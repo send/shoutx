@@ -40,6 +40,11 @@ shoutx github-actions:env REPORT_URL "$REPORT_URL" >> "$GITHUB_ENV"
 shoutx github-actions:path "$TOOL_DIR" >> "$GITHUB_PATH"
 ```
 
+Pass expression values through an environment variable or another data channel.
+Do not interpolate untrusted `${{ ... }}` expressions directly into `run:`;
+GitHub expands them before the generated shell script executes, so injection can
+happen before `shoutx` starts.
+
 When the value argument is omitted, `shoutx` reads standard input:
 
 ```sh
@@ -106,6 +111,11 @@ emitting the record.
 rejects NUL, line breaks, and empty values. Platform-specific path rules belong
 to this command rather than to the caller.
 
+This command prevents one value from becoming multiple `$GITHUB_PATH` records.
+It cannot make an attacker-controlled directory safe to add to `PATH`: doing so
+can still hijack later command lookup. Path trust and authorization remain the
+caller's responsibility.
+
 The commands write encoded records to stdout. The caller deliberately chooses
 the destination file with shell redirection; `shoutx` does not discover or
 modify environment files implicitly.
@@ -168,8 +178,11 @@ GitHub Actions output record. If a later step interpolates that value into shell
 source, that later shell boundary still requires a safe API or `shell:arg`.
 
 Values may also require application-level validation. A safely encoded path can
-still identify an unintended directory, and a safely quoted argument can still
-be interpreted as a command option.
+still identify an attacker-controlled directory and hijack command lookup. A
+safely quoted argument can still be interpreted as a command option.
+
+See [the threat model](docs/threat-model.md) for trust assumptions, attack
+coverage, and required failure behavior.
 
 ## Non-goals
 

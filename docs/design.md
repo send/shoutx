@@ -4,6 +4,9 @@ This document records decisions and open questions while `shoutx` is being
 designed. The README defines the intended product contract; this file may
 describe alternatives that have not been accepted.
 
+Security scope and trust assumptions are defined in the
+[threat model](threat-model.md).
+
 ## Product boundary
 
 `shoutx` prevents injection when CI workflows write values across output
@@ -42,6 +45,10 @@ shoutx markdown:text  [VALUE]
 7. Raw passthrough is not provided.
 8. Names and paths are validated according to their destination protocol.
 9. Diagnostics never include untrusted values unless safely represented.
+10. Documentation distinguishes structural encoding from authorization and
+   semantic validation.
+11. Documentation does not imply protection from injection that occurs before
+   `shoutx` starts or after its selected boundary has been crossed.
 
 ## Command model
 
@@ -71,6 +78,8 @@ workflow.
 - Whether provider extensions are compiled in, discovered as executables, or
   loaded through another plugin mechanism.
 - Compatibility and versioning rules for provider extensions.
+- Whether conservative name grammars should be stricter than the GitHub Actions
+  runner parser, which currently accepts any non-empty record name.
 
 ## Deferred scope
 

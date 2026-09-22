@@ -32,18 +32,27 @@ boundary.
 
 ## Quick start
 
-Replace hand-built records with an explicit destination:
+Pass expression values through `env:` so they reach the shell as data, then use
+`shoutx` at the output boundary:
 
-```sh
-shoutx github-actions:output title "$PR_TITLE" >> "$GITHUB_OUTPUT"
-shoutx github-actions:env REPORT_URL "$REPORT_URL" >> "$GITHUB_ENV"
-shoutx github-actions:path "$TOOL_DIR" >> "$GITHUB_PATH"
+```yaml
+- name: Export workflow values
+  id: export
+  env:
+    PR_TITLE: ${{ github.event.pull_request.title }}
+    REPORT_URL: ${{ steps.build.outputs.report-url }}
+    TOOL_DIR: ${{ github.workspace }}/.tools/bin
+  run: |
+    shoutx github-actions:output title "$PR_TITLE" >> "$GITHUB_OUTPUT"
+    shoutx github-actions:env REPORT_URL "$REPORT_URL" >> "$GITHUB_ENV"
+    # PATH entries must name trusted directories.
+    shoutx github-actions:path "$TOOL_DIR" >> "$GITHUB_PATH"
 ```
 
-Pass expression values through an environment variable or another data channel.
-Do not interpolate untrusted `${{ ... }}` expressions directly into `run:`;
+Do not interpolate untrusted `${{ ... }}` expressions directly into `run:`.
 GitHub expands them before the generated shell script executes, so injection can
-happen before `shoutx` starts.
+happen before `shoutx` starts. Detecting that workflow pattern is a linter's
+responsibility; `shoutx` protects values that reach it as data.
 
 When the value argument is omitted, `shoutx` reads standard input:
 

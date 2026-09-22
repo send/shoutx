@@ -1,0 +1,81 @@
+# Design notes
+
+This document records decisions and open questions while `shoutx` is being
+designed. The README defines the intended product contract; this file may
+describe alternatives that have not been accepted.
+
+## Product boundary
+
+`shoutx` prevents injection when CI workflows write values across output
+boundaries. It provides runtime writers and context encoders rather than static
+workflow analysis or attack-path discovery.
+
+The initial provider is GitHub Actions. Provider-specific behavior is isolated
+behind namespaced commands so support for other workflow engines can be added
+without pretending their protocols are interchangeable.
+
+## MVP commands
+
+Provider-specific writers:
+
+```text
+shoutx github-actions:output [--first-line | --join-lines STRING | --multiline] NAME [VALUE]
+shoutx github-actions:env    [--first-line | --join-lines STRING | --multiline] NAME [VALUE]
+shoutx github-actions:path   [VALUE]
+```
+
+Reusable context encoders under consideration for the MVP:
+
+```text
+shoutx shell:arg      [VALUE]
+shoutx markdown:text  [VALUE]
+```
+
+## Security invariants
+
+1. A command protects only the interpretation boundary named by that command.
+2. Invalid input produces no partial value or record on stdout.
+3. Single-line record modes never accept line breaks implicitly.
+4. Lossy normalization is always explicit.
+5. Multiline framing never uses a delimiter that can terminate the value.
+6. NUL is rejected.
+7. Raw passthrough is not provided.
+8. Names and paths are validated according to their destination protocol.
+9. Diagnostics never include untrusted values unless safely represented.
+
+## Command model
+
+Provider writers use `PROVIDER:DESTINATION`. Reusable encoders use
+`LANGUAGE:CONTEXT`.
+
+A value argument is used when present. Otherwise, input is read from stdin when
+stdin is not a terminal. Commands fail instead of waiting for interactive input.
+
+Encoded output is written to stdout and diagnostics to stderr. This preserves
+normal Unix composition and keeps destination selection visible in the calling
+workflow.
+
+## Open questions
+
+- Whether `shell:arg` belongs in the MVP and which POSIX shells are covered.
+- Whether `markdown:text` belongs in the MVP and what rendering guarantees it
+  can accurately make across supported surfaces.
+- The exact grammar for GitHub Actions output and environment variable names.
+- The precise semantics of `--first-line`, including empty first lines and line
+  ending normalization.
+- Whether `--join-lines STRING` is the right interface and how consecutive or
+  trailing line breaks are handled.
+- Buffering limits required to guarantee all-or-nothing stdout output.
+- Cross-platform rules for `$GITHUB_PATH`, especially Windows runners.
+- Implementation language, packaging, and supported installation methods.
+- Whether provider extensions are compiled in, discovered as executables, or
+  loaded through another plugin mechanism.
+- Compatibility and versioning rules for provider extensions.
+
+## Deferred scope
+
+- Static workflow analysis and attack-path discovery.
+- General JSON and HTML encoders.
+- Arbitrary document sanitization.
+- Providers other than GitHub Actions.
+- A stable third-party plugin API.

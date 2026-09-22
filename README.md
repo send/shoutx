@@ -147,8 +147,10 @@ or HTML documents.
 - If `VALUE` is omitted and stdin is piped, stdin is read through EOF.
 - If `VALUE` is omitted and stdin is a terminal, the command fails.
 - Encoded output is written to stdout; diagnostics are written to stderr.
+- Input and output are valid UTF-8; provider record framing uses LF on every OS.
 - Success emits exactly one value or record and exits with status 0.
 - Invalid input emits no partial record and exits non-zero.
+- An I/O failure after output begins may leave a partial record.
 - NUL is always rejected.
 - Raw passthrough is intentionally unsupported.
 
@@ -166,10 +168,12 @@ Escaping and framing should preserve the value whenever the destination can
 represent it safely. `--first-line` and `--join-lines` are explicit because they
 are lossy transformations. `--multiline` preserves the value.
 
-### Fail closed and atomically
+### Validate before writing
 
 If a value cannot be represented under the selected contract, `shoutx` fails
-without writing a partial result. It never silently falls back to raw output.
+before beginning output. It never silently falls back to raw output. An I/O
+failure after writing begins can still leave partial bytes in the destination;
+stdout and shell redirection are not transactional.
 
 ### Keep provider behavior pluggable
 

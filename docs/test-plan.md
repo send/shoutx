@@ -10,6 +10,8 @@ The product contract is defined by the [README](../README.md), the design
 decisions by [design.md](design.md), and the security boundary by
 [threat-model.md](threat-model.md). If this plan disagrees with those files,
 the disagreement must be resolved rather than silently encoded in a test.
+The [Rust implementation plan](implementation-plan.md) maps these cases to
+implementation increments without changing their expected behavior.
 
 ## Test layers
 
@@ -85,10 +87,12 @@ with `-`. Options other than global help/version and `--` are usage errors.
 | VALUE operand | Stdin state | Expected source and result |
 | --- | --- | --- |
 | Present | Any bytes, terminal, or closed | Use VALUE without reading stdin |
-| Omitted | Non-terminal with bytes | Read through EOF and use all bytes |
+| Omitted | Non-terminal with bytes within limit | Read through EOF and use all bytes |
+| Omitted | Non-terminal exceeding limit | May stop after the first excess byte; status 1 and empty stdout |
 | Omitted | Non-terminal at EOF | Empty value |
 | Omitted | Terminal | Do not wait; status 2 and empty stdout |
-| Omitted | Closed descriptor | I/O diagnostic, status 1 and empty stdout |
+| Omitted | POSIX descriptor closed before process startup | Runtime substitutes `/dev/null`; empty value |
+| Omitted | Invalid Windows handle | I/O diagnostic, status 1 and empty stdout |
 
 The argv and stdin variants of every value-validation case must have identical
 semantic results where the host process API can represent the value. NUL
@@ -208,11 +212,13 @@ the value ends in bare CR, verify status 1 and empty stdout.
 ## Limits and failure behavior
 
 Test values of 1,048,575, 1,048,576, and 1,048,577 UTF-8 bytes before optional
-final-boundary consumption, through argv where supported and through stdin. The
-first two sizes succeed if otherwise valid; the last fails with status 1 and
-empty stdout. Include a value at or below the input limit whose many boundaries
-and 255-byte join separator would expand far beyond 1 MiB. Assert rejection
-using checked size arithmetic before allocating the normalized result.
+final-boundary consumption through stdin and directly against the library argv
+input path. Host argument-block limits make executable-level argv tests at these
+sizes non-portable. The first two sizes succeed if otherwise valid; the last
+fails with status 1 and empty stdout. Include a value at or below the input limit
+whose many boundaries and 255-byte join separator would expand far beyond 1
+MiB. Assert rejection using checked size arithmetic before allocating the
+normalized result.
 
 Test names and separators at 254, 255, and 256 bytes. Limits are byte counts,
 not Unicode scalar counts. Names are ASCII by grammar; separators need
@@ -221,11 +227,17 @@ multibyte cases.
 Diagnostics must identify the failed rule without containing the supplied
 name, value, separator, generated delimiter, or excerpts derived from them.
 Capture stdout and stderr separately. Include a value resembling
-`::stop-commands::TOKEN` to ensure it is never copied to a diagnostic.
+`::stop-commands::TOKEN` to ensure it is never copied to a diagnostic. Assert
+that no fixed diagnostic line begins with `::`, because runner command handling
+can observe stderr as well as stdout.
 
-Cause a broken pipe and another short/failed stdout write. The process must
-ignore SIGPIPE as a termination mechanism, report an I/O failure on stderr, and
-exit 1. A partial stdout prefix is permitted only after writing began.
+Cause a broken pipe and another short/failed stdout write using deterministic
+synchronization or an injected test writer rather than a scheduling race. The
+process must ignore SIGPIPE as a termination mechanism, report an I/O failure on
+stderr, and exit 1. A partial stdout prefix is permitted only after writing
+began. An invalid Windows stdout handle must also produce status 1. On POSIX,
+test and document that a descriptor closed before startup is replaced with
+`/dev/null`, so the process cannot detect the discard and may exit 0.
 
 ## Runner parser model
 
@@ -278,7 +290,9 @@ the contract, model, or supported-version declaration is updated.
 The release matrix should capture executable stdout bytes before testing runner
 semantics, so shell transcoding and parser behavior are diagnosed separately.
 Windows contract tests must also prove that stdin is read as binary bytes,
-without CRLF translation or treating byte `0x1a` as end-of-file.
+without CRLF translation or treating byte `0x1a` as end-of-file. Use
+discriminating inputs such as `a CR CRLF`, which default mode rejects only when
+the bytes are preserved, and `a 0x1a b`, which must retain the control byte.
 
 | Host | Invocation | Required before guarantee |
 | --- | --- | --- |
@@ -307,6 +321,8 @@ before the command moves from candidate to supported MVP scope.
 For each supported workflow shell, a negative smoke test must place another
 successful command after a rejected `shoutx` invocation and still observe step
 failure. This catches shells that would otherwise mask the native exit status.
+Also test the runner-default stdin state with `VALUE` omitted, plus PowerShell
+argv fidelity for an empty value, embedded quotes, and trailing backslashes.
 Run concurrency tests with parallel writers to characterize, but not guarantee
 against, interleaving and lifecycle behavior.
 

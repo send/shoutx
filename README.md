@@ -168,10 +168,13 @@ arbitrary Markdown or HTML documents.
 - `--help` and `--version` are options only before `NAME`; after `NAME`, those
   tokens are values.
 - If `VALUE` is present, it is the input value and stdin is not read.
-- If `VALUE` is omitted and stdin is not a terminal, stdin is read through EOF.
+- If `VALUE` is omitted and stdin is not a terminal, stdin is read through EOF
+  unless the first byte beyond the hard limit proves it must be rejected.
 - If `VALUE` is omitted and stdin is a terminal, the command exits with usage
-  status 2 instead of waiting. A closed stdin descriptor is an I/O failure with
-  status 1, not an empty value.
+  status 2 instead of waiting. An unreadable stdin reported by the host API is
+  an I/O failure with status 1. On POSIX, the Rust runtime replaces a descriptor
+  that was already closed at process startup with `/dev/null`, so that case is
+  indistinguishable from intentional empty stdin and produces an empty value.
 - An empty `VALUE` and empty non-terminal stdin both mean an empty value.
 - GitHub Actions `run:` steps normally provide non-terminal stdin, so omitting
   `VALUE` can successfully write an empty record when stdin is empty.
@@ -199,6 +202,10 @@ arbitrary Markdown or HTML documents.
   usage errors exit with status 2.
 - An I/O failure exits with status 1 and may leave a partial record if output
   already began.
+- On POSIX, a stdout descriptor already closed at process startup is replaced
+  with `/dev/null` by the Rust runtime; no write failure is exposed, so output
+  is discarded and status 0 is possible. Supported writer usage always
+  redirects stdout to the runner file and does not rely on detecting this case.
 - NUL is always rejected.
 - Raw passthrough is intentionally unsupported.
 

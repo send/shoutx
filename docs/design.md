@@ -8,6 +8,8 @@ Security scope and trust assumptions are defined in the
 [threat model](threat-model.md).
 The contract-derived verification matrix is defined in the
 [CLI contract test plan](test-plan.md).
+Implementation sequencing and Rust-specific architecture are defined in the
+[Rust implementation plan](implementation-plan.md).
 
 ## Product boundary
 
@@ -65,9 +67,14 @@ Provider writers use `PROVIDER:DESTINATION`. Reusable encoders use
 `LANGUAGE:CONTEXT`.
 
 A value argument is used when present. Otherwise, input is read from stdin when
-stdin is not a terminal. With no value and terminal stdin, commands fail with
-usage status 2 instead of waiting. A closed stdin descriptor is an I/O failure
-with status 1, not an empty value.
+stdin is not a terminal. Reading normally continues through EOF, but may stop
+when the first byte beyond the hard limit proves the input must be rejected.
+With no value and terminal stdin, commands fail with usage status 2 instead of
+waiting. An unreadable stdin error exposed by the host API has status 1. On
+POSIX, however, Rust runtime initialization replaces an inherited descriptor
+that was already closed with `/dev/null`; shoutx cannot distinguish it from an
+intentional empty input and therefore accepts it as empty stdin. Windows invalid
+handles remain observable I/O failures.
 
 Options precede `NAME`. After `NAME`, one token is treated as `VALUE` even if it
 begins with `-`. A value argument causes stdin to be ignored. An empty argument
@@ -192,6 +199,13 @@ reproduce names, values, separators, or delimiter-derived excerpts.
 Implementations should submit the complete constructed record with one stdout
 write operation where the host API permits it, reducing but not eliminating the
 partial-write window.
+
+Rust runtime initialization reopens inherited POSIX standard descriptors that
+were already closed using `/dev/null`. Consequently a startup-closed POSIX
+stdout exposes no I/O error and may discard a successful record with status 0.
+This exception does not apply to failures surfaced after writing begins or to
+observable invalid Windows handles. Supported writer invocations redirect
+stdout to an opened runner environment file.
 
 The cross-platform guarantee is semantic equivalence through the local
 supported runner parser, not byte-identical records across operating systems.

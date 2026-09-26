@@ -17,6 +17,10 @@ explicit handling of non-Unicode process arguments, checked size arithmetic,
 and native POSIX and Windows behavior. The MSRV may be raised deliberately in a
 later release, but CI must build the declared MSRV until that decision is made.
 
+The initial project uses `rust-toolchain.toml`, Cargo, and direct Cargo commands
+rather than requiring mise or another general tool-version manager. A single
+language toolchain does not justify an additional bootstrap dependency.
+
 ## Dependency policy
 
 The first implementation increment should have no production dependency unless
@@ -396,6 +400,12 @@ Workflow smoke tests then establish:
 
 Only after this PR passes may PowerShell and the tested runner versions enter a
 release compatibility declaration.
+
+Re-evaluate mise when this work introduces a .NET SDK for the runner harness or
+several separately versioned development tools. Adopt it only if it replaces a
+growing set of installation instructions or repeated local/CI command sequences;
+it must remain optional unless the same tasks cannot be expressed clearly with
+the native toolchains and CI configuration.
 
 ## Later PR: `github-actions:path`
 

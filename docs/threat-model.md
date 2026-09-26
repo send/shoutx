@@ -3,6 +3,9 @@
 This document defines the security boundary that `shoutx` intends to protect.
 It covers the proposed MVP and will evolve with the implementation.
 
+Concrete cases and compatibility gates derived from this model are maintained
+in the [CLI contract test plan](test-plan.md).
+
 Revision status: second design pass, before implementation.
 
 ## Security objective
@@ -121,30 +124,40 @@ contract is therefore:
 - invalid UTF-8 from stdin is rejected before output begins;
 - NUL is rejected in every mode;
 - emitted records are UTF-8 without a byte-order mark; and
-- record framing emitted by `shoutx` uses LF, independent of the host OS.
+- record framing is emitted explicitly and does not rely on host text-mode
+  newline translation.
 
 Command-line arguments are subject to the host process API. Implementations
 must reject arguments that cannot be represented as valid UTF-8 rather than
 silently replacing data.
 
-Single-line modes reject both CR and LF. The exact value semantics for CRLF,
-bare CR, and trailing line breaks in multiline and normalization modes remain a
-CLI design decision and must be resolved before those modes are implemented.
+Every non-multiline GitHub Actions writer consumes at most one final line
+boundary as input framing. The default named-writer mode then rejects both CR
+and LF; normalization modes treat each remaining CRLF as one line boundary and
+each remaining bare CR or LF as one boundary. `--multiline` preserves all three
+forms, including trailing line breaks. Framing normally uses LF; on Windows a
+value ending in bare CR requires a CRLF framing separator to prevent the Windows
+runner parser from consuming the value's final CR. Here Windows means the
+target runner OS, selected from trusted `RUNNER_OS` when present and otherwise
+from the native process OS; it does not mean the shell or executable format.
 
 Shell redirection and shell-specific transcoding remain outside `shoutx`'s
 control. Supported invocation environments must preserve native-process stdout
-bytes unchanged. Legacy Windows PowerShell requires particular care because its
-file-writing commands do not use UTF-8 by default.
+bytes unchanged. Windows PowerShell and PowerShell Core before 7.4 are
+unsupported. PowerShell Core 7.4 and later preserves native-command stdout
+bytes with direct redirection, but is not included in the release guarantee
+until differential tests establish the invocation contract. Merged stdout and
+stderr are treated as text and are unsupported.
 
 ## GitHub Actions boundary inventory
 
-The MVP protects these environment-file destinations:
+The MVP candidates are these environment-file destinations:
 
 | Boundary | MVP status | Interpretation |
 | --- | --- | --- |
 | `$GITHUB_OUTPUT` | Included | Named step-output records |
 | `$GITHUB_ENV` | Included | Named environment-variable records |
-| `$GITHUB_PATH` | Included | One path entry per line |
+| `$GITHUB_PATH` | Candidate; contract incomplete | One path entry per line |
 
 Other recognized boundaries are explicitly deferred:
 
@@ -167,14 +180,19 @@ The security property is structural integrity of one `$GITHUB_OUTPUT` record.
 An attacker-controlled value must not define another output name or terminate a
 multiline record early.
 
-Single-line mode rejects CR and LF. Multiline mode uses the documented
-`NAME<<DELIMITER` framing and verifies that the selected delimiter does not
-occur as a line of its own in the value. Framing must preserve empty values and
-trailing line breaks according to the final CLI contract.
+Every non-multiline named-writer mode consumes one optional final CRLF, LF, or
+bare CR before applying its mode-specific rule. Default mode rejects any
+remaining CR or LF.
+Multiline mode uses the documented
+`NAME<<DELIMITER` framing and verifies, more conservatively, that the selected
+delimiter does not occur anywhere in the value. Framing preserves empty values
+and trailing LF, CRLF, and bare CR.
 
-The command rejects invalid names according to a documented, conservative
-grammar. This does not protect later use of the output. If a later `run:` block
-inserts the output directly as an expression, shell injection is again possible.
+The command accepts names matching `[A-Za-z_][A-Za-z0-9_-]*`, up to 255 ASCII
+bytes. This matches GitHub's documented action-output identifier grammar,
+including established kebab-case output names. It does not protect later use of
+the output. If a later `run:` block inserts the output directly as an
+expression, shell injection is again possible.
 
 GitHub applies separate limits to job and workflow outputs. Passing `shoutx`
 validation does not guarantee that GitHub will accept or propagate the output.
@@ -185,10 +203,16 @@ The security property is structural integrity of one `$GITHUB_ENV` record. An
 attacker-controlled value must not define another variable or terminate a
 multiline record early.
 
-The command uses a documented, portable name grammar and fails for names that
-GitHub reserves or blocks. At minimum, policy must account for default
-`GITHUB_*` and `RUNNER_*` variables, `NODE_OPTIONS`, case-insensitive collisions
-on Windows, and duplicate assignments.
+The command accepts names matching `[A-Za-z_][A-Za-z0-9_]*`, up to 255 ASCII
+bytes. It rejects `GITHUB_*`, `RUNNER_*`, and `NODE_OPTIONS` using ASCII
+case-insensitive comparisons. This is intentionally stricter than the current
+runner file parser and reflects GitHub policy and portable environment-variable
+use.
+
+The command does not read the destination file and cannot detect duplicate or
+case-colliding assignments made by another invocation. The runner's handling of
+such assignments and caller-level uniqueness are outside this command's
+guarantee.
 
 The command does not make later uses of the variable safe for shell, SQL, URLs,
 templates, or other contexts. It also does not make environment variables an
@@ -196,8 +220,10 @@ appropriate channel for secrets.
 
 ### `github-actions:path`
 
-The security property is limited to one `$GITHUB_PATH` record. The command
-rejects NUL, CR, LF, and empty values so one input cannot add multiple entries.
+The security property is limited to one `$GITHUB_PATH` record. As with other
+non-multiline modes, the command consumes at most one final CRLF, LF, or bare CR
+as input framing, then rejects NUL, every remaining CR or LF, and empty values
+so one input cannot add multiple entries.
 
 There is no encoding that makes an attacker-controlled directory safe to add to
 `PATH`. An attacker who controls a directory earlier in command lookup may place
@@ -233,10 +259,10 @@ claimed without an explicit platform contract.
 
 | Attack | In scope | Intended control |
 | --- | --- | --- |
-| New output or environment record through a line break | Yes | Reject CR/LF or use verified multiline framing |
-| Early multiline termination | Yes | Verify the delimiter is not a standalone input line |
+| New output or environment record through a line break | Yes | Consume only one optional final boundary, reject remaining CR/LF, or use verified multiline framing |
+| Early multiline termination | Yes | Use an independent delimiter and verify that it does not occur in the value |
 | Record-name confusion | Yes | Validate against a documented conservative grammar |
-| Multiple PATH entries through a line break | Yes | Reject CR and LF |
+| Multiple PATH entries through a line break | Yes | Consume only one optional final boundary and reject remaining CR/LF |
 | Invalid UTF-8 or NUL | Yes | Reject before output begins |
 | Memory exhaustion through large input | Yes | Enforce a documented hard input limit |
 | Secret exposure through diagnostics | Yes | Do not reproduce input values in diagnostics |
@@ -252,9 +278,12 @@ claimed without an explicit platform contract.
 
 ## Resource limits
 
-`shoutx` must read and validate the complete input before beginning output, so
-it requires a hard input-size limit. The exact limit is part of the CLI contract
-and must be enforced for both argv and stdin.
+`shoutx` must read and validate the complete input before beginning output. The
+value is therefore limited to 1 MiB (1,048,576 UTF-8 bytes), enforced equally
+for argv and stdin. The normalized value has the same limit. Record names and
+`--join-lines-with` separators are limited to 255 bytes. Implementations must
+compute expanded sizes with checked arithmetic and reject them before allocating
+the normalized result.
 
 Provider limits are separate. GitHub currently documents job outputs of at most
 1 MB per job and 50 MB per workflow run, approximated using UTF-16 encoding.
@@ -271,14 +300,33 @@ Commands validate and encode the complete input before beginning stdout output.
 Validation, encoding, and resource-limit failures therefore emit no encoded
 bytes to stdout and exit non-zero.
 
+Exit status 0 means success, 1 means input or policy rejection, I/O failure, or
+internal failure, and 2 means command-line usage error. Help and version output
+exit 0. Status 1 does not distinguish a failure before output from an I/O
+failure after output began. Implementations ignore SIGPIPE and report EPIPE as
+an I/O failure so broken pipes follow the documented status contract.
+
 Once writing begins, an operating-system or I/O failure can leave partial bytes
 in stdout or the redirected destination. `shoutx` cannot promise transactional
 stdout. It must report the failure through a non-zero exit status when the host
-API exposes it.
+API exposes it. It should use one write operation for a complete constructed
+record where possible, but short writes and later writers can still leave or
+extend a malformed record.
+
+A non-zero native-process status does not necessarily stop a workflow step.
+In particular, PowerShell does not turn every non-zero native status into a
+terminating error. Documented recipes must enable native-command error
+propagation or check `$LASTEXITCODE` immediately; supported-shell smoke tests
+must verify that rejection fails the step.
 
 Diagnostics go to stderr and identify the failed rule without reproducing
 untrusted or secret values. Diagnostic text itself must not accidentally form a
 GitHub stdout workflow command.
+
+Writer stdout must be redirected to the selected environment file. In
+particular, an unredirected multiline value can place attacker-controlled lines
+on the runner command channel, which is outside the environment-file encoding
+guarantee.
 
 Shell redirection is outside the output guarantee. `>` may create or truncate a
 destination before `shoutx` validates input. The documented GitHub Actions usage
@@ -311,16 +359,29 @@ entries from selecting a different provider implementation.
 
 ## Required tests
 
-- LF and CRLF input, including a final line without a terminator;
-- bare CR, NUL, invalid UTF-8, and a UTF-8 byte-order mark;
+- LF, CRLF, and bare-CR input, including every trailing form, the Windows
+  trailing-bare-CR framing case, and a final line without a terminator;
+- NUL, invalid UTF-8, and a UTF-8 byte-order mark;
 - empty values, empty first lines, and one or more trailing line breaks;
+- default-mode inputs with no terminator, exactly one final CRLF/LF/CR, multiple
+  final boundaries, internal boundaries, and LF followed by CR;
+- first-line and join-mode inputs with no boundary, one final boundary, and
+  multiple final or internal boundaries;
 - names containing `=`, `<<`, leading `-`, whitespace, Unicode, and controls;
-- reserved, blocked, duplicate, and case-colliding environment names;
-- delimiter equality using the runner's ordinal line comparison;
+- reserved and blocked names, plus documentation of unsupported duplicate and
+  case-collision detection across invocations;
+- delimiter equality using the runner's ordinal line comparison, plus the
+  stronger no-substring selection rule;
 - values resembling workflow commands such as `::stop-commands::`;
 - values containing secrets without diagnostic disclosure;
 - inputs at, below, and above the supported hard limit;
+- `--`, mutually exclusive modes, `--join-lines-with` arguments beginning with
+  `-`, equals-form separators, help/version option position, missing operands,
+  and extra operands;
+- empty non-terminal stdin, terminal stdin with no value, and a closed stdin
+  descriptor;
 - POSIX and Windows runner path behavior;
+- byte-for-byte stdout capture under each supported Windows invocation;
 - stdout failures and broken pipes; and
 - parallel writers to document unsupported behavior.
 
@@ -341,5 +402,7 @@ claiming compatibility.
 - [Workflow commands for GitHub Actions](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-commands)
 - [Script injections](https://docs.github.com/en/actions/concepts/security/script-injections)
 - [Variables reference](https://docs.github.com/en/actions/reference/workflows-and-actions/variables)
+- [Action metadata syntax](https://docs.github.com/en/actions/reference/workflows-and-actions/metadata-syntax)
 - [Workflow syntax and output limits](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#jobsjob_idoutputs)
-- [Pinned GitHub Actions runner environment-file parser](https://github.com/actions/runner/blob/50bd7667ef037c0bef8fdc38337a7a797f2279c7/src/Runner.Worker/FileCommandManager.cs)
+- [PowerShell redirection](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_redirection)
+- [Pinned GitHub Actions runner v2.337.0 environment-file parser](https://github.com/actions/runner/blob/v2.337.0/src/Runner.Worker/FileCommandManager.cs)

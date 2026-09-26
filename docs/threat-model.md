@@ -313,6 +313,13 @@ API exposes it. It should use one write operation for a complete constructed
 record where possible, but short writes and later writers can still leave or
 extend a malformed record.
 
+On POSIX, Rust runtime initialization replaces standard descriptors that were
+already closed at process startup with `/dev/null`. Such a stdin is observed as
+empty input, and such a stdout can discard output without exposing an error.
+This is an explicit host-runtime limitation; supported writer usage redirects
+stdout to an opened runner file. Invalid Windows handles and I/O failures that
+the host API does expose still require status 1.
+
 A non-zero native-process status does not necessarily stop a workflow step.
 In particular, PowerShell does not turn every non-zero native status into a
 terminating error. Documented recipes must enable native-command error
@@ -378,8 +385,8 @@ entries from selecting a different provider implementation.
 - `--`, mutually exclusive modes, `--join-lines-with` arguments beginning with
   `-`, equals-form separators, help/version option position, missing operands,
   and extra operands;
-- empty non-terminal stdin, terminal stdin with no value, and a closed stdin
-  descriptor;
+- empty non-terminal stdin, terminal stdin with no value, POSIX startup-closed
+  stdin as `/dev/null`, and invalid Windows stdin handles;
 - POSIX and Windows runner path behavior;
 - byte-for-byte stdout capture under each supported Windows invocation;
 - stdout failures and broken pipes; and

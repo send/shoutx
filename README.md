@@ -327,6 +327,12 @@ source checks as CI with:
 cargo deny --all-features --locked check advisories bans licenses sources
 ```
 
+## Security
+
+Report suspected vulnerabilities through GitHub's private vulnerability
+reporting form rather than a public issue. See the [security policy](SECURITY.md)
+for the supported-version policy and the information to include.
+
 ## License
 
 MIT

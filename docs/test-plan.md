@@ -83,7 +83,9 @@ For `github-actions:path`, test `COMMAND VALUE`, `COMMAND -- VALUE`, stdin when
 VALUE is omitted, and rejection of an extra operand. `--` is required to pass a
 value beginning with `-`; without it, the token is an unknown option. Options
 other than global help/version and `--` are usage errors. Help and version are
-recognized only before VALUE.
+recognized only before VALUE. `COMMAND VALUE --help` is an extra-operand usage
+error with status 2 and empty stdout. `COMMAND --` with no following token
+selects stdin rather than an empty argv value.
 
 ## Input-source selection
 
@@ -203,19 +205,31 @@ separators, non-ASCII UTF-8, and U+FEFF away from the first character. Preserve
 every accepted byte exactly. Reject relative paths, `./a`, `../a`, an empty
 value, a leading U+FEFF, any CR or LF left after common final-boundary
 consumption, NUL, and any value containing `:`.
+Reject `"` even though it can occur in a POSIX filename, because it crosses the
+runner container step-host argument boundary.
 
 ### Windows target grammar
 
 Accept drive-absolute paths using either directory separator, UNC paths, and
 fully qualified verbatim drive and UNC forms. Include spaces, dot segments,
 repeated and trailing separators, non-ASCII UTF-8, and U+FEFF away from the
-first character, and assert exact preservation.
+first character, and assert exact preservation. Cover `C:\`, `c:/tools`,
+`\\server\share`, `//server/share`, `\\?\C:\`, and
+`\\?\UNC\server\share`.
 
 Reject drive-relative `C:tools`, root-relative `\tools`, plain relative paths,
 incomplete UNC forms, Win32 device forms such as `\\.\...`, an empty value, a
 leading U+FEFF, any remaining CR or LF, NUL, and any value containing `;`.
-Include lower- and uppercase drive letters. Tests must not require the path to
-exist or infer validity from the test host filesystem.
+Reject `"` and explicitly cover bare `C:`, `\\server`, `//./x`, `/\.\x`,
+`//?/C:/x`, `\\?\C:/x`, `\\?\C:`, `\\?\UNC\server`,
+`\\?\GLOBALROOT\x`, `\\?\Volume{x}\`, `\\?\pipe\x`, and
+`\\.\UNC\server\share`. Include lower- and uppercase drive letters. Tests
+must not require the path to exist or infer validity from the test host
+filesystem.
+
+Every path grammar, separator, quote, leading-BOM, and target-selection
+rejection has status 1 and empty stdout. This includes an empty or otherwise
+unknown `RUNNER_OS` value.
 
 ### Runner parser and effective ordering
 
@@ -230,13 +244,24 @@ Assert that empty lines are ignored but whitespace-only lines are retained,
 that later distinct entries appear earlier in the effective PATH, and that the
 last runner-equivalent duplicate determines precedence. Because the runner
 uses current-culture string comparison, do not turn non-ASCII duplicate
-equivalence into a portable shoutx guarantee. Include only culture-invariant
-ASCII duplicate fixtures in the cross-platform oracle.
+equivalence into a portable shoutx guarantee. Use only printable ASCII for
+portable duplicate fixtures, and add one native observation case showing the
+runner's treatment of otherwise identical paths where one contains U+200B.
+Also observe an embedded U+FEFF case so byte preservation is not confused with
+effective duplicate identity.
 
 Append a shoutx record to both an empty command file and a file containing an
 earlier record. A supported value must have the same parsed text in both
 positions; the leading-U+FEFF rejection specifically prevents the known
 position-dependent exception.
+
+The actual-runner fixture calls `AddPathFileCommand.ProcessCommand` with a test
+execution context whose `DeferredPrependPath` is null and whose
+`Global.PrependPath` is observable. A test-only handler subclass then exposes
+the protected `AddPrependPathToEnvironment` path and asserts the final PATH,
+including reverse ordering and an original PATH that already starts with the
+complete prepend string plus the PATH separator. This distinguishes runner
+execution from a local transcription of its list and join logic.
 
 ## Multiline records
 

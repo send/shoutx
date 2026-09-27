@@ -128,9 +128,11 @@ The planned `github-actions:path` command will validate and emit one fully
 qualified entry for `$GITHUB_PATH`. It will consume one optional final line
 boundary, reject remaining boundaries and empty values, reject the target OS
 PATH separator (`:` on POSIX or `;` on Windows), and preserve the path without
-normalization. A leading U+FEFF will be rejected because the runner would treat
-it differently at the beginning of the file. The current build still rejects
-the command as unknown until its separate parser model and implementation land.
+normalization. It will also reject `"`, which the runner cannot safely compose
+into its container-runtime PATH argument. A leading U+FEFF will be rejected
+because the runner would treat it differently at the beginning of the file.
+The current build still rejects the command as unknown until its separate
+parser model and implementation land.
 
 That future command will provide record framing, not path authorization. An
 attacker-controlled directory could still hijack later command lookup.

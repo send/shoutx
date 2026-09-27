@@ -245,20 +245,32 @@ unrecognized value is always rejected because path grammar and the effective
 PATH separator are target-specific.
 
 Only fully qualified paths are accepted. POSIX paths must begin with `/`.
-Windows accepts drive-absolute, UNC, and fully qualified verbatim drive or UNC
-forms; drive-relative forms such as `C:tools`, root-relative forms such as
-`\tools`, incomplete UNC forms, Win32 device forms such as `\\.\...`, and all
-relative forms are rejected. Both `/` and `\` remain accepted as Windows
-directory separators. The implementation does not require the path to exist,
-resolve `.` or `..`, canonicalize symlinks, change separator spelling, trim
-whitespace, or change case.
+Windows accepts these forms:
+
+- an ASCII drive letter, `:`, and `/` or `\`, including a drive root;
+- exactly two leading `/` or `\` separators followed by non-empty server and
+  share components, where neither component is `.` or `?`; or
+- an exact `\\?\` prefix followed by either an ASCII drive letter, `:`, and
+  `\`, or `UNC\` plus non-empty server and share components separated by `\`.
+
+The verbatim prefixes and their structural separators are backslash-only;
+forward slashes later in a verbatim path remain literal data. Drive-relative
+forms such as `C:tools`, root-relative forms such as `\tools`, incomplete UNC
+forms, mixed-separator spellings of `\\.\` or `\\?\`, Win32 device forms, and
+verbatim namespaces other than drive and UNC are rejected. Thus paths under
+`GLOBALROOT`, `Volume{...}`, and `pipe` are not accepted. The implementation
+does not require the path to exist, resolve `.` or `..`, canonicalize symlinks,
+change separator spelling, trim whitespace, or change case.
 
 POSIX `:` and Windows `;` are rejected. Although either character can be path
 data in some contexts, the runner later joins accepted lines with the target
 OS PATH separator; accepting it would let one line become multiple effective
-PATH entries. Other platform-specific invalid filename characters are not
-validated because shoutx neither accesses the directory nor claims that the OS
-will accept it.
+PATH entries. A double quote is rejected on every target because a container
+step host interpolates the resulting PATH into a quoted `docker exec` argument
+string; accepting it could terminate that argument and create another runtime
+option. Other platform-specific invalid filename characters are not validated
+because shoutx neither accesses the directory nor claims that the OS will
+accept it.
 
 A leading U+FEFF is rejected. When the entry is the first content in the
 command file, `File.ReadAllLines(..., Encoding.UTF8)` consumes its UTF-8 bytes
@@ -274,6 +286,14 @@ It reverses that list when constructing PATH, so a later distinct entry has
 higher command-lookup priority. shoutx emits one entry and does not inspect the
 destination file, deduplicate entries, or promise stable duplicate equivalence
 across runner cultures.
+
+Current-culture equality can treat distinct Unicode strings as duplicates,
+including strings that differ by default-ignorable characters. Exact UTF-8
+preservation therefore does not imply stable duplicate identity. On non-Linux
+hosts, the runner's later PATH helper also uses an ordinal-ignore-case prefix
+check and avoids prepending the complete string when PATH already starts with
+that string followed by the PATH separator. These are runner behaviors, not
+shoutx deduplication guarantees.
 
 This is structural validation, not authorization. The caller must establish
 that the directory and executables reachable through it are trusted.

@@ -231,7 +231,9 @@ one file record cannot become multiple effective PATH entries. It accepts only
 fully qualified paths in the target runner dialect and rejects a leading
 U+FEFF, whose preservation would otherwise depend on whether the record begins
 the file. Target selection follows trusted `RUNNER_OS`, with native fallback;
-an unknown value is rejected.
+an unknown value is rejected. It rejects `"` on every target because the
+runner's container step host embeds PATH in a quoted `docker exec` argument
+string.
 
 There is no encoding that makes an attacker-controlled directory safe to add to
 `PATH`. An attacker who controls a directory earlier in command lookup may place
@@ -274,6 +276,7 @@ claimed without an explicit platform contract.
 | Record-name confusion | Yes | Validate against a documented conservative grammar |
 | Multiple PATH entries through a line break | Yes | Consume only one optional final boundary and reject remaining CR/LF |
 | Multiple effective PATH entries through the PATH separator | Yes | Reject `:` for POSIX targets and `;` for Windows targets |
+| Container runtime option injection through PATH quoting | Yes | Reject `"` on every target before the runner constructs `docker exec` arguments |
 | Append-position-dependent leading BOM | Yes | Reject a leading U+FEFF before output |
 | Relative PATH resolution against a later working directory | Yes | Require a fully qualified target-platform path |
 | Invalid UTF-8 or NUL | Yes | Reject before output begins |

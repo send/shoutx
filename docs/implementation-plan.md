@@ -527,12 +527,13 @@ rejection, echo suppression, stopped-command behavior, derived masks, and job
 output suppression. Pin these observations to runner v2.337.0 and inspect the
 current runner source before release.
 
-Current CI dogfoods registration with a fresh random marker on each supported
-OS, but it cannot inspect its own still-open log. Before the next release,
-hosted workflow coverage must inspect the completed log from outside the
-producing job. It must prove redaction on Linux,
-macOS, and Windows under each supported shell, including stdin and quoted
-environment-variable delivery. Do not use shell tracing or literal secrets in
+CI dogfoods registration with fresh random markers on each supported OS and
+shell. A read-only `workflow_run` verifier on the default branch inspects the
+completed log from outside the producing job without checking out or executing
+the triggering revision. Before the next release, a successful main-branch run
+must record this evidence. It must prove redaction on Linux,
+macOS, and Windows under each supported shell, including stdin sourced from
+quoted environment variables and shell-local variables. Do not use shell tracing or literal secrets in
 workflow source. The workflow should distinguish a missing marker caused by a
 test setup failure from successful replacement with `***`.
 

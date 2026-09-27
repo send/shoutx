@@ -141,6 +141,21 @@ jobs:
         run: |
           sh tests/workflow-smoke/posix.sh target/debug/shoutx sh
           bash tests/workflow-smoke/posix.sh target/debug/shoutx bash
+      - name: Dash smoke tests
+        id: dash_smoke
+        if: runner.os == 'Linux'
+        shell: dash -e {0}
+        run: |
+          command -v dash
+          dpkg-query --show --showformat='dash ${Version}\n' dash
+          dash tests/workflow-smoke/posix.sh target/debug/shoutx dash
+          target/debug/shoutx github-actions:output value 'dash % 日本語' >> "$GITHUB_OUTPUT"
+      - name: Verify Dash workflow output
+        if: runner.os == 'Linux'
+        shell: dash -e {0}
+        env:
+          DASH_OUTPUT: ${{ steps.dash_smoke.outputs.value }}
+        run: test "$DASH_OUTPUT" = 'dash % 日本語'
       - name: PowerShell smoke tests
         if: runner.os == 'Windows'
         shell: pwsh

@@ -397,7 +397,8 @@ the bytes are preserved, and `a 0x1a b`, which must retain the control byte.
 
 | Host | Invocation | Required before guarantee |
 | --- | --- | --- |
-| Linux GitHub-hosted runner | POSIX `sh` direct `>>` | Exact native stdout bytes and semantic round trip |
+| Linux GitHub-hosted runner | `sh` direct `>>` | Exact native stdout bytes and semantic round trip |
+| Linux GitHub-hosted runner | Explicit Dash direct `>>` | Exact native stdout bytes, status propagation, and semantic round trip |
 | Linux GitHub-hosted runner | Bash direct `>>` | Exact native stdout bytes and semantic round trip |
 | macOS GitHub-hosted runner | Bash direct `>>` | Exact native stdout bytes and semantic round trip |
 | Windows GitHub-hosted runner | PowerShell 7.4+ direct `>>` | Exact native stdout bytes, status propagation, and semantic round trip |

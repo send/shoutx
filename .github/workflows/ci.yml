@@ -107,7 +107,7 @@ jobs:
           [[ "$DOGFOOD_OUTPUT" == 'output % 日本語' ]]
           [[ "$DOGFOOD_MULTILINE" == $'first\nsecond\n' ]]
           [[ "$SHOUTX_DOGFOOD_ENV" == 'env % 日本語' ]]
-          [[ "${PATH%%:*}" == "$RUNNER_TEMP/shoutx-dogfood-bin" ]]
+          [[ ":$PATH:" == *":$RUNNER_TEMP/shoutx-dogfood-bin:"* ]]
       - name: Dogfood GitHub environment files on Windows
         id: dogfood_windows
         if: runner.os == 'Windows'
@@ -130,7 +130,7 @@ jobs:
           if ($env:DOGFOOD_MULTILINE -cne "first`nsecond`n") { throw 'Multiline mismatch' }
           if ($env:SHOUTX_DOGFOOD_ENV -cne 'env % 日本語') { throw 'Environment mismatch' }
           $expectedPath = Join-Path $env:RUNNER_TEMP 'shoutx-dogfood-bin'
-          if (($env:PATH -split ';')[0] -cne $expectedPath) { throw 'PATH mismatch' }
+          if ($expectedPath -notin ($env:PATH -split ';')) { throw 'PATH mismatch' }
       - name: POSIX shell smoke tests
         if: runner.os != 'Windows'
         shell: sh

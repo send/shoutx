@@ -295,6 +295,14 @@ scripts/test-runner-oracle.sh
 CI installs the same SDK directly and runs the oracle natively on Linux and
 Windows.
 
+Dependency policy is declared in `deny.toml`. Contributors with `cargo-deny`
+installed can run the same vulnerability, license, duplicate-version, and
+source checks as CI with:
+
+```sh
+cargo deny --all-features --locked check advisories bans licenses sources
+```
+
 ## License
 
 MIT

@@ -97,7 +97,7 @@ jobs:
           dotnet-version: 8.0.424
       - name: Verify pinned .NET SDK
         shell: pwsh
-        working-directory: target/runner-oracle/actions-runner
+        working-directory: target/runner-oracle/actions-runner/src
         run: |
           if ((dotnet --version) -ne '8.0.424') {
             throw "Expected .NET SDK 8.0.424, got $(dotnet --version)"
@@ -111,20 +111,20 @@ jobs:
           cargo +stable test --test runner_differential_fixture export_runner_corpus -- --ignored
       - name: Build pinned runner oracle
         shell: pwsh
-        working-directory: target/runner-oracle/actions-runner
+        working-directory: target/runner-oracle/actions-runner/src
         run: |
-          Copy-Item ${{ github.workspace }}/tests/runner-oracle/ShoutxDifferentialL0.cs src/Test/L0/Worker/
-          dotnet build src/Test/Test.csproj `
+          Copy-Item ${{ github.workspace }}/tests/runner-oracle/ShoutxDifferentialL0.cs Test/L0/Worker/
+          dotnet build Test/Test.csproj `
             --configuration Release `
             -p:PackageRuntime=${{ matrix.runtime }} `
             -p:NuGetAudit=false
       - name: Compare pinned runner parser
         shell: pwsh
-        working-directory: target/runner-oracle/actions-runner
+        working-directory: target/runner-oracle/actions-runner/src
         env:
           SHOUTX_CORPUS: ${{ github.workspace }}/target/runner-oracle/corpus.json
         run: |
-          dotnet test src/Test/Test.csproj `
+          dotnet test Test/Test.csproj `
             --configuration Release `
             --no-build `
             --no-restore `

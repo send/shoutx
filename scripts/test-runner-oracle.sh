@@ -79,13 +79,13 @@ SHOUTX_CORPUS_PATH="$corpus" \
 cp tests/runner-oracle/ShoutxDifferentialL0.cs \
   "$runner_dir/src/Test/L0/Worker/ShoutxDifferentialL0.cs"
 (
-  cd "$runner_dir"
-  DOTNET_CLI_TELEMETRY_OPTOUT=1 dotnet_run build src/Test/Test.csproj \
+  cd "$runner_dir/src"
+  DOTNET_CLI_TELEMETRY_OPTOUT=1 dotnet_run build Test/Test.csproj \
     --configuration Release \
     -p:PackageRuntime="$runtime" \
     -p:NuGetAudit=false
   SHOUTX_CORPUS="$corpus" DOTNET_CLI_TELEMETRY_OPTOUT=1 \
-    dotnet_run test src/Test/Test.csproj \
+    dotnet_run test Test/Test.csproj \
     --configuration Release \
     --no-build \
     --no-restore \

@@ -19,11 +19,14 @@ safe for later parsers or operations.
   processes, or other resources.
 
 Read `README.md`, `docs/design.md`, `docs/threat-model.md`, and
-`docs/test-plan.md` before changing observable behavior. Resolve contradictions
-between them rather than choosing one silently. Specify security-relevant CLI
-behavior before implementing it. `docs/implementation-plan.md` records the
-intended architecture and sequencing but does not override the product
-contract.
+`docs/test-plan.md` before changing observable behavior, then follow their links
+to every relevant normative command specification under `docs/commands/` or
+decision record. Resolve
+contradictions between them rather than choosing one silently. Specify
+security-relevant CLI behavior before implementing it.
+`docs/implementation-plan.md` records the intended architecture and does not
+override the product contract; `docs/implementation-history.md` is historical
+context only.
 
 For GitHub Actions behavior, verify claims against current official GitHub
 documentation and the repository-pinned `actions/runner` implementation. Do

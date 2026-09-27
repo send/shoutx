@@ -308,8 +308,9 @@ against, interleaving and lifecycle behavior.
 The implementation PR following this design work should not be considered
 ready until:
 
-- every normative deterministic case in this plan and the applicable linked
-  command specification is automated;
+- every applicable deterministic verification case in this plan and the linked
+  command specifications is automated, including cases outside their normative
+  Contract sections;
 - property tests establish the one-input-to-one-record invariant;
 - the pinned runner differential suite passes on Linux and Windows;
 - supported shell redirection preserves stdout bytes;

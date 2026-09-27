@@ -194,12 +194,12 @@ arbitrary Markdown or HTML documents.
   selects CRLF framing so the Windows runner preserves that CR. If `RUNNER_OS`
   is absent, the native OS is used; an unrecognized value is rejected only when
   this framing distinction matters.
-- Supported redirection must preserve native stdout bytes. CI verifies POSIX
-  `sh`/Bash on Linux, Bash on macOS, and PowerShell Core 7.4+ plus Git Bash on
-  Windows. These shell tests run alongside differential tests against the
-  pinned GitHub Actions runner v2.337.0 parser. Windows PowerShell 5.1, older
-  PowerShell Core versions, text-writing cmdlets, and merged stderr/stdout
-  redirection are unsupported.
+- Supported redirection must preserve native stdout bytes. CI verifies both
+  the `sh` command and an explicit Dash invocation on Linux, `sh` and Bash on
+  macOS, and PowerShell Core 7.4+ plus Git Bash on Windows. These shell tests
+  run alongside differential tests against the pinned GitHub Actions runner
+  v2.337.0 parser. Windows PowerShell 5.1, older PowerShell Core versions,
+  text-writing cmdlets, and merged stderr/stdout redirection are unsupported.
 - A non-zero `shoutx` status must also be propagated by the workflow shell.
   PowerShell callers must enable native-command error propagation or check
   `$LASTEXITCODE` immediately after each invocation.

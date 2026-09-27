@@ -236,9 +236,9 @@ second handwritten transcription is not an independent oracle.
 
 Run the same corpus through the local model and actual runner parser on native
 Linux and Windows hosts. Compare ordered names, exact values, record counts,
-and success or failure. The corpus includes:
+and success or failure. The corpus includes applicable deterministic cases
+from this document and the linked command specifications, including:
 
-- every deterministic case in this document;
 - generated valid names and UTF-8 values across every line mode;
 - malformed records that exercise parser error paths;
 - delimiter-like substrings at every position;

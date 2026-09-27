@@ -158,8 +158,10 @@ only when one of the following is observed:
   exact SHA; or
 - the bot posts an explicit no-findings comment that names that exact SHA as
   the reviewed commit; or
-- after an explicit `@codex review` request, the bot adds a thumbs-up reaction
-  to that request to signal no findings.
+- the bot adds a thumbs-up reaction to an explicit `@codex review` request that
+  was created after the current head was pushed. Record that request's comment
+  ID together with the head SHA, and accept a reaction only from that exact
+  comment.
 
 A submitted review or SHA-matched completion comment is only a terminal review
 event. It is not convergence when that review created an unresolved thread.

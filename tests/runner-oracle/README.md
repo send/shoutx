@@ -1,8 +1,8 @@
 # Pinned runner parser oracle
 
-This test-only xUnit fixture calls `EnvFileKeyValuePairs` from the pinned
-`actions/runner` checkout directly. It does not copy or translate the runner's
-parser implementation.
+This test-only xUnit fixture calls `EnvFileKeyValuePairs` and
+`AddPathFileCommand.ProcessCommand` from the pinned `actions/runner` checkout
+directly. It does not copy or translate the runner's parser implementation.
 
 The baseline is:
 

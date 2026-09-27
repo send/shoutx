@@ -14,8 +14,10 @@ Implementation sequencing and Rust-specific architecture are defined in the
 ## Product boundary
 
 `shoutx` prevents injection when CI workflows write values across output
-boundaries. It provides runtime writers and context encoders rather than static
-workflow analysis or attack-path discovery.
+boundaries. It provides destination-specific runtime writers rather than
+static workflow analysis or attack-path discovery. A reusable context encoder
+would require its own concrete, safely consumable boundary; none is currently
+planned for v1.0.
 
 The initial provider is GitHub Actions. Provider-specific behavior is isolated
 behind namespaced commands so support for other workflow engines can be added

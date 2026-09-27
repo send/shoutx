@@ -4,14 +4,13 @@ Prevent injection at CI workflow output boundaries.
 
 `shoutx` safely writes untrusted values from shell-driven workflows to
 destination-specific formats and protocols. The first release targets GitHub
-Actions environment files. A reusable encoder for a downstream shell context
-is under consideration for v1.0.
+Actions environment files. Generic context encoders are deferred until a
+concrete destination and safe consumption contract justify one.
 
 Status: early implementation. The `github-actions:output`,
 `github-actions:env`, `github-actions:path`, and `github-actions:state` writers
-are implemented; one context encoder remains under consideration. Native
-binaries, checksums, and provenance are available from the
-[GitHub releases](https://github.com/send/shoutx/releases).
+are implemented. Native binaries, checksums, and provenance are available from
+the [GitHub releases](https://github.com/send/shoutx/releases).
 
 The native-binary packaging and publication contract is specified in the
 [release design](docs/release.md).

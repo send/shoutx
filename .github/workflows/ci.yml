@@ -45,6 +45,7 @@ jobs:
           set +e
           git diff --quiet "$range" -- . \
             ':(exclude)README.md' \
+            ':(exclude)SECURITY.md' \
             ':(exclude)docs/**'
           status=$?
           set -e
@@ -264,8 +265,8 @@ jobs:
             --no-restore `
             --filter 'FullyQualifiedName~ShoutxDifferentialL0'
 
-  # Configure this stable aggregate check, rather than individual matrix
-  # checks, as the required check in a future branch protection rule.
+  # The main-branch ruleset requires this stable aggregate check rather than
+  # individual matrix checks.
   ci-result:
     name: CI result
     if: ${{ always() }}

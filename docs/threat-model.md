@@ -161,13 +161,13 @@ The supported environment-file destinations are:
 | `$GITHUB_PATH` | Included | One path entry per line, then PATH-separator joining |
 | `$GITHUB_STATE` | Included | Named intra-action state records for `pre:`, `main:`, and `post:` phases |
 
-Other recognized boundaries are explicitly deferred:
+Other recognized boundaries are deferred, candidates, or out of scope:
 
 | Boundary | Status | Primary concern |
 | --- | --- | --- |
 | `$GITHUB_STEP_SUMMARY` | Deferred; no generic Markdown writer planned | GitHub-rendered content integrity rather than runner command-file record injection |
 | stdout workflow commands | Deferred | Lines such as `::warning::`, `::add-mask::`, and `::stop-commands::` are runner control messages |
-| `$GITHUB_ARTIFACTS` | Deferred | One file or OCI declaration per line |
+| `$GITHUB_ARTIFACTS` | Candidate; availability gate unresolved | One file or OCI declaration per line |
 | `$GITHUB_ARTIFACTS_LIST` | Out of scope | Runner-managed, read-only JSON input |
 
 Inventorying a boundary does not commit `shoutx` to supporting it. It prevents
@@ -271,6 +271,37 @@ from an ordinary workflow step has no such consumer. shoutx does not expand
 that scope and does not make later consumption safe. Cleanup code must still
 authorize paths, process identifiers, and other state before acting on them.
 
+### `$GITHUB_ARTIFACTS` candidate
+
+The candidate security property is structural integrity of one typed artifact
+declaration. An attacker-controlled newline must not add another file or OCI
+subject to the job aggregate, and content resembling another subject type must
+not change the selected type. An injected subject could corrupt the set of
+materials associated with later provenance or attestation processing.
+
+The proposed writer always emits `file://` or `oci://` and rejects record
+boundaries before stdout begins. This does not establish that a declared file
+is trusted, immutable, or intended. The runner resolves and opens file paths
+after the producing step, follows symlinks, excludes directories, and calculates
+the digest. When the step has a job container, the runner translates rooted
+container paths inside known mounts and rejects rooted paths outside them;
+without a container it uses the rooted path directly. Relative container paths
+resolve through the host workspace context rather than the container working
+directory. Other special file types are not explicitly excluded. Those
+operations create filesystem-identity, blocking-I/O, and time-of-check/time-of-
+use concerns outside shoutx's record-framing guarantee.
+
+Likewise, structurally encoding an OCI reference and digest does not validate
+the reference against the OCI distribution grammar, contact a registry, or
+prove that the named object has that digest. Duplicate, conflicting, and
+aggregate-limit behavior depends on declarations outside one shoutx
+invocation.
+
+No protection is claimed until hosted-runner testing confirms the feature is
+enabled. A runner may currently expose `$GITHUB_ARTIFACTS` while silently
+ignoring its contents when both its server feature flag and self-hosted opt-in
+environment variable are disabled.
+
 ### `shell:arg`
 
 If included in v1.0, the security property is one shell word after exactly one
@@ -311,6 +342,7 @@ mentions, Unicode controls, bidirectional text, and embedded HTML.
 | Early multiline termination | Yes | Use an independent delimiter and verify that it does not occur in the value |
 | Record-name confusion | Yes | Validate against a documented conservative grammar |
 | Multiple PATH entries through a line break | Yes | Consume only one optional final boundary and reject remaining CR/LF |
+| Multiple artifact declarations through a line break | Candidate | Emit one typed scheme and reject remaining CR/LF before output |
 | Multiple effective PATH entries through the PATH separator | Yes | Reject `:` for POSIX targets and `;` for Windows targets |
 | Container runtime option injection through PATH quoting | Yes | Reject `"` on every target before the runner constructs `docker exec` arguments |
 | Container path identity change through argument re-tokenization | Yes | Reject a trailing backslash for POSIX targets |
@@ -320,6 +352,7 @@ mentions, Unicode controls, bidirectional text, and embedded HTML.
 | Memory exhaustion through large input | Yes | Enforce a documented hard input limit |
 | Secret exposure through diagnostics | Yes | Do not reproduce input values in diagnostics |
 | Command hijacking through an attacker-controlled PATH directory | No | Caller validates trust and authorization |
+| Declaring an attacker-selected file or OCI subject | No | Caller validates identity, trust, and authorization |
 | Shell injection before `shoutx` starts | No | Use a structured data channel and quoted expansion |
 | Injection when a stored value is consumed later | No | Protect the later interpretation boundary |
 | Option injection such as a value beginning with `-` | No | Use `--` or an API separating options from operands |
@@ -337,6 +370,13 @@ for argv and stdin. The normalized value has the same limit. Record names and
 `--join-lines-with` separators are limited to 255 bytes. Implementations must
 compute expanded sizes with checked arithmetic and reject them before allocating
 the normalized result.
+
+For the artifact candidate, PATH and REFERENCE each retain the 1 MiB input
+limit, while DIGEST has a fixed algorithm-dependent length. The complete
+scheme-prefixed record including its final LF must also be at most 1 MiB, so
+framing overhead makes the maximum accepted PATH or REFERENCE smaller. This
+only bounds one shoutx record; it cannot account for bytes already present in
+the per-step command file or subjects already accumulated in the job.
 
 Provider limits are separate. GitHub currently documents job outputs of at most
 1 MB per job and 50 MB per workflow run, approximated using UTF-16 encoding.

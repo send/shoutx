@@ -59,7 +59,8 @@ shoutx shell:arg      [VALUE]
 12. Input is strict UTF-8 and output is UTF-8 without a byte-order mark.
     Framing bytes are chosen for semantic round trips through the local
     supported runner parser and do not rely on host text-mode translation.
-13. Every input path has the same documented hard size limit.
+13. Every input field has a documented hard size limit; a destination's encoded
+    record limit may impose a smaller effective maximum after framing.
 
 ## Command model
 
@@ -339,8 +340,113 @@ threat and named rendering surface rather than a renderer-independent promise.
 [job-summaries]: https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-commands#adding-a-job-summary
 [github-markup]: https://github.com/github/markup#github-markup
 
+## Workflow artifact declaration candidate
+
+GitHub now [documents `$GITHUB_ARTIFACTS`][workflow-artifacts-command] as a
+per-step command file containing one file path or OCI reference per line. A
+newline in attacker-controlled input
+can therefore add a second artifact subject to the job-scoped aggregate. This
+is a structural output boundary and a plausible future shoutx destination, but
+support remains conditional on hosted-runner availability testing.
+
+The candidate interface is deliberately typed:
+
+```text
+shoutx github-actions:artifacts file [PATH]
+shoutx github-actions:artifacts oci REFERENCE DIGEST
+```
+
+The command name follows the actual `GITHUB_ARTIFACTS` destination. The `file`
+and `oci` variants prevent the runner's scheme-free syntax from guessing a
+record type from its contents. Successful output always uses an explicit
+scheme:
+
+```text
+file://PATH LF
+oci://REFERENCE@DIGEST LF
+```
+
+There is no untyped or raw variant. `github-actions:artifacts file` follows the
+usual single-value source rule: an argv `PATH` wins, otherwise stdin is read.
+It consumes at most one final CRLF, LF, or bare CR as producer framing and
+rejects every remaining CR or LF. `github-actions:artifacts oci` requires both
+operands and never reads stdin; omitting either operand or supplying another is
+a usage error.
+
+The first token after `github-actions:artifacts` must be `file` or `oci`;
+missing and unknown variants are usage errors. `--help` and `--version` are
+recognized before the variant and after it while the first data operand is
+still expected. A `--` before the variant is not supported. After `file` or
+`oci`, `--` ends option parsing. `file --` with no PATH selects stdin. For
+`oci`, option parsing ends when REFERENCE is consumed, so the following token
+is always DIGEST data even when it begins with `-`.
+
+Both variants require valid UTF-8, reject NUL and `=`, and reject an empty
+semantic value. The runner trims the complete declaration before parsing it.
+Because the explicit scheme protects whitespace at the beginning of PATH but a
+file PATH occupies the end of its record, shoutx rejects a final scalar in the
+Unicode `White_Space` property rather than silently changing identity. This is
+the set used by .NET 8 `Char.IsWhiteSpace` and includes final NEL, LINE
+SEPARATOR, and PARAGRAPH SEPARATOR; U+FEFF and U+200B are not members and remain
+data. Other whitespace is preserved. OCI reference whitespace is internal to
+its record, before `@DIGEST`, and is preserved; its semantic validity remains
+the caller's responsibility.
+
+PATH and REFERENCE each use the standard 1 MiB input limit. In addition, the
+complete emitted record, including scheme and LF, must be no larger than the
+runner's documented 1 MiB per-step file limit. A near-limit input can therefore
+be rejected because of framing overhead. shoutx cannot account for records
+already appended by other processes.
+
+The file variant emits `file://` so a path that resembles an OCI reference
+cannot change record type. Relative paths are permitted and are resolved by the
+runner against `GITHUB_WORKSPACE`, not the step working directory. shoutx does
+not canonicalize the path, require it to exist, resolve symlinks, translate
+container paths, open it, or calculate its digest. The runner performs those
+operations after the producer exits. Consequently shoutx provides record
+integrity, not file identity, trust, authorization, or protection against
+filesystem races.
+
+The OCI variant accepts a reference as an opaque nonempty UTF-8 field subject
+to the structural exclusions above. The caller remains responsible for OCI
+reference validity and authorization. `DIGEST` must be lowercase `sha256:`,
+`sha384:`, or `sha512:` followed by exactly 64, 96, or 128 lowercase
+hexadecimal digits respectively. Uppercase input is rejected rather than
+silently normalized. shoutx does not contact a registry or establish that the
+reference resolves to the supplied digest.
+
+The runner keys the aggregate by subject name using ordinal comparison; kind is
+not part of the key. A file subject's name is only its base name, so distinct
+paths with the same base name collide, as can a file base name and an equal OCI
+reference. The runner deduplicates an identical name/digest pair, rejects a
+conflicting digest for an existing name, and caps the job aggregate at 500
+subjects.
+shoutx emits one declaration, does not inspect `$GITHUB_ARTIFACTS_LIST`, and
+does not promise runner acceptance in the presence of prior declarations.
+`$GITHUB_ARTIFACTS_LIST` remains out of scope as a runner-managed read-only JSON
+input rather than an output writer boundary.
+
+The current runner implementation enables processing when either the
+server-provided `actions_runner_allow_artifacts_file` feature flag or the
+self-hosted runner process environment variable
+`ACTIONS_RUNNER_ALLOW_ARTIFACTS_FILE` is true. When both are disabled it exposes
+the command files but silently ignores declarations and leaves the list file at
+zero bytes; when enabled with no subjects, the list contains
+`{"version":1,"subjects":[]}`. Before this candidate becomes a supported
+command, CI must prove on every supported hosted runner that a file declaration
+appears with the expected name and digest in a later step's
+`GITHUB_ARTIFACTS_LIST`. The pinned runner oracle must separately enable the
+server-side feature variable without changing process-global state and exercise
+the actual artifact handlers. Official documentation is the public contract,
+but documentation alone is insufficient for a compatibility claim while
+silent disablement exists.
+
+[workflow-artifacts-command]: https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-commands#declaring-workflow-artifacts
+
 ## Open questions
 
+- Whether hosted-runner availability is sufficiently uniform to implement the
+  `$GITHUB_ARTIFACTS` candidate.
 - Whether `shell:arg` belongs in v1.0 and which POSIX shells are covered.
 - Whether provider extensions are compiled in, discovered as executables, or
   loaded through another plugin mechanism.

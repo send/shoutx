@@ -195,7 +195,8 @@ candidate was deferred because shell quoting emitted at runtime cannot be
 consumed as syntax through command substitution. It is useful only while
 generating source for a later shell parse, where a single-word encoder cannot
 enforce safe composition. Prefer an argv-capable API, or use `env:` and
-`"$VALUE"` in GitHub Actions. See the [design decision](docs/design.md#deferred-posix-shell-word-encoder).
+`"$VALUE"` in GitHub Actions. See the
+[design decision](docs/decisions/shell-arg.md).
 
 ## Input and output contract
 
@@ -300,8 +301,9 @@ safely quoted argument can still be interpreted as a command option.
 
 See [the threat model](docs/threat-model.md) for trust assumptions, attack
 coverage, and required failure behavior. The
-[CLI contract test plan](docs/test-plan.md) defines the cases and compatibility
-gates that an implementation must satisfy.
+[design index](docs/design.md) links the destination-specific specifications;
+the [CLI contract test plan](docs/test-plan.md) defines their shared cases and
+compatibility gates.
 
 ## Non-goals
 

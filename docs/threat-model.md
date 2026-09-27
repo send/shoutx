@@ -3,8 +3,9 @@
 This document defines the security boundary that `shoutx` protects. It covers
 the GitHub Actions writers and inventories the remaining deferred boundaries.
 
-Concrete cases and compatibility gates derived from this model are maintained
-in the [CLI contract test plan](test-plan.md).
+Shared compatibility gates derived from this model are maintained in the
+[CLI contract test plan](test-plan.md); boundary-specific analyses and cases
+are colocated in the command specifications linked below.
 
 Revision status: implemented writer baseline.
 
@@ -176,213 +177,21 @@ an unsupported control channel from being mistaken for a protected one.
 
 ## Protected and specified boundaries
 
-### `github-actions:output`
+### Command-specific analyses
 
-The security property is structural integrity of one `$GITHUB_OUTPUT` record.
-An attacker-controlled value must not define another output name or terminate a
-multiline record early.
+Detailed boundary analyses are colocated with their command specifications:
 
-Every non-multiline named-writer mode consumes one optional final CRLF, LF, or
-bare CR before applying its mode-specific rule. Default mode rejects any
-remaining CR or LF.
-Multiline mode uses the documented
-`NAME<<DELIMITER` framing and verifies, more conservatively, that the selected
-delimiter does not occur anywhere in the value. Framing preserves empty values
-and trailing LF, CRLF, and bare CR.
+- [GitHub Actions named records](commands/github-actions-records.md)
+- [GitHub Actions PATH writer](commands/github-actions-path.md)
+- [GitHub Actions log-mask command](commands/github-actions-mask.md)
 
-The command accepts names matching `[A-Za-z_][A-Za-z0-9_-]*`, up to 255 ASCII
-bytes. This matches GitHub's documented action-output identifier grammar,
-including established kebab-case output names. It does not protect later use of
-the output. If a later `run:` block inserts the output directly as an
-expression, shell injection is again possible.
+### Deferred-feature analyses
 
-GitHub applies separate limits to job and workflow outputs. Passing `shoutx`
-validation does not guarantee that GitHub will accept or propagate the output.
+Detailed rationale for deferred features is recorded in decision documents:
 
-### `github-actions:env`
-
-The security property is structural integrity of one `$GITHUB_ENV` record. An
-attacker-controlled value must not define another variable or terminate a
-multiline record early.
-
-The command accepts names matching `[A-Za-z_][A-Za-z0-9_]*`, up to 255 ASCII
-bytes. It rejects `GITHUB_*`, `RUNNER_*`, and `NODE_OPTIONS` using ASCII
-case-insensitive comparisons. This is intentionally stricter than the current
-runner file parser and reflects GitHub policy and portable environment-variable
-use.
-
-The command does not read the destination file and cannot detect duplicate or
-case-colliding assignments made by another invocation. The runner's handling of
-such assignments and caller-level uniqueness are outside this command's
-guarantee.
-
-The command does not make later uses of the variable safe for shell, SQL, URLs,
-templates, or other contexts. It also does not make environment variables an
-appropriate channel for secrets.
-
-### `github-actions:path`
-
-The security property is limited to one `$GITHUB_PATH` record. As with other
-non-multiline modes, the command consumes at most one final CRLF, LF, or bare CR
-as input framing, then rejects NUL, every remaining CR or LF, and empty values
-so one input cannot add multiple entries.
-
-The runner's second interpretation step joins accepted lines using the target
-OS PATH separator. shoutx therefore also rejects POSIX `:` or Windows `;`, so
-one file record cannot become multiple effective PATH entries. It accepts only
-fully qualified paths in the target runner dialect and rejects a leading
-U+FEFF, whose preservation would otherwise depend on whether the record begins
-the file. Target selection follows trusted `RUNNER_OS`, with native fallback;
-an unknown value is rejected. It rejects `"` on every target because the
-runner's container step host embeds PATH in a quoted `docker exec` argument
-string. For the same boundary, a POSIX path ending in backslash is rejected
-because .NET argument re-tokenization can consume backslashes or the closing
-quote and change the resulting argument.
-
-There is no encoding that makes an attacker-controlled directory safe to add to
-`PATH`. An attacker who controls a directory earlier in command lookup may place
-a malicious executable there. The caller must separately establish that the
-path is trusted and intended. `github-actions:path` is framing and validation,
-not authorization.
-
-shoutx does not canonicalize, resolve dot segments or symlinks, change path
-separators, trim whitespace, inspect the destination file, or require the
-directory to exist. Those transformations could change identity or introduce
-filesystem races and are outside record framing.
-
-### `github-actions:state`
-
-The security property is structural integrity of one `$GITHUB_STATE` record.
-An attacker-controlled value must not define another state name or terminate a
-multiline record early. Injected state could change later cleanup behavior in
-the same action, including which process, path, or resource a `post:` phase
-operates on.
-
-The command shares the named-writer value, line-mode, multiline-framing, size,
-and failure contracts. It accepts names matching
-`[A-Za-z_][A-Za-z0-9_]*`, up to 255 ASCII bytes. It has no environment
-reserved-name block because GitHub exposes the value with a `STATE_` prefix.
-The runner compares saved state names ordinally without regard to case. A later
-case-colliding record replaces the value while retaining the first record's
-name spelling. shoutx does not inspect earlier records or prevent that
-replacement.
-
-GitHub exposes saved values only to another phase of the same action; a write
-from an ordinary workflow step has no such consumer. shoutx does not expand
-that scope and does not make later consumption safe. Cleanup code must still
-authorize paths, process identifiers, and other state before acting on them.
-
-### `github-actions:mask`
-
-The security property is structural integrity of one stdout
-`add-mask` workflow command and faithful registration of its decoded value by
-the supported runner while command processing is active. After consuming at
-most one final producer-framing boundary, shoutx preserves the remaining value
-and escapes `%`, CR, and LF so attacker-controlled data cannot terminate the
-physical line or create another workflow command.
-
-Mask registration is itself an integrity-sensitive operation, not authorization
-to let untrusted input choose arbitrary masks. An attacker-selected value can
-hide unrelated log substrings and can cause a matching job output to be
-suppressed. The caller remains responsible for deciding which value should be
-registered; shoutx only preserves and frames that choice.
-
-The command rejects NUL, invalid UTF-8, empty values, and values consisting
-only of Unicode whitespace before output begins. The last two cases are
-necessary because the runner warns and performs no registration for
-`String.IsNullOrWhiteSpace` data. A successful shoutx status must not imply a
-mask was installed when the runner would deterministically reject it.
-
-The runner registers the exact decoded value and also every trimmed, nonempty
-item produced by splitting it on CR and LF. This applies even without a line
-boundary, so ` secret ` additionally registers `secret`. It can mask more text
-than the exact value alone; empty and whitespace-only items are not separately
-registered. These derived masks are accepted destination behavior rather than
-a transformation made or independently promised by shoutx.
-
-Masking is prospective and best-effort. It does not protect a value logged
-before registration, passed visibly in process arguments, exposed by shell
-tracing or host audit facilities, transformed into an unregistered form, or
-read by other code running with equivalent job privileges. Very short or
-common values can redact unrelated text. If workflow-command processing has
-been suspended with `stop-commands`, the runner ignores the candidate output;
-the encoded command line is then handled as ordinary log output and can expose
-the value. That hidden runner state cannot be detected by the child process and
-active command processing is therefore an explicit precondition of the
-registration guarantee.
-
-GitHub permits a masked value to be placed in a step output for later use in
-the same job, but the runner suppresses job outputs that its secret masker
-recognizes. shoutx therefore makes no guarantee that a masked value can cross
-job or workflow boundaries as an output.
-
-### Deferred `$GITHUB_ARTIFACTS` candidate
-
-The candidate security property is structural integrity of one typed artifact
-declaration. An attacker-controlled newline must not add another file or OCI
-subject to the job aggregate, and content resembling another subject type must
-not change the selected type. An injected subject could corrupt the set of
-materials associated with later provenance or attestation processing.
-
-The proposed writer always emits `file://` or `oci://` and rejects record
-boundaries before stdout begins. This does not establish that a declared file
-is trusted, immutable, or intended. The runner resolves and opens file paths
-after the producing step, follows symlinks, excludes directories, and calculates
-the digest. When the step has a job container, the runner translates rooted
-container paths inside known mounts and rejects rooted paths outside them;
-without a container it uses the rooted path directly. Relative container paths
-resolve through the host workspace context rather than the container working
-directory. Other special file types are not explicitly excluded. Those
-operations create filesystem-identity, blocking-I/O, and time-of-check/time-of-
-use concerns outside shoutx's record-framing guarantee.
-
-Likewise, structurally encoding an OCI reference and digest does not validate
-the reference against the OCI distribution grammar, contact a registry, or
-prove that the named object has that digest. Duplicate, conflicting, and
-aggregate-limit behavior depends on declarations outside one shoutx
-invocation.
-
-No protection is claimed until hosted-runner testing confirms the feature is
-enabled. A runner may currently expose `$GITHUB_ARTIFACTS` while silently
-ignoring its contents when both its server feature flag and self-hosted opt-in
-environment variable are disabled.
-
-### Deferred shell source encoding
-
-`shell:arg` is not a v1.0 candidate. Although a value can be represented as one
-POSIX shell word in source, command substitution does not reparse quote
-characters produced by the command. The representation therefore has no safe,
-natural runtime consumption pattern. It becomes effective only in source that
-is parsed later, where a one-word encoder cannot enforce trusted composition or
-exactly one parse and may encourage unsafe `eval` use.
-
-The recommended GitHub Actions pattern remains a value passed through `env:` and
-expanded as `"$VALUE"`. A future shell-source feature would require a concrete
-destination, named dialect, and composition contract. It would still not cover
-command options, executable selection, or application-level authorization.
-
-### Markdown rendering
-
-`markdown:text` is not a v1.0 candidate. GitHub documents job summaries as
-[GitHub Flavored Markdown][job-summaries], and its documented
-[markup pipeline][github-markup] applies HTML sanitization before rendered
-content is displayed. A correctly redirected `$GITHUB_STEP_SUMMARY` write does
-not feed Markdown records back into workflow execution. Links, document
-structure, mentions, and misleading presentation remain possible, but treating
-all such features as unsafe would turn shoutx into an application-specific
-content-policy engine and reduce normal Markdown usability without addressing
-a comparable runner-protocol injection path.
-
-This conclusion is specific to GitHub-rendered content. It does not treat the
-same bytes as safe for an arbitrary Markdown or HTML renderer, and it does not
-cover lines written to the workflow log: `add-mask` is specified separately and
-other stdout workflow commands remain deferred. A future Markdown feature
-requires a concrete threat, a named rendering surface, and explicit decisions
-for links, images, mentions, Unicode controls, bidirectional text, and embedded
-HTML.
-
-[job-summaries]: https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-commands#adding-a-job-summary
-[github-markup]: https://github.com/github/markup#github-markup
+- [GitHub Actions artifact declarations](decisions/github-actions-artifacts.md)
+- [POSIX shell-word encoding](decisions/shell-arg.md)
+- [Markdown output](decisions/markdown-output.md)
 
 ## Attack and guarantee matrix
 
@@ -529,40 +338,25 @@ entries from selecting a different provider implementation.
 
 ## Required tests
 
-- LF, CRLF, and bare-CR input, including every trailing form, the Windows
-  trailing-bare-CR framing case, and a final line without a terminator;
-- NUL, invalid UTF-8, and a UTF-8 byte-order mark;
-- empty values, empty first lines, and one or more trailing line breaks;
-- default-mode inputs with no terminator, exactly one final CRLF/LF/CR, multiple
-  final boundaries, internal boundaries, and LF followed by CR;
-- first-line and join-mode inputs with no boundary, one final boundary, and
-  multiple final or internal boundaries;
-- names containing `=`, `<<`, leading `-`, whitespace, Unicode, and controls;
-- reserved and blocked names, plus documentation of unsupported duplicate and
-  case-collision detection across invocations;
-- state names that are reserved for `$GITHUB_ENV` but valid after the `STATE_`
-  prefix, plus ordinal case-insensitive replacement in the runner state
-  handler;
-- delimiter equality using the runner's ordinal line comparison, plus the
-  stronger no-substring selection rule;
-- values resembling workflow commands such as `::stop-commands::`;
-- values containing secrets without diagnostic disclosure;
-- absolute POSIX, Windows drive, UNC, and verbatim path forms, plus relative,
-  PATH-separator, leading-BOM, and Win32-device rejection;
-- container argument behavior for quotes and odd and even trailing-backslash
-  runs in POSIX paths;
-- path parser BOM position, CR/LF/CRLF splitting, empty-line removal, ordering,
-  and culture-invariant duplicate cases;
-- inputs at, below, and above the supported hard limit;
-- `--`, mutually exclusive modes, `--join-lines-with` arguments beginning with
-  `-`, equals-form separators, help/version option position, missing operands,
-  and extra operands;
-- empty non-terminal stdin, terminal stdin with no value, POSIX startup-closed
-  stdin as `/dev/null`, and invalid Windows stdin handles;
-- POSIX and Windows runner path behavior;
-- byte-for-byte stdout capture under each supported Windows invocation;
-- stdout failures and broken pipes; and
-- parallel writers to document unsupported behavior.
+The shared test plan covers command-line parsing, input selection, strict UTF-8,
+NUL rejection, size limits, diagnostics, exit status, process I/O, supported
+shells, and differential testing against the pinned runner. Each command
+specification defines its boundary-specific cases:
+
+- [named-record name and multiline cases](commands/github-actions-records.md#command-specific-verification);
+- [PATH grammar, parser, ordering, and container cases](commands/github-actions-path.md#command-specific-verification); and
+- [mask encoding, runner behavior, and hosted-log cases](commands/github-actions-mask.md#command-specific-verification).
+
+Together these suites must cover:
+
+- every accepted and rejected record delimiter, line boundary, name, and path
+  form that affects structural integrity;
+- empty, boundary-sized, invalid-encoding, secret-bearing, and protocol-like
+  values without diagnostic disclosure or pre-validation stdout;
+- target-OS-dependent behavior on POSIX and Windows runners;
+- runner parsing and downstream interpretation that can change the effective
+  value, ordering, masking, or record count; and
+- unsupported concurrency and lifecycle behavior without implying guarantees.
 
 Property tests must assert that parsing every successful output with a
 compatible runner-parser model yields exactly the requested name and value and

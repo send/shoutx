@@ -42,6 +42,7 @@ pub enum LineMode {
     Default,
     FirstLine,
     Join(Vec<u8>),
+    Multiline,
 }
 
 #[derive(Debug)]
@@ -107,9 +108,13 @@ pub fn parse(args: Vec<OsString>) -> Result<Action, ShoutxError> {
             return Ok(Action::Version);
         }
         if options && token_text == Some("--multiline") {
-            return Err(ShoutxError::usage(
-                "--multiline is not implemented in this build",
-            ));
+            if mode_set {
+                return Err(ShoutxError::usage("line modes are mutually exclusive"));
+            }
+            mode = LineMode::Multiline;
+            mode_set = true;
+            i += 1;
+            continue;
         }
         if options {
             if let Some(separator) = strip_os_prefix(token, b"--join-lines-with=") {

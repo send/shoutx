@@ -7,7 +7,7 @@ destination-specific formats and protocols. The first release targets GitHub
 Actions environment files. Small reusable encoders for downstream shell and
 Markdown contexts are under consideration for v1.0.
 
-Status: early implementation. The single-line `github-actions:output` and
+Status: early implementation. The `github-actions:output` and
 `github-actions:env` writers are implemented; other commands remain planned.
 
 ## The problem
@@ -73,17 +73,15 @@ Changing the value requires an explicit normalization mode:
 generate-title | shoutx github-actions:output --first-line title >> "$GITHUB_OUTPUT"
 generate-summary | shoutx github-actions:output --join-lines summary >> "$GITHUB_OUTPUT"
 generate-list | shoutx github-actions:output --join-lines-with ', ' items >> "$GITHUB_OUTPUT"
+generate-notes | shoutx github-actions:output --multiline notes >> "$GITHUB_OUTPUT"
 ```
-
-`--multiline` is planned but is not implemented in the current development
-build. It is rejected rather than falling back to single-line output.
 
 ## Commands
 
 ```text
 GitHub Actions writers:
-  shoutx github-actions:output [--first-line | --join-lines | --join-lines-with STRING] NAME [VALUE]
-  shoutx github-actions:env    [--first-line | --join-lines | --join-lines-with STRING] NAME [VALUE]
+  shoutx github-actions:output [--first-line | --join-lines | --join-lines-with STRING | --multiline] NAME [VALUE]
+  shoutx github-actions:env    [--first-line | --join-lines | --join-lines-with STRING | --multiline] NAME [VALUE]
 
 Planned GitHub Actions writer:
   shoutx github-actions:path   [VALUE]
@@ -123,8 +121,8 @@ CR as input framing. Default mode then rejects any remaining CR or LF.
 `--first-line` keeps the prefix before the first remaining boundary.
 `--join-lines` replaces each remaining boundary with one ASCII space;
 `--join-lines-with STRING` uses an explicit separator, which may be empty but
-may not contain NUL, CR, or LF. The planned `--multiline` mode will use an
-independently generated delimiter; it is not part of the current build.
+may not contain NUL, CR, or LF. `--multiline` preserves the complete value using
+an independently generated, collision-checked delimiter.
 
 The planned `github-actions:path` command will validate and emit one entry for
 `$GITHUB_PATH`. Its cross-platform rules and parser tests remain incomplete, so
@@ -178,8 +176,11 @@ arbitrary Markdown or HTML documents.
 - Input is strict UTF-8 and output is UTF-8 without a byte-order mark. Framing
   bytes are emitted explicitly for the local supported runner parser and do
   not rely on host text-mode newline conversion.
-- The implemented single-line records use explicit LF framing on every OS.
-  Platform-dependent `RUNNER_OS` framing belongs to the planned multiline mode.
+- Single-line records use explicit LF framing on every OS. Multiline records
+  normally do the same. For a value ending in bare CR, `RUNNER_OS=Windows`
+  selects CRLF framing so the Windows runner preserves that CR. If `RUNNER_OS`
+  is absent, the native OS is used; an unrecognized value is rejected only when
+  this framing distinction matters.
 - Supported redirection must preserve native stdout bytes. POSIX `sh`/`bash`
   redirection and PowerShell Core 7.4 or later direct redirection are intended
   targets, but PowerShell is not part of the release guarantee until
@@ -212,8 +213,8 @@ makes the next parser explicit.
 
 Default single-line mode treats at most one final CRLF, LF, or bare CR as input
 framing rather than value data. Other discarded or normalized content requires
-an explicit `--first-line`, `--join-lines`, or `--join-lines-with` mode. Exact
-value preservation with `--multiline` remains planned.
+an explicit `--first-line`, `--join-lines`, or `--join-lines-with` mode. Use
+`--multiline` for exact value preservation.
 
 ### Validate before writing
 

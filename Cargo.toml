@@ -7,6 +7,9 @@ license = "MIT"
 description = "Safe writers for CI workflow output boundaries"
 repository = "https://github.com/send/shoutx"
 
+[dependencies]
+getrandom = "0.4.3"
+
 [profile.release]
 overflow-checks = true
 panic = "unwind"

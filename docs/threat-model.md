@@ -166,7 +166,8 @@ Other recognized boundaries are deferred, candidates, or out of scope:
 | Boundary | Status | Primary concern |
 | --- | --- | --- |
 | `$GITHUB_STEP_SUMMARY` | Deferred; no generic Markdown writer planned | GitHub-rendered content integrity rather than runner command-file record injection |
-| stdout workflow commands | Deferred | Lines such as `::warning::`, `::add-mask::`, and `::stop-commands::` are runner control messages |
+| stdout `add-mask` workflow command | Specified candidate; not implemented | Register one faithfully decoded value for subsequent runner log masking |
+| other stdout workflow commands | Deferred | Lines such as `::warning::` and `::stop-commands::` are runner control messages |
 | `$GITHUB_ARTIFACTS` | Deferred; 2026-09-28 hosted-runner gate failed | One file or OCI declaration per line |
 | `$GITHUB_ARTIFACTS_LIST` | Out of scope | Runner-managed, read-only JSON input |
 
@@ -271,6 +272,41 @@ from an ordinary workflow step has no such consumer. shoutx does not expand
 that scope and does not make later consumption safe. Cleanup code must still
 authorize paths, process identifiers, and other state before acting on them.
 
+### Candidate `github-actions:mask`
+
+The candidate security property is structural integrity of one stdout
+`add-mask` workflow command and faithful registration of its decoded value by
+the supported runner while command processing is active. After consuming at
+most one final producer-framing boundary, shoutx preserves the remaining value
+and escapes `%`, CR, and LF so attacker-controlled data cannot terminate the
+physical line or create another workflow command.
+
+The candidate rejects NUL, invalid UTF-8, empty values, and values consisting
+only of Unicode whitespace before output begins. The last two cases are
+necessary because the runner warns and performs no registration for
+`String.IsNullOrWhiteSpace` data. A successful shoutx status must not imply a
+mask was installed when the runner would deterministically reject it.
+
+The runner registers the exact decoded value and also each trimmed, nonempty
+line of a multiline value. This can mask more text than the exact value alone;
+blank and whitespace-only lines are not separately registered. These derived
+line masks are accepted destination behavior rather than a transformation made
+or independently promised by shoutx.
+
+Masking is prospective and best-effort. It does not protect a value logged
+before registration, passed visibly in process arguments, exposed by shell
+tracing or host audit facilities, transformed into an unregistered form, or
+read by other code running with equivalent job privileges. Very short or
+common values can redact unrelated text. If workflow-command processing has
+been suspended with `stop-commands`, the runner ignores the candidate output;
+that hidden runner state cannot be detected by the child process and is an
+explicit precondition of the registration guarantee.
+
+GitHub permits a masked value to be placed in a step output for later use in
+the same job, but the runner suppresses job outputs that its secret masker
+recognizes. shoutx therefore makes no guarantee that a masked value can cross
+job or workflow boundaries as an output.
+
 ### Deferred `$GITHUB_ARTIFACTS` candidate
 
 The candidate security property is structural integrity of one typed artifact
@@ -330,10 +366,11 @@ a comparable runner-protocol injection path.
 
 This conclusion is specific to GitHub-rendered content. It does not treat the
 same bytes as safe for an arbitrary Markdown or HTML renderer, and it does not
-cover lines written to the workflow log: stdout workflow commands remain a
-separate deferred boundary. A future Markdown feature requires a concrete
-threat, a named rendering surface, and explicit decisions for links, images,
-mentions, Unicode controls, bidirectional text, and embedded HTML.
+cover lines written to the workflow log: `add-mask` is specified separately and
+other stdout workflow commands remain deferred. A future Markdown feature
+requires a concrete threat, a named rendering surface, and explicit decisions
+for links, images, mentions, Unicode controls, bidirectional text, and embedded
+HTML.
 
 [job-summaries]: https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-commands#adding-a-job-summary
 [github-markup]: https://github.com/github/markup#github-markup
@@ -355,6 +392,11 @@ mentions, Unicode controls, bidirectional text, and embedded HTML.
 | Invalid UTF-8 or NUL | Yes | Reject before output begins |
 | Memory exhaustion through large input | Yes | Enforce a documented hard input limit |
 | Secret exposure through diagnostics | Yes | Do not reproduce input values in diagnostics |
+| Additional workflow commands through mask data | Candidate | Percent-escape `%`, CR, and LF and emit one physical `add-mask` line |
+| False mask success for empty or whitespace-only data | Candidate | Reject before stdout because the runner would not register it |
+| Disclosure before mask registration or through process tracing | No | Deliver secrets as data, disable tracing, and register before other output |
+| Mask ignored while workflow commands are stopped | No | Require active command processing; the child cannot observe runner state |
+| Over-masking caused by short values or multiline line registration | No | Document runner substring and per-line behavior; caller chooses the value |
 | Command hijacking through an attacker-controlled PATH directory | No | Caller validates trust and authorization |
 | Declaring an attacker-selected file or OCI subject | No | Caller validates identity, trust, and authorization |
 | Shell injection before `shoutx` starts | No | Use a structured data channel and quoted expansion |
@@ -374,6 +416,16 @@ for argv and stdin. The normalized value has the same limit. Record names and
 `--join-lines-with` separators are limited to 255 bytes. Implementations must
 compute expanded sizes with checked arithmetic and reject them before allocating
 the normalized result.
+
+The mask candidate applies the 1 MiB limit after optional stdin framing. Its
+workflow-command encoding can expand each input byte to three bytes, so the
+complete encoded line can exceed 1 MiB. The implementation must compute that
+length before allocation. GitHub publishes no separate maximum for dynamic
+masks or workflow-command lines; local success therefore does not promise that
+every runner or surrounding log transport will accept an unusually large
+value. The runner also derives several alternate representations for each
+registered value, which makes large masks operationally expensive even within
+the accepted bound.
 
 For the artifact candidate, PATH and REFERENCE each retain the 1 MiB input
 limit, while DIGEST has a fixed algorithm-dependent length. The complete
@@ -427,10 +479,12 @@ Diagnostics go to stderr and identify the failed rule without reproducing
 untrusted or secret values. Diagnostic text itself must not accidentally form a
 GitHub stdout workflow command.
 
-Writer stdout must be redirected to the selected environment file. In
-particular, an unredirected multiline value can place attacker-controlled lines
-on the runner command channel, which is outside the environment-file encoding
-guarantee.
+Environment-file writer stdout must be redirected to the selected environment
+file. In particular, an unredirected multiline value can place
+attacker-controlled lines on the runner command channel, which is outside the
+environment-file encoding guarantee. The mask candidate is the deliberate
+exception: its stdout is one encoded runner command and must remain connected
+to the runner log stream rather than being redirected to an environment file.
 
 Shell redirection is outside the output guarantee. `>` may create or truncate a
 destination before `shoutx` validates input. The documented GitHub Actions usage
@@ -445,10 +499,12 @@ appends to runner-created files with `>>`.
 - generated delimiters must not be derived from secret input; and
 - failures do not suggest retry commands containing the original value.
 
-GitHub's log masking and summary masking are defense-in-depth and are not part
-of the `shoutx` guarantee. Successfully writing a secret to an output,
-environment variable, PATH entry, summary, or later command may still disclose
-or misuse it.
+For environment-file writers, GitHub's log masking and summary masking remain
+defense-in-depth rather than part of the `shoutx` guarantee. The mask candidate
+guarantees only construction and runner registration of one accepted value,
+not comprehensive confidentiality. Successfully writing a secret to an output,
+environment variable, PATH entry, summary, command argument, or later parser
+may still disclose or misuse it.
 
 ## Concurrency and lifecycle
 
@@ -513,9 +569,12 @@ claiming compatibility.
 ## References
 
 - [Workflow commands for GitHub Actions](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-commands)
+- [Secure use reference](https://docs.github.com/en/actions/reference/security/secure-use)
+- [Actions toolkit workflow commands](https://github.com/actions/toolkit/blob/main/packages/core/src/command.ts)
 - [Script injections](https://docs.github.com/en/actions/concepts/security/script-injections)
 - [Variables reference](https://docs.github.com/en/actions/reference/workflows-and-actions/variables)
 - [Action metadata syntax](https://docs.github.com/en/actions/reference/workflows-and-actions/metadata-syntax)
 - [Workflow syntax and output limits](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#jobsjob_idoutputs)
 - [PowerShell redirection](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_redirection)
 - [Pinned GitHub Actions runner v2.337.0 environment-file parser](https://github.com/actions/runner/blob/v2.337.0/src/Runner.Worker/FileCommandManager.cs)
+- [Pinned GitHub Actions runner v2.337.0 workflow-command manager](https://github.com/actions/runner/blob/v2.337.0/src/Runner.Worker/ActionCommandManager.cs)

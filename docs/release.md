@@ -36,19 +36,27 @@ GitHub release binaries. Users may still build from the repository with Cargo.
 
 ## Version and tag contract
 
-Release versions follow SemVer as represented by Cargo. A release tag is
-`vVERSION`, where `VERSION` is exactly the `[package].version` from
-`Cargo.toml`; for example, package version `0.1.0` uses tag `v0.1.0`.
+Release versions follow SemVer as represented by Cargo, except that the initial
+release process prohibits build metadata. A release tag is `vVERSION`, where
+`VERSION` is exactly the `[package].version` from `Cargo.toml`; for example,
+package version `0.1.0` uses tag `v0.1.0`.
 
 The release workflow validates all of the following before any public release
 is created:
 
 - the ref is a tag with the exact `vMAJOR.MINOR.PATCH` form, including an
   optional Cargo-compatible prerelease suffix;
+- neither the tag nor the Cargo version contains a `+BUILD` metadata component;
 - removing the leading `v` produces exactly the Cargo package version;
 - `Cargo.lock` is current and all builds use `--locked`;
 - the complete CI and dependency-policy gates pass for the tagged commit; and
 - the tag does not already have a published GitHub release.
+
+A version with a prerelease component, such as `0.1.0-rc.1`, is published as a
+GitHub prerelease and is excluded from GitHub's latest-release selection. A
+version without that component is published as a normal release. The workflow
+derives this state from the already validated Cargo version rather than from a
+separate manual input.
 
 Builds use the exact Rust toolchain selected in `rust-toolchain.toml`. The
 workflow records the tag, commit, Rust version, target, and runner image in its
@@ -121,11 +129,15 @@ The workflow performs the release in these phases:
 7. publish the draft only after every upload succeeds.
 
 A failure before the final step leaves no public release. A failed draft is
-retained for diagnosis or manually deleted; an automatic retry must update the
-same draft rather than create a second release. A failure after GitHub accepts
-the final publish operation cannot be made transactional and requires
-maintainer review. The workflow never silently replaces assets on an already
-published release.
+retained for diagnosis or manually deleted. An automatic retry must use the
+same draft rather than create a second release, remove every existing asset
+from that draft, and upload the newly collected complete asset set. It must
+then verify that the draft contains exactly the expected filenames and digests
+before publication. This prevents an archive from an earlier, potentially
+byte-different build from being paired with a new checksum manifest. A failure
+after GitHub accepts the final publish operation cannot be made transactional
+and requires maintainer review. The workflow never modifies or silently
+replaces assets on an already published release.
 
 Release publication is serialized so two runs cannot publish the same tag
 concurrently. The workflow has a finite timeout and retains intermediate

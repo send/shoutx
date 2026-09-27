@@ -199,3 +199,48 @@ jobs:
             --no-build `
             --no-restore `
             --filter 'FullyQualifiedName~ShoutxDifferentialL0'
+
+  # Configure this stable aggregate check, rather than individual matrix
+  # checks, as the required check in a future branch protection rule.
+  ci-result:
+    name: CI result
+    if: ${{ always() }}
+    needs: [changes, dependencies, test, msrv, runner-differential]
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify required job results
+        shell: bash
+        env:
+          RUN_CI: ${{ needs.changes.outputs.run_ci }}
+          CHANGES_RESULT: ${{ needs.changes.result }}
+          DEPENDENCIES_RESULT: ${{ needs.dependencies.result }}
+          TEST_RESULT: ${{ needs.test.result }}
+          MSRV_RESULT: ${{ needs.msrv.result }}
+          RUNNER_DIFFERENTIAL_RESULT: ${{ needs.runner-differential.result }}
+        run: |
+          if [[ "$CHANGES_RESULT" != "success" ]]; then
+            echo "Change detection did not succeed"
+            exit 1
+          fi
+
+          if [[ "$RUN_CI" == "true" ]]; then
+            expected="success"
+          elif [[ "$RUN_CI" == "false" ]]; then
+            expected="skipped"
+          else
+            echo "Change detection produced an invalid result"
+            exit 1
+          fi
+
+          for result in \
+            "$DEPENDENCIES_RESULT" \
+            "$TEST_RESULT" \
+            "$MSRV_RESULT" \
+            "$RUNNER_DIFFERENTIAL_RESULT"
+          do
+            if [[ "$result" != "$expected" ]]; then
+              echo "Expected dependent jobs to be $expected, got $result"
+              exit 1
+            fi
+          done

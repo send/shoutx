@@ -47,13 +47,15 @@ public sealed class ShoutxDifferentialL0
                     success = false;
                 }
 
-                Assert.Equal(item.Success, success);
+                Assert.True(item.Success == success, $"case {item.Id}: success mismatch");
                 if (success)
                 {
                     var expected = OperatingSystem.IsWindows() && item.WindowsRecords is not null
                         ? item.WindowsRecords
                         : item.Records;
-                    Assert.Equal(expected, actual);
+                    Assert.True(
+                        expected.SequenceEqual(actual),
+                        $"case {item.Id}: record mismatch");
                 }
             }
         }

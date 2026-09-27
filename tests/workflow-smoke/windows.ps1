@@ -15,6 +15,14 @@ try {
         throw "PowerShell changed native stdout bytes"
     }
 
+    $empty = Join-Path $root 'empty-stdin'
+    & $Binary github-actions:output empty > $empty
+    if ($LASTEXITCODE -ne 0) { throw "empty-stdin writer failed" }
+    $expectedEmpty = [Text.Encoding]::UTF8.GetBytes("empty=`n")
+    if (-not [Linq.Enumerable]::SequenceEqual([byte[]](Get-Content -AsByteStream -Raw $empty), $expectedEmpty)) {
+        throw "PowerShell did not pass inherited empty stdin through unchanged"
+    }
+
     $rejectedBinary = Join-Path $root 'rejected-binary-stdin'
     & pwsh -NoProfile -Command `
         '[Console]::OpenStandardOutput().Write([byte[]](97,13,13,10))' |

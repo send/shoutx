@@ -2,6 +2,7 @@
 set -eu
 
 binary=$1
+shell_under_test=${2:-sh}
 tmp=$(mktemp -d "${TMPDIR:-/tmp}/shoutx-smoke.XXXXXX")
 trap 'rm -rf "$tmp"' EXIT HUP INT TERM
 
@@ -23,7 +24,7 @@ else
 fi
 cmp "$tmp/expected-multiline" "$tmp/multiline"
 
-if sh -c '
+if "$shell_under_test" -c '
   set -e
   printf "a\nb\n" | "$1" github-actions:output result >"$2"
   : >"$3"

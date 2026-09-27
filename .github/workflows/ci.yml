@@ -18,6 +18,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
       - run: rustup toolchain install stable --profile minimal --component clippy
       - run: cargo +stable test --all-targets
       - run: cargo +stable clippy --all-targets -- -D warnings
@@ -26,8 +28,8 @@ jobs:
         if: runner.os != 'Windows'
         shell: sh
         run: |
-          sh tests/workflow-smoke/posix.sh target/debug/shoutx
-          bash tests/workflow-smoke/posix.sh target/debug/shoutx
+          sh tests/workflow-smoke/posix.sh target/debug/shoutx sh
+          bash tests/workflow-smoke/posix.sh target/debug/shoutx bash
       - name: PowerShell smoke tests
         if: runner.os == 'Windows'
         shell: pwsh
@@ -54,7 +56,7 @@ jobs:
           SHOUTX_BIN: ${{ github.workspace }}\target\debug\shoutx.exe
         run: |
           & "$env:ProgramFiles\Git\bin\bash.exe" -lc `
-            'tests/workflow-smoke/posix.sh "$(cygpath -u "$SHOUTX_BIN")"'
+            'tests/workflow-smoke/posix.sh "$(cygpath -u "$SHOUTX_BIN")" bash'
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
   msrv:
@@ -62,6 +64,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
       - run: rustup toolchain install 1.85.0 --profile minimal --component clippy,rustfmt
       - run: cargo +1.85.0 fmt --all -- --check
       - run: cargo +1.85.0 test --all-targets
@@ -80,6 +84,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: actions/runner
@@ -89,6 +95,12 @@ jobs:
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68
         with:
           dotnet-version: 8.0.424
+      - name: Verify pinned .NET SDK
+        shell: pwsh
+        run: |
+          if ((dotnet --version) -ne '8.0.424') {
+            throw "Expected .NET SDK 8.0.424, got $(dotnet --version)"
+          }
       - run: rustup toolchain install stable --profile minimal
       - name: Generate and validate shared corpus
         shell: pwsh

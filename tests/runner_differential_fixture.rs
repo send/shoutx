@@ -111,8 +111,19 @@ fn corpus() -> Vec<CorpusCase> {
     for index in 0_u8..128 {
         let name = format!("generated_{index}");
         let mut value = generated_value(index);
-        if value.ends_with('\r') {
+        let target_os = if index % 2 == 0 {
+            TargetOs::Windows
+        } else {
+            TargetOs::Linux
+        };
+        if target_os == TargetOs::Windows && index % 4 == 0 {
+            value.push('\r');
+        } else if value.ends_with('\r') {
             value.push('x');
+        }
+        if index % 16 == 0 {
+            value.push_str("SHOUTX_");
+            value.push_str(&format!("{index:02x}").repeat(32));
         }
         let mut random = SequenceRandom(index);
         let mut input = shoutx::github_actions::encode_with(
@@ -123,18 +134,24 @@ fn corpus() -> Vec<CorpusCase> {
                 value: None,
             },
             value.as_bytes().to_vec(),
-            TargetOs::Linux,
+            target_os,
             &mut random,
         )
         .unwrap();
         input.extend_from_slice(b"after=ok\n");
-        cases.push(success_owned(
+        let expected = vec![
+            (name.into_bytes(), value.into_bytes()),
+            (b"after".to_vec(), b"ok".to_vec()),
+        ];
+        let target_platform = if target_os == TargetOs::Windows {
+            Platform::Windows
+        } else {
+            Platform::Posix
+        };
+        assert_eq!(parse(&input, target_platform).unwrap(), expected);
+        cases.push(success_owned_platform(
             format!("generated-{index:03}"),
             input,
-            vec![
-                (name.into_bytes(), value.into_bytes()),
-                (b"after".to_vec(), b"ok".to_vec()),
-            ],
         ));
     }
     cases
@@ -189,20 +206,27 @@ fn success(
     }
 }
 
-fn success_owned(id: String, input: Vec<u8>, records: Vec<(Vec<u8>, Vec<u8>)>) -> CorpusCase {
+fn success_owned_platform(id: String, input: Vec<u8>) -> CorpusCase {
+    let records = encode_owned_records(parse(&input, Platform::Posix).unwrap());
+    let windows = encode_owned_records(parse(&input, Platform::Windows).unwrap());
+    let windows_records = (windows != records).then_some(windows);
     CorpusCase {
         id,
         input: STANDARD.encode(input),
         success: true,
-        records: records
-            .into_iter()
-            .map(|(name, value)| CorpusRecord {
-                name: STANDARD.encode(name),
-                value: STANDARD.encode(value),
-            })
-            .collect(),
-        windows_records: None,
+        records,
+        windows_records,
     }
+}
+
+fn encode_owned_records(records: Vec<(Vec<u8>, Vec<u8>)>) -> Vec<CorpusRecord> {
+    records
+        .into_iter()
+        .map(|(name, value)| CorpusRecord {
+            name: STANDARD.encode(name),
+            value: STANDARD.encode(value),
+        })
+        .collect()
 }
 
 fn failure(id: &str, input: &[u8]) -> CorpusCase {

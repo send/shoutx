@@ -66,6 +66,12 @@ case "$dotnet_command" in
     ;;
 esac
 
+actual_sdk=$(dotnet_run --version)
+if [ "$actual_sdk" != 8.0.424 ]; then
+  echo "error: expected .NET SDK 8.0.424, got $actual_sdk" >&2
+  exit 1
+fi
+
 cd "$root"
 mkdir -p "$(dirname -- "$corpus")"
 SHOUTX_CORPUS_PATH="$corpus" \

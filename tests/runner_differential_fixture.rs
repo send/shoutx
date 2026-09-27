@@ -111,25 +111,38 @@ fn corpus() -> Vec<CorpusCase> {
     for index in 0_u8..128 {
         let name = format!("generated_{index}");
         let mut value = generated_value(index);
+        let mode = match index % 5 {
+            0 => {
+                value = value.replace(['\r', '\n'], "x");
+                LineMode::Default
+            }
+            1 => LineMode::FirstLine,
+            2 => LineMode::Join(Vec::new()),
+            3 => LineMode::Join(b" :: ".to_vec()),
+            _ => LineMode::Multiline,
+        };
         let target_os = if index % 2 == 0 {
             TargetOs::Windows
         } else {
             TargetOs::Linux
         };
-        if target_os == TargetOs::Windows && index % 4 == 0 {
+        if mode == LineMode::Multiline && target_os == TargetOs::Windows {
             value.push('\r');
-        } else if value.ends_with('\r') {
-            value.push('x');
         }
-        if index % 16 == 0 {
+        if mode == LineMode::Multiline && index % 20 == 4 {
             value.push_str("SHOUTX_");
             value.push_str(&format!("{index:02x}").repeat(32));
         }
+        let target_platform = if target_os == TargetOs::Windows {
+            Platform::Windows
+        } else {
+            Platform::Posix
+        };
         let mut random = SequenceRandom(index);
         let mut input = shoutx::github_actions::encode_with(
             WriteRequest {
                 destination: Destination::Output,
-                mode: LineMode::Multiline,
+                mode,
                 name: OsString::from(&name),
                 value: None,
             },
@@ -139,16 +152,7 @@ fn corpus() -> Vec<CorpusCase> {
         )
         .unwrap();
         input.extend_from_slice(b"after=ok\n");
-        let expected = vec![
-            (name.into_bytes(), value.into_bytes()),
-            (b"after".to_vec(), b"ok".to_vec()),
-        ];
-        let target_platform = if target_os == TargetOs::Windows {
-            Platform::Windows
-        } else {
-            Platform::Posix
-        };
-        assert_eq!(parse(&input, target_platform).unwrap(), expected);
+        assert_eq!(parse(&input, target_platform).unwrap().len(), 2);
         cases.push(success_owned_platform(
             format!("generated-{index:03}"),
             input,

@@ -21,7 +21,7 @@ The initial provider is GitHub Actions. Provider-specific behavior is isolated
 behind namespaced commands so support for other workflow engines can be added
 without pretending their protocols are interchangeable.
 
-## Implemented GitHub Actions commands
+## GitHub Actions commands
 
 Provider-specific writers:
 
@@ -29,6 +29,12 @@ Provider-specific writers:
 shoutx github-actions:output [--first-line | --join-lines | --join-lines-with STRING | --multiline] NAME [VALUE]
 shoutx github-actions:env    [--first-line | --join-lines | --join-lines-with STRING | --multiline] NAME [VALUE]
 shoutx github-actions:path   [VALUE]
+```
+
+Specified for a future release, but not yet implemented:
+
+```text
+shoutx github-actions:state  [--first-line | --join-lines | --join-lines-with STRING | --multiline] NAME [VALUE]
 ```
 
 Reusable context encoders under consideration for v1.0:
@@ -95,7 +101,7 @@ Encoded output is written to stdout and diagnostics to stderr. This preserves
 normal Unix composition and keeps destination selection visible in the calling
 workflow.
 
-## GitHub Actions output and environment contract
+## GitHub Actions named-writer contract
 
 ### Record names
 
@@ -105,18 +111,30 @@ universal grammar:
 ```text
 github-actions:output  [A-Za-z_][A-Za-z0-9_-]*
 github-actions:env     [A-Za-z_][A-Za-z0-9_]*
+github-actions:state   [A-Za-z_][A-Za-z0-9_]*
 ```
 
-Both names are limited to 255 ASCII bytes. Hyphens are supported for outputs
+All names are limited to 255 ASCII bytes. Hyphens are supported for outputs
 because GitHub's action metadata grammar permits them and established actions
-use names such as `cache-hit` and `artifact-id`. Environment names use the
-portable shell-variable subset.
+use names such as `cache-hit` and `artifact-id`. Environment and state names
+use the portable shell-variable subset because saved state is later exposed as
+an environment variable with a `STATE_` prefix.
 
 The environment writer rejects names beginning with `GITHUB_` or `RUNNER_` and
 the exact name `NODE_OPTIONS`, using ASCII case-insensitive comparisons. It
 does not inspect the destination file, detect assignments from other
 invocations, or guarantee uniqueness; duplicate handling remains runner and
 caller behavior.
+
+The state writer has no reserved-name block. GitHub exposes a saved name to
+another phase of the same action with a `STATE_` prefix, so a name such as
+`GITHUB_ENV` does not overwrite `GITHUB_ENV`; it becomes `STATE_GITHUB_ENV`.
+The saved value is exposed only to another phase of the same action; this is
+not a general workflow environment channel. The pinned runner compares state
+names ordinally without regard to case. A later duplicate or case-colliding
+record replaces the value but retains the first record's name spelling.
+shoutx emits one record and does not inspect the destination file or detect
+such collisions.
 
 ### Text and line boundaries
 

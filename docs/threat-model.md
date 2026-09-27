@@ -1,13 +1,14 @@
 # Threat model
 
 This document defines the security boundary that `shoutx` protects. It covers
-the v0.1.0 GitHub Actions writers and inventories boundaries deferred beyond
-that release.
+the v0.1.0 GitHub Actions writers, specifies `github-actions:state` for a future
+release, and inventories the remaining deferred boundaries.
 
 Concrete cases and compatibility gates derived from this model are maintained
 in the [CLI contract test plan](test-plan.md).
 
-Revision status: v0.1.0 release baseline.
+Revision status: v0.1.0 release baseline plus the specified
+`github-actions:state` contract.
 
 ## Security objective
 
@@ -37,7 +38,7 @@ untrusted source
     -> shell redirection
     -> GitHub Actions environment file
     -> runner parser
-    -> output, environment, or PATH state
+    -> output, environment, PATH, or intra-action state
     -> later consumer
 ```
 
@@ -46,10 +47,12 @@ caller controls how values reach the process and where stdout is redirected.
 The operating system controls process I/O. GitHub Actions controls the
 environment-file parser and downstream runtime behavior.
 
-GitHub creates a distinct environment-file path for each step. The runner reads
-these files after processing the step. `$GITHUB_OUTPUT`, `$GITHUB_ENV`, and
-`$GITHUB_PATH` are therefore protocols between the step and the runner, not
-ordinary application data files.
+GitHub creates distinct environment-file paths while running a step or action.
+The runner reads these files after processing the producer.
+`$GITHUB_OUTPUT`, `$GITHUB_ENV`, `$GITHUB_PATH`, and `$GITHUB_STATE` are
+therefore protocols between executed code and the runner, not ordinary
+application data files. Saved state is exposed only between phases of the same
+action.
 
 ## Assets
 
@@ -58,6 +61,7 @@ The model aims to protect:
 - the structure and namespace of runner command-file records;
 - subsequent step environment state;
 - command lookup affected by `PATH`;
+- intra-action state passed to a later action phase;
 - the integrity of generated shell contexts, if their encoder is included;
 - secrets, tokens, and sensitive values from disclosure in diagnostics; and
 - runner availability against unreasonable memory consumption by `shoutx`.
@@ -150,19 +154,19 @@ stderr are treated as text and are unsupported.
 
 ## GitHub Actions boundary inventory
 
-The v0.1.0 release includes these environment-file destinations:
+The current and next specified environment-file destinations are:
 
-| Boundary | MVP status | Interpretation |
+| Boundary | Status | Interpretation |
 | --- | --- | --- |
 | `$GITHUB_OUTPUT` | Included | Named step-output records |
 | `$GITHUB_ENV` | Included | Named environment-variable records |
 | `$GITHUB_PATH` | Included | One path entry per line, then PATH-separator joining |
+| `$GITHUB_STATE` | Specified; not yet implemented | Named intra-action state records for `pre:`, `main:`, and `post:` phases |
 
 Other recognized boundaries are explicitly deferred:
 
 | Boundary | Status | Primary concern |
 | --- | --- | --- |
-| `$GITHUB_STATE` | Deferred | Named state records used by action `pre:`, `main:`, and `post:` phases |
 | `$GITHUB_STEP_SUMMARY` | Deferred; no generic Markdown writer planned | GitHub-rendered content integrity rather than runner command-file record injection |
 | stdout workflow commands | Deferred | Lines such as `::warning::`, `::add-mask::`, and `::stop-commands::` are runner control messages |
 | `$GITHUB_ARTIFACTS` | Deferred | One file or OCI declaration per line |
@@ -171,7 +175,7 @@ Other recognized boundaries are explicitly deferred:
 Inventorying a boundary does not commit `shoutx` to supporting it. It prevents
 an unsupported control channel from being mistaken for a protected one.
 
-## Protected boundaries
+## Protected and specified boundaries
 
 ### `github-actions:output`
 
@@ -247,6 +251,28 @@ separators, trim whitespace, inspect the destination file, or require the
 directory to exist. Those transformations could change identity or introduce
 filesystem races and are outside record framing.
 
+### `github-actions:state`
+
+The security property is structural integrity of one `$GITHUB_STATE` record.
+An attacker-controlled value must not define another state name or terminate a
+multiline record early. Injected state could change later cleanup behavior in
+the same action, including which process, path, or resource a `post:` phase
+operates on.
+
+The command shares the named-writer value, line-mode, multiline-framing, size,
+and failure contracts. It accepts names matching
+`[A-Za-z_][A-Za-z0-9_]*`, up to 255 ASCII bytes. It has no environment
+reserved-name block because GitHub exposes the value with a `STATE_` prefix.
+The runner compares saved state names ordinally without regard to case. A later
+case-colliding record replaces the value while retaining the first record's
+name spelling. shoutx does not inspect earlier records or prevent that
+replacement.
+
+GitHub exposes saved values only to another phase of the same action; a write
+from an ordinary workflow step has no such consumer. shoutx does not expand
+that scope and does not make later consumption safe. Cleanup code must still
+authorize paths, process identifiers, and other state before acting on them.
+
 ### `shell:arg`
 
 If included in v1.0, the security property is one shell word after exactly one
@@ -283,7 +309,7 @@ mentions, Unicode controls, bidirectional text, and embedded HTML.
 
 | Attack | In scope | Intended control |
 | --- | --- | --- |
-| New output or environment record through a line break | Yes | Consume only one optional final boundary, reject remaining CR/LF, or use verified multiline framing |
+| New output, environment, or state record through a line break | Yes | Consume only one optional final boundary, reject remaining CR/LF, or use verified multiline framing |
 | Early multiline termination | Yes | Use an independent delimiter and verify that it does not occur in the value |
 | Record-name confusion | Yes | Validate against a documented conservative grammar |
 | Multiple PATH entries through a line break | Yes | Consume only one optional final boundary and reject remaining CR/LF |
@@ -406,6 +432,9 @@ entries from selecting a different provider implementation.
 - names containing `=`, `<<`, leading `-`, whitespace, Unicode, and controls;
 - reserved and blocked names, plus documentation of unsupported duplicate and
   case-collision detection across invocations;
+- state names that are reserved for `$GITHUB_ENV` but valid after the `STATE_`
+  prefix, plus ordinal case-insensitive replacement in the runner state
+  handler;
 - delimiter equality using the runner's ordinal line comparison, plus the
   stronger no-substring selection rule;
 - values resembling workflow commands such as `::stop-commands::`;

@@ -103,6 +103,9 @@ GitHub Actions writers:
   shoutx github-actions:env    [--first-line | --join-lines | --join-lines-with STRING | --multiline] NAME [VALUE]
   shoutx github-actions:path   [VALUE]
 
+Specified for a future release (not yet implemented):
+  shoutx github-actions:state  [--first-line | --join-lines | --join-lines-with STRING | --multiline] NAME [VALUE]
+
 Context encoders under consideration for v1.0 (not yet specified):
   shoutx shell:arg             [VALUE]
 ```
@@ -112,7 +115,8 @@ Context encoders under consideration for v1.0 (not yet specified):
 | `github-actions:output` | One `$GITHUB_OUTPUT` record | Internal boundaries rejected by default; explicit normalization |
 | `github-actions:env` | One `$GITHUB_ENV` record | Internal boundaries rejected by default; explicit normalization |
 | `github-actions:path` | One `$GITHUB_PATH` record | One final boundary consumed; others rejected |
-| `shell:arg` (planned) | One POSIX shell word | Preserved in the quoted word |
+| `github-actions:state` (specified) | One `$GITHUB_STATE` record | Internal boundaries rejected by default; explicit normalization |
+| `shell:arg` (under consideration) | One POSIX shell word | Preserved in the quoted word |
 
 Namespaced commands identify the interpretation context, not merely a data
 type. Provider-specific writers use the `PROVIDER:DESTINATION` form. Reusable
@@ -126,8 +130,16 @@ environment-file protocol.
 `github-actions:env` writes a named value using the `$GITHUB_ENV`
 environment-file protocol.
 
-Both commands validate the record name and reject NUL. Output names match
-`[A-Za-z_][A-Za-z0-9_-]*`; environment names match
+`github-actions:state` is specified but not yet implemented. It will write one
+named value to `$GITHUB_STATE` for exposure to another phase of the same action.
+Its value and line-mode contract is identical to the output and environment
+writers. State names match `[A-Za-z_][A-Za-z0-9_]*`; unlike environment names,
+they have no reserved-name block because the runner exposes them with a
+`STATE_` prefix. The command is useful only when the producer has a later phase
+of the same action that consumes the state.
+
+The implemented named writers validate the record name and reject NUL. Output
+names match `[A-Za-z_][A-Za-z0-9_-]*`; environment names match
 `[A-Za-z_][A-Za-z0-9_]*`. The environment writer also rejects `GITHUB_*`,
 `RUNNER_*`, and `NODE_OPTIONS`, using ASCII case-insensitive comparisons.
 

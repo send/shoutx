@@ -1,6 +1,6 @@
-use shoutx::ShoutxError;
 use shoutx::cli::{Destination, LineMode, WriteRequest};
 use shoutx::github_actions::{RandomSource, TargetOs};
+use shoutx::{ErrorClass, ShoutxError};
 use std::{
     ffi::OsString,
     io::Write,
@@ -48,6 +48,21 @@ fn run_with_runner_os(args: &[&str], stdin: Option<&[u8]>, runner_os: &str) -> O
         if let Err(error) = child.stdin.take().unwrap().write_all(input) {
             assert_eq!(error.kind(), std::io::ErrorKind::BrokenPipe);
         }
+    }
+    child.wait_with_output().unwrap()
+}
+
+fn run_without_runner_os(args: &[&str], stdin: &[u8]) -> Output {
+    let mut child = Command::new(env!("CARGO_BIN_EXE_shoutx"))
+        .args(args)
+        .env_remove("RUNNER_OS")
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    if let Err(error) = child.stdin.take().unwrap().write_all(stdin) {
+        assert_eq!(error.kind(), std::io::ErrorKind::BrokenPipe);
     }
     child.wait_with_output().unwrap()
 }
@@ -190,6 +205,16 @@ fn failures_have_empty_stdout_and_stable_statuses() {
             ],
             2,
         ),
+        (
+            vec![
+                "github-actions:output",
+                "--multiline",
+                "--first-line",
+                "r",
+                "x",
+            ],
+            2,
+        ),
         (vec!["github-actions:output", "r", "a", "b"], 2),
     ] {
         let output = run(&args, None);
@@ -261,7 +286,11 @@ fn multiline_round_trips_exact_values_and_is_appendable() {
                 let delimiter = &record[b"result<<".len()..header_end];
                 assert_eq!(delimiter.len(), 39);
                 assert!(delimiter.starts_with(b"SHOUTX_"));
-                assert!(delimiter[7..].iter().all(u8::is_ascii_hexdigit));
+                assert!(
+                    delimiter[7..]
+                        .iter()
+                        .all(|byte| matches!(byte, b'0'..=b'9' | b'a'..=b'f'))
+                );
                 assert!(!value.windows(delimiter.len()).any(|part| part == delimiter));
                 assert_eq!(
                     parse_runner_file(&record, platform).unwrap(),
@@ -301,44 +330,41 @@ fn multiline_retries_collisions_and_bounds_failures() {
         bytes: vec![[0; 16]; 128],
         ..DeterministicRandom::default()
     };
-    assert!(
-        shoutx::github_actions::encode_with(
-            multiline_request(Destination::Output, "r"),
-            zero_delimiter.to_vec(),
-            TargetOs::Linux,
-            &mut exhausted,
-        )
-        .is_err()
-    );
+    let error = shoutx::github_actions::encode_with(
+        multiline_request(Destination::Output, "r"),
+        zero_delimiter.to_vec(),
+        TargetOs::Linux,
+        &mut exhausted,
+    )
+    .unwrap_err();
+    assert_eq!(error.class(), ErrorClass::Failure);
     assert_eq!(exhausted.offset, 128);
 
     let mut failed = DeterministicRandom {
         fail: true,
         ..DeterministicRandom::default()
     };
-    assert!(
-        shoutx::github_actions::encode_with(
-            multiline_request(Destination::Output, "r"),
-            b"value".to_vec(),
-            TargetOs::Linux,
-            &mut failed,
-        )
-        .is_err()
-    );
+    let error = shoutx::github_actions::encode_with(
+        multiline_request(Destination::Output, "r"),
+        b"value".to_vec(),
+        TargetOs::Linux,
+        &mut failed,
+    )
+    .unwrap_err();
+    assert_eq!(error.class(), ErrorClass::Failure);
 }
 
 #[test]
 fn multiline_target_os_only_matters_for_trailing_bare_cr() {
     let mut random = DeterministicRandom::default();
-    assert!(
-        shoutx::github_actions::encode_with(
-            multiline_request(Destination::Output, "r"),
-            b"value\r".to_vec(),
-            TargetOs::Unknown,
-            &mut random,
-        )
-        .is_err()
-    );
+    let error = shoutx::github_actions::encode_with(
+        multiline_request(Destination::Output, "r"),
+        b"value\r".to_vec(),
+        TargetOs::Unknown,
+        &mut random,
+    )
+    .unwrap_err();
+    assert_eq!(error.class(), ErrorClass::Failure);
     let record = shoutx::github_actions::encode_with(
         multiline_request(Destination::Output, "r"),
         b"value".to_vec(),
@@ -384,6 +410,18 @@ fn executable_multiline_uses_trusted_runner_os() {
         parse_runner_file(&irrelevant.stdout, Platform::Posix).unwrap(),
         vec![(b"r".to_vec(), b"value".to_vec())]
     );
+
+    let native = run_without_runner_os(&["github-actions:output", "--multiline", "r"], b"value\r");
+    assert_eq!(native.status.code(), Some(0));
+    let platform = if cfg!(windows) {
+        Platform::Windows
+    } else {
+        Platform::Posix
+    };
+    assert_eq!(
+        parse_runner_file(&native.stdout, platform).unwrap(),
+        vec![(b"r".to_vec(), b"value\r".to_vec())]
+    );
 }
 
 #[test]
@@ -399,11 +437,28 @@ fn runner_parser_model_covers_platform_and_error_edges() {
         parse_runner_file(b"a<<X\nX", Platform::Posix).unwrap(),
         vec![(b"a".to_vec(), Vec::new())]
     );
+    assert_eq!(
+        parse_runner_file(b"a=b<<c\n", Platform::Posix).unwrap(),
+        vec![(b"a".to_vec(), b"b<<c".to_vec())]
+    );
+    assert_eq!(
+        parse_runner_file(b"a<<b=c\nvalue\nb=c\n", Platform::Posix).unwrap(),
+        vec![(b"a".to_vec(), b"value".to_vec())]
+    );
+    assert_eq!(
+        parse_runner_file(b"a<<X\r\nv\r\r\nX\n", Platform::Windows).unwrap(),
+        vec![(b"a".to_vec(), b"v\r".to_vec())]
+    );
+    assert_eq!(
+        parse_runner_file(b"a<<X\r\nv\r\nX\r\n", Platform::Posix).unwrap(),
+        vec![(b"a".to_vec(), b"v\r".to_vec())]
+    );
     for malformed in [
         b"invalid\n".as_slice(),
         b"a<<\n".as_slice(),
         b"a<<X\nvalue".as_slice(),
         b"a<<X\nvalue\n".as_slice(),
+        b"a<<X\nv\nX\nrest\n".as_slice(),
     ] {
         assert!(parse_runner_file(malformed, Platform::Posix).is_err());
     }

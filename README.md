@@ -7,7 +7,7 @@ destination-specific formats and protocols. The first release targets GitHub
 Actions environment files. Small reusable encoders for downstream shell and
 Markdown contexts are under consideration for v1.0.
 
-Status: early implementation. The single-line `github-actions:output` and
+Status: early implementation. The `github-actions:output` and
 `github-actions:env` writers are implemented; other commands remain planned.
 
 ## The problem

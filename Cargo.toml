@@ -1,0 +1,19 @@
+[package]
+name = "shoutx"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+license = "MIT"
+description = "Safe writers for CI workflow output boundaries"
+repository = "https://github.com/send/shoutx"
+
+[profile.release]
+overflow-checks = true
+panic = "unwind"
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+print_stdout = "deny"
+print_stderr = "deny"

@@ -79,8 +79,13 @@ Run applicable cases for both `github-actions:output` and
 | Empty separator | `--join-lines-with= NAME VALUE` | Empty separator succeeds |
 | Unknown option | Unknown token before `NAME` | Usage diagnostic, status 2, empty stdout |
 
-For `github-actions:path`, test that `--` is required to pass a value beginning
-with `-`. Options other than global help/version and `--` are usage errors.
+For `github-actions:path`, test `COMMAND VALUE`, `COMMAND -- VALUE`, stdin when
+VALUE is omitted, and rejection of an extra operand. `--` is required to pass a
+value beginning with `-`; without it, the token is an unknown option. Options
+other than global help/version and `--` are usage errors. Help and version are
+recognized only before VALUE. `COMMAND VALUE --help` is an extra-operand usage
+error with status 2 and empty stdout. `COMMAND --` with no following token
+selects stdin rather than an empty argv value.
 
 ## Input-source selection
 
@@ -100,6 +105,8 @@ requires byte-oriented stdin because host argument APIs cannot represent it.
 Invalid UTF-8 requires both byte-oriented stdin and POSIX argv cases. On
 Windows, use a small native launcher to pass an unpaired UTF-16 surrogate and
 assert status 1 with empty stdout rather than a panic or process abort.
+For `github-actions:path`, empty argv and empty stdin are input failures with
+status 1 rather than successful empty records.
 
 ## Record names
 
@@ -178,6 +185,95 @@ UTF-8 bytes. Separator validation happens even when the input has no boundary.
 
 `github-actions:path` uses the same optional-final-boundary preprocessing as
 the table, then rejects an empty result or any remaining boundary.
+
+## Path records
+
+Every successful `github-actions:path` invocation emits the validated path
+followed by exactly one LF and no BOM. Test both argv and stdin and verify that
+VALUE causes stdin to remain untouched. The command has no lossy or multiline
+mode.
+
+Target selection is exact and case-sensitive. Test `RUNNER_OS=Linux`,
+`RUNNER_OS=macOS`, and `RUNNER_OS=Windows`, native fallback when the variable is
+absent, and rejection of empty, differently cased, invalid-encoding, and other
+unknown values. Unlike multiline named records, the target is always relevant.
+
+### POSIX target grammar
+
+Accept `/`, `/a`, `/a b`, `/a/./b`, `/a/../b`, repeated separators, trailing
+separators, non-ASCII UTF-8, and U+FEFF away from the first character. Preserve
+every accepted byte exactly. Reject relative paths, `./a`, `../a`, an empty
+value, a leading U+FEFF, any CR or LF left after common final-boundary
+consumption, NUL, and any value containing `:`.
+Reject `"` even though it can occur in a POSIX filename, because it crosses the
+runner container step-host argument boundary. Reject a path ending in `\` and
+include both odd and even runs of trailing backslashes; .NET argument
+re-tokenization must not silently change directory identity.
+
+### Windows target grammar
+
+Accept drive-absolute paths using either directory separator, UNC paths, and
+fully qualified verbatim drive and UNC forms. Include spaces, dot segments,
+repeated and trailing separators, non-ASCII UTF-8, and U+FEFF away from the
+first character, and assert exact preservation. Cover `C:\`, `c:/tools`,
+`\\server\share`, `//server/share`, `\\?\C:\`, and
+`\\?\UNC\server\share`. Normal UNC separators may be mixed, so also accept
+`/\server/share` and `\/server\share`.
+
+Reject drive-relative `C:tools`, root-relative `\tools`, plain relative paths,
+incomplete UNC forms, Win32 device forms such as `\\.\...`, an empty value, a
+leading U+FEFF, any remaining CR or LF, NUL, and any value containing `;`.
+Reject `"` and explicitly cover bare `C:`, `\\server`, `//./x`, `/\.\x`,
+`//?/C:/x`, `\\?\C:/x`, `\\?\C:`, `\\?\UNC\server`,
+`\\?\GLOBALROOT\x`, `\\?\Volume{x}\`, `\\?\pipe\x`, and
+`\\.\UNC\server\share`. Reject lowercase `\\?\unc\server\share` because
+the verbatim UNC marker is exact and uppercase. Include lower- and uppercase
+drive letters. Tests must not require the path to exist or infer validity from
+the test host filesystem.
+
+Every path grammar, separator, quote, leading-BOM, and target-selection
+rejection has status 1 and empty stdout. This includes an empty or otherwise
+unknown `RUNNER_OS` value.
+
+### Runner parser and effective ordering
+
+Implement a separate test-only model of `File.ReadAllLines(path,
+Encoding.UTF8)` and path-list handling. Compare it with the pinned runner on
+native Linux and Windows. The corpus covers LF, CRLF, and bare CR separators on
+both hosts; an initial UTF-8 BOM; U+FEFF after earlier file content; empty and
+whitespace-only lines; a final unterminated line; multiple entries; and
+duplicates.
+
+Assert that empty lines are ignored but whitespace-only lines are retained,
+that later distinct entries appear earlier in the effective PATH, and that the
+last runner-equivalent duplicate determines precedence. Because the runner
+uses current-culture string comparison, do not turn non-ASCII duplicate
+equivalence into a portable shoutx guarantee. Use only printable ASCII for
+portable duplicate fixtures, and add one native observation case showing the
+runner's treatment of otherwise identical paths where one contains U+200B.
+Also observe an embedded U+FEFF case so byte preservation is not confused with
+effective duplicate identity.
+
+Append a shoutx record to both an empty command file and a file containing an
+earlier record. A supported value must have the same parsed text in both
+positions; the leading-U+FEFF rejection specifically prevents the known
+position-dependent exception.
+
+The actual-runner fixture calls `AddPathFileCommand.ProcessCommand` with a test
+execution context whose `DeferredPrependPath` is null and whose
+`Global.PrependPath` is observable. A test-only handler subclass then exposes
+the protected `AddPrependPathToEnvironment` path and asserts the final PATH,
+including reverse ordering and an original PATH that already starts with the
+complete prepend string plus the PATH separator. This distinguishes runner
+execution from a local transcription of its list and join logic.
+
+A separate native Linux characterization test exercises the runner's container
+branch and its actual `ProcessInvoker` argument-string path. A test helper
+standing in for `docker` records the argv it receives. Cover a normal path, a
+double quote, and odd and even trailing-backslash runs, and assert the observed
+token boundaries and bytes. This test independently grounds the quote and
+trailing-backslash rejection instead of merely reproducing the runner's string
+concatenation.
 
 ## Multiline records
 
@@ -262,6 +358,11 @@ The model is not production code and must not become the sole compatibility
 oracle. Unit tests should be derived from inspected runner source before the
 model is used to validate the encoder.
 
+The path command uses a separate model of `File.ReadAllLines(...,
+Encoding.UTF8)` and `AddPathFileCommand`; it must not reuse the named-record
+model. Its required cases and ordering assertions are specified under Path
+records above.
+
 ## Differential testing against `actions/runner`
 
 Pin the initial oracle to `actions/runner` v2.337.0. Record both the tag and
@@ -311,12 +412,9 @@ until the Windows byte-capture, status-propagation, and runner differential
 suites pass. Also test and document the failure of self-hosted Windows fallback
 to unsupported Desktop PowerShell.
 
-`github-actions:path` additionally needs native Linux and Windows tests for
-absolute-path grammar, separators, normalization, and runner ordering. Those
-rules remain an open design question, so a release must not infer them from the
-named-writer tests. Its separate parser model must cover `File.ReadAllLines`,
-including bare-CR splitting on every OS, empty-line removal, and BOM handling,
-before the command moves from candidate to supported MVP scope.
+`github-actions:path` additionally requires the native Linux and Windows
+grammar, parser, append-position, ordering, and shell tests above. A release
+must not infer path compatibility from the named-writer tests.
 
 For each supported workflow shell, a negative smoke test must place another
 successful command after a rejected `shoutx` invocation and still observe step

@@ -30,11 +30,14 @@ $PSNativeCommandUseErrorActionPreference = $true
 "a`nb" | & $args[0] github-actions:output result > $args[1]
 New-Item -ItemType File -Path $args[2] | Out-Null
 '@ | Set-Content -Encoding utf8NoBOM $child
-    $previousNativePreference = $PSNativeCommandUseErrorActionPreference
-    $PSNativeCommandUseErrorActionPreference = $false
-    & pwsh -NoProfile -File $child $Binary (Join-Path $root 'rejected') $marker
-    $childExit = $LASTEXITCODE
-    $PSNativeCommandUseErrorActionPreference = $previousNativePreference
+    $start = [Diagnostics.ProcessStartInfo]::new('pwsh')
+    $start.UseShellExecute = $false
+    foreach ($argument in @('-NoProfile', '-File', $child, $Binary, (Join-Path $root 'rejected'), $marker)) {
+        $start.ArgumentList.Add($argument)
+    }
+    $process = [Diagnostics.Process]::Start($start)
+    $process.WaitForExit()
+    $childExit = $process.ExitCode
     if ($childExit -eq 0 -or (Test-Path $marker)) {
         throw "PowerShell did not propagate the rejected shoutx invocation"
     }

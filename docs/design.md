@@ -34,6 +34,13 @@ shoutx github-actions:state  [--first-line | --join-lines | --join-lines-with ST
 shoutx github-actions:path   [VALUE]
 ```
 
+The next specified provider command is not yet implemented or exposed by the
+CLI:
+
+```text
+shoutx github-actions:mask [VALUE]
+```
+
 No reusable context encoder is currently planned for v1.0. The former
 `shell:arg` candidate is deferred after boundary review.
 
@@ -60,6 +67,9 @@ No reusable context encoder is currently planned for v1.0. The former
     supported runner parser and do not rely on host text-mode translation.
 13. Every input field has a documented hard size limit; a destination's encoded
     record limit may impose a smaller effective maximum after framing.
+14. A stdout workflow-command writer emits exactly one command line whose
+    decoded data equals the accepted value; it does not claim that runner log
+    masking prevents every disclosure of that value.
 
 ## Command model
 
@@ -314,6 +324,93 @@ shoutx deduplication guarantees.
 This is structural validation, not authorization. The caller must establish
 that the directory and executables reachable through it are trusted.
 
+## GitHub Actions log-mask candidate
+
+`github-actions:mask [VALUE]` is specified as the next provider command, but is
+not exposed until its implementation and compatibility tests are complete. It
+registers one value with the current job's runner-side secret masker by writing
+one [`add-mask` workflow command][workflow-mask-command] to stdout. Unlike
+environment-file writers, its successful stdout is intentionally consumed
+directly by the runner and must not be redirected to an environment file.
+
+The command follows the shared single-value source rule. An argv value wins and
+stdin is not read; otherwise non-terminal stdin is read through EOF. `--` ends
+option parsing and is required for a dash-prefixed argv value. There is no name
+operand and there are no first-line, join, or multiline modes. The complete
+semantic value is registered rather than normalized into a different secret.
+As with the other stdin interfaces, at most one final CRLF, LF, or bare CR is
+consumed as producer framing. All remaining CR and LF are value data.
+
+Input is strict UTF-8, rejects NUL, and uses the standard 1 MiB input limit.
+After optional producer framing, an empty value or a value consisting only of
+Unicode whitespace is rejected before stdout begins. This mirrors the runner's
+`String.IsNullOrWhiteSpace` rejection; accepting such a value locally would
+report success without registering a mask. The whitespace classification is
+the .NET 8 `Char.IsWhiteSpace` set, equivalent here to the Unicode
+`White_Space` property. U+FEFF and U+200B are not whitespace under that rule.
+
+Successful output is exactly:
+
+```text
+::add-mask::ENCODED_VALUE LF
+```
+
+The encoder applies replacements in this order: `%` with `%25`, CR with `%0D`,
+then LF with `%0A`. No other character is escaped. This is the encoding used by
+[`@actions/core.setSecret`][toolkit-command] and inverted by the runner's
+workflow-command parser. Escaping `%` first prevents a literal sequence such as
+`%0A` from becoming a line break during runner decoding. Encoding CR and LF
+ensures the process emits one physical command line, and `::` inside the value
+cannot create another command because the runner treats only the first command
+separator as structural.
+
+The implementation computes the encoded length with checked arithmetic and
+constructs the complete line before opening stdout for writing. The 1 MiB
+input can expand to at most 3 MiB plus the fixed prefix and LF. GitHub documents
+no separate dynamic-mask or workflow-command line limit, and the pinned runner
+applies no explicit command-line length check before its stream reader, so this
+is a shoutx resource limit rather than a provider-capacity promise. Large or
+structured values remain discouraged under GitHub's
+[secure-use guidance][secure-use]: runner registration derives multiple encoded
+variants and exact-match redaction becomes less reliable when a value is
+transformed.
+
+On receipt, the runner registers both the exact decoded value and every
+trimmed, nonempty item produced by splitting it on CR and LF. This occurs even
+for a single-line value: registering ` secret ` also registers `secret`. It can
+therefore broaden masking for both single-line and multiline values and is
+runner behavior, not a shoutx normalization promise. Empty items and
+whitespace-only items are not independently registered. Registration is
+job-local and affects only subsequent runner output. The command itself is
+configured not to echo its data; when workflow-command echoing is enabled, the
+runner prints a masked placeholder.
+
+The security property is structural integrity and faithful registration of one
+accepted value while workflow-command processing is active. It is not a
+confidentiality guarantee. In particular:
+
+- output produced before registration remains visible;
+- shell tracing, process inspection, audit logging, or a compromised runner
+  can disclose the value before the runner masker sees it;
+- transformed, split, or encoded forms are not necessarily masked unless the
+  runner derives that exact form or the caller registers it separately;
+- short or common values can over-mask unrelated log text;
+- a preceding `stop-commands` command causes the runner to ignore `add-mask`
+  until the matching resume token, causing the encoded command line itself to
+  be logged as ordinary output; shoutx cannot observe that state; and
+- values treated as secrets can be suppressed when exported as job outputs,
+  even though GitHub documents same-job use through a step output.
+
+Callers should pass sensitive values through stdin or a quoted environment
+variable rather than placing them literally in process arguments. They must
+ensure workflow-command processing is active and register a value before any
+command can log it. If an unmasked value has already reached a workflow log,
+masking it later is not remediation; delete the log and rotate the credential.
+
+[toolkit-command]: https://github.com/actions/toolkit/blob/a7911ca44eeaa6d87ad79a4703b750fb0993fb99/packages/core/src/command.ts
+[workflow-mask-command]: https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-commands#masking-a-value-in-a-log
+[secure-use]: https://docs.github.com/en/actions/reference/security/secure-use
+
 ## Markdown output decision
 
 `markdown:text` is not a v1.0 candidate. GitHub documents job summaries as
@@ -332,9 +429,10 @@ normal Markdown usability while distinguishing malicious from intended content
 also requires application-specific policy.
 
 This decision does not cover an unredirected process writing attacker-controlled
-lines to the workflow log. GitHub Actions stdout workflow commands are a
-separate deferred boundary. A future Markdown feature requires a concrete
-threat and named rendering surface rather than a renderer-independent promise.
+lines to the workflow log. The `add-mask` command is specified separately and
+other GitHub Actions stdout workflow commands remain deferred. A future
+Markdown feature requires a concrete threat and named rendering surface rather
+than a renderer-independent promise.
 
 [job-summaries]: https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-commands#adding-a-job-summary
 [github-markup]: https://github.com/github/markup#github-markup

@@ -3,7 +3,8 @@
 This document turns the `shoutx` CLI contract into an implementation test plan.
 It covers `github-actions:output`, `github-actions:env`,
 `github-actions:state`, `github-actions:path`, the shared input rules, and the
-supported workflow-shell redirection paths.
+supported workflow-shell redirection paths. It also specifies the acceptance
+tests for the not-yet-implemented `github-actions:mask` candidate.
 
 The product contract is defined by the [README](../README.md), the design
 decisions by [design.md](design.md), and the security boundary by
@@ -151,6 +152,98 @@ and record that construction path; supplying a test-created dictionary with the
 expected comparer would prove only the fixture's behavior. This characterizes
 destination behavior; one shoutx invocation still emits exactly one requested
 record and does not inspect earlier records.
+
+## Log-mask command candidate
+
+These cases define the implementation gate for `github-actions:mask`. They do
+not make the command public until the contract, runner differential tests, and
+supported-shell workflow tests are complete.
+
+### Command grammar and input
+
+Test `COMMAND VALUE`, `COMMAND -- VALUE`, and stdin when VALUE is omitted.
+`--` is required for a dash-prefixed argv value; without it the token is an
+unknown-option usage error. Reject extra operands and every line-mode option as
+usage errors with status 2 and empty stdout. Help and version are recognized
+only before VALUE. `COMMAND --` with no following operand selects stdin.
+
+Apply the shared terminal, closed-handle, invalid-encoding, NUL, and 1 MiB input
+cases. An argv value wins without reading stdin. For both argv and stdin,
+consume at most one final CRLF, LF, or bare CR as producer framing and preserve
+every remaining boundary. Exercise each final-boundary form through both input
+sources, plus empty input, multiple final terminators, internal mixed
+boundaries, and a final boundary following invalid UTF-8 or NUL. Empty semantic
+values and values consisting only of the .NET 8 `Char.IsWhiteSpace` set fail
+with status 1 and empty stdout. Cover ASCII whitespace, NEL, U+1680, the
+U+2000--U+200A range, LINE SEPARATOR, PARAGRAPH SEPARATOR, U+202F, U+205F, and
+U+3000. Verify that U+FEFF and U+200B are accepted as non-whitespace data.
+
+### Encoding and command structure
+
+For every success, exact stdout is:
+
+```text
+::add-mask::ENCODED_VALUE LF
+```
+
+Test `%`, CR, LF, CRLF, every mixture of them, literal `%0A`, `%0D`, and `%25`,
+leading spaces, `::`, strings beginning with another registered command, and
+multibyte UTF-8. Assert the replacement order `%` to `%25`, CR to `%0D`, then
+LF to `%0A`. Feed the result to the pinned runner parser and verify exactly one
+recognized `add-mask` command whose decoded data equals the accepted semantic
+value. The emitted bytes must contain no physical CR or LF before the final LF
+and must not parse a second command.
+
+Test 1,048,575, 1,048,576, and 1,048,577 raw input bytes before optional final
+producer-boundary consumption, using both low-expansion and worst-case
+`%`/CR/LF data. The first two succeed when otherwise valid and the last fails,
+so specifically assert that a 1,048,576-byte semantic value followed by LF is
+rejected before the framing boundary can be consumed. Verify checked encoded-
+size calculation before allocation and the exact maximum output length. Do not
+assert an undocumented GitHub command line limit.
+
+### Runner masking behavior
+
+Use the actual pinned `AddMaskCommandExtension` and `SecretMasker`, not only a
+local parser transcription. After registration, verify masking of the exact
+value as a substring in later output. For every value, verify both the full
+decoded value and each trimmed nonempty item from CR/LF splitting are
+registered; this includes a single-line value with surrounding whitespace.
+Blank and whitespace-only items remain unregistered. Include leading and
+trailing whitespace on individual lines, overlapping values, a short common
+value demonstrating intentional over-masking, and data for which the runner
+derives Base64, JSON, URI, XML, command-line, and PowerShell representations.
+The tests characterize those derived masks without making their complete set a
+stable shoutx guarantee.
+
+Enable workflow-command echoing and verify that command processing emits only
+the masked placeholder, never the supplied value. Suspend command processing
+with a valid `stop-commands` token, feed a shoutx mask record, and prove that it
+is treated as ordinary output, can expose the encoded value, and installs no
+mask; resume processing and prove normal registration works again. This is a
+documented precondition, not a condition the shoutx process can detect.
+
+Verify that a masked step output remains usable in a later step of the same job
+using GitHub's documented pattern. Separately use a runner oracle to verify that
+a matching job output is skipped as potentially secret. The product must not
+promise cross-job propagation.
+
+### Process and workflow coverage
+
+For every validation or size failure, assert empty stdout and a fixed stderr
+diagnostic that contains neither the candidate value nor a derived excerpt.
+Exercise broken-pipe and short-write behavior under the shared status contract.
+Unlike environment-file writers, successful mask output is not redirected.
+
+On every supported hosted OS and shell, register a unique generated marker and
+then print it between fixed sentinel strings in a later command in the same
+step. Inspect the completed job log through the GitHub API and require the
+sentinel form containing `***`, without requiring the verifier to receive the
+secret marker. A step cannot prove masking by inspecting its own still-open
+log. Include stdin and quoted-environment-variable recipes, ensure shell
+tracing is disabled, and do not place the marker literally in workflow source
+or argv. Shell tests must also confirm that stdout uses one LF-terminated
+command on Windows without depending on text-mode newline conversion.
 
 ## Workflow artifact declaration candidate
 

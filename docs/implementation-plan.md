@@ -504,6 +504,36 @@ zero bytes. The temporary probe was removed after capturing the result in the
 design. No implementation increment should begin until a later probe passes on
 all supported operating systems.
 
+## Next implementation increment: `github-actions:mask`
+
+Implement the specified log-mask command without reusing environment-file
+record framing. Extend the manual parser with one optional value operand and no
+line-mode options. Reuse bounded argv/stdin acquisition, strict UTF-8 and NUL
+validation, one optional final producer-boundary consumption, safe diagnostics,
+and the existing single-buffer stdout path. Add a destination-specific
+whitespace-only rejection matching .NET 8 `String.IsNullOrWhiteSpace`.
+
+Add a small workflow-command data encoder that replaces `%`, CR, and LF in that
+order. It computes the encoded length with checked arithmetic before allocating
+and returns a complete immutable `::add-mask::...\n` buffer. Keep this encoder
+separate from named records and do not generalize it into a raw workflow-command
+API. The public command remains absent from help and release artifacts until
+all of its contract tests pass.
+
+Extend the C# runner oracle around `ActionCommandManager`,
+`AddMaskCommandExtension`, and the real `SecretMasker`. Compare decoded values,
+single-command parsing, multiline per-line registration, whitespace-only
+rejection, echo suppression, stopped-command behavior, derived masks, and job
+output suppression. Pin these observations to runner v2.337.0 and inspect the
+current runner source before release.
+
+Hosted workflow coverage must register a fresh random marker and inspect the
+completed job log from outside the producing job. Prove redaction on Linux,
+macOS, and Windows under each supported shell, including stdin and quoted
+environment-variable delivery. Do not use shell tracing or literal secrets in
+workflow source. The workflow should distinguish a missing marker caused by a
+test setup failure from successful replacement with `***`.
+
 ## CI and quality gates
 
 CI begins in the first implementation PR and expands with each supported

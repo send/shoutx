@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using GitHub.Runner.Worker;
 using Xunit;
 
@@ -70,6 +71,7 @@ public sealed class ShoutxDifferentialL0
         string Input,
         bool Success,
         IReadOnlyList<CorpusRecord> Records,
+        [property: JsonPropertyName("windows_records")]
         IReadOnlyList<CorpusRecord>? WindowsRecords);
 
     private sealed record CorpusRecord(string Name, string Value);

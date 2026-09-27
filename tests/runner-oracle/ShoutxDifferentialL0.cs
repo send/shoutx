@@ -36,6 +36,7 @@ public sealed class ShoutxDifferentialL0
         }
 
         using var host = new TestHostContext(this);
+        Directory.CreateDirectory(host.GetDirectory(WellKnownDirectory.Work));
         var root = Path.Combine(Path.GetTempPath(), $"shoutx-argv-{Guid.NewGuid():N}");
         Directory.CreateDirectory(root);
         try

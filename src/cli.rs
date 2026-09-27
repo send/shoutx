@@ -16,7 +16,7 @@ fn strip_os_prefix(value: &OsStr, prefix: &[u8]) -> Option<OsString> {
     use std::os::windows::ffi::{OsStrExt, OsStringExt};
     let wide: Vec<u16> = value.encode_wide().collect();
     let prefix: Vec<u16> = prefix.iter().map(|byte| u16::from(*byte)).collect();
-    wide.strip_prefix(&prefix).map(OsString::from_wide)
+    wide.strip_prefix(&prefix[..]).map(OsString::from_wide)
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

@@ -258,6 +258,26 @@ fn windows_unpaired_surrogate_is_rejected() {
 
 #[cfg(windows)]
 #[test]
+fn windows_unpaired_surrogate_equals_separator_is_input_failure() {
+    use std::os::windows::ffi::OsStringExt;
+    let mut option: Vec<u16> = "--join-lines-with=".encode_utf16().collect();
+    option.push(0xd800);
+    let output = Command::new(env!("CARGO_BIN_EXE_shoutx"))
+        .arg("github-actions:output")
+        .arg(OsString::from_wide(&option))
+        .arg("r")
+        .arg("value")
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .output()
+        .unwrap();
+    assert_eq!(output.status.code(), Some(1));
+    assert!(output.stdout.is_empty());
+}
+
+#[cfg(windows)]
+#[test]
 fn windows_ctrl_z_is_value_data() {
     let output = run(&["github-actions:output", "r"], Some(b"a\x1ab"));
     assert_eq!(output.status.code(), Some(0));
@@ -307,9 +327,10 @@ fn invalid_utf8_equals_separator_is_input_failure() {
 #[test]
 fn broken_pipe_is_status_one_not_signal_termination() {
     use std::os::fd::OwnedFd;
-    use std::os::unix::net::UnixStream;
+    use std::{net::Shutdown, os::unix::net::UnixStream};
 
     let (writer, reader) = UnixStream::pair().unwrap();
+    reader.shutdown(Shutdown::Both).unwrap();
     drop(reader);
     let writer: OwnedFd = writer.into();
     let output = Command::new(env!("CARGO_BIN_EXE_shoutx"))
@@ -438,8 +459,9 @@ fn invalid_and_multibyte_separators_are_covered() {
 #[test]
 fn failed_stderr_preserves_usage_status() {
     use std::os::fd::OwnedFd;
-    use std::os::unix::net::UnixStream;
+    use std::{net::Shutdown, os::unix::net::UnixStream};
     let (writer, reader) = UnixStream::pair().unwrap();
+    reader.shutdown(Shutdown::Both).unwrap();
     drop(reader);
     let writer: OwnedFd = writer.into();
     let output = Command::new(env!("CARGO_BIN_EXE_shoutx"))

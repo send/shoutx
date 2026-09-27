@@ -142,6 +142,35 @@ changes made in response to its findings. A third round is warranted only when
 the second review identifies a new substantive issue or the response changes
 the security contract again.
 
+## CI and GitHub review monitoring
+
+When asked to monitor a pull request, keep a live wait running until both CI and
+the configured Codex review have reached terminal states. A Codex summary or
+review-start comment is evidence that review began, not that it completed.
+
+Record the pull request's current head SHA before waiting. CI is complete only
+when every required check is terminal; for documentation-only changes, also
+confirm that the change detector passed and expensive jobs were skipped rather
+than silently omitted. Codex review is complete for that SHA only when either:
+
+- `chatgpt-codex-connector[bot]` submits a review whose `commit_id` is that
+  exact SHA; or
+- after an explicit `@codex review` request, the bot adds a thumbs-up reaction
+  to that request to signal no findings.
+
+Do not treat an earlier-commit review, the existence or disappearance of a
+summary comment, or an empty API result as successful completion. The wait must
+surface API failures and print the terminal evidence it observed. After the
+wait exits, query CI, reviews, inline comments, unresolved review threads, and
+the relevant reaction once more before reporting success.
+
+For each valid finding, make the scoped correction, reply with the addressing
+commit, and resolve the thread. Any pushed correction changes the head SHA:
+discard the old wait, request review of the new head when needed, and start a
+new SHA-specific monitor. Do not merge until all findings are resolved, the
+latest-head review has converged, CI is successful, and the maintainer has
+explicitly directed the merge.
+
 ## Change workflow
 
 - Keep pull requests focused and explain any security-contract consequence.

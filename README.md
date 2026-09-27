@@ -4,12 +4,12 @@ Prevent injection at CI workflow output boundaries.
 
 `shoutx` safely writes untrusted values from shell-driven workflows to
 destination-specific formats and protocols. The first release targets GitHub
-Actions environment files. Small reusable encoders for downstream shell and
-Markdown contexts are under consideration for v1.0.
+Actions environment files. A reusable encoder for a downstream shell context
+is under consideration for v1.0.
 
 Status: early implementation. The `github-actions:output`,
 `github-actions:env`, and `github-actions:path` writers are implemented;
-context encoders remain under consideration. Native binaries, checksums, and
+one context encoder remains under consideration. Native binaries, checksums, and
 provenance are available from the
 [GitHub releases](https://github.com/send/shoutx/releases).
 
@@ -105,7 +105,6 @@ GitHub Actions writers:
 
 Context encoders under consideration for v1.0 (not yet specified):
   shoutx shell:arg             [VALUE]
-  shoutx markdown:text         [VALUE]
 ```
 
 | Command | Produces | Line-break behavior |
@@ -114,7 +113,6 @@ Context encoders under consideration for v1.0 (not yet specified):
 | `github-actions:env` | One `$GITHUB_ENV` record | Internal boundaries rejected by default; explicit normalization |
 | `github-actions:path` | One `$GITHUB_PATH` record | One final boundary consumed; others rejected |
 | `shell:arg` (planned) | One POSIX shell word | Preserved in the quoted word |
-| `markdown:text` (planned) | Markdown that renders the value as text | Preserved |
 
 Namespaced commands identify the interpretation context, not merely a data
 type. Provider-specific writers use the `PROVIDER:DESTINATION` form. Reusable
@@ -166,11 +164,6 @@ If included, `shell:arg` will emit one POSIX shell word. It would prevent
 shell-source injection when the result is parsed exactly once as one word. It
 does not encode an entire command line, make `eval` safe, prevent option
 injection, or repair an unsafe command interface.
-
-If included, `markdown:text` will emit Markdown that renders the input as plain
-text rather than as Markdown syntax or embedded HTML. It is intended for values
-written to job summaries, comments, and release notes. It does not sanitize
-arbitrary Markdown or HTML documents.
 
 ## Input and output contract
 

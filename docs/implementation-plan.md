@@ -148,8 +148,9 @@ extra operands are usage errors with status 2 and empty stdout. Input and policy
 rejections after a syntactically valid invocation use status 1.
 
 `github-actions:path` is not exposed as a functional command until its contract
-is complete. `shell:arg` and `markdown:text` likewise remain absent rather than
-shipping placeholders whose behavior could be mistaken for stable API.
+is complete. `shell:arg` likewise remains absent rather than shipping a
+placeholder whose behavior could be mistaken for stable API. `markdown:text`
+was subsequently removed from the v1.0 candidates after threat-model review.
 
 During incremental development, `--multiline` may be parsed but must not appear
 in release artifacts until it is implemented. In the first PR it is rejected

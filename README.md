@@ -9,10 +9,11 @@ Markdown contexts are under consideration for v1.0.
 
 Status: early implementation. The `github-actions:output`,
 `github-actions:env`, and `github-actions:path` writers are implemented;
-context encoders and release packaging remain planned.
+context encoders remain under consideration. Native release packaging,
+checksums, and provenance are implemented, but no release has been published.
 
-The initial native-binary packaging and publication contract is specified in
-the [release design](docs/release.md). No release has been published yet.
+The native-binary packaging and publication contract is specified in the
+[release design](docs/release.md).
 
 ## The problem
 

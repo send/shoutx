@@ -35,7 +35,6 @@ Reusable context encoders under consideration for v1.0:
 
 ```text
 shoutx shell:arg      [VALUE]
-shoutx markdown:text  [VALUE]
 ```
 
 ## Security invariants
@@ -302,12 +301,34 @@ shoutx deduplication guarantees.
 This is structural validation, not authorization. The caller must establish
 that the directory and executables reachable through it are trusted.
 
+## Markdown output decision
+
+`markdown:text` is not a v1.0 candidate. GitHub documents job summaries as
+[GitHub Flavored Markdown][job-summaries], and its documented
+[markup pipeline][github-markup] applies HTML sanitization before rendered
+content is displayed. A value written to `$GITHUB_STEP_SUMMARY` does not feed
+records back into the runner command protocol. Under the current threat model,
+there is therefore no comparable workflow-execution injection boundary for a
+generic Markdown encoder to protect.
+
+Attacker-controlled Markdown can still mislead readers, contain links, alter
+document structure, mention users, or disclose a value that the workflow chose
+to publish. Those are content-policy and data-flow concerns rather than the
+record-injection problem addressed by the implemented writers. Preserving
+normal Markdown usability while distinguishing malicious from intended content
+also requires application-specific policy.
+
+This decision does not cover an unredirected process writing attacker-controlled
+lines to the workflow log. GitHub Actions stdout workflow commands are a
+separate deferred boundary. A future Markdown feature requires a concrete
+threat and named rendering surface rather than a renderer-independent promise.
+
+[job-summaries]: https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-commands#adding-a-job-summary
+[github-markup]: https://github.com/github/markup#github-markup
+
 ## Open questions
 
 - Whether `shell:arg` belongs in v1.0 and which POSIX shells are covered.
-- Whether `markdown:text` belongs in v1.0 and what rendering guarantees it
-  can accurately make across supported surfaces.
-- Implementation language, packaging, and supported installation methods.
 - Whether provider extensions are compiled in, discovered as executables, or
   loaded through another plugin mechanism.
 - Compatibility and versioning rules for provider extensions.

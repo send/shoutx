@@ -58,8 +58,7 @@ The model aims to protect:
 - the structure and namespace of runner command-file records;
 - subsequent step environment state;
 - command lookup affected by `PATH`;
-- the integrity of generated shell and Markdown contexts, if their encoders are
-  included;
+- the integrity of generated shell contexts, if their encoder is included;
 - secrets, tokens, and sensitive values from disclosure in diagnostics; and
 - runner availability against unreasonable memory consumption by `shoutx`.
 
@@ -164,7 +163,7 @@ Other recognized boundaries are explicitly deferred:
 | Boundary | Status | Primary concern |
 | --- | --- | --- |
 | `$GITHUB_STATE` | Deferred | Named state records used by action `pre:`, `main:`, and `post:` phases |
-| `$GITHUB_STEP_SUMMARY` | Deferred to `markdown:text` design | GitHub Flavored Markdown interpretation |
+| `$GITHUB_STEP_SUMMARY` | Deferred; no generic Markdown writer planned | GitHub-rendered content integrity rather than runner command-file record injection |
 | stdout workflow commands | Deferred | Lines such as `::warning::`, `::add-mask::`, and `::stop-commands::` are runner control messages |
 | `$GITHUB_ARTIFACTS` | Deferred | One file or OCI declaration per line |
 | `$GITHUB_ARTIFACTS_LIST` | Out of scope | Runner-managed, read-only JSON input |
@@ -258,16 +257,27 @@ concatenation into a larger shell token without a documented composition rule.
 The recommended GitHub Actions pattern remains a value passed through `env:` and
 expanded as `"$VALUE"`. `shell:arg` is not a replacement for that data channel.
 
-### `markdown:text`
+### Markdown rendering
 
-If included in v1.0, the security property must be defined against GitHub
-Flavored Markdown and a named renderer. Rendering attacker-controlled input as
-text is different from sanitizing an existing Markdown or HTML document.
+`markdown:text` is not a v1.0 candidate. GitHub documents job summaries as
+[GitHub Flavored Markdown][job-summaries], and its documented
+[markup pipeline][github-markup] applies HTML sanitization before rendered
+content is displayed. A correctly redirected `$GITHUB_STEP_SUMMARY` write does
+not feed Markdown records back into workflow execution. Links, document
+structure, mentions, and misleading presentation remain possible, but treating
+all such features as unsafe would turn shoutx into an application-specific
+content-policy engine and reduce normal Markdown usability without addressing
+a comparable runner-protocol injection path.
 
-The design must separately consider links, autolinks, images, mentions, Unicode
-control characters, bidirectional text, and embedded HTML. XSS protection
-provided by the hosting renderer is outside `shoutx`'s control and must not be
-claimed without an explicit platform contract.
+This conclusion is specific to GitHub-rendered content. It does not treat the
+same bytes as safe for an arbitrary Markdown or HTML renderer, and it does not
+cover lines written to the workflow log: stdout workflow commands remain a
+separate deferred boundary. A future Markdown feature requires a concrete
+threat, a named rendering surface, and explicit decisions for links, images,
+mentions, Unicode controls, bidirectional text, and embedded HTML.
+
+[job-summaries]: https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-commands#adding-a-job-summary
+[github-markup]: https://github.com/github/markup#github-markup
 
 ## Attack and guarantee matrix
 

@@ -285,6 +285,26 @@ fn invalid_utf8_argv_is_rejected_without_echoing_it() {
 
 #[cfg(unix)]
 #[test]
+fn invalid_utf8_equals_separator_is_input_failure() {
+    use std::os::unix::ffi::OsStringExt;
+    let mut option = b"--join-lines-with=".to_vec();
+    option.push(0xff);
+    let output = Command::new(env!("CARGO_BIN_EXE_shoutx"))
+        .arg("github-actions:output")
+        .arg(OsString::from_vec(option))
+        .arg("r")
+        .arg("value")
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .output()
+        .unwrap();
+    assert_eq!(output.status.code(), Some(1));
+    assert!(output.stdout.is_empty());
+}
+
+#[cfg(unix)]
+#[test]
 fn broken_pipe_is_status_one_not_signal_termination() {
     use std::os::fd::OwnedFd;
     use std::os::unix::net::UnixStream;

@@ -2,6 +2,23 @@ use std::ffi::{OsStr, OsString};
 
 use crate::error::ShoutxError;
 
+#[cfg(unix)]
+fn strip_os_prefix(value: &OsStr, prefix: &[u8]) -> Option<OsString> {
+    use std::os::unix::ffi::{OsStrExt, OsStringExt};
+    value
+        .as_bytes()
+        .strip_prefix(prefix)
+        .map(|rest| OsString::from_vec(rest.to_vec()))
+}
+
+#[cfg(windows)]
+fn strip_os_prefix(value: &OsStr, prefix: &[u8]) -> Option<OsString> {
+    use std::os::windows::ffi::{OsStrExt, OsStringExt};
+    let wide: Vec<u16> = value.encode_wide().collect();
+    let prefix: Vec<u16> = prefix.iter().map(|byte| u16::from(*byte)).collect();
+    wide.strip_prefix(&prefix).map(OsString::from_wide)
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Destination {
     Output,
@@ -81,21 +98,25 @@ pub fn parse(args: Vec<OsString>) -> Result<Action, ShoutxError> {
                 "--multiline is not implemented in this build",
             ));
         }
-        if options
-            && (token_text == Some("--first-line")
-                || token_text == Some("--join-lines")
-                || token_text.is_some_and(|text| text.starts_with("--join-lines-with=")))
-        {
+        if options {
+            if let Some(separator) = strip_os_prefix(token, b"--join-lines-with=") {
+                if mode_set {
+                    return Err(ShoutxError::usage("line modes are mutually exclusive"));
+                }
+                mode = LineMode::Join(os_bytes(&separator)?.to_vec());
+                mode_set = true;
+                i += 1;
+                continue;
+            }
+        }
+        if options && (token_text == Some("--first-line") || token_text == Some("--join-lines")) {
             if mode_set {
                 return Err(ShoutxError::usage("line modes are mutually exclusive"));
             }
             mode = if token_text == Some("--first-line") {
                 LineMode::FirstLine
-            } else if token_text == Some("--join-lines") {
-                LineMode::Join(b" ".to_vec())
             } else {
-                let token_text = token_text.expect("equals form was matched");
-                LineMode::Join(token_text.as_bytes()["--join-lines-with=".len()..].to_vec())
+                LineMode::Join(b" ".to_vec())
             };
             mode_set = true;
             i += 1;

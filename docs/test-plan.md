@@ -251,6 +251,12 @@ absent, the list file is zero bytes, the enabled empty-list JSON remains
 unchanged, or the expected subject is absent. Public support is blocked until
 this probe passes across the supported matrix.
 
+The first hosted probe, run on 2026-09-28 against runner v2.337.0 on
+`ubuntu-latest`, `macos-latest`, and `windows-latest`, observed a zero-byte list
+file on every OS after writing a valid file declaration. This records a failed
+availability gate rather than a product test failure: keep the command deferred
+and repeat the same positive-subject assertion before starting implementation.
+
 ## Text validation
 
 Run these cases in every mode, including data that `--first-line` would later

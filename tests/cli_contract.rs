@@ -1,3 +1,4 @@
+use shoutx::ShoutxError;
 use shoutx::cli::{Destination, LineMode, WriteRequest};
 use std::{
     ffi::OsString,
@@ -124,7 +125,9 @@ fn stdin_is_binary_and_value_ignores_it() {
     let output = run(&["github-actions:output", "r"], Some(b"a\r\r\n"));
     assert_eq!(output.status.code(), Some(1));
     assert!(output.stdout.is_empty());
-    success(&["github-actions:output", "r", "argv"], b"r=argv\n");
+    let ignored = run(&["github-actions:output", "r", "argv"], Some(b"stdin"));
+    assert_eq!(ignored.status.code(), Some(0));
+    assert_eq!(ignored.stdout, b"r=argv\n");
 }
 
 #[test]
@@ -328,4 +331,100 @@ fn posix_runtime_substitutes_startup_closed_descriptors() {
         .output()
         .unwrap();
     assert_eq!(output_closed.status.code(), Some(0));
+}
+
+fn matrix_encode(
+    destination: Destination,
+    mode: LineMode,
+    input: &[u8],
+) -> Result<Vec<u8>, ShoutxError> {
+    shoutx::encode(
+        WriteRequest {
+            destination,
+            mode,
+            name: OsString::from("r"),
+            value: None,
+        },
+        input.to_vec(),
+    )
+}
+
+#[test]
+fn normative_line_matrix_all_modes_and_destinations() {
+    type MatrixRow = (
+        &'static [u8],
+        Option<&'static [u8]>,
+        &'static [u8],
+        &'static [u8],
+    );
+    let rows: &[MatrixRow] = &[
+        (b"", Some(b""), b"", b""),
+        (b"a", Some(b"a"), b"a", b"a"),
+        (b"a\n", Some(b"a"), b"a", b"a"),
+        (b"a\r", Some(b"a"), b"a", b"a"),
+        (b"a\r\n", Some(b"a"), b"a", b"a"),
+        (b"a\n\n", None, b"a", b"a "),
+        (b"a\r\n\r\n", None, b"a", b"a "),
+        (b"a\r\r", None, b"a", b"a "),
+        (b"a\nb\n", None, b"a", b"a b"),
+        (b"a\rb\r", None, b"a", b"a b"),
+        (b"a\r\nb\r\n", None, b"a", b"a b"),
+        (b"\na", None, b"", b" a"),
+        (b"a\n\r", None, b"a", b"a "),
+        (b"a\r\n", Some(b"a"), b"a", b"a"),
+    ];
+    for destination in [Destination::Output, Destination::Env] {
+        for (input, default, first, joined) in rows {
+            match default {
+                Some(expected) => {
+                    let out = matrix_encode(destination, LineMode::Default, input).unwrap();
+                    assert_eq!(&out[2..out.len() - 1], *expected);
+                }
+                None => assert!(matrix_encode(destination, LineMode::Default, input).is_err()),
+            }
+            let out = matrix_encode(destination, LineMode::FirstLine, input).unwrap();
+            assert_eq!(&out[2..out.len() - 1], *first);
+            let out = matrix_encode(destination, LineMode::Join(b" ".to_vec()), input).unwrap();
+            assert_eq!(&out[2..out.len() - 1], *joined);
+        }
+    }
+}
+
+#[test]
+fn invalid_and_multibyte_separators_are_covered() {
+    for separator in [
+        b"\r".to_vec(),
+        b"\n".to_vec(),
+        b"\0".to_vec(),
+        vec![b'x'; 256],
+    ] {
+        assert!(matrix_encode(Destination::Output, LineMode::Join(separator), b"plain").is_err());
+    }
+    let out = matrix_encode(
+        Destination::Output,
+        LineMode::Join("・".as_bytes().to_vec()),
+        b"a\nb",
+    )
+    .unwrap();
+    assert_eq!(out, "r=a・b\n".as_bytes());
+    for name in ["-bad", "has space", "bad<name"] {
+        let output = run(&["github-actions:output", "--", name, "x"], None);
+        assert_eq!(output.status.code(), Some(1));
+        assert!(output.stdout.is_empty());
+    }
+}
+
+#[cfg(unix)]
+#[test]
+fn failed_stderr_preserves_usage_status() {
+    let output = Command::new("sh")
+        .args([
+            "-c",
+            "exec \"$1\" --unknown 2>&-",
+            "sh",
+            env!("CARGO_BIN_EXE_shoutx"),
+        ])
+        .output()
+        .unwrap();
+    assert_eq!(output.status.code(), Some(2));
 }

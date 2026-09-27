@@ -23,6 +23,14 @@ try {
         throw "PowerShell did not pass inherited empty stdin through unchanged"
     }
 
+    $state = Join-Path $root 'state'
+    & $Binary github-actions:state GITHUB_ENV value > $state
+    if ($LASTEXITCODE -ne 0) { throw "state writer failed" }
+    $expectedState = [Text.Encoding]::UTF8.GetBytes("GITHUB_ENV=value`n")
+    if (-not [Linq.Enumerable]::SequenceEqual([byte[]](Get-Content -AsByteStream -Raw $state), $expectedState)) {
+        throw "PowerShell changed state stdout bytes"
+    }
+
     $rejectedBinary = Join-Path $root 'rejected-binary-stdin'
     & pwsh -NoProfile -Command `
         '[Console]::OpenStandardOutput().Write([byte[]](97,13,13,10))' |

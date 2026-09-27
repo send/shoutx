@@ -14,6 +14,10 @@ cmp "$tmp/expected-single" "$tmp/single"
 printf 'empty=\n' >"$tmp/expected-empty"
 cmp "$tmp/expected-empty" "$tmp/empty"
 
+"$binary" github-actions:state GITHUB_ENV value >"$tmp/state"
+printf 'GITHUB_ENV=value\n' >"$tmp/expected-state"
+cmp "$tmp/expected-state" "$tmp/state"
+
 printf 'value\r' | "$binary" github-actions:output --multiline result >>"$tmp/multiline"
 header=$(sed -n '1p' "$tmp/multiline")
 delimiter=${header#result<<}

@@ -92,6 +92,13 @@ jobs:
       - run: cargo +stable test --all-targets
       - run: cargo +stable clippy --all-targets -- -D warnings
       - run: cargo +stable build
+      - name: Dogfood GitHub action state
+        uses: ./tests/workflow-state-action
+        with:
+          binary: ${{ github.workspace }}/target/debug/shoutx
+      - name: Verify state is not a step environment export
+        shell: bash
+        run: test -z "${STATE_Result+x}"
       - name: Dogfood GitHub environment files on POSIX
         id: dogfood_posix
         if: runner.os != 'Windows'

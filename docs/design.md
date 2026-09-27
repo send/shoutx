@@ -28,13 +28,8 @@ Provider-specific writers:
 ```text
 shoutx github-actions:output [--first-line | --join-lines | --join-lines-with STRING | --multiline] NAME [VALUE]
 shoutx github-actions:env    [--first-line | --join-lines | --join-lines-with STRING | --multiline] NAME [VALUE]
-shoutx github-actions:path   [VALUE]
-```
-
-Specified for a future release, but not yet implemented:
-
-```text
 shoutx github-actions:state  [--first-line | --join-lines | --join-lines-with STRING | --multiline] NAME [VALUE]
+shoutx github-actions:path   [VALUE]
 ```
 
 Reusable context encoders under consideration for v1.0:

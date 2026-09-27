@@ -19,11 +19,67 @@ using GitHub.Runner.Worker.Container.ContainerHooks;
 using GitHub.Runner.Worker.Handlers;
 using Moq;
 using Xunit;
+using Pipelines = GitHub.DistributedTask.Pipelines;
 
 namespace GitHub.Runner.Common.Tests.Worker;
 
 public sealed class ShoutxDifferentialL0
 {
+    [Fact]
+    [Trait("Level", "L0")]
+    [Trait("Category", "Worker")]
+    public void StateUsesRunnerCreatedCaseInsensitiveDictionary()
+    {
+        using var host = new TestHostContext(this);
+        Directory.CreateDirectory(host.GetDirectory(WellKnownDirectory.Work));
+        var pagingLogger = new Mock<IPagingLogger>();
+        var childPagingLogger = new Mock<IPagingLogger>();
+        var jobServerQueue = new Mock<IJobServerQueue>();
+        jobServerQueue.Setup(x => x.QueueTimelineRecordUpdate(It.IsAny<Guid>(), It.IsAny<TimelineRecord>()));
+        host.EnqueueInstance(pagingLogger.Object);
+        host.EnqueueInstance(childPagingLogger.Object);
+        host.SetSingleton(jobServerQueue.Object);
+        var configurationStore = new Mock<IConfigurationStore>();
+        configurationStore.Setup(x => x.GetSettings()).Returns(new RunnerSettings());
+        host.SetSingleton(configurationStore.Object);
+
+        var jobRequest = new Pipelines.AgentJobRequestMessage(
+            new TaskOrchestrationPlanReference(), new TimelineReference(), Guid.NewGuid(),
+            "state", "state", null, null, null, new Dictionary<string, VariableValue>(),
+            new List<MaskHint>(), new Pipelines.JobResources(),
+            new Pipelines.ContextData.DictionaryContextData(), new Pipelines.WorkspaceOptions(),
+            new List<Pipelines.ActionStep>(), null, null, null, null, null);
+        jobRequest.Resources.Repositories.Add(new Pipelines.RepositoryResource
+        {
+            Alias = Pipelines.PipelineConstants.SelfAlias,
+            Id = "github",
+            Version = "sha1",
+        });
+        jobRequest.ContextData["github"] = new Pipelines.ContextData.DictionaryContextData();
+
+        var root = new Runner.Worker.ExecutionContext();
+        root.Initialize(host);
+        root.InitializeJob(jobRequest, CancellationToken.None);
+        var child = root.CreateChild(
+            Guid.NewGuid(), "state", "state", null, null, ActionRunStage.Main);
+        var path = Path.GetTempFileName();
+        try
+        {
+            File.WriteAllText(path, "Result=first\nresult=second\n");
+            var command = new SaveStateFileCommand();
+            command.Initialize(host);
+            command.ProcessCommand(child, path, null!);
+
+            Assert.Single(child.IntraActionState);
+            Assert.Equal("Result", child.IntraActionState.Keys.Single());
+            Assert.Equal("second", child.IntraActionState["RESULT"]);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
 #if !OS_WINDOWS
     [Fact]
     [Trait("Level", "L0")]

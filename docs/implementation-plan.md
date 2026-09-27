@@ -441,9 +441,9 @@ Linux and Windows runner differential cases, shell smoke tests, and the public
 command. It must not inherit output/environment parser assumptions by code
 reuse.
 
-## Next implementation PR: `github-actions:state`
+## `github-actions:state` implementation increment
 
-The state contract is specified after v0.1.0 and implemented as a small
+The state contract was specified after v0.1.0 and implemented as a small
 named-writer extension. Add the command to the manual parser and help output,
 reuse the shared value, line-mode, multiline-framing, size, and record
 construction paths, and add a state name policy that shares the environment
@@ -457,9 +457,8 @@ would make the oracle self-validating. Prove exact value round trips and that a
 case-colliding later record replaces the value while retaining the first name
 spelling. Add a local JavaScript fixture action whose `main` phase writes state
 through shoutx and whose `post` phase verifies `STATE_NAME`. Keep
-shell-redirection coverage in the shared named-writer matrix. Documentation
-must continue to label the command unavailable until this implementation PR
-lands.
+shell-redirection coverage in the shared named-writer matrix. Public
+documentation exposes the command only with the completed implementation.
 
 ## CI and quality gates
 

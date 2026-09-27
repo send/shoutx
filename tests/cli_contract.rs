@@ -110,6 +110,12 @@ fn help_version_and_grammar_contract() {
         let output = run(args, None);
         assert_eq!(output.status.code(), Some(0));
         assert!(output.stdout.starts_with(b"shoutx -"));
+        assert!(
+            output
+                .stdout
+                .windows(b"github-actions:state".len())
+                .any(|part| part == b"github-actions:state")
+        );
     }
     let version = run(&["--version"], None);
     assert_eq!(version.status.code(), Some(0));
@@ -192,6 +198,39 @@ fn output_and_env_name_policies_differ() {
 }
 
 #[test]
+fn state_name_policy_uses_portable_grammar_without_env_reservations() {
+    for name in ["a", "_", "A0", "GITHUB_ENV", "RUNNER_OS", "NODE_OPTIONS"] {
+        success(
+            &["github-actions:state", name, "x"],
+            format!("{name}=x\n").as_bytes(),
+        );
+    }
+    let max_name = format!("a{}", "b".repeat(254));
+    success(
+        &["github-actions:state", &max_name, "x"],
+        format!("{max_name}=x\n").as_bytes(),
+    );
+    let too_long = format!("a{}", "b".repeat(255));
+    for name in [
+        "",
+        "1bad",
+        "-bad",
+        "has space",
+        "bad-name",
+        "bad=name",
+        "bad<name",
+        "bad\rname",
+        "bad\nname",
+        "é",
+        &too_long,
+    ] {
+        let output = run(&["github-actions:state", "--", name, "x"], None);
+        assert_eq!(output.status.code(), Some(1), "{name:?}");
+        assert!(output.stdout.is_empty(), "{name:?}");
+    }
+}
+
+#[test]
 fn failures_have_empty_stdout_and_stable_statuses() {
     for (args, expected) in [
         (vec!["github-actions:output", "r", "a\nb"], 1),
@@ -267,7 +306,7 @@ fn multiline_round_trips_exact_values_and_is_appendable() {
         b"\xef\xbb\xbfvalue",
         b"::stop-commands::TOKEN\nname=value",
     ];
-    for destination in [Destination::Output, Destination::Env] {
+    for destination in [Destination::Output, Destination::Env, Destination::State] {
         for (target, platform) in [
             (TargetOs::Linux, Platform::Posix),
             (TargetOs::MacOs, Platform::Posix),
@@ -770,7 +809,7 @@ fn normative_line_matrix_all_modes_and_destinations() {
         (b"a\n\r", None, b"a", b"a "),
         (b"a\r\n", Some(b"a"), b"a", b"a"),
     ];
-    for destination in [Destination::Output, Destination::Env] {
+    for destination in [Destination::Output, Destination::Env, Destination::State] {
         for (input, default, first, joined) in rows {
             match default {
                 Some(expected) => {

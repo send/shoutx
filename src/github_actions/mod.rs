@@ -1,8 +1,46 @@
 mod name;
 mod normalize;
+mod random;
 mod record;
 
+use std::ffi::OsStr;
+
 use crate::{cli::WriteRequest, error::ShoutxError, input::VALUE_LIMIT};
+
+pub use random::{OsRandom, RandomSource};
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum TargetOs {
+    Linux,
+    MacOs,
+    Windows,
+    Unknown,
+}
+
+impl TargetOs {
+    pub fn from_runner_os(value: Option<&OsStr>) -> Self {
+        match value.and_then(OsStr::to_str) {
+            Some("Linux") => Self::Linux,
+            Some("macOS") => Self::MacOs,
+            Some("Windows") => Self::Windows,
+            Some(_) => Self::Unknown,
+            None if value.is_some() => Self::Unknown,
+            None => Self::native(),
+        }
+    }
+
+    pub const fn native() -> Self {
+        if cfg!(windows) {
+            Self::Windows
+        } else if cfg!(target_os = "macos") {
+            Self::MacOs
+        } else if cfg!(target_os = "linux") {
+            Self::Linux
+        } else {
+            Self::Unknown
+        }
+    }
+}
 
 pub fn validate_request(request: &WriteRequest) -> Result<(), ShoutxError> {
     name::validate(request.destination, &request.name)?;
@@ -13,6 +51,15 @@ pub fn validate_request(request: &WriteRequest) -> Result<(), ShoutxError> {
 }
 
 pub fn encode(request: WriteRequest, value: Vec<u8>) -> Result<Vec<u8>, ShoutxError> {
+    encode_with(request, value, TargetOs::native(), &mut OsRandom)
+}
+
+pub fn encode_with(
+    request: WriteRequest,
+    value: Vec<u8>,
+    target_os: TargetOs,
+    random: &mut impl RandomSource,
+) -> Result<Vec<u8>, ShoutxError> {
     validate_request(&request)?;
     if value.len() > VALUE_LIMIT {
         return Err(ShoutxError::failure("value exceeds size limit"));
@@ -22,6 +69,11 @@ pub fn encode(request: WriteRequest, value: Vec<u8>) -> Result<Vec<u8>, ShoutxEr
         return Err(ShoutxError::failure("value contains NUL"));
     }
     let name = name::validate(request.destination, &request.name)?;
-    let normalized = normalize::apply(request.mode, value)?;
-    record::single_line(name, normalized)
+    match request.mode {
+        crate::cli::LineMode::Multiline => record::multiline(name, value, target_os, random),
+        mode => {
+            let normalized = normalize::apply(mode, value)?;
+            record::single_line(name, normalized)
+        }
+    }
 }

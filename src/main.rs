@@ -46,7 +46,15 @@ fn run() -> Result<(), ShoutxError> {
                     .map_err(|_| ShoutxError::failure("failed to open stdin"))?;
                 shoutx::input::read_bounded(&mut stdin)?
             };
-            let record = shoutx::encode(request, value)?;
+            let target_os = shoutx::github_actions::TargetOs::from_runner_os(
+                std::env::var_os("RUNNER_OS").as_deref(),
+            );
+            let record = shoutx::github_actions::encode_with(
+                request,
+                value,
+                target_os,
+                &mut shoutx::github_actions::OsRandom,
+            )?;
             output(&record)
         }
     }

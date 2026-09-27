@@ -24,6 +24,7 @@ pub fn apply(mode: LineMode, mut value: Vec<u8>) -> Result<Vec<u8>, ShoutxError>
             Ok(value)
         }
         LineMode::Join(separator) => join(value, separator),
+        LineMode::Multiline => unreachable!("multiline values bypass normalization"),
     }
 }
 

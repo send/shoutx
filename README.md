@@ -104,8 +104,6 @@ GitHub Actions writers:
   shoutx github-actions:state  [--first-line | --join-lines | --join-lines-with STRING | --multiline] NAME [VALUE]
   shoutx github-actions:path   [VALUE]
 
-Context encoders under consideration for v1.0 (not yet specified):
-  shoutx shell:arg             [VALUE]
 ```
 
 | Command | Produces | Line-break behavior |
@@ -114,7 +112,6 @@ Context encoders under consideration for v1.0 (not yet specified):
 | `github-actions:env` | One `$GITHUB_ENV` record | Internal boundaries rejected by default; explicit normalization |
 | `github-actions:path` | One `$GITHUB_PATH` record | One final boundary consumed; others rejected |
 | `github-actions:state` | One `$GITHUB_STATE` record | Internal boundaries rejected by default; explicit normalization |
-| `shell:arg` (under consideration) | One POSIX shell word | Preserved in the quoted word |
 
 Namespaced commands identify the interpretation context, not merely a data
 type. Provider-specific writers use the `PROVIDER:DESTINATION` form. Reusable
@@ -170,10 +167,12 @@ interpreted as stdout workflow commands by the runner.
 
 ## Context encoders
 
-If included, `shell:arg` will emit one POSIX shell word. It would prevent
-shell-source injection when the result is parsed exactly once as one word. It
-does not encode an entire command line, make `eval` safe, prevent option
-injection, or repair an unsafe command interface.
+No context encoder is currently planned for v1.0. The former `shell:arg`
+candidate was deferred because shell quoting emitted at runtime cannot be
+consumed as syntax through command substitution. It is useful only while
+generating source for a later shell parse, where a single-word encoder cannot
+enforce safe composition. Prefer an argv-capable API, or use `env:` and
+`"$VALUE"` in GitHub Actions. See the [design decision](docs/design.md#deferred-posix-shell-word-encoder).
 
 ## Input and output contract
 
@@ -266,7 +265,8 @@ the value safe for every later use.
 
 For example, `github-actions:output` prevents a value from injecting another
 GitHub Actions output record. If a later step interpolates that value into shell
-source, that later shell boundary still requires a safe API or `shell:arg`.
+source, that later shell boundary still requires a safe structured API;
+`shoutx` does not currently provide one.
 
 Values may also require application-level validation. A safely encoded path can
 still identify an attacker-controlled directory and hijack command lookup. A

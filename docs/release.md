@@ -173,3 +173,29 @@ The release-workflow PR must demonstrate, without publishing a real release:
 
 Creating the first tag and publishing the first release remain explicit
 maintainer actions after that PR is merged.
+
+## Verifying a published release
+
+Download an archive together with `SHA256SUMS`, then verify the archive digest
+from the directory containing both files:
+
+```sh
+sha256sum --check --ignore-missing SHA256SUMS
+```
+
+On macOS, the equivalent command is:
+
+```sh
+shasum --algorithm 256 --check SHA256SUMS
+```
+
+Checksum verification proves that the archive matches the manifest. To also
+verify that GitHub Actions built that exact archive from this repository, use
+the GitHub CLI:
+
+```sh
+gh attestation verify shoutx-vVERSION-TARGET.EXT --repo send/shoutx
+```
+
+Replace `VERSION`, `TARGET`, and `EXT` with the downloaded asset name. Perform
+these checks before extracting or executing the archive.

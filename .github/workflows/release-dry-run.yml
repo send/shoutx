@@ -1,7 +1,10 @@
-name: Release dry run
+name: Release
 
 on:
   workflow_dispatch:
+  push:
+    tags:
+      - v*
   pull_request:
     paths:
       - .github/workflows/release-dry-run.yml
@@ -9,13 +12,23 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   metadata:
+    permissions:
+      contents: read
+      checks: read
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     outputs:
       version: ${{ steps.package.outputs.version }}
       toolchain: ${{ steps.toolchain.outputs.channel }}
+      publish: ${{ steps.package.outputs.publish }}
+      tag: ${{ steps.package.outputs.tag }}
+      prerelease: ${{ steps.package.outputs.prerelease }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -32,6 +45,11 @@ jobs:
       - run: rustup toolchain install '${{ steps.toolchain.outputs.channel }}' --profile minimal
       - id: package
         shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
+          COMMIT_SHA: ${{ github.sha }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           version=$(cargo metadata --format-version 1 --no-deps --locked |
             jq -er '.packages[] | select(.name == "shoutx") | .version')
@@ -40,6 +58,29 @@ jobs:
             exit 1
           fi
           echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=v$version" >> "$GITHUB_OUTPUT"
+          if [[ "$version" == *-* ]]; then
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          if [[ "$EVENT_NAME" != "push" ]]; then
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [[ "$REF_NAME" != "v$version" ]]; then
+            echo "Tag does not match the Cargo package version"
+            exit 1
+          fi
+          successful_ci=$(gh api \
+            "repos/$GITHUB_REPOSITORY/commits/$COMMIT_SHA/check-runs" \
+            --jq '[.check_runs[] | select(.name == "CI result" and .conclusion == "success")] | length')
+          if [[ "$successful_ci" -lt 1 ]]; then
+            echo "The tagged commit does not have a successful CI result"
+            exit 1
+          fi
+          echo "publish=true" >> "$GITHUB_OUTPUT"
 
   build:
     needs: metadata
@@ -138,6 +179,78 @@ jobs:
           path: dist/shoutx-v${{ needs.metadata.outputs.version }}-${{ matrix.target }}.${{ matrix.extension }}
           if-no-files-found: error
           retention-days: 2
+
+  publish:
+    if: ${{ needs.metadata.outputs.publish == 'true' }}
+    needs: [metadata, aggregate]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: ${{ needs.metadata.outputs.tag }}
+      PRERELEASE: ${{ needs.metadata.outputs.prerelease }}
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: release-dry-run
+          path: dist
+      - name: Reverify publication inputs
+        shell: bash
+        run: |
+          test "$(find dist -maxdepth 1 -type f | wc -l | tr -d ' ')" = 6
+          (cd dist && sha256sum --check SHA256SUMS)
+      - name: Attest release assets
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6
+        with:
+          subject-path: dist/*
+      - name: Create or reset draft release
+        shell: bash
+        run: |
+          set +e
+          release=$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$TAG" 2>/dev/null)
+          found=$?
+          set -e
+          if [[ "$found" -eq 0 ]]; then
+            if [[ "$(jq -r '.draft' <<< "$release")" != "true" ]]; then
+              echo "A published release already exists for this tag"
+              exit 1
+            fi
+            release_id=$(jq -r '.id' <<< "$release")
+            gh api "repos/$GITHUB_REPOSITORY/releases/$release_id/assets" --paginate \
+              --jq '.[].id' | while IFS= read -r asset_id; do
+                gh api --method DELETE \
+                  "repos/$GITHUB_REPOSITORY/releases/assets/$asset_id"
+              done
+          elif [[ "$found" -eq 1 ]]; then
+            args=("$TAG" --draft --verify-tag --generate-notes)
+            if [[ "$PRERELEASE" == "true" ]]; then
+              args+=(--prerelease)
+            fi
+            gh release create "${args[@]}"
+          else
+            exit "$found"
+          fi
+      - name: Upload and verify draft assets
+        shell: bash
+        run: |
+          gh release upload "$TAG" dist/*
+          mkdir downloaded
+          gh release download "$TAG" --dir downloaded
+          diff -u dist/SHA256SUMS downloaded/SHA256SUMS
+          (cd downloaded && sha256sum --check SHA256SUMS)
+          test "$(find downloaded -maxdepth 1 -type f | wc -l | tr -d ' ')" = 6
+      - name: Publish verified release
+        shell: bash
+        run: |
+          if [[ "$PRERELEASE" == "true" ]]; then
+            gh release edit "$TAG" --draft=false --prerelease --latest=false
+          else
+            gh release edit "$TAG" --draft=false --prerelease=false --latest
+          fi
 
   aggregate:
     needs: [metadata, build]

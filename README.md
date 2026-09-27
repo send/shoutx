@@ -181,11 +181,12 @@ arbitrary Markdown or HTML documents.
   selects CRLF framing so the Windows runner preserves that CR. If `RUNNER_OS`
   is absent, the native OS is used; an unrecognized value is rejected only when
   this framing distinction matters.
-- Supported redirection must preserve native stdout bytes. POSIX `sh`/`bash`
-  redirection and PowerShell Core 7.4 or later direct redirection are intended
-  targets, but PowerShell is not part of the release guarantee until
-  differential tests pass. Older PowerShell versions, text-writing cmdlets, and
-  merged stderr/stdout redirection are unsupported.
+- Supported redirection must preserve native stdout bytes. CI verifies POSIX
+  `sh`/Bash on Linux, Bash on macOS, and PowerShell Core 7.4+ plus Git Bash on
+  Windows. These shell tests run alongside differential tests against the
+  pinned GitHub Actions runner v2.337.0 parser. Windows PowerShell 5.1, older
+  PowerShell Core versions, text-writing cmdlets, and merged stderr/stdout
+  redirection are unsupported.
 - A non-zero `shoutx` status must also be propagated by the workflow shell.
   PowerShell callers must enable native-command error propagation or check
   `$LASTEXITCODE` immediately after each invocation.
@@ -270,6 +271,21 @@ shoutx azure-pipelines:variable ...
 ```
 
 The exact plugin distribution and discovery mechanism is not yet specified.
+
+## Development
+
+Rust development uses the toolchain pinned by `rust-toolchain.toml`; normal
+builds and tests require only Cargo. The pinned `actions/runner` differential
+suite additionally needs .NET SDK 8.0.424. `mise.toml` can install that SDK for
+local development, but mise is optional:
+
+```sh
+mise install
+scripts/test-runner-oracle.sh
+```
+
+CI installs the same SDK directly and runs the oracle natively on Linux and
+Windows.
 
 ## License
 

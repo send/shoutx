@@ -8,6 +8,7 @@ pub type Record = (Vec<u8>, Vec<u8>);
 
 pub fn parse(input: &[u8], platform: Platform) -> Result<Vec<Record>, &'static str> {
     std::str::from_utf8(input).map_err(|_| "invalid UTF-8")?;
+    let input = input.strip_prefix(b"\xef\xbb\xbf").unwrap_or(input);
     let mut records = Vec::new();
     let mut index = 0;
     while let Some((line, _)) = read_line(input, &mut index, platform) {

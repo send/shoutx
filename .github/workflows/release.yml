@@ -7,6 +7,7 @@ on:
       - v*
   pull_request:
     paths:
+      - .github/scripts/install-shoutx.sh
       - .github/workflows/release.yml
 
 permissions:
@@ -33,15 +34,19 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
+      - name: Install pinned shoutx release
+        shell: bash
+        run: .github/scripts/install-shoutx.sh
       - id: toolchain
         shell: bash
         run: |
+          shoutx="$RUNNER_TEMP/shoutx-bootstrap/bin/shoutx"
           channel=$(sed -n 's/^channel = "\([^"]*\)"$/\1/p' rust-toolchain.toml)
           if [[ ! "$channel" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "Rust toolchain must be one exact stable version"
             exit 1
           fi
-          echo "channel=$channel" >> "$GITHUB_OUTPUT"
+          "$shoutx" github-actions:output channel "$channel" >> "$GITHUB_OUTPUT"
       - run: rustup toolchain install '${{ steps.toolchain.outputs.channel }}' --profile minimal
       - id: package
         shell: bash
@@ -51,22 +56,23 @@ jobs:
           COMMIT_SHA: ${{ github.sha }}
           GH_TOKEN: ${{ github.token }}
         run: |
+          shoutx="$RUNNER_TEMP/shoutx-bootstrap/bin/shoutx"
           version=$(cargo metadata --format-version 1 --no-deps --locked |
             jq -er '.packages[] | select(.name == "shoutx") | .version')
           if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
             echo "Unsupported release version"
             exit 1
           fi
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-          echo "tag=v$version" >> "$GITHUB_OUTPUT"
+          "$shoutx" github-actions:output version "$version" >> "$GITHUB_OUTPUT"
+          "$shoutx" github-actions:output tag "v$version" >> "$GITHUB_OUTPUT"
           if [[ "$version" == *-* ]]; then
-            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+            "$shoutx" github-actions:output prerelease true >> "$GITHUB_OUTPUT"
           else
-            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+            "$shoutx" github-actions:output prerelease false >> "$GITHUB_OUTPUT"
           fi
 
           if [[ "$EVENT_NAME" != "push" ]]; then
-            echo "publish=false" >> "$GITHUB_OUTPUT"
+            "$shoutx" github-actions:output publish false >> "$GITHUB_OUTPUT"
             exit 0
           fi
           if [[ "$REF_NAME" != "v$version" ]]; then
@@ -82,7 +88,7 @@ jobs:
             echo "The latest CI workflow run for the tagged commit is not successful"
             exit 1
           fi
-          echo "publish=true" >> "$GITHUB_OUTPUT"
+          "$shoutx" github-actions:output publish true >> "$GITHUB_OUTPUT"
 
   build:
     needs: metadata

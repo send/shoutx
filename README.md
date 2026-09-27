@@ -9,8 +9,9 @@ Markdown contexts are under consideration for v1.0.
 
 Status: early implementation. The `github-actions:output`,
 `github-actions:env`, and `github-actions:path` writers are implemented;
-context encoders remain under consideration. Native release packaging,
-checksums, and provenance are implemented, but no release has been published.
+context encoders remain under consideration. Native binaries, checksums, and
+provenance are available from the
+[GitHub releases](https://github.com/send/shoutx/releases).
 
 The native-binary packaging and publication contract is specified in the
 [release design](docs/release.md).

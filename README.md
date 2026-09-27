@@ -11,6 +11,9 @@ Status: early implementation. The `github-actions:output`,
 `github-actions:env`, and `github-actions:path` writers are implemented;
 context encoders and release packaging remain planned.
 
+The initial native-binary packaging and publication contract is specified in
+the [release design](docs/release.md). No release has been published yet.
+
 ## The problem
 
 CI workflows routinely move untrusted values across interpretation boundaries:

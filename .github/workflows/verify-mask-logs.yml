@@ -70,8 +70,12 @@ jobs:
             job_log="$RUNNER_TEMP/job-$job_id.log"
             downloaded=false
             for attempt in {1..6}; do
-              if gh api --allow-escape-sequences \
-                "repos/$GH_REPO/actions/jobs/$job_id/logs" > "$job_log"
+              if curl --fail --location --silent --show-error \
+                --header "Authorization: Bearer $GH_TOKEN" \
+                --header "Accept: application/vnd.github+json" \
+                --header "X-GitHub-Api-Version: 2026-03-10" \
+                "https://api.github.com/repos/$GH_REPO/actions/jobs/$job_id/logs" \
+                > "$job_log"
               then
                 downloaded=true
                 break

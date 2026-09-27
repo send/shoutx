@@ -213,6 +213,20 @@ jobs:
       - name: Create or reset draft release
         shell: bash
         run: |
+          tag_object=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG")
+          tag_type=$(jq -r '.object.type' <<< "$tag_object")
+          tag_sha=$(jq -r '.object.sha' <<< "$tag_object")
+          for _ in {1..8}; do
+            [[ "$tag_type" == "tag" ]] || break
+            tag_object=$(gh api "repos/$GITHUB_REPOSITORY/git/tags/$tag_sha")
+            tag_type=$(jq -r '.object.type' <<< "$tag_object")
+            tag_sha=$(jq -r '.object.sha' <<< "$tag_object")
+          done
+          if [[ "$tag_type" != "commit" || "$tag_sha" != "$GITHUB_SHA" ]]; then
+            echo "The release tag no longer resolves to the triggering commit"
+            exit 1
+          fi
+
           set +e
           release=$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$TAG" 2>/dev/null)
           found=$?
@@ -249,22 +263,53 @@ jobs:
       - name: Publish verified release
         shell: bash
         run: |
+          tag_object=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG")
+          tag_type=$(jq -r '.object.type' <<< "$tag_object")
+          tag_sha=$(jq -r '.object.sha' <<< "$tag_object")
+          for _ in {1..8}; do
+            [[ "$tag_type" == "tag" ]] || break
+            tag_object=$(gh api "repos/$GITHUB_REPOSITORY/git/tags/$tag_sha")
+            tag_type=$(jq -r '.object.type' <<< "$tag_object")
+            tag_sha=$(jq -r '.object.sha' <<< "$tag_object")
+          done
+          if [[ "$tag_type" != "commit" || "$tag_sha" != "$GITHUB_SHA" ]]; then
+            echo "The release tag no longer resolves to the triggering commit"
+            exit 1
+          fi
+
           if [[ "$PRERELEASE" == "true" ]]; then
             gh release edit "$TAG" --draft=false --prerelease --latest=false
           else
+            latest_file=$(mktemp)
             set +e
-            current_latest=$(gh release view --json tagName --jq .tagName 2>/dev/null)
-            latest_found=$?
+            latest_status=$(curl --silent --show-error \
+              --output "$latest_file" --write-out '%{http_code}' \
+              --header "Authorization: Bearer $GH_TOKEN" \
+              --header "Accept: application/vnd.github+json" \
+              --header "X-GitHub-Api-Version: 2022-11-28" \
+              "$GH_API_URL/repos/$GITHUB_REPOSITORY/releases/latest")
+            curl_status=$?
             set -e
-            if [[ "$latest_found" -eq 0 && "$current_latest" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            if [[ "$curl_status" -ne 0 ]]; then
+              exit "$curl_status"
+            elif [[ "$latest_status" == "200" ]]; then
+              current_latest=$(jq -er '.tag_name' "$latest_file")
+            elif [[ "$latest_status" == "404" ]]; then
+              current_latest=""
+            else
+              echo "Latest release lookup failed with HTTP $latest_status"
+              exit 1
+            fi
+            if [[ "$current_latest" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
               greatest=$(printf '%s\n%s\n' "$current_latest" "$TAG" |
                 LC_ALL=C sort -V | tail -n 1)
               if [[ "$greatest" != "$TAG" ]]; then
                 echo "Refusing to move the latest release pointer backward"
                 exit 1
               fi
-            elif [[ "$latest_found" -ne 0 && "$latest_found" -ne 1 ]]; then
-              exit "$latest_found"
+            elif [[ -n "$current_latest" ]]; then
+              echo "Current latest release has an unsupported tag"
+              exit 1
             fi
             gh release edit "$TAG" --draft=false --prerelease=false --latest
           fi

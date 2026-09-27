@@ -5,6 +5,7 @@ root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 runner_commit=397b032cbf865e9c3ddfab89d533ec19325e1273
 runner_dir="$root/target/runner-oracle/actions-runner"
 corpus="$root/target/runner-oracle/corpus.json"
+path_corpus="$root/target/runner-oracle/path-corpus.json"
 staging_dir=
 
 cleanup() {
@@ -70,6 +71,8 @@ cd "$root"
 mkdir -p "$(dirname -- "$corpus")"
 SHOUTX_CORPUS_PATH="$corpus" \
   cargo test --test runner_differential_fixture export_runner_corpus -- --ignored
+SHOUTX_PATH_CORPUS_PATH="$path_corpus" \
+  cargo test --test path_runner_fixture export_path_corpus -- --ignored
 cp tests/runner-oracle/ShoutxDifferentialL0.cs \
   "$runner_dir/src/Test/L0/Worker/ShoutxDifferentialL0.cs"
 (
@@ -83,7 +86,7 @@ cp tests/runner-oracle/ShoutxDifferentialL0.cs \
     --configuration Release \
     -p:PackageRuntime="$runtime" \
     -p:NuGetAudit=false
-  SHOUTX_CORPUS="$corpus" DOTNET_CLI_TELEMETRY_OPTOUT=1 \
+  SHOUTX_CORPUS="$corpus" SHOUTX_PATH_CORPUS="$path_corpus" DOTNET_CLI_TELEMETRY_OPTOUT=1 \
     dotnet_run test Test/Test.csproj \
     --configuration Release \
     --no-build \

@@ -53,6 +53,18 @@ try {
         throw "PowerShell changed CR-sensitive multiline stdout bytes"
     }
 
+    $pathOutput = Join-Path $root 'path'
+    & $Binary github-actions:path 'C:\tools' > $pathOutput
+    if ($LASTEXITCODE -ne 0) { throw "path writer failed" }
+    $expectedPath = [Text.Encoding]::UTF8.GetBytes("C:\tools`n")
+    if (-not [Linq.Enumerable]::SequenceEqual([byte[]](Get-Content -AsByteStream -Raw $pathOutput), $expectedPath)) {
+        throw "PowerShell changed path stdout bytes"
+    }
+    & $Binary github-actions:path 'C:\bad;path' > (Join-Path $root 'rejected-path')
+    if ($LASTEXITCODE -ne 1 -or (Get-Item (Join-Path $root 'rejected-path')).Length -ne 0) {
+        throw "unsafe path was accepted"
+    }
+
     $legacy = Join-Path $root 'legacy-powershell'
     & powershell.exe -NoProfile -Command `
         "& '$Binary' github-actions:output result value >> '$legacy'"

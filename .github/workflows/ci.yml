@@ -107,8 +107,11 @@ jobs:
         shell: pwsh
         run: |
           cargo +stable test --test runner_differential_fixture local_model_matches_shared_runner_corpus
+          cargo +stable test --test path_runner_fixture local_path_model_matches_shared_corpus
           $env:SHOUTX_CORPUS_PATH = "$pwd/target/runner-oracle/corpus.json"
           cargo +stable test --test runner_differential_fixture export_runner_corpus -- --ignored
+          $env:SHOUTX_PATH_CORPUS_PATH = "$pwd/target/runner-oracle/path-corpus.json"
+          cargo +stable test --test path_runner_fixture export_path_corpus -- --ignored
       - name: Build pinned runner oracle
         shell: pwsh
         working-directory: target/runner-oracle/actions-runner/src
@@ -123,6 +126,7 @@ jobs:
         working-directory: target/runner-oracle/actions-runner/src
         env:
           SHOUTX_CORPUS: ${{ github.workspace }}/target/runner-oracle/corpus.json
+          SHOUTX_PATH_CORPUS: ${{ github.workspace }}/target/runner-oracle/path-corpus.json
         run: |
           dotnet test Test/Test.csproj `
             --configuration Release `

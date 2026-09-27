@@ -233,7 +233,9 @@ U+FEFF, whose preservation would otherwise depend on whether the record begins
 the file. Target selection follows trusted `RUNNER_OS`, with native fallback;
 an unknown value is rejected. It rejects `"` on every target because the
 runner's container step host embeds PATH in a quoted `docker exec` argument
-string.
+string. For the same boundary, a POSIX path ending in backslash is rejected
+because .NET argument re-tokenization can consume backslashes or the closing
+quote and change the resulting argument.
 
 There is no encoding that makes an attacker-controlled directory safe to add to
 `PATH`. An attacker who controls a directory earlier in command lookup may place
@@ -277,6 +279,7 @@ claimed without an explicit platform contract.
 | Multiple PATH entries through a line break | Yes | Consume only one optional final boundary and reject remaining CR/LF |
 | Multiple effective PATH entries through the PATH separator | Yes | Reject `:` for POSIX targets and `;` for Windows targets |
 | Container runtime option injection through PATH quoting | Yes | Reject `"` on every target before the runner constructs `docker exec` arguments |
+| Container path identity change through argument re-tokenization | Yes | Reject a trailing backslash for POSIX targets |
 | Append-position-dependent leading BOM | Yes | Reject a leading U+FEFF before output |
 | Relative PATH resolution against a later working directory | Yes | Require a fully qualified target-platform path |
 | Invalid UTF-8 or NUL | Yes | Reject before output begins |
@@ -399,6 +402,8 @@ entries from selecting a different provider implementation.
 - values containing secrets without diagnostic disclosure;
 - absolute POSIX, Windows drive, UNC, and verbatim path forms, plus relative,
   PATH-separator, leading-BOM, and Win32-device rejection;
+- container argument behavior for quotes and odd and even trailing-backslash
+  runs in POSIX paths;
 - path parser BOM position, CR/LF/CRLF splitting, empty-line removal, ordering,
   and culture-invariant duplicate cases;
 - inputs at, below, and above the supported hard limit;

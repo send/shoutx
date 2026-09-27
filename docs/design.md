@@ -248,10 +248,12 @@ Only fully qualified paths are accepted. POSIX paths must begin with `/`.
 Windows accepts these forms:
 
 - an ASCII drive letter, `:`, and `/` or `\`, including a drive root;
-- exactly two leading `/` or `\` separators followed by non-empty server and
-  share components, where neither component is `.` or `?`; or
+- exactly two leading separators in any `/` and `\` combination followed by
+  non-empty server and share components separated by either character, where
+  neither component is `.` or `?`; or
 - an exact `\\?\` prefix followed by either an ASCII drive letter, `:`, and
-  `\`, or `UNC\` plus non-empty server and share components separated by `\`.
+  `\`, or uppercase `UNC\` plus non-empty server and share components separated
+  by `\`.
 
 The verbatim prefixes and their structural separators are backslash-only;
 forward slashes later in a verbatim path remain literal data. Drive-relative
@@ -268,9 +270,11 @@ OS PATH separator; accepting it would let one line become multiple effective
 PATH entries. A double quote is rejected on every target because a container
 step host interpolates the resulting PATH into a quoted `docker exec` argument
 string; accepting it could terminate that argument and create another runtime
-option. Other platform-specific invalid filename characters are not validated
-because shoutx neither accesses the directory nor claims that the OS will
-accept it.
+option. A POSIX path ending in `\` is also rejected: .NET re-tokenizes that
+argument string, so trailing backslashes can escape the synthetic closing quote
+or be collapsed, changing the directory identity. Other platform-specific
+invalid filename characters are not validated because shoutx neither accesses
+the directory nor claims that the OS will accept it.
 
 A leading U+FEFF is rejected. When the entry is the first content in the
 command file, `File.ReadAllLines(..., Encoding.UTF8)` consumes its UTF-8 bytes

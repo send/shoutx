@@ -206,7 +206,9 @@ every accepted byte exactly. Reject relative paths, `./a`, `../a`, an empty
 value, a leading U+FEFF, any CR or LF left after common final-boundary
 consumption, NUL, and any value containing `:`.
 Reject `"` even though it can occur in a POSIX filename, because it crosses the
-runner container step-host argument boundary.
+runner container step-host argument boundary. Reject a path ending in `\` and
+include both odd and even runs of trailing backslashes; .NET argument
+re-tokenization must not silently change directory identity.
 
 ### Windows target grammar
 
@@ -215,7 +217,8 @@ fully qualified verbatim drive and UNC forms. Include spaces, dot segments,
 repeated and trailing separators, non-ASCII UTF-8, and U+FEFF away from the
 first character, and assert exact preservation. Cover `C:\`, `c:/tools`,
 `\\server\share`, `//server/share`, `\\?\C:\`, and
-`\\?\UNC\server\share`.
+`\\?\UNC\server\share`. Normal UNC separators may be mixed, so also accept
+`/\server/share` and `\/server\share`.
 
 Reject drive-relative `C:tools`, root-relative `\tools`, plain relative paths,
 incomplete UNC forms, Win32 device forms such as `\\.\...`, an empty value, a
@@ -223,9 +226,10 @@ leading U+FEFF, any remaining CR or LF, NUL, and any value containing `;`.
 Reject `"` and explicitly cover bare `C:`, `\\server`, `//./x`, `/\.\x`,
 `//?/C:/x`, `\\?\C:/x`, `\\?\C:`, `\\?\UNC\server`,
 `\\?\GLOBALROOT\x`, `\\?\Volume{x}\`, `\\?\pipe\x`, and
-`\\.\UNC\server\share`. Include lower- and uppercase drive letters. Tests
-must not require the path to exist or infer validity from the test host
-filesystem.
+`\\.\UNC\server\share`. Reject lowercase `\\?\unc\server\share` because
+the verbatim UNC marker is exact and uppercase. Include lower- and uppercase
+drive letters. Tests must not require the path to exist or infer validity from
+the test host filesystem.
 
 Every path grammar, separator, quote, leading-BOM, and target-selection
 rejection has status 1 and empty stdout. This includes an empty or otherwise
@@ -262,6 +266,14 @@ the protected `AddPrependPathToEnvironment` path and asserts the final PATH,
 including reverse ordering and an original PATH that already starts with the
 complete prepend string plus the PATH separator. This distinguishes runner
 execution from a local transcription of its list and join logic.
+
+A separate native Linux characterization test exercises the runner's container
+branch and its actual `ProcessInvoker` argument-string path. A test helper
+standing in for `docker` records the argv it receives. Cover a normal path, a
+double quote, and odd and even trailing-backslash runs, and assert the observed
+token boundaries and bytes. This test independently grounds the quote and
+trailing-backslash rejection instead of merely reproducing the runner's string
+concatenation.
 
 ## Multiline records
 

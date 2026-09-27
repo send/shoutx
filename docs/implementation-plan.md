@@ -368,9 +368,11 @@ The CSPRNG abstraction returns raw random bytes; hexadecimal encoding and
 delimiter policy remain project code. Randomness is acquired and all collisions
 are resolved before constructing or writing stdout.
 
-An unrecognized `RUNNER_OS` is relevant only when platform-specific multiline
-framing is required. The implementation follows the design contract rather than
-silently treating an unknown target as POSIX.
+For the named writers in this increment, an unrecognized `RUNNER_OS` is
+relevant only when platform-specific multiline framing is required. The
+implementation follows the design contract rather than silently treating an
+unknown target as POSIX. The later path writer always requires a recognized
+target dialect when `RUNNER_OS` is present.
 
 Read `RUNNER_OS` as `OsString` in the process layer and pass a parsed target-OS
 value into the library; tests never mutate global process environment. Matching
@@ -413,10 +415,11 @@ the native toolchains and CI configuration.
 `github-actions:path` remains separate because the runner uses path-specific
 `File.ReadAllLines` behavior rather than the named environment-file parser.
 The design increment specifies one fully qualified target-platform path,
-rejects the effective PATH separator, double quote, and leading U+FEFF, and
-performs no lexical or filesystem normalization. It documents bare-CR
-splitting, empty-line removal, ordering, and culture-sensitive duplicate
-behavior as runner facts rather than shoutx transformations.
+rejects the effective PATH separator, double quote, leading U+FEFF, and a POSIX
+trailing backslash, and performs no lexical or filesystem normalization. It
+documents bare-CR splitting, empty-line removal, ordering, and
+culture-sensitive duplicate behavior as runner facts rather than shoutx
+transformations.
 
 After that contract is reviewed, the implementation increment adds a separate
 path validator and parser model, target selection from `RUNNER_OS`, native

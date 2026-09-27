@@ -125,14 +125,16 @@ may not contain NUL, CR, or LF. `--multiline` preserves the complete value using
 an independently generated, collision-checked delimiter.
 
 The planned `github-actions:path` command will validate and emit one fully
-qualified entry for `$GITHUB_PATH`. It will consume one optional final line
-boundary, reject remaining boundaries and empty values, reject the target OS
-PATH separator (`:` on POSIX or `;` on Windows), and preserve the path without
-normalization. It will also reject `"`, which the runner cannot safely compose
-into its container-runtime PATH argument. A leading U+FEFF will be rejected
-because the runner would treat it differently at the beginning of the file.
-The current build still rejects the command as unknown until its separate
-parser model and implementation land.
+qualified entry for `$GITHUB_PATH`. Its target dialect follows `RUNNER_OS`,
+with native fallback; a present unknown value is always rejected. It will
+consume one optional final line boundary, reject remaining boundaries and empty
+values, reject the target OS PATH separator (`:` on POSIX or `;` on Windows),
+and preserve the path without normalization. It will also reject `"` on every
+target and a trailing `\` on POSIX, which the runner cannot safely compose into
+its container-runtime PATH argument. A leading U+FEFF will be rejected because
+the runner would treat it differently at the beginning of the file. The
+current build still rejects the command as unknown until its separate parser
+model and implementation land.
 
 That future command will provide record framing, not path authorization. An
 attacker-controlled directory could still hijack later command lookup.
@@ -184,7 +186,8 @@ arbitrary Markdown or HTML documents.
 - Input is strict UTF-8 and output is UTF-8 without a byte-order mark. Framing
   bytes are emitted explicitly for the local supported runner parser and do
   not rely on host text-mode newline conversion.
-- Single-line records use explicit LF framing on every OS. Multiline records
+- Named-writer single-line records use explicit LF framing on every OS.
+  Named-writer multiline records
   normally do the same. For a value ending in bare CR, `RUNNER_OS=Windows`
   selects CRLF framing so the Windows runner preserves that CR. If `RUNNER_OS`
   is absent, the native OS is used; an unrecognized value is rejected only when

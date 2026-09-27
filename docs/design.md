@@ -38,6 +38,15 @@ shoutx github-actions:path   [VALUE]
 shoutx github-actions:mask [VALUE]
 ```
 
+The next provider-command family is specified but not yet implemented or
+exposed by the CLI:
+
+```text
+shoutx github-actions:notice  [ANNOTATION OPTIONS] [MESSAGE]
+shoutx github-actions:warning [ANNOTATION OPTIONS] [MESSAGE]
+shoutx github-actions:error   [ANNOTATION OPTIONS] [MESSAGE]
+```
+
 No reusable context encoder is currently planned for v1.0. The former
 `shell:arg` candidate is deferred after boundary review.
 
@@ -95,6 +104,8 @@ the `--join-lines-with=STRING` form is also accepted. For commands without a
 `NAME` operand, `--` is required when a value begins with `-`.
 Callers using the separate-token form must not omit the separator: the parser
 always consumes the next token as `STRING` before parsing `NAME`.
+Acceptance of the equals form is specific to `--join-lines-with`; it is not a
+general CLI convention for other options.
 
 `--help` and `--version` are recognized only while options are being parsed.
 After `NAME`, the same tokens are values rather than options.
@@ -111,6 +122,7 @@ verification plan:
 - [GitHub Actions named records](commands/github-actions-records.md)
 - [GitHub Actions PATH writer](commands/github-actions-path.md)
 - [GitHub Actions log-mask command](commands/github-actions-mask.md)
+- [GitHub Actions annotation commands](commands/github-actions-annotations.md)
 
 ## Design decisions
 

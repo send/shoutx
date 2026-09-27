@@ -417,13 +417,16 @@ fn invalid_and_multibyte_separators_are_covered() {
 #[cfg(unix)]
 #[test]
 fn failed_stderr_preserves_usage_status() {
-    let output = Command::new("sh")
-        .args([
-            "-c",
-            "exec \"$1\" --unknown 2>&-",
-            "sh",
-            env!("CARGO_BIN_EXE_shoutx"),
-        ])
+    use std::os::fd::OwnedFd;
+    use std::os::unix::net::UnixStream;
+    let (writer, reader) = UnixStream::pair().unwrap();
+    drop(reader);
+    let writer: OwnedFd = writer.into();
+    let output = Command::new(env!("CARGO_BIN_EXE_shoutx"))
+        .arg("--unknown")
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::from(writer))
         .output()
         .unwrap();
     assert_eq!(output.status.code(), Some(2));

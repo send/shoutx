@@ -394,17 +394,18 @@ confidentiality guarantee. In particular:
   runner derives that exact form or the caller registers it separately;
 - short or common values can over-mask unrelated log text;
 - a preceding `stop-commands` command causes the runner to ignore `add-mask`
-  until the matching resume token, and shoutx cannot observe that state; and
+  until the matching resume token, causing the encoded command line itself to
+  be logged as ordinary output; shoutx cannot observe that state; and
 - values treated as secrets can be suppressed when exported as job outputs,
   even though GitHub documents same-job use through a step output.
 
 Callers should pass sensitive values through stdin or a quoted environment
 variable rather than placing them literally in process arguments. They must
-register a value before any command can log it. If an unmasked value has
-already reached a workflow log, masking it later is not remediation; delete the
-log and rotate the credential.
+ensure workflow-command processing is active and register a value before any
+command can log it. If an unmasked value has already reached a workflow log,
+masking it later is not remediation; delete the log and rotate the credential.
 
-[toolkit-command]: https://github.com/actions/toolkit/blob/main/packages/core/src/command.ts
+[toolkit-command]: https://github.com/actions/toolkit/blob/a7911ca44eeaa6d87ad79a4703b750fb0993fb99/packages/core/src/command.ts
 [workflow-mask-command]: https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-commands#masking-a-value-in-a-log
 [secure-use]: https://docs.github.com/en/actions/reference/security/secure-use
 

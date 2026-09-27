@@ -216,9 +216,9 @@ stable shoutx guarantee.
 Enable workflow-command echoing and verify that command processing emits only
 the masked placeholder, never the supplied value. Suspend command processing
 with a valid `stop-commands` token, feed a shoutx mask record, and prove that it
-is treated as ordinary output and installs no mask; resume processing and prove
-normal registration works again. This is a documented precondition, not a
-condition the shoutx process can detect.
+is treated as ordinary output, can expose the encoded value, and installs no
+mask; resume processing and prove normal registration works again. This is a
+documented precondition, not a condition the shoutx process can detect.
 
 Verify that a masked step output remains usable in a later step of the same job
 using GitHub's documented pattern. Separately use a runner oracle to verify that
@@ -233,13 +233,14 @@ Exercise broken-pipe and short-write behavior under the shared status contract.
 Unlike environment-file writers, successful mask output is not redirected.
 
 On every supported hosted OS and shell, register a unique generated marker and
-then print it in a later command in the same step. Inspect the completed job log
-through the GitHub API and require that the marker appears only as `***`; a
-step cannot prove masking by inspecting its own still-open log. Include stdin
-and quoted-environment-variable recipes, ensure shell tracing is disabled, and
-do not place the marker literally in workflow source or argv. Shell tests must
-also confirm that stdout uses one LF-terminated command on Windows without
-depending on text-mode newline conversion.
+then print it between fixed sentinel strings in a later command in the same
+step. Inspect the completed job log through the GitHub API and require the
+sentinel form containing `***`, without requiring the verifier to receive the
+secret marker. A step cannot prove masking by inspecting its own still-open
+log. Include stdin and quoted-environment-variable recipes, ensure shell
+tracing is disabled, and do not place the marker literally in workflow source
+or argv. Shell tests must also confirm that stdout uses one LF-terminated
+command on Windows without depending on text-mode newline conversion.
 
 ## Workflow artifact declaration candidate
 

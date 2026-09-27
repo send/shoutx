@@ -299,8 +299,10 @@ tracing or host audit facilities, transformed into an unregistered form, or
 read by other code running with equivalent job privileges. Very short or
 common values can redact unrelated text. If workflow-command processing has
 been suspended with `stop-commands`, the runner ignores the candidate output;
-that hidden runner state cannot be detected by the child process and is an
-explicit precondition of the registration guarantee.
+the encoded command line is then handled as ordinary log output and can expose
+the value. That hidden runner state cannot be detected by the child process and
+active command processing is therefore an explicit precondition of the
+registration guarantee.
 
 GitHub permits a masked value to be placed in a step output for later use in
 the same job, but the runner suppresses job outputs that its secret masker
@@ -395,7 +397,7 @@ HTML.
 | Additional workflow commands through mask data | Candidate | Percent-escape `%`, CR, and LF and emit one physical `add-mask` line |
 | False mask success for empty or whitespace-only data | Candidate | Reject before stdout because the runner would not register it |
 | Disclosure before mask registration or through process tracing | No | Deliver secrets as data, disable tracing, and register before other output |
-| Mask ignored while workflow commands are stopped | No | Require active command processing; the child cannot observe runner state |
+| Mask ignored and logged while workflow commands are stopped | No | Require active command processing; the child cannot observe runner state |
 | Over-masking caused by short values or multiline line registration | No | Document runner substring and per-line behavior; caller chooses the value |
 | Command hijacking through an attacker-controlled PATH directory | No | Caller validates trust and authorization |
 | Declaring an attacker-selected file or OCI subject | No | Caller validates identity, trust, and authorization |
@@ -570,7 +572,7 @@ claiming compatibility.
 
 - [Workflow commands for GitHub Actions](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-commands)
 - [Secure use reference](https://docs.github.com/en/actions/reference/security/secure-use)
-- [Actions toolkit workflow commands](https://github.com/actions/toolkit/blob/main/packages/core/src/command.ts)
+- [Pinned Actions toolkit workflow commands](https://github.com/actions/toolkit/blob/a7911ca44eeaa6d87ad79a4703b750fb0993fb99/packages/core/src/command.ts)
 - [Script injections](https://docs.github.com/en/actions/concepts/security/script-injections)
 - [Variables reference](https://docs.github.com/en/actions/reference/workflows-and-actions/variables)
 - [Action metadata syntax](https://docs.github.com/en/actions/reference/workflows-and-actions/metadata-syntax)

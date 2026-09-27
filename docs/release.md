@@ -53,7 +53,7 @@ is created:
 
 In addition to these automated checks, a release containing
 `github-actions:mask` requires the hosted-log gate in
-[`docs/test-plan.md`](test-plan.md#runner-masking-behavior): completed Linux,
+[`docs/test-plan.md`](test-plan.md#process-and-workflow-coverage): completed Linux,
 macOS, and Windows job logs must be inspected from outside the producing job
 and show replacement of fresh runtime-generated markers. Until that evidence
 is recorded, maintainers must not create a release tag for a commit exposing

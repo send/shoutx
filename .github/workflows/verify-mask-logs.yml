@@ -1,0 +1,116 @@
+name: Verify hosted mask logs
+
+on:
+  workflow_run:
+    # Keep this synchronized with the display name in ci.yml.
+    workflows: [CI]
+    types: [completed]
+
+permissions:
+  actions: read
+
+jobs:
+  verify:
+    if: >-
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.head_repository.full_name == github.repository &&
+      github.event.workflow_run.conclusion == 'success'
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      SOURCE_RUN_ID: ${{ github.event.workflow_run.id }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Verify completed CI log redaction
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          jobs_json="$RUNNER_TEMP/jobs.json"
+          gh api --paginate \
+            "repos/$GH_REPO/actions/runs/$SOURCE_RUN_ID/jobs?filter=latest&per_page=100" \
+            --jq '.jobs[] | [.name, .conclusion, .id] | @tsv' > "$jobs_json"
+
+          expected_jobs=(
+            'test (ubuntu-latest)'
+            'test (macos-latest)'
+            'test (windows-latest)'
+          )
+          successful=0
+          skipped=0
+          for job in "${expected_jobs[@]}"; do
+            conclusion=$(awk -F '\t' -v name="$job" '$1 == name { print $2 }' "$jobs_json")
+            case "$conclusion" in
+              success) ((successful += 1)) ;;
+              skipped) ((skipped += 1)) ;;
+              *)
+                echo "Expected $job to be successful or skipped, got: ${conclusion:-missing}" >&2
+                exit 1
+                ;;
+            esac
+          done
+
+          if (( skipped == ${#expected_jobs[@]} )); then
+            echo "Full CI was skipped; no hosted mask logs to verify"
+            echo "## Hosted mask logs: not exercised" >> "$GITHUB_STEP_SUMMARY"
+            echo "All hosted test jobs were skipped; this run is not release-gate evidence." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          if (( successful != ${#expected_jobs[@]} )); then
+            echo "Hosted test jobs had inconsistent outcomes" >&2
+            exit 1
+          fi
+
+          combined_log="$RUNNER_TEMP/ci.log"
+          : > "$combined_log"
+          for job in "${expected_jobs[@]}"; do
+            job_id=$(awk -F '\t' -v name="$job" '$1 == name { print $3 }' "$jobs_json")
+            job_log="$RUNNER_TEMP/job-$job_id.log"
+            downloaded=false
+            for attempt in {1..6}; do
+              if curl --fail --location --silent --show-error \
+                --header "Authorization: Bearer $GH_TOKEN" \
+                --header "Accept: application/vnd.github+json" \
+                --header "X-GitHub-Api-Version: 2026-03-10" \
+                "https://api.github.com/repos/$GH_REPO/actions/jobs/$job_id/logs" \
+                > "$job_log"
+              then
+                downloaded=true
+                break
+              fi
+              echo "$job log is not ready yet (attempt $attempt of 6)"
+              sleep 10
+            done
+            if [[ "$downloaded" != true || ! -s "$job_log" ]]; then
+              echo "Could not download completed log for $job" >&2
+              exit 1
+            fi
+            cat "$job_log" >> "$combined_log"
+          done
+
+          if grep -Eq 'shoutx-mask-([[:xdigit:]]{32}|[[:xdigit:]]{8}-[[:xdigit:]]{4}-[[:xdigit:]]{4}-[[:xdigit:]]{4}-[[:xdigit:]]{12})' "$combined_log"; then
+            echo "Unmasked marker found in completed log; delete the log and investigate" >&2
+            exit 1
+          fi
+          sentinels=(
+            'SHOUTX_MASK_BASH_Linux_BEGIN***_END'
+            'SHOUTX_MASK_SH_Linux_BEGIN***_END'
+            'SHOUTX_MASK_DASH_LINUX_BEGIN***_END'
+            'SHOUTX_MASK_BASH_macOS_BEGIN***_END'
+            'SHOUTX_MASK_SH_macOS_BEGIN***_END'
+            'SHOUTX_MASK_PWSH_WINDOWS_BEGIN***_END'
+            'SHOUTX_MASK_GIT_BASH_WINDOWS_BEGIN***_END'
+          )
+          for sentinel in "${sentinels[@]}"; do
+            count=$(grep -Fc "$sentinel" "$combined_log" || true)
+            if (( count < 1 )); then
+              echo "Missing masked sentinel: $sentinel" >&2
+              exit 1
+            fi
+          done
+
+          echo "## Hosted mask logs: verified" >> "$GITHUB_STEP_SUMMARY"
+          echo "All supported OS and shell sentinels were redacted in CI run $SOURCE_RUN_ID." >> "$GITHUB_STEP_SUMMARY"
+          echo "Verified hosted mask redaction in all supported OS and shell logs"

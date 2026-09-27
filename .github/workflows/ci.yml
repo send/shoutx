@@ -1,3 +1,4 @@
+# verify-mask-logs.yml selects this workflow by its display name.
 name: CI
 
 on:
@@ -110,10 +111,11 @@ jobs:
           target/debug/shoutx github-actions:output --multiline multiline $'first\nsecond\n' >> "$GITHUB_OUTPUT"
           target/debug/shoutx github-actions:env SHOUTX_DOGFOOD_ENV 'env % 日本語' >> "$GITHUB_ENV"
           target/debug/shoutx github-actions:path "$dogfood_path" >> "$GITHUB_PATH"
-          mask_marker="shoutx-mask-$(uuidgen)"
-          printf %s "$mask_marker" | target/debug/shoutx github-actions:mask
+          mask_marker="shoutx-mask-$(od -An -N16 -tx1 /dev/urandom | tr -d ' \n')"
+          export SHOUTX_MASK_VALUE="$mask_marker"
+          printf %s "$SHOUTX_MASK_VALUE" | target/debug/shoutx github-actions:mask
           target/debug/shoutx github-actions:output masked_value "$mask_marker" >> "$GITHUB_OUTPUT"
-          printf 'masked value: %s\n' "$mask_marker"
+          printf 'SHOUTX_MASK_BASH_%s_BEGIN%s_END\n' "$RUNNER_OS" "$mask_marker"
       - name: Verify dogfooded values on POSIX
         if: runner.os != 'Windows'
         shell: bash
@@ -127,6 +129,13 @@ jobs:
           [[ "$SHOUTX_DOGFOOD_ENV" == 'env % 日本語' ]]
           [[ "$DOGFOOD_MASKED" == shoutx-mask-* ]]
           [[ ":$PATH:" == *":$RUNNER_TEMP/shoutx-dogfood-bin:"* ]]
+      - name: Dogfood mask through POSIX sh
+        if: runner.os != 'Windows'
+        shell: sh
+        run: |
+          mask_marker="shoutx-mask-$(od -An -N16 -tx1 /dev/urandom | tr -d ' \n')"
+          printf %s "$mask_marker" | target/debug/shoutx github-actions:mask
+          printf 'SHOUTX_MASK_SH_%s_BEGIN%s_END\n' "$RUNNER_OS" "$mask_marker"
       - name: Dogfood GitHub environment files on Windows
         id: dogfood_windows
         if: runner.os == 'Windows'
@@ -140,8 +149,9 @@ jobs:
           target/debug/shoutx.exe github-actions:path $dogfoodPath >> $env:GITHUB_PATH
           $maskMarker = "shoutx-mask-$([guid]::NewGuid())"
           $maskMarker | target/debug/shoutx.exe github-actions:mask
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           target/debug/shoutx.exe github-actions:output masked_value $maskMarker >> $env:GITHUB_OUTPUT
-          Write-Output "masked value: $maskMarker"
+          Write-Output "SHOUTX_MASK_PWSH_WINDOWS_BEGIN${maskMarker}_END"
       - name: Verify dogfooded values on Windows
         if: runner.os == 'Windows'
         shell: pwsh
@@ -171,6 +181,9 @@ jobs:
           dpkg-query --show --showformat='dash ${Version}\n' dash
           dash tests/workflow-smoke/posix.sh target/debug/shoutx dash
           target/debug/shoutx github-actions:output value 'dash % 日本語' >> "$GITHUB_OUTPUT"
+          mask_marker="shoutx-mask-$(od -An -N16 -tx1 /dev/urandom | tr -d ' \n')"
+          printf %s "$mask_marker" | target/debug/shoutx github-actions:mask
+          printf 'SHOUTX_MASK_DASH_LINUX_BEGIN%s_END\n' "$mask_marker"
       - name: Verify Dash workflow output
         if: runner.os == 'Linux'
         shell: dash -e {0}
@@ -204,6 +217,9 @@ jobs:
         run: |
           & "$env:ProgramFiles\Git\bin\bash.exe" -lc `
             'tests/workflow-smoke/posix.sh "$(cygpath -u "$SHOUTX_BIN")" bash'
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & "$env:ProgramFiles\Git\bin\bash.exe" -lc `
+            'set -euo pipefail; marker="shoutx-mask-$(od -An -N16 -tx1 /dev/urandom | tr -d " \n")"; printf %s "$marker" | "$(cygpath -u "$SHOUTX_BIN")" github-actions:mask; printf "SHOUTX_MASK_GIT_BASH_WINDOWS_BEGIN%s_END\n" "$marker"'
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
   msrv:

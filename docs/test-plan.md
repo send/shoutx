@@ -238,10 +238,20 @@ then print it between fixed sentinel strings in a later command in the same
 step. Inspect the completed job log through the GitHub API and require the
 sentinel form containing `***`, without requiring the verifier to receive the
 secret marker. A step cannot prove masking by inspecting its own still-open
-log. Include stdin and quoted-environment-variable recipes, ensure shell
+log. Include stdin sourced from quoted environment variables and shell-local
+variables, ensure shell
 tracing is disabled, and do not place the marker literally in workflow source
 or argv. Shell tests must also confirm that stdout uses one LF-terminated
 command on Windows without depending on text-mode newline conversion.
+
+The external verifier is a `workflow_run` workflow stored on the default
+branch. It runs only for successful `push` executions of CI on `main`, obtains
+the completed log archive with read-only Actions permission, and never checks
+out or executes code from the triggering revision. Runtime-generated values
+remain unknown to the verifier: fixed per-OS and per-shell sentinels prove
+replacement with `***`, while a missing sentinel distinguishes a setup failure.
+Documentation-only CI runs, whose hosted test jobs are all skipped, are
+recognized and skipped rather than treated as redaction evidence.
 
 ## Workflow artifact declaration candidate
 

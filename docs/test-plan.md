@@ -4,7 +4,7 @@ This document turns the `shoutx` CLI contract into an implementation test plan.
 It covers `github-actions:output`, `github-actions:env`,
 `github-actions:state`, `github-actions:path`, the shared input rules, and the
 supported workflow-shell redirection paths. It also specifies the acceptance
-tests for the not-yet-implemented `github-actions:mask` candidate.
+tests for `github-actions:mask`.
 
 The product contract is defined by the [README](../README.md), the design
 decisions by [design.md](design.md), and the security boundary by
@@ -153,11 +153,9 @@ expected comparer would prove only the fixture's behavior. This characterizes
 destination behavior; one shoutx invocation still emits exactly one requested
 record and does not inspect earlier records.
 
-## Log-mask command candidate
+## Log-mask command
 
-These cases define the implementation gate for `github-actions:mask`. They do
-not make the command public until the contract, runner differential tests, and
-supported-shell workflow tests are complete.
+These cases define the compatibility suite for `github-actions:mask`.
 
 ### Command grammar and input
 

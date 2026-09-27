@@ -1,3 +1,4 @@
+mod mask;
 mod name;
 mod normalize;
 mod path;
@@ -8,6 +9,7 @@ use std::ffi::OsStr;
 
 use crate::{cli::WriteRequest, error::ShoutxError, input::VALUE_LIMIT};
 
+pub use mask::encode as encode_mask;
 pub use path::encode as encode_path;
 pub use random::{OsRandom, RandomSource};
 

@@ -10,6 +10,8 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
+using GitHub.DistributedTask.Pipelines.ContextData;
+using GitHub.DistributedTask.Logging;
 using GitHub.DistributedTask.WebApi;
 using GitHub.Runner.Common;
 using GitHub.Runner.Sdk;
@@ -25,6 +27,179 @@ namespace GitHub.Runner.Common.Tests.Worker;
 
 public sealed class ShoutxDifferentialL0
 {
+    [Fact]
+    [Trait("Level", "L0")]
+    [Trait("Category", "Worker")]
+    public void AddMaskCommandsMatchRunnerParserAndMasker()
+    {
+        var corpusPath = Environment.GetEnvironmentVariable("SHOUTX_MASK_CORPUS");
+        Assert.False(string.IsNullOrEmpty(corpusPath));
+        var corpus = JsonSerializer.Deserialize<List<MaskCase>>(
+            File.ReadAllText(corpusPath!),
+            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        Assert.NotNull(corpus);
+
+        foreach (var item in corpus!)
+        {
+            var (host, manager, context) = CreateActionCommandContext();
+            using (host)
+            {
+                var bytes = Convert.FromBase64String(item.Command);
+                Assert.Equal((byte)'\n', bytes[^1]);
+                var line = Encoding.UTF8.GetString(bytes, 0, bytes.Length - 1);
+
+                Assert.True(manager.TryProcessCommand(context.Object, line, null!));
+                Assert.Equal("***", host.SecretMasker.MaskSecrets(Decode(item.Value)));
+                foreach (var masked in item.Masked)
+                {
+                    var value = Decode(masked);
+                    Assert.NotEqual(value, host.SecretMasker.MaskSecrets(value));
+                }
+                foreach (var unmasked in item.Unmasked)
+                {
+                    var value = Decode(unmasked);
+                    Assert.Equal(value, host.SecretMasker.MaskSecrets(value));
+                }
+            }
+        }
+    }
+
+    [Fact]
+    [Trait("Level", "L0")]
+    [Trait("Category", "Worker")]
+    public void AddMaskIsIgnoredWhileCommandsAreStopped()
+    {
+        var (host, manager, context) = CreateActionCommandContext();
+        using (host)
+        {
+            Assert.True(manager.TryProcessCommand(
+                context.Object, "::stop-commands::shoutx-stop-token", null!));
+            Assert.False(manager.TryProcessCommand(
+                context.Object, "::add-mask::secret", null!));
+            Assert.Equal("secret", host.SecretMasker.MaskSecrets("secret"));
+            Assert.True(manager.TryProcessCommand(
+                context.Object, "::shoutx-stop-token::", null!));
+            Assert.True(manager.TryProcessCommand(
+                context.Object, "::add-mask::secret", null!));
+            Assert.Equal("***", host.SecretMasker.MaskSecrets("secret"));
+        }
+    }
+
+    [Fact]
+    [Trait("Level", "L0")]
+    [Trait("Category", "Worker")]
+    public void AddMaskEchoAndDerivedValuesMatchRunnerBehavior()
+    {
+        const string secret = "\"alpha beta&+gamma<delta>\"";
+        var (host, manager, context) = CreateActionCommandContext();
+        using (host)
+        {
+            // TestHostContext installs only a reduced encoder set. Mirror the
+            // production HostContext registrations from Runner.Common here.
+            ValueEncoder[] productionEncoders =
+            [
+                ValueEncoders.Base64StringEscape,
+                ValueEncoders.Base64StringEscapeShift1,
+                ValueEncoders.Base64StringEscapeShift2,
+                ValueEncoders.CommandLineArgumentEscape,
+                ValueEncoders.ExpressionStringEscape,
+                ValueEncoders.JsonStringEscape,
+                ValueEncoders.UriDataEscape,
+                ValueEncoders.XmlDataEscape,
+                ValueEncoders.TrimDoubleQuotes,
+                ValueEncoders.PowerShellPreAmpersandEscape,
+                ValueEncoders.PowerShellPostAmpersandEscape,
+            ];
+            foreach (var encoder in productionEncoders)
+            {
+                host.SecretMasker.AddValueEncoder(encoder);
+            }
+
+            var output = new List<string>();
+            context.Object.EchoOnActionCommand = true;
+            context.Setup(value => value.Write(It.IsAny<string>(), It.IsAny<string>()))
+                .Callback<string, string>((_, message) => output.Add(message))
+                .Returns(1);
+
+            Assert.True(manager.TryProcessCommand(
+                context.Object, $"::add-mask::{secret}", null!));
+            Assert.Equal(["::add-mask::***"], output);
+            Assert.DoesNotContain(secret, string.Join("\n", output));
+
+            string[] derived =
+            [
+                ValueEncoders.Base64StringEscape(secret),
+                ValueEncoders.Base64StringEscapeShift1(secret),
+                ValueEncoders.Base64StringEscapeShift2(secret),
+                ValueEncoders.CommandLineArgumentEscape(secret),
+                ValueEncoders.ExpressionStringEscape(secret),
+                ValueEncoders.JsonStringEscape(secret),
+                ValueEncoders.UriDataEscape(secret),
+                ValueEncoders.XmlDataEscape(secret),
+                ValueEncoders.TrimDoubleQuotes(secret),
+                ValueEncoders.PowerShellPreAmpersandEscape(secret),
+                ValueEncoders.PowerShellPostAmpersandEscape(secret),
+            ];
+            foreach (var value in derived.Where(value => !string.IsNullOrEmpty(value)))
+            {
+                Assert.NotEqual(value, host.SecretMasker.MaskSecrets(value));
+            }
+        }
+    }
+
+    [Fact]
+    [Trait("Level", "L0")]
+    [Trait("Category", "Worker")]
+    public void MaskedValueTriggersJobOutputSuppressionPredicate()
+    {
+        var (host, manager, context) = CreateActionCommandContext();
+        using (host)
+        {
+            Assert.True(manager.TryProcessCommand(
+                context.Object, "::add-mask::job-output-secret", null!));
+
+            // JobExtension skips an output exactly when MaskSecrets changes it.
+            Assert.NotEqual(
+                "job-output-secret",
+                host.SecretMasker.MaskSecrets("job-output-secret"));
+            Assert.Equal("public", host.SecretMasker.MaskSecrets("public"));
+        }
+    }
+
+    [Fact]
+    [Trait("Level", "L0")]
+    [Trait("Category", "Worker")]
+    public void AddMaskWhitespaceRegistrationMatchesDotNetClassification()
+    {
+        foreach (var value in new[]
+        {
+            " ", "\t", "\n", "\u000b", "\f", "\r", "\u0085", "\u00a0", "\u1680",
+            "\u2000", "\u2001", "\u2002", "\u2003", "\u2004", "\u2005", "\u2006",
+            "\u2007", "\u2008", "\u2009", "\u200a", "\u2028", "\u2029", "\u202f",
+            "\u205f", "\u3000",
+        })
+        {
+            var (host, manager, context) = CreateActionCommandContext();
+            using (host)
+            {
+                Assert.True(manager.TryProcessCommand(
+                    context.Object, $"::add-mask::{value}", null!));
+                Assert.Equal(value, host.SecretMasker.MaskSecrets(value));
+            }
+        }
+
+        foreach (var value in new[] { "\ufeff", "\u200b" })
+        {
+            var (host, manager, context) = CreateActionCommandContext();
+            using (host)
+            {
+                Assert.True(manager.TryProcessCommand(
+                    context.Object, $"::add-mask::{value}", null!));
+                Assert.Equal("***", host.SecretMasker.MaskSecrets(value));
+            }
+        }
+    }
+
     [Fact]
     [Trait("Level", "L0")]
     [Trait("Category", "Worker")]
@@ -291,6 +466,46 @@ public sealed class ShoutxDifferentialL0
     private static string Encode(string value) =>
         Convert.ToBase64String(Encoding.UTF8.GetBytes(value));
 
+    private static string Decode(string value) =>
+        Encoding.UTF8.GetString(Convert.FromBase64String(value));
+
+    private static (TestHostContext Host, ActionCommandManager Manager, Mock<IExecutionContext> Context)
+        CreateActionCommandContext()
+    {
+        var host = new TestHostContext(
+            new ShoutxDifferentialL0(), nameof(CreateActionCommandContext));
+        var extensionManager = new Mock<IExtensionManager>();
+        IActionCommandExtension[] commands = [new AddMaskCommandExtension()];
+        foreach (var command in commands)
+        {
+            command.Initialize(host);
+        }
+        extensionManager.Setup(value => value.GetExtensions<IActionCommandExtension>())
+            .Returns(commands.ToList());
+        host.SetSingleton<IExtensionManager>(extensionManager.Object);
+
+        var context = new Mock<IExecutionContext>();
+        context.SetupAllProperties();
+        context.Setup(value => value.Global).Returns(new GlobalContext());
+        context.Object.Global.Variables = new Variables(
+            host, new Dictionary<string, VariableValue>());
+        context.Object.Global.JobTelemetry = [];
+        var expressionValues = new DictionaryContextData
+        {
+            ["env"] =
+#if OS_WINDOWS
+                new DictionaryContextData(),
+#else
+                new CaseSensitiveDictionaryContextData(),
+#endif
+        };
+        context.Setup(value => value.ExpressionValues).Returns(expressionValues);
+
+        var manager = new ActionCommandManager();
+        manager.Initialize(host);
+        return (host, manager, context);
+    }
+
     private sealed record CorpusCase(
         string Id,
         string Input,
@@ -305,6 +520,12 @@ public sealed class ShoutxDifferentialL0
         string Input,
         IReadOnlyList<string> Paths,
         IReadOnlyList<string> Effective);
+    private sealed record MaskCase(
+        string Id,
+        string Command,
+        string Value,
+        IReadOnlyList<string> Masked,
+        IReadOnlyList<string> Unmasked);
 
     private sealed class ExposedHandler : Handler
     {

@@ -37,6 +37,10 @@ printf '%s\n' "$path_value" | "$binary" github-actions:path >>"$tmp/path"
 printf '%s\n' "$path_value" >"$tmp/expected-path"
 cmp "$tmp/expected-path" "$tmp/path"
 
+printf 'mask%%value\r\n' | "$binary" github-actions:mask >"$tmp/mask"
+printf '%s\n' '::add-mask::mask%25value' >"$tmp/expected-mask"
+cmp "$tmp/expected-mask" "$tmp/mask"
+
 if "$binary" github-actions:path 'bad"path' >"$tmp/rejected-path"; then
   echo "error: unsafe path was accepted" >&2
   exit 1

@@ -324,11 +324,10 @@ shoutx deduplication guarantees.
 This is structural validation, not authorization. The caller must establish
 that the directory and executables reachable through it are trusted.
 
-## GitHub Actions log-mask candidate
+## GitHub Actions log-mask command
 
-`github-actions:mask [VALUE]` is specified as the next provider command, but is
-not exposed until its implementation and compatibility tests are complete. It
-registers one value with the current job's runner-side secret masker by writing
+`github-actions:mask [VALUE]` registers one value with the current job's
+runner-side secret masker by writing
 one [`add-mask` workflow command][workflow-mask-command] to stdout. Unlike
 environment-file writers, its successful stdout is intentionally consumed
 directly by the runner and must not be redirected to an environment file.

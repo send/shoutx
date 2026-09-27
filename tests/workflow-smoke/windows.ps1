@@ -1,6 +1,9 @@
 param([Parameter(Mandatory = $true)][string]$Binary)
 
 $ErrorActionPreference = 'Stop'
+if ($PSVersionTable.PSVersion -lt [version]'7.4') {
+    throw "PowerShell 7.4 or later is required"
+}
 $root = Join-Path ([System.IO.Path]::GetTempPath()) ("shoutx-smoke-" + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $root | Out-Null
 try {
@@ -10,6 +13,14 @@ try {
     $expected = [Text.Encoding]::UTF8.GetBytes("result=value`n")
     if (-not [Linq.Enumerable]::SequenceEqual([byte[]](Get-Content -AsByteStream -Raw $single), $expected)) {
         throw "PowerShell changed native stdout bytes"
+    }
+
+    $legacy = Join-Path $root 'legacy-powershell'
+    & powershell.exe -NoProfile -Command `
+        "& '$Binary' github-actions:output result value >> '$legacy'"
+    if ($LASTEXITCODE -ne 0) { throw "Windows PowerShell fixture failed" }
+    if ([Linq.Enumerable]::SequenceEqual([byte[]](Get-Content -AsByteStream -Raw $legacy), $expected)) {
+        throw "Windows PowerShell unexpectedly preserved the native byte contract"
     }
 
     foreach ($value in @('', '"quoted"', 'trailing\')) {

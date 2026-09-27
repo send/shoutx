@@ -151,17 +151,22 @@ review-start comment is evidence that review began, not that it completed.
 Record the pull request's current head SHA before waiting. CI is complete only
 when every required check is terminal; for documentation-only changes, also
 confirm that the change detector passed and expensive jobs were skipped rather
-than silently omitted. Codex review is complete for that SHA only when either:
+than silently omitted. Codex review has produced a terminal result for that SHA
+only when one of the following is observed:
 
 - `chatgpt-codex-connector[bot]` submits a review whose `commit_id` is that
   exact SHA; or
+- the bot posts an explicit no-findings comment that names that exact SHA as
+  the reviewed commit; or
 - after an explicit `@codex review` request, the bot adds a thumbs-up reaction
   to that request to signal no findings.
 
-A submitted review is only a terminal review event. It is not convergence when
-that review created an unresolved thread. Include the unresolved-thread count in
-the wait condition and finish only when it is zero; do not postpone this check
-until after the monitor has already declared success.
+A submitted review or SHA-matched completion comment is only a terminal review
+event. It is not convergence when that review created an unresolved thread.
+Include the unresolved-thread count in the wait condition and finish only when
+it is zero; do not postpone this check until after the monitor has already
+declared success. Match the reviewed SHA from structured API data or the
+explicit `Reviewed commit` field, not merely from arbitrary comment text.
 
 Do not treat an earlier-commit review, the existence or disappearance of a
 summary comment, or an empty API result as successful completion. The wait must

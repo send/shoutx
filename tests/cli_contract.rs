@@ -280,6 +280,39 @@ fn windows_unpaired_surrogate_equals_separator_is_input_failure() {
 
 #[cfg(windows)]
 #[test]
+fn windows_invalid_option_data_preserves_usage_precedence() {
+    use std::os::windows::ffi::OsStringExt;
+
+    let invalid = OsString::from_wide(&[0xd800]);
+    for args in [
+        vec![OsString::from("--join-lines-with"), invalid.clone()],
+        vec![
+            OsString::from("--join-lines-with"),
+            invalid.clone(),
+            OsString::from("r"),
+            OsString::from("a"),
+            OsString::from("b"),
+        ],
+        vec![
+            OsString::from_wide(&[u16::from(b'-'), 0xd800]),
+            OsString::from("r"),
+        ],
+    ] {
+        let output = Command::new(env!("CARGO_BIN_EXE_shoutx"))
+            .arg("github-actions:output")
+            .args(args)
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .output()
+            .unwrap();
+        assert_eq!(output.status.code(), Some(2));
+        assert!(output.stdout.is_empty());
+    }
+}
+
+#[cfg(windows)]
+#[test]
 fn windows_ctrl_z_is_value_data() {
     let output = run(&["github-actions:output", "r"], Some(b"a\x1ab"));
     assert_eq!(output.status.code(), Some(0));
@@ -323,6 +356,36 @@ fn invalid_utf8_equals_separator_is_input_failure() {
         .unwrap();
     assert_eq!(output.status.code(), Some(1));
     assert!(output.stdout.is_empty());
+}
+
+#[cfg(unix)]
+#[test]
+fn invalid_utf8_option_data_preserves_usage_precedence() {
+    use std::os::unix::ffi::OsStringExt;
+
+    let invalid = OsString::from_vec(vec![0xff]);
+    for args in [
+        vec![OsString::from("--join-lines-with"), invalid.clone()],
+        vec![
+            OsString::from("--join-lines-with"),
+            invalid.clone(),
+            OsString::from("r"),
+            OsString::from("a"),
+            OsString::from("b"),
+        ],
+        vec![OsString::from_vec(vec![b'-', 0xff]), OsString::from("r")],
+    ] {
+        let output = Command::new(env!("CARGO_BIN_EXE_shoutx"))
+            .arg("github-actions:output")
+            .args(args)
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .output()
+            .unwrap();
+        assert_eq!(output.status.code(), Some(2));
+        assert!(output.stdout.is_empty());
+    }
 }
 
 #[cfg(unix)]

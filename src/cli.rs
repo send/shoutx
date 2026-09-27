@@ -11,12 +11,24 @@ fn strip_os_prefix(value: &OsStr, prefix: &[u8]) -> Option<OsString> {
         .map(|rest| OsString::from_vec(rest.to_vec()))
 }
 
+#[cfg(unix)]
+fn starts_with_ascii_dash(value: &OsStr) -> bool {
+    use std::os::unix::ffi::OsStrExt;
+    value.as_bytes().first() == Some(&b'-')
+}
+
 #[cfg(windows)]
 fn strip_os_prefix(value: &OsStr, prefix: &[u8]) -> Option<OsString> {
     use std::os::windows::ffi::{OsStrExt, OsStringExt};
     let wide: Vec<u16> = value.encode_wide().collect();
     let prefix: Vec<u16> = prefix.iter().map(|byte| u16::from(*byte)).collect();
     wide.strip_prefix(&prefix[..]).map(OsString::from_wide)
+}
+
+#[cfg(windows)]
+fn starts_with_ascii_dash(value: &OsStr) -> bool {
+    use std::os::windows::ffi::OsStrExt;
+    value.encode_wide().next() == Some(u16::from(b'-'))
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -75,6 +87,7 @@ pub fn parse(args: Vec<OsString>) -> Result<Action, ShoutxError> {
     let mut i = 0;
     let mut mode = LineMode::Default;
     let mut mode_set = false;
+    let mut join_separator = None;
     let mut options = true;
     let name;
     loop {
@@ -103,7 +116,8 @@ pub fn parse(args: Vec<OsString>) -> Result<Action, ShoutxError> {
                 if mode_set {
                     return Err(ShoutxError::usage("line modes are mutually exclusive"));
                 }
-                mode = LineMode::Join(os_bytes(&separator)?.to_vec());
+                mode = LineMode::Join(Vec::new());
+                join_separator = Some(separator);
                 mode_set = true;
                 i += 1;
                 continue;
@@ -129,12 +143,13 @@ pub fn parse(args: Vec<OsString>) -> Result<Action, ShoutxError> {
             let separator = tokens
                 .get(i + 1)
                 .ok_or_else(|| ShoutxError::usage("missing join separator"))?;
-            mode = LineMode::Join(os_bytes(separator)?.to_vec());
+            mode = LineMode::Join(Vec::new());
+            join_separator = Some(separator.clone());
             mode_set = true;
             i += 2;
             continue;
         }
-        if options && token_text.is_some_and(|text| text.starts_with('-')) {
+        if options && starts_with_ascii_dash(token) {
             return Err(ShoutxError::usage("unknown option"));
         }
         name = token.clone();
@@ -146,6 +161,9 @@ pub fn parse(args: Vec<OsString>) -> Result<Action, ShoutxError> {
         1 => Some(tokens[i].clone()),
         _ => return Err(ShoutxError::usage("too many operands")),
     };
+    if let Some(separator) = join_separator {
+        mode = LineMode::Join(os_bytes(&separator)?.to_vec());
+    }
     Ok(Action::Write(WriteRequest {
         destination,
         mode,

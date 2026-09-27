@@ -186,7 +186,7 @@ sha256sum --check --ignore-missing SHA256SUMS
 On macOS, the equivalent command is:
 
 ```sh
-shasum --algorithm 256 --check SHA256SUMS
+shasum --algorithm 256 --check --ignore-missing SHA256SUMS
 ```
 
 Checksum verification proves that the archive matches the manifest. To also

@@ -20,7 +20,7 @@ jobs:
   metadata:
     permissions:
       contents: read
-      checks: read
+      actions: read
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     outputs:
@@ -73,11 +73,13 @@ jobs:
             echo "Tag does not match the Cargo package version"
             exit 1
           fi
-          successful_ci=$(gh api \
-            "repos/$GITHUB_REPOSITORY/commits/$COMMIT_SHA/check-runs" \
-            --jq '[.check_runs[] | select(.name == "CI result" and .conclusion == "success")] | length')
-          if [[ "$successful_ci" -lt 1 ]]; then
-            echo "The tagged commit does not have a successful CI result"
+          latest_ci=$(gh api --method GET \
+            "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs" \
+            -f head_sha="$COMMIT_SHA" -f event=push -f per_page=1)
+          if [[ "$(jq -r '.workflow_runs | length' <<< "$latest_ci")" != 1 ]] ||
+             [[ "$(jq -r '.workflow_runs[0].status' <<< "$latest_ci")" != "completed" ]] ||
+             [[ "$(jq -r '.workflow_runs[0].conclusion' <<< "$latest_ci")" != "success" ]]; then
+            echo "The latest CI workflow run for the tagged commit is not successful"
             exit 1
           fi
           echo "publish=true" >> "$GITHUB_OUTPUT"
@@ -191,6 +193,7 @@ jobs:
       attestations: write
     env:
       GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
       TAG: ${{ needs.metadata.outputs.tag }}
       PRERELEASE: ${{ needs.metadata.outputs.prerelease }}
     steps:
@@ -249,6 +252,20 @@ jobs:
           if [[ "$PRERELEASE" == "true" ]]; then
             gh release edit "$TAG" --draft=false --prerelease --latest=false
           else
+            set +e
+            current_latest=$(gh release view --json tagName --jq .tagName 2>/dev/null)
+            latest_found=$?
+            set -e
+            if [[ "$latest_found" -eq 0 && "$current_latest" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              greatest=$(printf '%s\n%s\n' "$current_latest" "$TAG" |
+                LC_ALL=C sort -V | tail -n 1)
+              if [[ "$greatest" != "$TAG" ]]; then
+                echo "Refusing to move the latest release pointer backward"
+                exit 1
+              fi
+            elif [[ "$latest_found" -ne 0 && "$latest_found" -ne 1 ]]; then
+              exit "$latest_found"
+            fi
             gh release edit "$TAG" --draft=false --prerelease=false --latest
           fi
 

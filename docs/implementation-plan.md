@@ -268,9 +268,9 @@ though the record is discarded. On Windows, invalid handles remain observable
 and require status 1. Supported writer invocations redirect stdout to an opened
 runner file and do not rely on startup-closed-descriptor detection.
 
-On POSIX, explicitly retain Rust's ignored-SIGPIPE behavior at the crate level
-and regression-test that `EPIPE` reaches normal error handling as status 1.
-This must not require a libc dependency or production `unsafe` code.
+On POSIX, rely on Rust runtime initialization to ignore SIGPIPE and
+regression-test that `EPIPE` reaches normal error handling as status 1. This
+must not require a libc dependency or production `unsafe` code.
 
 Diagnostics are fixed trusted messages written with fallible `Write` calls,
 never `print!`, `println!`, `eprint!`, or `eprintln!`; a diagnostic write failure
@@ -337,8 +337,9 @@ remain clearly labeled as planned. In particular, `github-actions:path` and
 - All validation and usage failures have empty stdout and the specified status.
 - A present value operand succeeds without the application touching an invalid
   Windows stdin handle or opening its stdin abstraction.
-- Invalid Windows stdin and stdout handles produce status 1; tests do not
-  substitute the Windows NUL device or another valid sink.
+- Windows CI covers safe unpaired-surrogate and binary-stdin cases. The
+  executable invalid-handle cases require the test-only FFI launcher and are a
+  mandatory gate in the platform harness PR before any release.
 - POSIX descriptors closed before process startup are observed as `/dev/null`;
   stdin becomes an empty value and stdout may discard output with status 0.
 - Broken-pipe behavior produces status 1 rather than signal termination.

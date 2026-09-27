@@ -7,7 +7,8 @@ destination-specific formats and protocols. The first release targets GitHub
 Actions environment files. Small reusable encoders for downstream shell and
 Markdown contexts are under consideration for v1.0.
 
-Status: early design draft.
+Status: early implementation. The single-line `github-actions:output` and
+`github-actions:env` writers are implemented; other commands remain planned.
 
 ## The problem
 
@@ -41,12 +42,9 @@ Pass expression values through `env:` so they reach the shell as data, then use
   env:
     PR_TITLE: ${{ github.event.pull_request.title }}
     REPORT_URL: ${{ steps.build.outputs.report-url }}
-    TOOL_DIR: ${{ github.workspace }}/.tools/bin
   run: |
     shoutx github-actions:output title "$PR_TITLE" >> "$GITHUB_OUTPUT"
     shoutx github-actions:env REPORT_URL "$REPORT_URL" >> "$GITHUB_ENV"
-    # PATH entries must name trusted directories.
-    shoutx github-actions:path -- "$TOOL_DIR" >> "$GITHUB_PATH"
 ```
 
 Do not interpolate untrusted `${{ ... }}` expressions directly into `run:`.
@@ -58,7 +56,6 @@ When the value argument is omitted, `shoutx` reads standard input:
 
 ```sh
 generate-title | shoutx github-actions:output title >> "$GITHUB_OUTPUT"
-generate-report | shoutx github-actions:output --multiline report >> "$GITHUB_OUTPUT"
 ```
 
 Default single-line mode accepts a normal one-line producer by consuming one
@@ -67,7 +64,7 @@ is rejected:
 
 ```console
 $ printf 'hello\nworld\n' | shoutx github-actions:output title
-error: value contains CR or LF; use --first-line, --join-lines, --join-lines-with, or --multiline
+error: value contains CR or LF
 ```
 
 Changing the value requires an explicit normalization mode:
@@ -78,15 +75,17 @@ generate-summary | shoutx github-actions:output --join-lines summary >> "$GITHUB
 generate-list | shoutx github-actions:output --join-lines-with ', ' items >> "$GITHUB_OUTPUT"
 ```
 
-`--multiline` preserves line breaks and emits a valid multiline record. It is
-not a raw mode.
+`--multiline` is planned but is not implemented in the current development
+build. It is rejected rather than falling back to single-line output.
 
 ## Commands
 
 ```text
 GitHub Actions writers:
-  shoutx github-actions:output [--first-line | --join-lines | --join-lines-with STRING | --multiline] NAME [VALUE]
-  shoutx github-actions:env    [--first-line | --join-lines | --join-lines-with STRING | --multiline] NAME [VALUE]
+  shoutx github-actions:output [--first-line | --join-lines | --join-lines-with STRING] NAME [VALUE]
+  shoutx github-actions:env    [--first-line | --join-lines | --join-lines-with STRING] NAME [VALUE]
+
+Planned GitHub Actions writer:
   shoutx github-actions:path   [VALUE]
 
 Context encoders under consideration for v1.0 (not yet specified):
@@ -96,11 +95,11 @@ Context encoders under consideration for v1.0 (not yet specified):
 
 | Command | Produces | Line-break behavior |
 | --- | --- | --- |
-| `github-actions:output` | One `$GITHUB_OUTPUT` record | Internal boundaries rejected by default; explicit normalization or `--multiline` |
-| `github-actions:env` | One `$GITHUB_ENV` record | Internal boundaries rejected by default; explicit normalization or `--multiline` |
-| `github-actions:path` | One `$GITHUB_PATH` record | One final boundary consumed; others rejected |
-| `shell:arg` | One POSIX shell word | Preserved in the quoted word |
-| `markdown:text` | Markdown that renders the value as text | Preserved |
+| `github-actions:output` | One `$GITHUB_OUTPUT` record | Internal boundaries rejected by default; explicit normalization |
+| `github-actions:env` | One `$GITHUB_ENV` record | Internal boundaries rejected by default; explicit normalization |
+| `github-actions:path` (planned) | One `$GITHUB_PATH` record | One final boundary consumed; others rejected |
+| `shell:arg` (planned) | One POSIX shell word | Preserved in the quoted word |
+| `markdown:text` (planned) | Markdown that renders the value as text | Preserved |
 
 Namespaced commands identify the interpretation context, not merely a data
 type. Provider-specific writers use the `PROVIDER:DESTINATION` form. Reusable
@@ -124,20 +123,15 @@ CR as input framing. Default mode then rejects any remaining CR or LF.
 `--first-line` keeps the prefix before the first remaining boundary.
 `--join-lines` replaces each remaining boundary with one ASCII space;
 `--join-lines-with STRING` uses an explicit separator, which may be empty but
-may not contain NUL, CR, or LF. In `--multiline` mode, `shoutx` chooses an
-independently generated, collision-resistant delimiter and verifies that it
-does not occur in the value before emitting the record.
+may not contain NUL, CR, or LF. The planned `--multiline` mode will use an
+independently generated delimiter; it is not part of the current build.
 
-`github-actions:path` validates and emits one entry for `$GITHUB_PATH`. It
-consumes one optional final CRLF, LF, or bare CR as input framing, then rejects
-NUL, any remaining line boundary, and empty values. Platform-specific path
-rules belong to this command rather than to the caller. This command remains an
-MVP candidate until those cross-platform rules and parser tests are complete.
+The planned `github-actions:path` command will validate and emit one entry for
+`$GITHUB_PATH`. Its cross-platform rules and parser tests remain incomplete, so
+the current build rejects the command as unknown.
 
-This command prevents one value from becoming multiple `$GITHUB_PATH` records.
-It cannot make an attacker-controlled directory safe to add to `PATH`: doing so
-can still hijack later command lookup. Path trust and authorization remain the
-caller's responsibility.
+That future command will provide record framing, not path authorization. An
+attacker-controlled directory could still hijack later command lookup.
 
 The commands write encoded records to stdout. The caller deliberately chooses
 the destination file with shell redirection; `shoutx` does not discover or
@@ -184,11 +178,8 @@ arbitrary Markdown or HTML documents.
 - Input is strict UTF-8 and output is UTF-8 without a byte-order mark. Framing
   bytes are emitted explicitly for the local supported runner parser and do
   not rely on host text-mode newline conversion.
-- The cross-platform guarantee is a semantic round trip through the local
-  supported runner, not byte-identical output. When `RUNNER_OS=Windows`, CRLF
-  framing is used where necessary to preserve a multiline value ending in bare
-  CR. `RUNNER_OS=Linux` or `macOS` selects LF framing regardless of executable
-  host; if `RUNNER_OS` is absent, the native process OS selects the convention.
+- The implemented single-line records use explicit LF framing on every OS.
+  Platform-dependent `RUNNER_OS` framing belongs to the planned multiline mode.
 - Supported redirection must preserve native stdout bytes. POSIX `sh`/`bash`
   redirection and PowerShell Core 7.4 or later direct redirection are intended
   targets, but PowerShell is not part of the release guarantee until
@@ -221,8 +212,8 @@ makes the next parser explicit.
 
 Default single-line mode treats at most one final CRLF, LF, or bare CR as input
 framing rather than value data. Other discarded or normalized content requires
-an explicit `--first-line`, `--join-lines`, or `--join-lines-with` mode.
-`--multiline` preserves the complete value.
+an explicit `--first-line`, `--join-lines`, or `--join-lines-with` mode. Exact
+value preservation with `--multiline` remains planned.
 
 ### Validate before writing
 

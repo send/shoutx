@@ -302,15 +302,19 @@ enabled. A runner may currently expose `$GITHUB_ARTIFACTS` while silently
 ignoring its contents when both its server feature flag and self-hosted opt-in
 environment variable are disabled.
 
-### `shell:arg`
+### Deferred shell source encoding
 
-If included in v1.0, the security property is one shell word after exactly one
-parse by a named shell dialect. It does not cover `eval`, nested parsing,
-command options, executable selection, expansions performed before encoding, or
-concatenation into a larger shell token without a documented composition rule.
+`shell:arg` is not a v1.0 candidate. Although a value can be represented as one
+POSIX shell word in source, command substitution does not reparse quote
+characters produced by the command. The representation therefore has no safe,
+natural runtime consumption pattern. It becomes effective only in source that
+is parsed later, where a one-word encoder cannot enforce trusted composition or
+exactly one parse and may encourage unsafe `eval` use.
 
 The recommended GitHub Actions pattern remains a value passed through `env:` and
-expanded as `"$VALUE"`. `shell:arg` is not a replacement for that data channel.
+expanded as `"$VALUE"`. A future shell-source feature would require a concrete
+destination, named dialect, and composition contract. It would still not cover
+command options, executable selection, or application-level authorization.
 
 ### Markdown rendering
 

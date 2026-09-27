@@ -1,0 +1,54 @@
+#!/bin/sh
+set -eu
+
+root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+runner_commit=397b032cbf865e9c3ddfab89d533ec19325e1273
+runner_dir=${SHOUTX_RUNNER_SOURCE:-"$root/target/runner-oracle/actions-runner"}
+corpus="$root/target/runner-oracle/corpus.json"
+
+case "$(uname -s)-$(uname -m)" in
+  Linux-x86_64) runtime=linux-x64 ;;
+  Linux-aarch64 | Linux-arm64) runtime=linux-arm64 ;;
+  Darwin-x86_64) runtime=osx-x64 ;;
+  Darwin-arm64) runtime=osx-arm64 ;;
+  *) echo "error: unsupported local oracle platform" >&2; exit 1 ;;
+esac
+
+if [ ! -d "$runner_dir/.git" ]; then
+  mkdir -p "$(dirname -- "$runner_dir")"
+  git clone --filter=blob:none --no-checkout https://github.com/actions/runner.git "$runner_dir"
+  git -C "$runner_dir" fetch --depth 1 origin "$runner_commit"
+  git -C "$runner_dir" checkout --detach "$runner_commit"
+fi
+
+actual_commit=$(git -C "$runner_dir" rev-parse HEAD)
+if [ "$actual_commit" != "$runner_commit" ]; then
+  echo "error: runner checkout is not the pinned commit" >&2
+  exit 1
+fi
+
+if command -v dotnet >/dev/null 2>&1; then
+  dotnet_run() { dotnet "$@"; }
+elif command -v mise >/dev/null 2>&1; then
+  dotnet_run() { mise exec -- dotnet "$@"; }
+else
+  echo "error: install .NET 8.0.424 directly or with mise" >&2
+  exit 1
+fi
+
+cd "$root"
+mkdir -p "$(dirname -- "$corpus")"
+SHOUTX_CORPUS_PATH="$corpus" \
+  cargo test --test runner_differential_fixture export_runner_corpus -- --ignored
+cp tests/runner-oracle/ShoutxDifferentialL0.cs \
+  "$runner_dir/src/Test/L0/Worker/ShoutxDifferentialL0.cs"
+DOTNET_CLI_TELEMETRY_OPTOUT=1 dotnet_run build "$runner_dir/src/Test/Test.csproj" \
+  --configuration Release \
+  -p:PackageRuntime="$runtime" \
+  -p:NuGetAudit=false
+SHOUTX_CORPUS="$corpus" DOTNET_CLI_TELEMETRY_OPTOUT=1 \
+  dotnet_run test "$runner_dir/src/Test/Test.csproj" \
+  --configuration Release \
+  --no-build \
+  --no-restore \
+  --filter 'FullyQualifiedName~ShoutxDifferentialL0'

@@ -271,6 +271,21 @@ shoutx azure-pipelines:variable ...
 
 The exact plugin distribution and discovery mechanism is not yet specified.
 
+## Development
+
+Rust development uses the toolchain pinned by `rust-toolchain.toml`; normal
+builds and tests require only Cargo. The pinned `actions/runner` differential
+suite additionally needs .NET SDK 8.0.424. `mise.toml` can install that SDK for
+local development, but mise is optional:
+
+```sh
+mise install
+scripts/test-runner-oracle.sh
+```
+
+CI installs the same SDK directly and runs the oracle natively on Linux and
+Windows.
+
 ## License
 
 MIT

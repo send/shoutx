@@ -21,6 +21,41 @@ jobs:
       - run: rustup toolchain install stable --profile minimal --component clippy
       - run: cargo +stable test --all-targets
       - run: cargo +stable clippy --all-targets -- -D warnings
+      - run: cargo +stable build
+      - name: POSIX shell smoke tests
+        if: runner.os != 'Windows'
+        shell: sh
+        run: |
+          sh tests/workflow-smoke/posix.sh target/debug/shoutx
+          bash tests/workflow-smoke/posix.sh target/debug/shoutx
+      - name: PowerShell smoke tests
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: tests/workflow-smoke/windows.ps1 -Binary target/debug/shoutx.exe
+      - name: Invalid Windows standard handles
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $installation = & $vswhere -latest -products * `
+            -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 `
+            -property installationPath
+          $devcmd = Join-Path $installation 'Common7\Tools\VsDevCmd.bat'
+          & cmd.exe /d /s /c `
+            "`"$devcmd`" -no_logo -arch=x64 && cl.exe /nologo /W4 /WX tests\workflow-smoke\windows_invalid_handle.c /Fe:target\windows_invalid_handle.exe"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          target/windows_invalid_handle.exe `
+            (Resolve-Path target/debug/shoutx.exe)
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Git Bash smoke tests
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          SHOUTX_BIN: ${{ github.workspace }}\target\debug\shoutx.exe
+        run: |
+          & "$env:ProgramFiles\Git\bin\bash.exe" -lc `
+            'tests/workflow-smoke/posix.sh "$(cygpath -u "$SHOUTX_BIN")"'
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
   msrv:
     timeout-minutes: 15
@@ -31,3 +66,51 @@ jobs:
       - run: cargo +1.85.0 fmt --all -- --check
       - run: cargo +1.85.0 test --all-targets
       - run: cargo +1.85.0 clippy --all-targets -- -D warnings
+
+  runner-differential:
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            runtime: linux-x64
+          - os: windows-latest
+            runtime: win-x64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: actions/runner
+          ref: 397b032cbf865e9c3ddfab89d533ec19325e1273
+          path: target/runner-oracle/actions-runner
+          persist-credentials: false
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68
+        with:
+          dotnet-version: 8.0.424
+      - run: rustup toolchain install stable --profile minimal
+      - name: Generate and validate shared corpus
+        shell: pwsh
+        run: |
+          cargo +stable test --test runner_differential_fixture local_model_matches_shared_runner_corpus
+          $env:SHOUTX_CORPUS_PATH = "$pwd/target/runner-oracle/corpus.json"
+          cargo +stable test --test runner_differential_fixture export_runner_corpus -- --ignored
+      - name: Build pinned runner oracle
+        shell: pwsh
+        run: |
+          Copy-Item tests/runner-oracle/ShoutxDifferentialL0.cs target/runner-oracle/actions-runner/src/Test/L0/Worker/
+          dotnet build target/runner-oracle/actions-runner/src/Test/Test.csproj `
+            --configuration Release `
+            -p:PackageRuntime=${{ matrix.runtime }} `
+            -p:NuGetAudit=false
+      - name: Compare pinned runner parser
+        shell: pwsh
+        env:
+          SHOUTX_CORPUS: ${{ github.workspace }}/target/runner-oracle/corpus.json
+        run: |
+          dotnet test target/runner-oracle/actions-runner/src/Test/Test.csproj `
+            --configuration Release `
+            --no-build `
+            --no-restore `
+            --filter 'FullyQualifiedName~ShoutxDifferentialL0'

@@ -92,14 +92,13 @@ public sealed class ShoutxDifferentialL0
     {
         using var host = new TestHostContext(this);
         host.EnqueueInstance<IActionCommandManager>(new Mock<IActionCommandManager>().Object);
-        var prepend = new List<string> { "first", "second", "first" };
+        var prepend = new List<string> { "first", "second", "third" };
         var global = new GlobalContext { PrependPath = prepend };
         var context = new Mock<IExecutionContext>();
         context.SetupGet(value => value.Global).Returns(global);
         var variables = new Variables(host, new Dictionary<string, VariableValue>());
         var expectedPrepend = string.Join(Path.PathSeparator, prepend.AsEnumerable().Reverse());
-        var original = expectedPrepend + Path.PathSeparator + "original";
-        var environment = new Dictionary<string, string> { [Constants.PathVariable] = original };
+        var environment = new Dictionary<string, string> { [Constants.PathVariable] = "original" };
         var handler = new ExposedHandler
         {
             ExecutionContext = context.Object,
@@ -111,7 +110,12 @@ public sealed class ShoutxDifferentialL0
 
         handler.ApplyPrependPath();
 
-        Assert.Equal(original, environment[Constants.PathVariable]);
+        var composed = expectedPrepend + Path.PathSeparator + "original";
+        Assert.Equal(composed, environment[Constants.PathVariable]);
+
+        handler.ApplyPrependPath();
+
+        Assert.Equal(composed, environment[Constants.PathVariable]);
     }
 
     [Fact]

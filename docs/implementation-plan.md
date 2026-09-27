@@ -454,9 +454,11 @@ platform FFI to create genuinely closed inherited handles; keep it test-only,
 document its invariants, and isolate it from production code. An unpaired
 surrogate alone uses safe `OsStringExt::from_wide` and does not justify FFI.
 
-Before the first release, add reproducible release builds, artifact checksums,
-and provenance appropriate to the chosen distribution channels. Packaging and
-distribution remain separate decisions from the encoder implementation.
+Before the first release, implement the repeatable build inputs, artifact
+checksums, provenance, and publication gates defined by the
+[release design](release.md). Bit-for-bit reproducibility is not claimed until
+it is separately demonstrated. Packaging and distribution remain separate
+decisions from the encoder implementation.
 
 ## Review gates
 

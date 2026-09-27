@@ -66,12 +66,6 @@ case "$dotnet_command" in
     ;;
 esac
 
-actual_sdk=$(dotnet_run --version)
-if [ "$actual_sdk" != 8.0.424 ]; then
-  echo "error: expected .NET SDK 8.0.424, got $actual_sdk" >&2
-  exit 1
-fi
-
 cd "$root"
 mkdir -p "$(dirname -- "$corpus")"
 SHOUTX_CORPUS_PATH="$corpus" \
@@ -80,6 +74,11 @@ cp tests/runner-oracle/ShoutxDifferentialL0.cs \
   "$runner_dir/src/Test/L0/Worker/ShoutxDifferentialL0.cs"
 (
   cd "$runner_dir/src"
+  actual_sdk=$(dotnet_run --version)
+  if [ "$actual_sdk" != 8.0.424 ]; then
+    echo "error: expected .NET SDK 8.0.424, got $actual_sdk" >&2
+    exit 1
+  fi
   DOTNET_CLI_TELEMETRY_OPTOUT=1 dotnet_run build Test/Test.csproj \
     --configuration Release \
     -p:PackageRuntime="$runtime" \

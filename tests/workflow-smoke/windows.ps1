@@ -41,6 +41,18 @@ try {
         throw "PowerShell treated control-Z as text or end-of-file"
     }
 
+    $multiline = Join-Path $root 'multiline-bare-cr'
+    & $Binary github-actions:output --multiline result "value`r" > $multiline
+    if ($LASTEXITCODE -ne 0) { throw "multiline writer failed" }
+    $multilineBytes = [byte[]](Get-Content -AsByteStream -Raw $multiline)
+    $firstLf = [Array]::IndexOf($multilineBytes, [byte]10)
+    if ($firstLf -lt 8) { throw "invalid multiline header" }
+    $delimiter = [Text.Encoding]::UTF8.GetString($multilineBytes[8..($firstLf - 1)])
+    $expectedMultiline = [Text.Encoding]::UTF8.GetBytes("result<<$delimiter`nvalue`r`r`n$delimiter`n")
+    if (-not [Linq.Enumerable]::SequenceEqual($multilineBytes, $expectedMultiline)) {
+        throw "PowerShell changed CR-sensitive multiline stdout bytes"
+    }
+
     $legacy = Join-Path $root 'legacy-powershell'
     & powershell.exe -NoProfile -Command `
         "& '$Binary' github-actions:output result value >> '$legacy'"

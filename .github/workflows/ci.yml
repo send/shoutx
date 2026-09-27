@@ -86,6 +86,51 @@ jobs:
       - run: cargo +stable test --all-targets
       - run: cargo +stable clippy --all-targets -- -D warnings
       - run: cargo +stable build
+      - name: Dogfood GitHub environment files on POSIX
+        id: dogfood_posix
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          dogfood_path="$RUNNER_TEMP/shoutx-dogfood-bin"
+          mkdir -p "$dogfood_path"
+          target/debug/shoutx github-actions:output value 'output % 日本語' >> "$GITHUB_OUTPUT"
+          target/debug/shoutx github-actions:output --multiline multiline $'first\nsecond\n' >> "$GITHUB_OUTPUT"
+          target/debug/shoutx github-actions:env SHOUTX_DOGFOOD_ENV 'env % 日本語' >> "$GITHUB_ENV"
+          target/debug/shoutx github-actions:path "$dogfood_path" >> "$GITHUB_PATH"
+      - name: Verify dogfooded values on POSIX
+        if: runner.os != 'Windows'
+        shell: bash
+        env:
+          DOGFOOD_OUTPUT: ${{ steps.dogfood_posix.outputs.value }}
+          DOGFOOD_MULTILINE: ${{ steps.dogfood_posix.outputs.multiline }}
+        run: |
+          [[ "$DOGFOOD_OUTPUT" == 'output % 日本語' ]]
+          [[ "$DOGFOOD_MULTILINE" == $'first\nsecond\n' ]]
+          [[ "$SHOUTX_DOGFOOD_ENV" == 'env % 日本語' ]]
+          [[ ":$PATH:" == *":$RUNNER_TEMP/shoutx-dogfood-bin:"* ]]
+      - name: Dogfood GitHub environment files on Windows
+        id: dogfood_windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $dogfoodPath = Join-Path $env:RUNNER_TEMP 'shoutx-dogfood-bin'
+          New-Item -ItemType Directory -Force $dogfoodPath | Out-Null
+          target/debug/shoutx.exe github-actions:output value 'output % 日本語' >> $env:GITHUB_OUTPUT
+          target/debug/shoutx.exe github-actions:output --multiline multiline "first`nsecond`n" >> $env:GITHUB_OUTPUT
+          target/debug/shoutx.exe github-actions:env SHOUTX_DOGFOOD_ENV 'env % 日本語' >> $env:GITHUB_ENV
+          target/debug/shoutx.exe github-actions:path $dogfoodPath >> $env:GITHUB_PATH
+      - name: Verify dogfooded values on Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          DOGFOOD_OUTPUT: ${{ steps.dogfood_windows.outputs.value }}
+          DOGFOOD_MULTILINE: ${{ steps.dogfood_windows.outputs.multiline }}
+        run: |
+          if ($env:DOGFOOD_OUTPUT -cne 'output % 日本語') { throw 'Output mismatch' }
+          if ($env:DOGFOOD_MULTILINE -cne "first`nsecond`n") { throw 'Multiline mismatch' }
+          if ($env:SHOUTX_DOGFOOD_ENV -cne 'env % 日本語') { throw 'Environment mismatch' }
+          $expectedPath = Join-Path $env:RUNNER_TEMP 'shoutx-dogfood-bin'
+          if ($expectedPath -notin ($env:PATH -split ';')) { throw 'PATH mismatch' }
       - name: POSIX shell smoke tests
         if: runner.os != 'Windows'
         shell: sh

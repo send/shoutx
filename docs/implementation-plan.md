@@ -217,18 +217,22 @@ include rejected bytes or distinguish secrets by content.
 
 ## Name and policy validation
 
-Keep output and environment name validators separate even though they share an
-ASCII prefix:
+Keep destination name policies explicit even when validators can share a
+portable grammar:
 
 ```text
 output  [A-Za-z_][A-Za-z0-9_-]*
 env     [A-Za-z_][A-Za-z0-9_]*
+state   [A-Za-z_][A-Za-z0-9_]*
 ```
 
 Validate the 255-byte limit independently of grammar. Environment reserved-name
 comparisons use ASCII case folding only. Do not use locale-sensitive or Unicode
 case conversion. Reject prefixes `GITHUB_` and `RUNNER_`, plus exact
 `NODE_OPTIONS`; do not broaden those checks by substring matching.
+State has no reserved-name policy because the runner adds the `STATE_` prefix.
+Reuse of the environment grammar must not accidentally reuse its reserved-name
+block.
 
 Name failures are policy/input errors with status 1, not CLI grammar errors.
 
@@ -257,7 +261,7 @@ hundreds-of-megabytes temporary allocation.
 
 ## Record construction and process behavior
 
-Single-line output and environment records are constructed as:
+Single-line output, environment, and state records are constructed as:
 
 ```text
 NAME `=` VALUE LF
@@ -436,6 +440,26 @@ path validator and parser model, target selection from `RUNNER_OS`, native
 Linux and Windows runner differential cases, shell smoke tests, and the public
 command. It must not inherit output/environment parser assumptions by code
 reuse.
+
+## Next implementation PR: `github-actions:state`
+
+The state contract is specified after v0.1.0 and implemented as a small
+named-writer extension. Add the command to the manual parser and help output,
+reuse the shared value, line-mode, multiline-framing, size, and record
+construction paths, and add a state name policy that shares the environment
+grammar without its reserved-name block.
+
+Extend CLI and property-test matrices to all three named destinations. Extend
+the pinned runner oracle to call `SaveStateFileCommand` and obtain its state
+dictionary from `ExecutionContext.CreateChild` without supplying an existing
+state dictionary; record that construction path, since a mock-provided comparer
+would make the oracle self-validating. Prove exact value round trips and that a
+case-colliding later record replaces the value while retaining the first name
+spelling. Add a local JavaScript fixture action whose `main` phase writes state
+through shoutx and whose `post` phase verifies `STATE_NAME`. Keep
+shell-redirection coverage in the shared named-writer matrix. Documentation
+must continue to label the command unavailable until this implementation PR
+lands.
 
 ## CI and quality gates
 

@@ -1,9 +1,9 @@
 # CLI contract test plan
 
 This document turns the `shoutx` CLI contract into an implementation test plan.
-It covers `github-actions:output`, `github-actions:env`,
-`github-actions:path`, the shared input rules, and the supported workflow-shell
-redirection paths.
+It covers `github-actions:output`, `github-actions:env`, the specified but not
+yet implemented `github-actions:state`, `github-actions:path`, the shared input
+rules, and the supported workflow-shell redirection paths.
 
 The product contract is defined by the [README](../README.md), the design
 decisions by [design.md](design.md), and the security boundary by
@@ -39,7 +39,7 @@ with the destination parser on the named platform. Unless stated otherwise,
 the name is `result`, input is supplied as one argv value, and success means
 status 0 with empty stderr.
 
-For single-line output and environment records, exact stdout is:
+For single-line output, environment, and state records, exact stdout is:
 
 ```text
 NAME=VALUE LF
@@ -51,8 +51,8 @@ instead of comparing the complete record with a fixture.
 
 ## Command-line grammar
 
-Run applicable cases for both `github-actions:output` and
-`github-actions:env`.
+Run applicable cases for `github-actions:output`, `github-actions:env`, and
+`github-actions:state`.
 
 | Case | Invocation shape | Expected result |
 | --- | --- | --- |
@@ -134,6 +134,23 @@ Names such as `GITHUB`, `RUNNER`, `NODE_OPTION`, and `NODE_OPTIONS_X` remain
 valid unless another rule rejects them. Duplicate or case-colliding assignments
 from separate invocations are not detected by `shoutx` and are not negative
 CLI tests. Every grammar or policy rejection has status 1 and empty stdout.
+
+### `github-actions:state`
+
+Apply the environment-name grammar cases without its reserved-name policy.
+Accepted boundaries include `a`, `_`, `A0`, `GITHUB_ENV`, `RUNNER_OS`,
+`NODE_OPTIONS`, and a 255-byte name. Reject an empty name; a leading digit or
+hyphen; whitespace; hyphens; `=`, `<`, CR, LF, non-ASCII characters; and a
+256-byte name. Every rejection has status 1 and empty stdout.
+
+Feed multiple records to the pinned runner state handler and verify that a
+case-colliding later record replaces the value while retaining the first name
+spelling. The oracle must obtain the dictionary from
+`ExecutionContext.CreateChild` without supplying an existing state dictionary,
+and record that construction path; supplying a test-created dictionary with the
+expected comparer would prove only the fixture's behavior. This characterizes
+destination behavior; one shoutx invocation still emits exactly one requested
+record and does not inspect earlier records.
 
 ## Text validation
 
@@ -276,9 +293,9 @@ concatenation.
 
 ## Multiline records
 
-For both named writers, cover empty values, values with no boundary, every mix
-of LF/CR/CRLF, multiple trailing boundaries, a trailing bare CR, Unicode, BOM,
-and strings resembling runner syntax or workflow commands.
+For all three named writers, cover empty values, values with no boundary, every
+mix of LF/CR/CRLF, multiple trailing boundaries, a trailing bare CR, Unicode,
+BOM, and strings resembling runner syntax or workflow commands.
 
 For every success, assert all of the following:
 
@@ -415,6 +432,18 @@ to unsupported Desktop PowerShell.
 `github-actions:path` additionally requires the native Linux and Windows
 grammar, parser, append-position, ordering, and shell tests above. A release
 must not infer path compatibility from the named-writer tests.
+
+`github-actions:state` additionally requires a local JavaScript fixture action
+rather than an ordinary workflow `run:` step; composite actions cannot declare
+a `post:` phase. Its `main` phase writes an attacker-style multiline value
+through shoutx to `$GITHUB_STATE`, and its `post` phase verifies the exact
+`STATE_NAME` value and the absence of a second attacker-selected key. A
+case-collision case must read the first spelling of `STATE_NAME`; the runner
+oracle is the discriminating name-spelling test because the Windows process
+environment is case-insensitive. The fixture must also show that the state is
+scoped to that action rather than exported as a general subsequent-step
+environment variable. Generic shell-redirection coverage remains in the
+named-writer shell matrix and is not inferred from this JavaScript fixture.
 
 For each supported workflow shell, a negative smoke test must place another
 successful command after a rejected `shoutx` invocation and still observe step

@@ -48,7 +48,10 @@ jobs:
           case "$status" in
             0) echo "run_ci=false" >> "$GITHUB_OUTPUT" ;;
             1) echo "run_ci=true" >> "$GITHUB_OUTPUT" ;;
-            *) exit "$status" ;;
+            *)
+              echo "Change detection failed with status $status; running full CI"
+              echo "run_ci=true" >> "$GITHUB_OUTPUT"
+              ;;
           esac
 
   dependencies:

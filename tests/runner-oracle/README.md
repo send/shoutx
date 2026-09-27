@@ -3,6 +3,10 @@
 This test-only xUnit fixture calls `EnvFileKeyValuePairs` and
 `AddPathFileCommand.ProcessCommand` from the pinned `actions/runner` checkout
 directly. It does not copy or translate the runner's parser implementation.
+The fixture also routes effective PATH composition through the runner's
+`Handler.AddPrependPathToEnvironment` implementation. On native Linux it runs
+the actual `ContainerStepHost` and `ProcessInvoker` against a test helper in
+place of Docker, recording how the runner tokenizes its constructed argv.
 
 The baseline is:
 

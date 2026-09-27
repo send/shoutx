@@ -1,10 +1,9 @@
 # Release design
 
-This document defines the intended first-release packaging and publication
-contract for `shoutx`. It does not authorize a release, reserve a registry
-name, or describe behavior of the writers themselves. The release workflow is
-a separate implementation increment and must be reviewed before the first tag
-is created.
+This document defines the native-binary packaging and publication contract for
+`shoutx`. The contract was first exercised by v0.1.0. It does not describe the
+behavior of the writers themselves or authorize a particular future release;
+creating a release tag remains an explicit maintainer action.
 
 ## Initial distribution scope
 
@@ -58,10 +57,10 @@ version without that component is published as a normal release. The workflow
 derives this state from the already validated Cargo version rather than from a
 separate manual input.
 
-Builds use the exact Rust toolchain selected in `rust-toolchain.toml`. The
-workflow records the tag, commit, Rust version, target, and runner image in its
-job output. Updating the development toolchain is a reviewed repository change;
-a floating `stable` toolchain is not used for release artifacts.
+Builds use the exact Rust toolchain selected in `rust-toolchain.toml`. Package
+metadata and workflow logs identify the tag, commit, Rust version, target, and
+runner image. Updating the development toolchain is a reviewed repository
+change; a floating `stable` toolchain is not used for release artifacts.
 
 ## Artifact contract
 
@@ -145,7 +144,7 @@ workflow artifacts only long enough to diagnose a failed release.
 
 ## Reproducibility and support boundary
 
-The first release contract provides repeatable inputs: a tagged commit, locked
+The initial release contract provides repeatable inputs: a tagged commit, locked
 dependencies, an exact Rust toolchain, declared target triples, and recorded
 GitHub runner images. It does **not** claim bit-for-bit reproducible archives.
 Runner images, platform linkers, archive tools, and embedded build metadata can
@@ -159,9 +158,10 @@ Microsoft identity, installer packages, automatic update behavior, long-term
 support for a particular OS release, and package-manager availability are not
 part of the initial contract.
 
-## Follow-up implementation gates
+## Release-workflow validation
 
-The release-workflow PR must demonstrate, without publishing a real release:
+Pull requests that change the release workflow demonstrate, without publishing
+a real release:
 
 - locally testable version and artifact-name validation;
 - archive-content and permission checks for every target;
@@ -171,8 +171,8 @@ The release-workflow PR must demonstrate, without publishing a real release:
 - a safe dry run that exercises aggregation without creating a release; and
 - documented checksum and attestation verification commands.
 
-Creating the first tag and publishing the first release remain explicit
-maintainer actions after that PR is merged.
+Creating a tag and publishing a release remain explicit maintainer actions
+after the workflow change is merged.
 
 ## Verifying a published release
 

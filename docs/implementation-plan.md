@@ -6,6 +6,11 @@ sequencing and architecture plan, not an additional product contract. The
 [CLI contract test plan](test-plan.md) remain authoritative for observable
 behavior.
 
+Status: the plan through native packaging and publication was completed for
+v0.1.0. Future-tense milestone language below is retained as a historical
+record of the implementation sequence, not as a statement that those features
+remain unimplemented.
+
 ## Language and compatibility baseline
 
 `shoutx` will be implemented in Rust using Edition 2024 with Rust 1.85 as the

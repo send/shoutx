@@ -1,12 +1,13 @@
 # Threat model
 
-This document defines the security boundary that `shoutx` intends to protect.
-It covers the proposed MVP and will evolve with the implementation.
+This document defines the security boundary that `shoutx` protects. It covers
+the v0.1.0 GitHub Actions writers and inventories boundaries deferred beyond
+that release.
 
 Concrete cases and compatibility gates derived from this model are maintained
 in the [CLI contract test plan](test-plan.md).
 
-Revision status: second design pass, before implementation.
+Revision status: v0.1.0 release baseline.
 
 ## Security objective
 
@@ -117,8 +118,8 @@ the value.
 
 ## Data and encoding model
 
-GitHub requires environment files to be written as UTF-8. The proposed CLI
-contract is therefore:
+GitHub requires environment files to be written as UTF-8. The CLI contract is
+therefore:
 
 - input values are valid UTF-8 text;
 - invalid UTF-8 from stdin is rejected before output begins;
@@ -144,20 +145,19 @@ from the native process OS; it does not mean the shell or executable format.
 Shell redirection and shell-specific transcoding remain outside `shoutx`'s
 control. Supported invocation environments must preserve native-process stdout
 bytes unchanged. Windows PowerShell and PowerShell Core before 7.4 are
-unsupported. PowerShell Core 7.4 and later preserves native-command stdout
-bytes with direct redirection, but is not included in the release guarantee
-until differential tests establish the invocation contract. Merged stdout and
+unsupported. PowerShell Core 7.4 and later is included for direct redirection,
+with byte-capture and runner differential coverage in CI. Merged stdout and
 stderr are treated as text and are unsupported.
 
 ## GitHub Actions boundary inventory
 
-The MVP candidates are these environment-file destinations:
+The v0.1.0 release includes these environment-file destinations:
 
 | Boundary | MVP status | Interpretation |
 | --- | --- | --- |
 | `$GITHUB_OUTPUT` | Included | Named step-output records |
 | `$GITHUB_ENV` | Included | Named environment-variable records |
-| `$GITHUB_PATH` | Candidate; contract specified, implementation pending | One path entry per line, then PATH-separator joining |
+| `$GITHUB_PATH` | Included | One path entry per line, then PATH-separator joining |
 
 Other recognized boundaries are explicitly deferred:
 

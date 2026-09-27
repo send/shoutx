@@ -16,6 +16,19 @@ provenance are available from the
 The native-binary packaging and publication contract is specified in the
 [release design](docs/release.md).
 
+## Installation
+
+Download the archive for your platform and `SHA256SUMS` from the
+[latest GitHub release](https://github.com/send/shoutx/releases/latest). Verify
+the archive before extracting it, then place `shoutx` (`shoutx.exe` on Windows)
+on `PATH`. The [release verification guide](docs/release.md#verifying-a-published-release)
+documents checksum and GitHub artifact-attestation verification.
+
+GitHub Releases is currently the only binary distribution channel; `shoutx`
+has not been published to crates.io or a package manager. Automation should pin
+an exact release and expected archive digest rather than execute a mutable
+`latest` download.
+
 ## The problem
 
 CI workflows routinely move untrusted values across interpretation boundaries:
@@ -131,12 +144,12 @@ an independently generated, collision-checked delimiter.
 `github-actions:path` validates and emits one fully
 qualified entry for `$GITHUB_PATH`. Its target dialect follows `RUNNER_OS`,
 with native fallback; a present unknown value is always rejected. It
-consume one optional final line boundary, reject remaining boundaries and empty
-values, reject the target OS PATH separator (`:` on POSIX or `;` on Windows),
-and preserve the path without normalization. It also rejects `"` on every
-target and a trailing `\` on POSIX, which the runner cannot safely compose into
-its container-runtime PATH argument. A leading U+FEFF will be rejected because
-the runner would treat it differently at the beginning of the file.
+consumes one optional final line boundary, rejects remaining boundaries and
+empty values, rejects the target OS PATH separator (`:` on POSIX or `;` on
+Windows), and preserves the path without normalization. It also rejects `"` on
+every target and a trailing `\` on POSIX, which the runner cannot safely compose
+into its container-runtime PATH argument. A leading U+FEFF will be rejected
+because the runner would treat it differently at the beginning of the file.
 
 The command provides record framing, not path authorization. An
 attacker-controlled directory could still hijack later command lookup.

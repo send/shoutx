@@ -21,7 +21,7 @@ The initial provider is GitHub Actions. Provider-specific behavior is isolated
 behind namespaced commands so support for other workflow engines can be added
 without pretending their protocols are interchangeable.
 
-## MVP command candidates
+## Implemented GitHub Actions commands
 
 Provider-specific writers:
 
@@ -212,9 +212,9 @@ supported runner parser, not byte-identical records across operating systems.
 Supported invocations must preserve native-process stdout bytes. Legacy Windows
 PowerShell and PowerShell Core before 7.4 are unsupported. PowerShell Core 7.4
 and later preserves native-command stdout bytes under direct `>` and `>>`
-redirection, but is not included in the release guarantee until differential
-tests establish the invocation contract. Redirecting merged stderr and stdout
-is unsupported because PowerShell treats the combined stream as text.
+redirection and is included in the release guarantee with differential and
+workflow-smoke coverage. Redirecting merged stderr and stdout is unsupported
+because PowerShell treats the combined stream as text.
 
 The CLI status contract does not itself guarantee that a workflow shell stops
 the step. In PowerShell, callers must enable native-command error propagation

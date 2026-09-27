@@ -114,6 +114,7 @@ Detailed command matrices are colocated with their specifications:
 - [GitHub Actions named records](commands/github-actions-records.md)
 - [GitHub Actions PATH writer](commands/github-actions-path.md)
 - [GitHub Actions log-mask command](commands/github-actions-mask.md)
+- [GitHub Actions annotation commands](commands/github-actions-annotations.md)
 
 Deferred candidate gates live with their decision records:
 

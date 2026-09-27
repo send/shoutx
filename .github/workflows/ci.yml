@@ -110,16 +110,22 @@ jobs:
           target/debug/shoutx github-actions:output --multiline multiline $'first\nsecond\n' >> "$GITHUB_OUTPUT"
           target/debug/shoutx github-actions:env SHOUTX_DOGFOOD_ENV 'env % 日本語' >> "$GITHUB_ENV"
           target/debug/shoutx github-actions:path "$dogfood_path" >> "$GITHUB_PATH"
+          mask_marker="shoutx-mask-$(uuidgen)"
+          printf %s "$mask_marker" | target/debug/shoutx github-actions:mask
+          target/debug/shoutx github-actions:output masked_value "$mask_marker" >> "$GITHUB_OUTPUT"
+          printf 'masked value: %s\n' "$mask_marker"
       - name: Verify dogfooded values on POSIX
         if: runner.os != 'Windows'
         shell: bash
         env:
           DOGFOOD_OUTPUT: ${{ steps.dogfood_posix.outputs.value }}
           DOGFOOD_MULTILINE: ${{ steps.dogfood_posix.outputs.multiline }}
+          DOGFOOD_MASKED: ${{ steps.dogfood_posix.outputs.masked_value }}
         run: |
           [[ "$DOGFOOD_OUTPUT" == 'output % 日本語' ]]
           [[ "$DOGFOOD_MULTILINE" == $'first\nsecond\n' ]]
           [[ "$SHOUTX_DOGFOOD_ENV" == 'env % 日本語' ]]
+          [[ "$DOGFOOD_MASKED" == shoutx-mask-* ]]
           [[ ":$PATH:" == *":$RUNNER_TEMP/shoutx-dogfood-bin:"* ]]
       - name: Dogfood GitHub environment files on Windows
         id: dogfood_windows
@@ -132,16 +138,22 @@ jobs:
           target/debug/shoutx.exe github-actions:output --multiline multiline "first`nsecond`n" >> $env:GITHUB_OUTPUT
           target/debug/shoutx.exe github-actions:env SHOUTX_DOGFOOD_ENV 'env % 日本語' >> $env:GITHUB_ENV
           target/debug/shoutx.exe github-actions:path $dogfoodPath >> $env:GITHUB_PATH
+          $maskMarker = "shoutx-mask-$([guid]::NewGuid())"
+          $maskMarker | target/debug/shoutx.exe github-actions:mask
+          target/debug/shoutx.exe github-actions:output masked_value $maskMarker >> $env:GITHUB_OUTPUT
+          Write-Output "masked value: $maskMarker"
       - name: Verify dogfooded values on Windows
         if: runner.os == 'Windows'
         shell: pwsh
         env:
           DOGFOOD_OUTPUT: ${{ steps.dogfood_windows.outputs.value }}
           DOGFOOD_MULTILINE: ${{ steps.dogfood_windows.outputs.multiline }}
+          DOGFOOD_MASKED: ${{ steps.dogfood_windows.outputs.masked_value }}
         run: |
           if ($env:DOGFOOD_OUTPUT -cne 'output % 日本語') { throw 'Output mismatch' }
           if ($env:DOGFOOD_MULTILINE -cne "first`nsecond`n") { throw 'Multiline mismatch' }
           if ($env:SHOUTX_DOGFOOD_ENV -cne 'env % 日本語') { throw 'Environment mismatch' }
+          if (-not $env:DOGFOOD_MASKED.StartsWith('shoutx-mask-')) { throw 'Masked step output mismatch' }
           $expectedPath = Join-Path $env:RUNNER_TEMP 'shoutx-dogfood-bin'
           if ($expectedPath -notin ($env:PATH -split ';')) { throw 'PATH mismatch' }
       - name: POSIX shell smoke tests
@@ -247,10 +259,13 @@ jobs:
         run: |
           cargo +stable test --test runner_differential_fixture local_model_matches_shared_runner_corpus
           cargo +stable test --test path_runner_fixture local_path_model_matches_shared_corpus
+          cargo +stable test --test mask_runner_fixture generated_commands_have_one_physical_line
           $env:SHOUTX_CORPUS_PATH = "$pwd/target/runner-oracle/corpus.json"
           cargo +stable test --test runner_differential_fixture export_runner_corpus -- --ignored
           $env:SHOUTX_PATH_CORPUS_PATH = "$pwd/target/runner-oracle/path-corpus.json"
           cargo +stable test --test path_runner_fixture export_path_corpus -- --ignored
+          $env:SHOUTX_MASK_CORPUS_PATH = "$pwd/target/runner-oracle/mask-corpus.json"
+          cargo +stable test --test mask_runner_fixture export_mask_corpus -- --ignored
       - name: Build pinned runner oracle
         shell: pwsh
         working-directory: target/runner-oracle/actions-runner/src
@@ -266,6 +281,7 @@ jobs:
         env:
           SHOUTX_CORPUS: ${{ github.workspace }}/target/runner-oracle/corpus.json
           SHOUTX_PATH_CORPUS: ${{ github.workspace }}/target/runner-oracle/path-corpus.json
+          SHOUTX_MASK_CORPUS: ${{ github.workspace }}/target/runner-oracle/mask-corpus.json
         run: |
           dotnet test Test/Test.csproj `
             --configuration Release `

@@ -60,11 +60,17 @@ pub struct PathRequest {
 }
 
 #[derive(Debug)]
+pub struct MaskRequest {
+    pub value: Option<OsString>,
+}
+
+#[derive(Debug)]
 pub enum Action {
     Help,
     Version,
     Write(WriteRequest),
     WritePath(PathRequest),
+    Mask(MaskRequest),
 }
 
 fn text(value: &OsStr) -> Result<&str, ShoutxError> {
@@ -87,6 +93,9 @@ pub fn parse(args: Vec<OsString>) -> Result<Action, ShoutxError> {
     }
     if command == "github-actions:path" {
         return parse_path(it.collect());
+    }
+    if command == "github-actions:mask" {
+        return parse_mask(it.collect());
     }
     let destination = match command {
         "github-actions:output" => Destination::Output,
@@ -186,6 +195,32 @@ pub fn parse(args: Vec<OsString>) -> Result<Action, ShoutxError> {
         name,
         value,
     }))
+}
+
+fn parse_mask(tokens: Vec<OsString>) -> Result<Action, ShoutxError> {
+    let mut options = true;
+    let mut value = None;
+    for token in tokens {
+        let token_text = token.to_str();
+        if value.is_none() && options && token_text == Some("--") {
+            options = false;
+            continue;
+        }
+        if value.is_none() && options && token_text == Some("--help") {
+            return Ok(Action::Help);
+        }
+        if value.is_none() && options && token_text == Some("--version") {
+            return Ok(Action::Version);
+        }
+        if value.is_none() && options && starts_with_ascii_dash(&token) {
+            return Err(ShoutxError::usage("unknown option"));
+        }
+        if value.is_some() {
+            return Err(ShoutxError::usage("too many operands"));
+        }
+        value = Some(token);
+    }
+    Ok(Action::Mask(MaskRequest { value }))
 }
 
 fn parse_path(tokens: Vec<OsString>) -> Result<Action, ShoutxError> {

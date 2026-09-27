@@ -68,6 +68,17 @@ try {
     if (-not [Linq.Enumerable]::SequenceEqual([byte[]](Get-Content -AsByteStream -Raw $pathOutput), $expectedPath)) {
         throw "PowerShell changed path stdout bytes"
     }
+
+    $maskOutput = Join-Path $root 'mask'
+    & pwsh -NoProfile -Command `
+        '[Console]::OpenStandardOutput().Write([Text.Encoding]::UTF8.GetBytes("mask%value`r`n"))' |
+        & $Binary github-actions:mask > $maskOutput
+    if ($LASTEXITCODE -ne 0) { throw "mask command failed" }
+    $expectedMask = [Text.Encoding]::UTF8.GetBytes("::add-mask::mask%25value`n")
+    if (-not [Linq.Enumerable]::SequenceEqual([byte[]](Get-Content -AsByteStream -Raw $maskOutput), $expectedMask)) {
+        throw "PowerShell changed mask stdout bytes"
+    }
+
     & $Binary github-actions:path 'C:\bad;path' > (Join-Path $root 'rejected-path')
     if ($LASTEXITCODE -ne 1 -or (Get-Item (Join-Path $root 'rejected-path')).Length -ne 0) {
         throw "unsafe path was accepted"

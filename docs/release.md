@@ -51,6 +51,14 @@ is created:
 - the complete CI and dependency-policy gates pass for the tagged commit; and
 - the tag does not already have a published GitHub release.
 
+In addition to these automated checks, a release containing
+`github-actions:mask` requires the hosted-log gate in
+[`docs/test-plan.md`](test-plan.md#runner-masking-behavior): completed Linux,
+macOS, and Windows job logs must be inspected from outside the producing job
+and show replacement of fresh runtime-generated markers. Until that evidence
+is recorded, maintainers must not create a release tag for a commit exposing
+the command.
+
 A version with a prerelease component, such as `0.1.0-rc.1`, is published as a
 GitHub prerelease and is excluded from GitHub's latest-release selection. A
 version without that component is published as a normal release. The workflow

@@ -1,6 +1,6 @@
 use crate::{cli::LineMode, error::ShoutxError, input::VALUE_LIMIT};
 
-fn strip_final(value: &mut Vec<u8>) {
+pub(super) fn strip_final(value: &mut Vec<u8>) {
     if value.ends_with(b"\r\n") {
         value.truncate(value.len() - 2);
     } else if value.ends_with(b"\r") || value.ends_with(b"\n") {

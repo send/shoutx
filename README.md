@@ -8,9 +8,13 @@ Actions environment files. Generic context encoders are deferred until a
 concrete destination and safe consumption contract justify one.
 
 Status: early implementation. The `github-actions:output`,
-`github-actions:env`, `github-actions:path`, and `github-actions:state` writers
-are implemented. Native binaries, checksums, and provenance are available from
+`github-actions:env`, `github-actions:path`, `github-actions:state`, and
+`github-actions:mask` commands are implemented. Native binaries, checksums, and provenance are available from
 the [GitHub releases](https://github.com/send/shoutx/releases).
+
+`github-actions:mask` is present on `main` but is not eligible for the next
+binary release until its completed hosted-runner logs have passed the external
+redaction check specified in the test plan.
 
 The native-binary packaging and publication contract is specified in the
 [release design](docs/release.md).
@@ -102,6 +106,7 @@ GitHub Actions writers:
   shoutx github-actions:env    [--first-line | --join-lines | --join-lines-with STRING | --multiline] NAME [VALUE]
   shoutx github-actions:state  [--first-line | --join-lines | --join-lines-with STRING | --multiline] NAME [VALUE]
   shoutx github-actions:path   [VALUE]
+  shoutx github-actions:mask   [VALUE]
 
 ```
 
@@ -111,6 +116,7 @@ GitHub Actions writers:
 | `github-actions:env` | One `$GITHUB_ENV` record | Internal boundaries rejected by default; explicit normalization |
 | `github-actions:path` | One `$GITHUB_PATH` record | One final boundary consumed; others rejected |
 | `github-actions:state` | One `$GITHUB_STATE` record | Internal boundaries rejected by default; explicit normalization |
+| `github-actions:mask` | One stdout `add-mask` command | One final boundary consumed; remaining boundaries percent-escaped |
 
 Namespaced commands identify the interpretation context, not merely a data
 type. Provider-specific writers use the `PROVIDER:DESTINATION` form. Reusable
@@ -158,6 +164,24 @@ because the runner would treat it differently at the beginning of the file.
 The command provides record framing, not path authorization. An
 attacker-controlled directory could still hijack later command lookup.
 
+`github-actions:mask` registers one value with the runner's job-local secret
+masker. Its successful stdout must go directly to the runner, not to an
+environment file:
+
+```sh
+printf %s "$GENERATED_SECRET" | shoutx github-actions:mask
+```
+
+It consumes one optional final input boundary and percent-escapes `%`, CR, and
+LF into one physical workflow-command line. Empty and Unicode-whitespace-only
+values are rejected because the runner would not register them. Masking affects
+only subsequent runner output and is best-effort: shell tracing or earlier
+output can disclose the value, transformed forms are not universally covered,
+short values can over-mask logs, and an active `stop-commands` region causes the
+runner to ignore the command. Prefer stdin or a quoted environment variable to
+a literal process argument. A masked value may be suppressed if used as a job
+output, even though same-job step-output use is supported by GitHub.
+
 The commands write encoded records to stdout. The caller deliberately chooses
 the destination file with shell redirection; `shoutx` does not discover or
 modify environment files implicitly. Redirect writer output to the intended
@@ -179,7 +203,8 @@ enforce safe composition. Prefer an argv-capable API, or use `env:` and
   with `-`.
 - `--` ends option parsing. Modes are mutually exclusive, extra operands are
   usage errors, and `--join-lines-with=STRING` is accepted.
-- For a command without `NAME`, including `github-actions:path`, use `--`
+- For a command without `NAME`, including `github-actions:path` and
+  `github-actions:mask`, use `--`
   before a value that could begin with `-`.
 - `--help` and `--version` are options only before `NAME`; after `NAME`, those
   tokens are values.
@@ -196,6 +221,8 @@ enforce safe composition. Prefer an argv-capable API, or use `env:` and
   `VALUE` can successfully write an empty record when stdin is empty.
 - The `github-actions:path` writer rejects that empty value because an
   empty line is not a path entry in the runner protocol.
+- `github-actions:mask` also rejects empty and Unicode-whitespace-only values
+  because the runner would not install those masks.
 - Encoded output is written to stdout; diagnostics are written to stderr.
 - Values are limited to 1 MiB of UTF-8 before and after normalization. Names
   and `--join-lines-with` separators are limited to 255 bytes.

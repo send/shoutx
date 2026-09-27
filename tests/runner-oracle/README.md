@@ -3,6 +3,12 @@
 This test-only xUnit fixture calls `EnvFileKeyValuePairs` and
 `AddPathFileCommand.ProcessCommand` from the pinned `actions/runner` checkout
 directly. It does not copy or translate the runner's parser implementation.
+It also feeds shoutx-generated `add-mask` commands through the runner's actual
+`ActionCommandManager`, `AddMaskCommandExtension`, and `SecretMasker`.
+The runner's `TestHostContext` intentionally installs only JSON and URI value
+encoders. The derived-mask test mirrors the full encoder registration list from
+the pinned production `Runner.Common/HostContext.cs`; changes to that upstream
+list must update the fixture during a runner-pin review.
 The fixture also routes effective PATH composition through the runner's
 `Handler.AddPrependPathToEnvironment` implementation. On native Linux it runs
 the actual `ContainerStepHost` and `ProcessInvoker` against a test helper in

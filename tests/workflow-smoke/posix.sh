@@ -24,6 +24,21 @@ else
 fi
 cmp "$tmp/expected-multiline" "$tmp/multiline"
 
+if [ "${RUNNER_OS:-}" = Windows ]; then
+  path_value='C:\tools'
+else
+  path_value='/opt/tools'
+fi
+printf '%s\n' "$path_value" | "$binary" github-actions:path >>"$tmp/path"
+printf '%s\n' "$path_value" >"$tmp/expected-path"
+cmp "$tmp/expected-path" "$tmp/path"
+
+if "$binary" github-actions:path 'bad"path' >"$tmp/rejected-path"; then
+  echo "error: unsafe path was accepted" >&2
+  exit 1
+fi
+test ! -s "$tmp/rejected-path"
+
 if "$shell_under_test" -c '
   set -e
   printf "a\nb\n" | "$1" github-actions:output result >"$2"

@@ -1,5 +1,6 @@
 mod name;
 mod normalize;
+mod path;
 mod random;
 mod record;
 
@@ -7,6 +8,7 @@ use std::ffi::OsStr;
 
 use crate::{cli::WriteRequest, error::ShoutxError, input::VALUE_LIMIT};
 
+pub use path::encode as encode_path;
 pub use random::{OsRandom, RandomSource};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

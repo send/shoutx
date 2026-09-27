@@ -57,6 +57,27 @@ fn run() -> Result<(), ShoutxError> {
             )?;
             output(&record)
         }
+        Action::WritePath(request) => {
+            let target_os = shoutx::github_actions::TargetOs::from_runner_os(
+                std::env::var_os("RUNNER_OS").as_deref(),
+            );
+            if target_os == shoutx::github_actions::TargetOs::Unknown {
+                return Err(ShoutxError::failure("unknown target runner OS"));
+            }
+            let value = if let Some(value) = request.value.as_ref() {
+                shoutx::cli::os_bytes(value)?.to_vec()
+            } else {
+                if io::stdin().is_terminal() {
+                    return Err(ShoutxError::usage(
+                        "VALUE omitted while stdin is a terminal",
+                    ));
+                }
+                let mut stdin = process_io::stdin_file()
+                    .map_err(|_| ShoutxError::failure("failed to open stdin"))?;
+                shoutx::input::read_bounded(&mut stdin)?
+            };
+            output(&shoutx::github_actions::encode_path(value, target_os)?)
+        }
     }
 }
 

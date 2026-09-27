@@ -82,8 +82,6 @@ generate-notes | shoutx github-actions:output --multiline notes >> "$GITHUB_OUTP
 GitHub Actions writers:
   shoutx github-actions:output [--first-line | --join-lines | --join-lines-with STRING | --multiline] NAME [VALUE]
   shoutx github-actions:env    [--first-line | --join-lines | --join-lines-with STRING | --multiline] NAME [VALUE]
-
-Planned GitHub Actions writer:
   shoutx github-actions:path   [VALUE]
 
 Context encoders under consideration for v1.0 (not yet specified):
@@ -95,7 +93,7 @@ Context encoders under consideration for v1.0 (not yet specified):
 | --- | --- | --- |
 | `github-actions:output` | One `$GITHUB_OUTPUT` record | Internal boundaries rejected by default; explicit normalization |
 | `github-actions:env` | One `$GITHUB_ENV` record | Internal boundaries rejected by default; explicit normalization |
-| `github-actions:path` (planned) | One `$GITHUB_PATH` record | One final boundary consumed; others rejected |
+| `github-actions:path` | One `$GITHUB_PATH` record | One final boundary consumed; others rejected |
 | `shell:arg` (planned) | One POSIX shell word | Preserved in the quoted word |
 | `markdown:text` (planned) | Markdown that renders the value as text | Preserved |
 
@@ -124,19 +122,17 @@ CR as input framing. Default mode then rejects any remaining CR or LF.
 may not contain NUL, CR, or LF. `--multiline` preserves the complete value using
 an independently generated, collision-checked delimiter.
 
-The planned `github-actions:path` command will validate and emit one fully
+`github-actions:path` validates and emits one fully
 qualified entry for `$GITHUB_PATH`. Its target dialect follows `RUNNER_OS`,
-with native fallback; a present unknown value is always rejected. It will
+with native fallback; a present unknown value is always rejected. It
 consume one optional final line boundary, reject remaining boundaries and empty
 values, reject the target OS PATH separator (`:` on POSIX or `;` on Windows),
-and preserve the path without normalization. It will also reject `"` on every
+and preserve the path without normalization. It also rejects `"` on every
 target and a trailing `\` on POSIX, which the runner cannot safely compose into
 its container-runtime PATH argument. A leading U+FEFF will be rejected because
-the runner would treat it differently at the beginning of the file. The
-current build still rejects the command as unknown until its separate parser
-model and implementation land.
+the runner would treat it differently at the beginning of the file.
 
-That future command will provide record framing, not path authorization. An
+The command provides record framing, not path authorization. An
 attacker-controlled directory could still hijack later command lookup.
 
 The commands write encoded records to stdout. The caller deliberately chooses
@@ -178,7 +174,7 @@ arbitrary Markdown or HTML documents.
 - An empty `VALUE` and empty non-terminal stdin both mean an empty value.
 - GitHub Actions `run:` steps normally provide non-terminal stdin, so omitting
   `VALUE` can successfully write an empty record when stdin is empty.
-- The planned `github-actions:path` writer rejects that empty value because an
+- The `github-actions:path` writer rejects that empty value because an
   empty line is not a path entry in the runner protocol.
 - Encoded output is written to stdout; diagnostics are written to stderr.
 - Values are limited to 1 MiB of UTF-8 before and after normalization. Names

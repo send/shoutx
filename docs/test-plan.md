@@ -152,6 +152,105 @@ expected comparer would prove only the fixture's behavior. This characterizes
 destination behavior; one shoutx invocation still emits exactly one requested
 record and does not inspect earlier records.
 
+## Workflow artifact declaration candidate
+
+These cases define the pre-implementation gate for the
+`github-actions:artifacts` candidate. They do not make the command public until
+the hosted-runner availability checks pass.
+
+### Command grammar and input
+
+Test a missing or unknown variant as a usage error. `--help` and `--version`
+succeed before the variant and after `file` or `oci` while the first data
+operand is expected. `--` before the variant is not accepted. For either
+variant, `--` immediately after the variant ends option parsing.
+
+For `github-actions:artifacts file`, test `COMMAND file PATH`, `COMMAND file --
+PATH`, stdin when PATH is omitted, empty argv and empty stdin, a dash-prefixed
+path with and without `--`, and an extra operand. The argv value wins without
+reading stdin. The stdin terminal, closed-handle, invalid UTF-8, NUL, and hard
+limit cases follow the existing single-value rules. `COMMAND file --` selects
+stdin. A dash-prefixed PATH without `--` is an unknown-option usage error. The
+command has no line mode options.
+
+For `github-actions:artifacts oci`, require exactly `REFERENCE DIGEST` after
+option parsing. It never reads stdin. Missing or extra operands, an unknown
+option, or a dash-prefixed reference without `--` are usage errors with status
+2 and empty stdout. Once REFERENCE is consumed, a dash-prefixed DIGEST is data
+and fails digest validation with status 1. Empty operands and values that fail
+field validation are input errors with status 1 and empty stdout.
+
+### File declarations
+
+A successful file declaration has exact stdout:
+
+```text
+file://PATH LF
+```
+
+Cover relative, absolute, Unicode, internal-space, leading-space, URI-looking,
+OCI-looking, and `#`-prefixed paths on Linux, macOS, and Windows. The explicit
+`file://` prefix must force file interpretation and prevent comment skipping.
+Consume at most one final CRLF, LF, or bare CR from PATH as producer framing.
+Reject an empty result, remaining CR or LF, NUL, `=`, and every trailing scalar
+in the Unicode `White_Space` property. Include final NEL, LINE SEPARATOR, and
+PARAGRAPH SEPARATOR rejections, plus U+FEFF and U+200B preservation. Assert
+empty stdout for every rejection.
+
+The local model must reproduce only runner parsing and resolution behavior
+needed for comparison: full-line Unicode trimming, explicit scheme selection,
+relative resolution against `GITHUB_WORKSPACE`, native rooted-path handling with
+a null container, rooted translation and outside-mount rejection with a job
+container, directory exclusion, symlink behavior, base-name selection, and
+SHA-256 calculation. Add a relative-container case to verify that it resolves
+through the host workspace context. Test these as runner facts, not as
+transformations or authorization performed by shoutx. Include a file that
+changes between shoutx output and runner processing to demonstrate that shoutx
+does not bind file identity or digest. Do not assert that the runner excludes
+every non-regular special file.
+
+### OCI declarations
+
+A successful OCI declaration has exact stdout:
+
+```text
+oci://REFERENCE@DIGEST LF
+```
+
+Test each supported algorithm at its exact lowercase hexadecimal length:
+`sha256` with 64 digits, `sha384` with 96, and `sha512` with 128. Reject an
+unknown or uppercase algorithm, uppercase or non-hex digits, short and long
+digests, empty reference or digest, NUL, CR, LF, and `=`. Include references
+containing tags, registry ports, internal `@`, leading or trailing whitespace,
+and strings resembling file paths. Verify that the runner returns the exact
+reference and digest. The runner lowercases algorithm and hex internally; on
+valid shoutx output this normalization must be a no-op.
+
+### Limits, aggregation, and availability
+
+Test records immediately below, at, and above the runner's 1 MiB per-step
+command-file limit. A shoutx invocation must reject when its own complete
+record exceeds the limit, but tests must not imply that it knows how many bytes
+another process already appended. Through the actual runner handler, cover
+identical deduplication, same-name conflicting digests, ordinal name
+comparison, the 500-subject aggregate cap, and parse-level all-or-nothing
+behavior for a step containing a malformed declaration. Parse-level failures
+occur before aggregation and add nothing. Conflict and cap failures occur
+during aggregation and leave subjects inserted earlier by that same step;
+assert this non-transactional runner behavior explicitly.
+
+The pinned runner differential test explicitly enables the server-side
+`actions_runner_allow_artifacts_file` variable, without mutating the process
+environment, and calls the actual write and list handlers. Separately test the
+self-hosted `ACTIONS_RUNNER_ALLOW_ARTIFACTS_FILE` fallback with state restored
+afterward. A hosted workflow probe on every supported runner writes a known
+temporary file, appends the candidate encoding, and verifies in a later step
+that `GITHUB_ARTIFACTS_LIST` contains exactly the expected base name, SHA-256
+digest, and `file` kind. It must fail rather than skip when the variable is
+absent, the list file is zero bytes, the enabled empty-list JSON remains
+unchanged, or the expected subject is absent. Public support is blocked until
+this probe passes across the supported matrix.
+
 ## Text validation
 
 Run these cases in every mode, including data that `--first-line` would later

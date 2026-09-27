@@ -460,6 +460,44 @@ through shoutx and whose `post` phase verifies `STATE_NAME`. Keep
 shell-redirection coverage in the shared named-writer matrix. Public
 documentation exposes the command only with the completed implementation.
 
+## Candidate design increment: `github-actions:artifacts`
+
+Do not implement or advertise this command until its hosted-runner availability
+gate passes. The proposed parser adds a destination command with two typed
+variants:
+
+```text
+github-actions:artifacts file [PATH]
+github-actions:artifacts oci REFERENCE DIGEST
+```
+
+Keep artifact validation separate from named records and PATH mutation. The
+file variant may reuse bounded argv/stdin acquisition and final-boundary
+consumption, but it has no lossy line modes. The OCI variant is a structured
+two-operand command and never consults stdin. Both variants build the complete
+explicit-scheme record and validate its encoded size before stdout is opened.
+
+Add a dedicated runner oracle around `CreateArtifactsFileCommand` and
+`ArtifactsListFileCommand`. Enable the pinned runner's server-side feature
+variable explicitly without mutating process-global state, exercise real
+temporary files and native path semantics, and compare the job-scoped aggregate
+and JSON list rather than transcribing only the line parser. Test the
+self-hosted process-environment fallback separately with cleanup. Test rooted
+paths once with a null container and separately with a real `ContainerInfo`
+mapping, including outside-mount rejection; a relative container case uses the
+host workspace context. The oracle must cover Unicode trimming, schemes,
+directory exclusion, hashing, name collisions, deduplication, conflicts,
+partial aggregation on conflict or cap failure, and limits without turning
+those runner behaviors into shoutx guarantees.
+
+Before implementation, add a temporary hosted-runner probe or equivalent
+design-validation workflow across Linux, macOS, and Windows. The probe must
+observe a declared subject in a subsequent step; the mere presence of
+`GITHUB_ARTIFACTS` is insufficient because the runner silently ignores writes
+when processing is disabled. If any supported hosted runner fails the probe,
+leave the command deferred rather than publishing a platform-dependent silent
+success.
+
 ## CI and quality gates
 
 CI begins in the first implementation PR and expands with each supported

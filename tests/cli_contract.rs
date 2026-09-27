@@ -19,7 +19,9 @@ fn run(args: &[&str], stdin: Option<&[u8]>) -> Output {
     }
     let mut child = command.spawn().unwrap();
     if let Some(input) = stdin {
-        child.stdin.take().unwrap().write_all(input).unwrap();
+        if let Err(error) = child.stdin.take().unwrap().write_all(input) {
+            assert_eq!(error.kind(), std::io::ErrorKind::BrokenPipe);
+        }
     }
     child.wait_with_output().unwrap()
 }

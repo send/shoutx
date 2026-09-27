@@ -168,15 +168,15 @@ usage errors with status 2 and empty stdout. Help and version are recognized
 only before VALUE. `COMMAND --` with no following operand selects stdin.
 
 Apply the shared terminal, closed-handle, invalid-encoding, NUL, and 1 MiB input
-cases. An argv value wins without reading stdin. For stdin, consume at most one
-final CRLF, LF, or bare CR as producer framing and preserve every remaining
-boundary. Test exact-boundary cases including empty input, one terminator,
-multiple final terminators, internal mixed boundaries, and a final boundary
-following invalid UTF-8 or NUL. Empty semantic values and values consisting
-only of the .NET 8 `Char.IsWhiteSpace` set fail with status 1 and empty stdout.
-Cover ASCII whitespace, NEL, U+1680, the U+2000--U+200A range, LINE SEPARATOR,
-PARAGRAPH SEPARATOR, U+202F, U+205F, and U+3000. Verify that U+FEFF and U+200B
-are accepted as non-whitespace data.
+cases. An argv value wins without reading stdin. For both argv and stdin,
+consume at most one final CRLF, LF, or bare CR as producer framing and preserve
+every remaining boundary. Exercise each final-boundary form through both input
+sources, plus empty input, multiple final terminators, internal mixed
+boundaries, and a final boundary following invalid UTF-8 or NUL. Empty semantic
+values and values consisting only of the .NET 8 `Char.IsWhiteSpace` set fail
+with status 1 and empty stdout. Cover ASCII whitespace, NEL, U+1680, the
+U+2000--U+200A range, LINE SEPARATOR, PARAGRAPH SEPARATOR, U+202F, U+205F, and
+U+3000. Verify that U+FEFF and U+200B are accepted as non-whitespace data.
 
 ### Encoding and command structure
 
@@ -194,19 +194,22 @@ recognized `add-mask` command whose decoded data equals the accepted semantic
 value. The emitted bytes must contain no physical CR or LF before the final LF
 and must not parse a second command.
 
-Test 1,048,575, 1,048,576, and 1,048,577 input bytes using both low-expansion
-and worst-case `%`/CR/LF data. The first two succeed when otherwise valid and
-the last fails. Verify checked encoded-size calculation before allocation and
-the exact maximum output length. Do not assert an undocumented GitHub command
-line limit.
+Test 1,048,575, 1,048,576, and 1,048,577 raw input bytes before optional final
+producer-boundary consumption, using both low-expansion and worst-case
+`%`/CR/LF data. The first two succeed when otherwise valid and the last fails,
+so specifically assert that a 1,048,576-byte semantic value followed by LF is
+rejected before the framing boundary can be consumed. Verify checked encoded-
+size calculation before allocation and the exact maximum output length. Do not
+assert an undocumented GitHub command line limit.
 
 ### Runner masking behavior
 
 Use the actual pinned `AddMaskCommandExtension` and `SecretMasker`, not only a
 local parser transcription. After registration, verify masking of the exact
-value as a substring in later output. For multiline data, verify both the full
-decoded value and each trimmed nonempty CR/LF-delimited line are registered;
-blank and whitespace-only lines remain unregistered. Include leading and
+value as a substring in later output. For every value, verify both the full
+decoded value and each trimmed nonempty item from CR/LF splitting are
+registered; this includes a single-line value with surrounding whitespace.
+Blank and whitespace-only items remain unregistered. Include leading and
 trailing whitespace on individual lines, overlapping values, a short common
 value demonstrating intentional over-masking, and data for which the runner
 derives Base64, JSON, URI, XML, command-line, and PowerShell representations.

@@ -287,11 +287,12 @@ necessary because the runner warns and performs no registration for
 `String.IsNullOrWhiteSpace` data. A successful shoutx status must not imply a
 mask was installed when the runner would deterministically reject it.
 
-The runner registers the exact decoded value and also each trimmed, nonempty
-line of a multiline value. This can mask more text than the exact value alone;
-blank and whitespace-only lines are not separately registered. These derived
-line masks are accepted destination behavior rather than a transformation made
-or independently promised by shoutx.
+The runner registers the exact decoded value and also every trimmed, nonempty
+item produced by splitting it on CR and LF. This applies even without a line
+boundary, so ` secret ` additionally registers `secret`. It can mask more text
+than the exact value alone; empty and whitespace-only items are not separately
+registered. These derived masks are accepted destination behavior rather than
+a transformation made or independently promised by shoutx.
 
 Masking is prospective and best-effort. It does not protect a value logged
 before registration, passed visibly in process arguments, exposed by shell
@@ -419,10 +420,11 @@ for argv and stdin. The normalized value has the same limit. Record names and
 compute expanded sizes with checked arithmetic and reject them before allocating
 the normalized result.
 
-The mask candidate applies the 1 MiB limit after optional stdin framing. Its
-workflow-command encoding can expand each input byte to three bytes, so the
-complete encoded line can exceed 1 MiB. The implementation must compute that
-length before allocation. GitHub publishes no separate maximum for dynamic
+The mask candidate applies the 1 MiB limit to raw input before optional final
+producer framing is consumed, matching the shared acquisition contract. Its
+workflow-command encoding can expand each semantic input byte to three bytes,
+so the complete encoded line can exceed 1 MiB. The implementation must compute
+that length before allocation. GitHub publishes no separate maximum for dynamic
 masks or workflow-command lines; local success therefore does not promise that
 every runner or surrounding log transport will accept an unusually large
 value. The runner also derives several alternate representations for each

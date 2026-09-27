@@ -375,10 +375,12 @@ structured values remain discouraged under GitHub's
 variants and exact-match redaction becomes less reliable when a value is
 transformed.
 
-On receipt, the runner registers both the exact decoded value and each trimmed,
-nonempty CR/LF-delimited line. The latter can broaden masking for multiline
-values and is runner behavior, not a shoutx normalization promise. Empty lines
-and whitespace-only lines are not independently registered. Registration is
+On receipt, the runner registers both the exact decoded value and every
+trimmed, nonempty item produced by splitting it on CR and LF. This occurs even
+for a single-line value: registering ` secret ` also registers `secret`. It can
+therefore broaden masking for both single-line and multiline values and is
+runner behavior, not a shoutx normalization promise. Empty items and
+whitespace-only items are not independently registered. Registration is
 job-local and affects only subsequent runner output. The command itself is
 configured not to echo its data; when workflow-command echoing is enabled, the
 runner prints a masked placeholder.

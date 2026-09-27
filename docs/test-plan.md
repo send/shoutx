@@ -1,9 +1,9 @@
 # CLI contract test plan
 
 This document turns the `shoutx` CLI contract into an implementation test plan.
-It covers `github-actions:output`, `github-actions:env`, the specified but not
-yet implemented `github-actions:state`, `github-actions:path`, the shared input
-rules, and the supported workflow-shell redirection paths.
+It covers `github-actions:output`, `github-actions:env`,
+`github-actions:state`, `github-actions:path`, the shared input rules, and the
+supported workflow-shell redirection paths.
 
 The product contract is defined by the [README](../README.md), the design
 decisions by [design.md](design.md), and the security boundary by

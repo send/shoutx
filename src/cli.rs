@@ -35,6 +35,7 @@ fn starts_with_ascii_dash(value: &OsStr) -> bool {
 pub enum Destination {
     Output,
     Env,
+    State,
 }
 
 #[derive(Debug, Eq, PartialEq)]
@@ -90,6 +91,7 @@ pub fn parse(args: Vec<OsString>) -> Result<Action, ShoutxError> {
     let destination = match command {
         "github-actions:output" => Destination::Output,
         "github-actions:env" => Destination::Env,
+        "github-actions:state" => Destination::State,
         _ => return Err(ShoutxError::usage("unknown command")),
     };
 

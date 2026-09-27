@@ -8,9 +8,9 @@ Actions environment files. A reusable encoder for a downstream shell context
 is under consideration for v1.0.
 
 Status: early implementation. The `github-actions:output`,
-`github-actions:env`, and `github-actions:path` writers are implemented;
-one context encoder remains under consideration. Native binaries, checksums, and
-provenance are available from the
+`github-actions:env`, `github-actions:path`, and `github-actions:state` writers
+are implemented; one context encoder remains under consideration. Native
+binaries, checksums, and provenance are available from the
 [GitHub releases](https://github.com/send/shoutx/releases).
 
 The native-binary packaging and publication contract is specified in the
@@ -101,10 +101,8 @@ generate-notes | shoutx github-actions:output --multiline notes >> "$GITHUB_OUTP
 GitHub Actions writers:
   shoutx github-actions:output [--first-line | --join-lines | --join-lines-with STRING | --multiline] NAME [VALUE]
   shoutx github-actions:env    [--first-line | --join-lines | --join-lines-with STRING | --multiline] NAME [VALUE]
-  shoutx github-actions:path   [VALUE]
-
-Specified for a future release (not yet implemented):
   shoutx github-actions:state  [--first-line | --join-lines | --join-lines-with STRING | --multiline] NAME [VALUE]
+  shoutx github-actions:path   [VALUE]
 
 Context encoders under consideration for v1.0 (not yet specified):
   shoutx shell:arg             [VALUE]
@@ -115,7 +113,7 @@ Context encoders under consideration for v1.0 (not yet specified):
 | `github-actions:output` | One `$GITHUB_OUTPUT` record | Internal boundaries rejected by default; explicit normalization |
 | `github-actions:env` | One `$GITHUB_ENV` record | Internal boundaries rejected by default; explicit normalization |
 | `github-actions:path` | One `$GITHUB_PATH` record | One final boundary consumed; others rejected |
-| `github-actions:state` (specified) | One `$GITHUB_STATE` record | Internal boundaries rejected by default; explicit normalization |
+| `github-actions:state` | One `$GITHUB_STATE` record | Internal boundaries rejected by default; explicit normalization |
 | `shell:arg` (under consideration) | One POSIX shell word | Preserved in the quoted word |
 
 Namespaced commands identify the interpretation context, not merely a data
@@ -130,7 +128,7 @@ environment-file protocol.
 `github-actions:env` writes a named value using the `$GITHUB_ENV`
 environment-file protocol.
 
-`github-actions:state` is specified but not yet implemented. It will write one
+`github-actions:state` writes one
 named value to `$GITHUB_STATE` for exposure to another phase of the same action.
 Its value and line-mode contract is identical to the output and environment
 writers. State names match `[A-Za-z_][A-Za-z0-9_]*`; unlike environment names,

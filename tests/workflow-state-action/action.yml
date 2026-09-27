@@ -1,0 +1,10 @@
+name: shoutx state fixture
+description: Verifies shoutx state across JavaScript action phases
+inputs:
+  binary:
+    description: Path to the shoutx binary without the Windows suffix
+    required: true
+runs:
+  using: node24
+  main: main.js
+  post: post.js

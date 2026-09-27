@@ -1,14 +1,12 @@
 # Threat model
 
 This document defines the security boundary that `shoutx` protects. It covers
-the v0.1.0 GitHub Actions writers, specifies `github-actions:state` for a future
-release, and inventories the remaining deferred boundaries.
+the GitHub Actions writers and inventories the remaining deferred boundaries.
 
 Concrete cases and compatibility gates derived from this model are maintained
 in the [CLI contract test plan](test-plan.md).
 
-Revision status: v0.1.0 release baseline plus the specified
-`github-actions:state` contract.
+Revision status: implemented writer baseline.
 
 ## Security objective
 
@@ -154,14 +152,14 @@ stderr are treated as text and are unsupported.
 
 ## GitHub Actions boundary inventory
 
-The current and next specified environment-file destinations are:
+The supported environment-file destinations are:
 
 | Boundary | Status | Interpretation |
 | --- | --- | --- |
 | `$GITHUB_OUTPUT` | Included | Named step-output records |
 | `$GITHUB_ENV` | Included | Named environment-variable records |
 | `$GITHUB_PATH` | Included | One path entry per line, then PATH-separator joining |
-| `$GITHUB_STATE` | Specified; not yet implemented | Named intra-action state records for `pre:`, `main:`, and `post:` phases |
+| `$GITHUB_STATE` | Included | Named intra-action state records for `pre:`, `main:`, and `post:` phases |
 
 Other recognized boundaries are explicitly deferred:
 

@@ -498,6 +498,12 @@ when processing is disabled. If any supported hosted runner fails the probe,
 leave the command deferred rather than publishing a platform-dependent silent
 success.
 
+The 2026-09-28 probe failed this gate uniformly on GitHub-hosted Linux, macOS,
+and Windows runners: the variables existed, but every later-step list file was
+zero bytes. The temporary probe was removed after capturing the result in the
+design. No implementation increment should begin until a later probe passes on
+all supported operating systems.
+
 ## CI and quality gates
 
 CI begins in the first implementation PR and expands with each supported

@@ -271,7 +271,7 @@ from an ordinary workflow step has no such consumer. shoutx does not expand
 that scope and does not make later consumption safe. Cleanup code must still
 authorize paths, process identifiers, and other state before acting on them.
 
-### `$GITHUB_ARTIFACTS` candidate
+### Deferred `$GITHUB_ARTIFACTS` candidate
 
 The candidate security property is structural integrity of one typed artifact
 declaration. An attacker-controlled newline must not add another file or OCI
@@ -342,7 +342,7 @@ mentions, Unicode controls, bidirectional text, and embedded HTML.
 | Early multiline termination | Yes | Use an independent delimiter and verify that it does not occur in the value |
 | Record-name confusion | Yes | Validate against a documented conservative grammar |
 | Multiple PATH entries through a line break | Yes | Consume only one optional final boundary and reject remaining CR/LF |
-| Multiple artifact declarations through a line break | Candidate | Emit one typed scheme and reject remaining CR/LF before output |
+| Multiple artifact declarations through a line break | Deferred candidate | Emit one typed scheme and reject remaining CR/LF before output if hosted-runner availability later permits implementation |
 | Multiple effective PATH entries through the PATH separator | Yes | Reject `:` for POSIX targets and `;` for Windows targets |
 | Container runtime option injection through PATH quoting | Yes | Reject `"` on every target before the runner constructs `docker exec` arguments |
 | Container path identity change through argument re-tokenization | Yes | Reject a trailing backslash for POSIX targets |

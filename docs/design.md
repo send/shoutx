@@ -441,12 +441,25 @@ the actual artifact handlers. Official documentation is the public contract,
 but documentation alone is insufficient for a compatibility claim while
 silent disablement exists.
 
+The hosted-runner gate was exercised on 2026-09-28 in
+[workflow run 36331651232][artifacts-availability-probe] using runner v2.337.0
+on `ubuntu-latest` (`ubuntu-24.04`), `macos-latest` (`macos-26-arm64`), and
+`windows-latest` (`windows-2025-vs2026`). On all three runners the declaration
+file and list file variables were present, but the later step received a
+zero-byte list file. This is the runner's disabled behavior, so the availability
+gate failed uniformly. `github-actions:artifacts` therefore remains deferred
+and must not be implemented or advertised. Reconsideration requires a new
+hosted-runner probe that observes the expected subject on every supported OS;
+the documented environment variables alone are not evidence that processing is
+enabled.
+
 [workflow-artifacts-command]: https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-commands#declaring-workflow-artifacts
+[artifacts-availability-probe]: https://github.com/send/shoutx/actions/runs/36331651232
 
 ## Open questions
 
-- Whether hosted-runner availability is sufficiently uniform to implement the
-  `$GITHUB_ARTIFACTS` candidate.
+- When GitHub enables `$GITHUB_ARTIFACTS` processing uniformly on supported
+  hosted runners, allowing the deferred candidate to be reconsidered.
 - Whether `shell:arg` belongs in v1.0 and which POSIX shells are covered.
 - Whether provider extensions are compiled in, discovered as executables, or
   loaded through another plugin mechanism.

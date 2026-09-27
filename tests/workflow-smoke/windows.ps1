@@ -15,6 +15,24 @@ try {
         throw "PowerShell changed native stdout bytes"
     }
 
+    $rejectedBinary = Join-Path $root 'rejected-binary-stdin'
+    & pwsh -NoProfile -Command `
+        '[Console]::OpenStandardOutput().Write([byte[]](97,13,13,10))' |
+        & $Binary github-actions:output result > $rejectedBinary
+    if ($LASTEXITCODE -ne 1 -or (Get-Item $rejectedBinary).Length -ne 0) {
+        throw "PowerShell did not preserve discriminating CR/CRLF stdin bytes"
+    }
+
+    $controlZ = Join-Path $root 'control-z-stdin'
+    & pwsh -NoProfile -Command `
+        '[Console]::OpenStandardOutput().Write([byte[]](97,26,98))' |
+        & $Binary github-actions:output result > $controlZ
+    if ($LASTEXITCODE -ne 0) { throw "control-Z stdin writer failed" }
+    $expectedControlZ = [byte[]](114,101,115,117,108,116,61,97,26,98,10)
+    if (-not [Linq.Enumerable]::SequenceEqual([byte[]](Get-Content -AsByteStream -Raw $controlZ), $expectedControlZ)) {
+        throw "PowerShell treated control-Z as text or end-of-file"
+    }
+
     $legacy = Join-Path $root 'legacy-powershell'
     & powershell.exe -NoProfile -Command `
         "& '$Binary' github-actions:output result value >> '$legacy'"

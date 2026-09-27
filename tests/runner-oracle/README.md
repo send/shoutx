@@ -16,6 +16,10 @@ and runs only this fixture with a fully-qualified-name filter. The test reads a
 shared JSON corpus whose names, values, and complete input files are base64
 encoded so the fixture format cannot alter parsed line boundaries.
 
+The local helper accepts an existing pinned checkout through
+`SHOUTX_RUNNER_SOURCE`. It exports that commit into a temporary directory
+before adding the fixture, so the caller-owned checkout is never modified.
+
 The pinned runner currently restores transitive packages with published
 security advisories. CI therefore disables NuGet audit only for this isolated,
 test-only historical oracle build. Those packages are not linked into or

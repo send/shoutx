@@ -167,7 +167,7 @@ Other recognized boundaries are deferred, candidates, or out of scope:
 | --- | --- | --- |
 | `$GITHUB_STEP_SUMMARY` | Deferred; no generic Markdown writer planned | GitHub-rendered content integrity rather than runner command-file record injection |
 | stdout workflow commands | Deferred | Lines such as `::warning::`, `::add-mask::`, and `::stop-commands::` are runner control messages |
-| `$GITHUB_ARTIFACTS` | Candidate; availability gate unresolved | One file or OCI declaration per line |
+| `$GITHUB_ARTIFACTS` | Deferred; 2026-09-28 hosted-runner gate failed | One file or OCI declaration per line |
 | `$GITHUB_ARTIFACTS_LIST` | Out of scope | Runner-managed, read-only JSON input |
 
 Inventorying a boundary does not commit `shoutx` to supporting it. It prevents

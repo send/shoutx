@@ -58,10 +58,10 @@ public sealed class ShoutxDifferentialL0
 
             foreach (var item in new[]
             {
-                (Path: "/normal", Expected: "PATH=/normal"),
-                (Path: "/bad\"quote", Expected: "PATH=/badquote"),
-                (Path: "/odd\\", Expected: "PATH=/odd\""),
-                (Path: "/even\\\\", Expected: "PATH=/even\\"),
+                (Path: "/normal", Expected: new[] { "exec", "-i", "--workdir", "/work", "-e", "PATH=/normal", "container", "command" }),
+                (Path: "/bad\"quote", Expected: new[] { "exec", "-i", "--workdir", "/work", "-e", "PATH=/badquote container command " }),
+                (Path: "/odd\\", Expected: new[] { "exec", "-i", "--workdir", "/work", "-e", "PATH=/odd\" container command " }),
+                (Path: "/even\\\\", Expected: new[] { "exec", "-i", "--workdir", "/work", "-e", "PATH=/even\\", "container", "command" }),
             })
             {
                 host.EnqueueInstance<IProcessInvoker>(new ProcessInvokerWrapper());
@@ -75,9 +75,7 @@ public sealed class ShoutxDifferentialL0
                     context.Object, "/work", "command", "", new Dictionary<string, string>(),
                     false, Encoding.UTF8, false, false, null!, CancellationToken.None);
                 Assert.Equal(0, status);
-                Assert.Equal(
-                    new[] { "exec", "-i", "--workdir", "/work", "-e", item.Expected, "container", "command" },
-                    File.ReadAllLines(output));
+                Assert.Equal(item.Expected, File.ReadAllLines(output));
             }
         }
         finally

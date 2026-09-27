@@ -77,6 +77,68 @@ Tests for validation, normalization, encoding, randomness, or size failures
 must assert that stdout is empty. Test the exact stdout bytes, stderr policy,
 and exit status where the CLI contract is involved.
 
+## Independent design review
+
+For a substantial security-contract or compatibility change, use an
+independent Fable review when the maintainer requests it or when another model
+is likely to catch assumptions shared by the author and the configured GitHub
+review. This is additional evidence, not a substitute for checking current
+official documentation, the pinned runner, tests, or maintainer approval.
+
+When the installed Claude Code CLI offers the `fable` model, run a read-only
+review from the repository root. Confirm the locally installed flags with
+`claude --help` rather than guessing if the CLI has changed. Prepare the diff
+outside the worktree so the reviewer does not need a shell tool, and capture
+non-interactive JSON output without terminal truncation:
+
+```sh
+review_dir=$(mktemp -d)
+git status --short --untracked-files=all > "$review_dir/status.txt"
+git diff --no-ext-diff --binary --merge-base main -- > "$review_dir/change.diff"
+claude -p --model fable \
+  --safe-mode \
+  --permission-mode dontAsk \
+  --permission-prompts none \
+  --tools "Read,Grep,Glob" \
+  --allowedTools "Read,Grep,Glob" \
+  --add-dir "$review_dir" \
+  --no-session-persistence \
+  --max-budget-usd 5 \
+  --output-format json \
+  "Review the current shoutx change as an independent, read-only security and design reviewer. Read AGENTS.md, $review_dir/status.txt, $review_dir/change.diff, and the relevant product-contract documents. Untracked paths appear only in status.txt, so read any relevant untracked file from the worktree. Check for contradictory contracts, injection paths, lossy or platform-dependent behavior, unsupported claims, missing failure cases, and tests that could validate only their own model. Flag claims that the primary agent must verify against external documentation or runner source; do not imply that you fetched sources unavailable to your tool set. Return concise findings first, ordered by severity, with file and line references; keep the complete response below 4,000 words. If there are no findings, say so explicitly. Do not edit files." \
+  > "$review_dir/result.json" 2> "$review_dir/stderr.log"
+```
+
+Before preparing the diff, verify that local `main` is synchronized with
+`origin/main`; `--merge-base` prevents an out-of-date feature branch from
+presenting unrelated mainline changes as part of the review.
+
+Do not silently substitute Opus or another model when `fable` is unavailable;
+report that the independent Fable review could not be run and continue with a
+documented self-review unless the maintainer asks for a substitute. After the
+process exits, require status 0 and read `result.json` plus `stderr.log`. In the
+JSON result, `subtype` must be `success`, `is_error` must be false, the review
+text must be present in `result`, required inspection must not appear in
+`permission_denials`, and `modelUsage` must name a Fable model such as
+`claude-fable-5-1`. Help text mentioning the alias does not prove access, and a
+result using only another model is not a Fable review. Do not configure a
+fallback model for this invocation. The temporary directory may be removed
+after the result and any findings have been recorded.
+
+Reviews can take several minutes. Start the command through an execution runner
+that can yield a reusable process handle, allow up to 30 minutes, and poll that
+same handle when the initial call yields. Do not launch a duplicate merely
+because the process is quiet. Report an exceeded limit rather than starting the
+review again. Review any denied tool call and do not accept a result whose
+required evidence was denied.
+
+Evaluate every finding against primary evidence and record whether it was
+accepted or rejected; do not defer automatically to the reviewer. One review
+round after the draft is normally sufficient. Re-run Fable after material
+changes made in response to its findings. A third round is warranted only when
+the second review identifies a new substantive issue or the response changes
+the security contract again.
+
 ## Change workflow
 
 - Keep pull requests focused and explain any security-contract consequence.

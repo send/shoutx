@@ -282,10 +282,16 @@ The exact plugin distribution and discovery mechanism is not yet specified.
 
 ## Development
 
-Rust development uses the toolchain pinned by `rust-toolchain.toml`; normal
-builds and tests require only Cargo. The pinned `actions/runner` differential
-suite additionally needs .NET SDK 8.0.424. `mise.toml` can install that SDK for
-local development, but mise is optional:
+Rust development uses Rust 1.98.1, pinned by `rust-toolchain.toml`; normal
+builds and tests require only Cargo. The minimum supported Rust version (MSRV)
+is separately declared as 1.85 in `Cargo.toml` and continuously tested in CI.
+The development pin may advance without changing that compatibility promise;
+raising the MSRV requires a deliberate release decision and matching manifest
+and CI changes.
+
+The pinned `actions/runner` differential suite additionally needs .NET SDK
+8.0.424. `mise.toml` can install that SDK for local development, but mise is
+optional:
 
 ```sh
 mise install

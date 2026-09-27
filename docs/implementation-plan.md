@@ -20,6 +20,10 @@ later release, but CI must build the declared MSRV until that decision is made.
 The initial project uses `rust-toolchain.toml`, Cargo, and direct Cargo commands
 rather than requiring mise or another general tool-version manager. A single
 language toolchain does not justify an additional bootstrap dependency.
+The pinned development toolchain tracks an explicitly selected current stable
+release independently of the MSRV. CI tests both current stable and the MSRV;
+updating the development pin does not silently change the compatibility
+contract.
 
 ## Dependency policy
 

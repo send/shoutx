@@ -2,7 +2,8 @@
 
 This document defines how the agreed CLI contract will be implemented. It is a
 sequencing and architecture plan, not an additional product contract. The
-[design](design.md), [threat model](threat-model.md), and
+[design](design.md), [threat model](threat-model.md), destination-specific
+[`commands/`](commands/) specifications, and
 [CLI contract test plan](test-plan.md) remain authoritative for observable
 behavior.
 

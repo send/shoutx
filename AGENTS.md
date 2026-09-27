@@ -158,6 +158,11 @@ than silently omitted. Codex review is complete for that SHA only when either:
 - after an explicit `@codex review` request, the bot adds a thumbs-up reaction
   to that request to signal no findings.
 
+A submitted review is only a terminal review event. It is not convergence when
+that review created an unresolved thread. Include the unresolved-thread count in
+the wait condition and finish only when it is zero; do not postpone this check
+until after the monitor has already declared success.
+
 Do not treat an earlier-commit review, the existence or disappearance of a
 summary comment, or an empty API result as successful completion. The wait must
 surface API failures and print the terminal evidence it observed. After the

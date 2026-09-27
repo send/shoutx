@@ -124,9 +124,13 @@ CR as input framing. Default mode then rejects any remaining CR or LF.
 may not contain NUL, CR, or LF. `--multiline` preserves the complete value using
 an independently generated, collision-checked delimiter.
 
-The planned `github-actions:path` command will validate and emit one entry for
-`$GITHUB_PATH`. Its cross-platform rules and parser tests remain incomplete, so
-the current build rejects the command as unknown.
+The planned `github-actions:path` command will validate and emit one fully
+qualified entry for `$GITHUB_PATH`. It will consume one optional final line
+boundary, reject remaining boundaries and empty values, reject the target OS
+PATH separator (`:` on POSIX or `;` on Windows), and preserve the path without
+normalization. A leading U+FEFF will be rejected because the runner would treat
+it differently at the beginning of the file. The current build still rejects
+the command as unknown until its separate parser model and implementation land.
 
 That future command will provide record framing, not path authorization. An
 attacker-controlled directory could still hijack later command lookup.
@@ -170,6 +174,8 @@ arbitrary Markdown or HTML documents.
 - An empty `VALUE` and empty non-terminal stdin both mean an empty value.
 - GitHub Actions `run:` steps normally provide non-terminal stdin, so omitting
   `VALUE` can successfully write an empty record when stdin is empty.
+- The planned `github-actions:path` writer rejects that empty value because an
+  empty line is not a path entry in the runner protocol.
 - Encoded output is written to stdout; diagnostics are written to stderr.
 - Values are limited to 1 MiB of UTF-8 before and after normalization. Names
   and `--join-lines-with` separators are limited to 255 bytes.

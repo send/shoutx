@@ -408,22 +408,21 @@ growing set of installation instructions or repeated local/CI command sequences;
 it must remain optional unless the same tasks cannot be expressed clearly with
 the native toolchains and CI configuration.
 
-## Later PR: `github-actions:path`
+## Next design and implementation PRs: `github-actions:path`
 
 `github-actions:path` remains separate because the runner uses path-specific
-`File.ReadAllLines` behavior rather than the named environment-file parser. Its
-design increment must first resolve:
+`File.ReadAllLines` behavior rather than the named environment-file parser.
+The design increment specifies one fully qualified target-platform path,
+rejects the effective PATH separator and leading U+FEFF, and performs no
+lexical or filesystem normalization. It documents bare-CR splitting, empty-line
+removal, ordering, and culture-sensitive duplicate behavior as runner facts
+rather than shoutx transformations.
 
-- BOM behavior for the first appended entry;
-- bare-CR splitting on every runner OS;
-- empty-line removal;
-- absolute and relative path policy;
-- Windows drive, UNC, and separator rules;
-- whether lexical normalization would change directory identity; and
-- ordering and duplicate behavior.
-
-The command is implemented only after its contract and separate parser model
-are reviewed. It must not inherit output/environment assumptions by code reuse.
+After that contract is reviewed, the implementation increment adds a separate
+path validator and parser model, target selection from `RUNNER_OS`, native
+Linux and Windows runner differential cases, shell smoke tests, and the public
+command. It must not inherit output/environment parser assumptions by code
+reuse.
 
 ## CI and quality gates
 

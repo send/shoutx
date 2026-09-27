@@ -221,12 +221,68 @@ the step. In PowerShell, callers must enable native-command error propagation
 or check `$LASTEXITCODE` immediately after each invocation. Supported workflow
 recipes and smoke tests must prove that a rejected write fails the step.
 
+## GitHub Actions path contract
+
+`github-actions:path [VALUE]` emits exactly one LF-terminated entry for
+`$GITHUB_PATH`. It has no line-mode options. `--` ends option parsing and is
+required for an argv value beginning with `-`.
+
+[GitHub documents](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-commands#adding-a-system-path)
+each line as a directory prepended to PATH for subsequent steps. The parser
+details below are grounded in the pinned
+[`AddPathFileCommand`](https://github.com/actions/runner/blob/397b032cbf865e9c3ddfab89d533ec19325e1273/src/Runner.Worker/FileCommandManager.cs#L127-L158),
+not inferred from the named environment-file parser.
+
+The command uses the shared strict UTF-8, NUL rejection, 1 MiB input limit,
+input-source, diagnostic, exit-status, and pre-write validation rules. It
+consumes at most one final CRLF, LF, or bare CR as CLI input framing, then
+rejects an empty value or any remaining CR or LF. The emitted bytes are the
+remaining value followed by LF; shoutx performs no path normalization.
+
+The target path dialect follows an exact trusted `RUNNER_OS` value of `Linux`,
+`macOS`, or `Windows`; if it is absent, the native process OS is used. An
+unrecognized value is always rejected because path grammar and the effective
+PATH separator are target-specific.
+
+Only fully qualified paths are accepted. POSIX paths must begin with `/`.
+Windows accepts drive-absolute, UNC, and fully qualified verbatim drive or UNC
+forms; drive-relative forms such as `C:tools`, root-relative forms such as
+`\tools`, incomplete UNC forms, Win32 device forms such as `\\.\...`, and all
+relative forms are rejected. Both `/` and `\` remain accepted as Windows
+directory separators. The implementation does not require the path to exist,
+resolve `.` or `..`, canonicalize symlinks, change separator spelling, trim
+whitespace, or change case.
+
+POSIX `:` and Windows `;` are rejected. Although either character can be path
+data in some contexts, the runner later joins accepted lines with the target
+OS PATH separator; accepting it would let one line become multiple effective
+PATH entries. Other platform-specific invalid filename characters are not
+validated because shoutx neither accesses the directory nor claims that the OS
+will accept it.
+
+A leading U+FEFF is rejected. When the entry is the first content in the
+command file, `File.ReadAllLines(..., Encoding.UTF8)` consumes its UTF-8 bytes
+as a byte-order mark; when earlier content exists, the same bytes are retained.
+Rejecting the ambiguous value makes the result independent of append position.
+U+FEFF elsewhere is preserved, and shoutx never emits an encoder-added BOM.
+
+In the pinned v2.337.0 runner, `AddPathFileCommand` uses
+`File.ReadAllLines(filePath, Encoding.UTF8)`. It ignores empty lines, processes
+non-empty lines in file order, removes a matching earlier path using its
+current-culture comparison, and adds the new path to an internal prepend list.
+It reverses that list when constructing PATH, so a later distinct entry has
+higher command-lookup priority. shoutx emits one entry and does not inspect the
+destination file, deduplicate entries, or promise stable duplicate equivalence
+across runner cultures.
+
+This is structural validation, not authorization. The caller must establish
+that the directory and executables reachable through it are trusted.
+
 ## Open questions
 
 - Whether `shell:arg` belongs in v1.0 and which POSIX shells are covered.
 - Whether `markdown:text` belongs in v1.0 and what rendering guarantees it
   can accurately make across supported surfaces.
-- Cross-platform rules for `$GITHUB_PATH`, especially Windows runners.
 - Implementation language, packaging, and supported installation methods.
 - Whether provider extensions are compiled in, discovered as executables, or
   loaded through another plugin mechanism.

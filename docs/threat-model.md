@@ -157,7 +157,7 @@ The MVP candidates are these environment-file destinations:
 | --- | --- | --- |
 | `$GITHUB_OUTPUT` | Included | Named step-output records |
 | `$GITHUB_ENV` | Included | Named environment-variable records |
-| `$GITHUB_PATH` | Candidate; contract incomplete | One path entry per line |
+| `$GITHUB_PATH` | Candidate; contract specified, implementation pending | One path entry per line, then PATH-separator joining |
 
 Other recognized boundaries are explicitly deferred:
 
@@ -225,14 +225,24 @@ non-multiline modes, the command consumes at most one final CRLF, LF, or bare CR
 as input framing, then rejects NUL, every remaining CR or LF, and empty values
 so one input cannot add multiple entries.
 
+The runner's second interpretation step joins accepted lines using the target
+OS PATH separator. shoutx therefore also rejects POSIX `:` or Windows `;`, so
+one file record cannot become multiple effective PATH entries. It accepts only
+fully qualified paths in the target runner dialect and rejects a leading
+U+FEFF, whose preservation would otherwise depend on whether the record begins
+the file. Target selection follows trusted `RUNNER_OS`, with native fallback;
+an unknown value is rejected.
+
 There is no encoding that makes an attacker-controlled directory safe to add to
 `PATH`. An attacker who controls a directory earlier in command lookup may place
 a malicious executable there. The caller must separately establish that the
 path is trusted and intended. `github-actions:path` is framing and validation,
 not authorization.
 
-The final CLI contract must define platform-specific absolute-path, separator,
-and normalization rules without changing the path to a different directory.
+shoutx does not canonicalize, resolve dot segments or symlinks, change path
+separators, trim whitespace, inspect the destination file, or require the
+directory to exist. Those transformations could change identity or introduce
+filesystem races and are outside record framing.
 
 ### `shell:arg`
 
@@ -263,6 +273,9 @@ claimed without an explicit platform contract.
 | Early multiline termination | Yes | Use an independent delimiter and verify that it does not occur in the value |
 | Record-name confusion | Yes | Validate against a documented conservative grammar |
 | Multiple PATH entries through a line break | Yes | Consume only one optional final boundary and reject remaining CR/LF |
+| Multiple effective PATH entries through the PATH separator | Yes | Reject `:` for POSIX targets and `;` for Windows targets |
+| Append-position-dependent leading BOM | Yes | Reject a leading U+FEFF before output |
+| Relative PATH resolution against a later working directory | Yes | Require a fully qualified target-platform path |
 | Invalid UTF-8 or NUL | Yes | Reject before output begins |
 | Memory exhaustion through large input | Yes | Enforce a documented hard input limit |
 | Secret exposure through diagnostics | Yes | Do not reproduce input values in diagnostics |
@@ -381,6 +394,10 @@ entries from selecting a different provider implementation.
   stronger no-substring selection rule;
 - values resembling workflow commands such as `::stop-commands::`;
 - values containing secrets without diagnostic disclosure;
+- absolute POSIX, Windows drive, UNC, and verbatim path forms, plus relative,
+  PATH-separator, leading-BOM, and Win32-device rejection;
+- path parser BOM position, CR/LF/CRLF splitting, empty-line removal, ordering,
+  and culture-invariant duplicate cases;
 - inputs at, below, and above the supported hard limit;
 - `--`, mutually exclusive modes, `--join-lines-with` arguments beginning with
   `-`, equals-form separators, help/version option position, missing operands,

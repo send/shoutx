@@ -15,11 +15,21 @@ jobs:
     timeout-minutes: 5
     outputs:
       version: ${{ steps.package.outputs.version }}
+      toolchain: ${{ steps.toolchain.outputs.channel }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
-      - run: rustup toolchain install 1.98.1 --profile minimal
+      - id: toolchain
+        shell: bash
+        run: |
+          channel=$(sed -n 's/^channel = "\([^"]*\)"$/\1/p' rust-toolchain.toml)
+          if [[ ! "$channel" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Rust toolchain must be one exact stable version"
+            exit 1
+          fi
+          echo "channel=$channel" >> "$GITHUB_OUTPUT"
+      - run: rustup toolchain install '${{ steps.toolchain.outputs.channel }}' --profile minimal
       - id: package
         shell: bash
         run: |
@@ -56,6 +66,7 @@ jobs:
     timeout-minutes: 20
     env:
       VERSION: ${{ needs.metadata.outputs.version }}
+      TOOLCHAIN: ${{ needs.metadata.outputs.toolchain }}
       TARGET: ${{ matrix.target }}
       EXTENSION: ${{ matrix.extension }}
     steps:
@@ -64,14 +75,14 @@ jobs:
           persist-credentials: false
       - name: Install pinned Rust toolchain
         shell: bash
-        run: rustup toolchain install 1.98.1 --profile minimal --target "$TARGET"
+        run: rustup toolchain install "$TOOLCHAIN" --profile minimal --target "$TARGET"
       - name: Install musl linker
         if: runner.os == 'Linux'
         shell: bash
         run: sudo apt-get update && sudo apt-get install --yes musl-tools
       - name: Build locked release binary
         shell: bash
-        run: cargo +1.98.1 build --release --locked --target "$TARGET"
+        run: cargo +"$TOOLCHAIN" build --release --locked --target "$TARGET"
       - name: Package and verify POSIX archive
         if: runner.os != 'Windows'
         shell: bash
@@ -157,7 +168,12 @@ jobs:
           LC_ALL=C sort -o "$expected" "$expected"
           find dist -maxdepth 1 -type f -printf '%f\n' | LC_ALL=C sort > "$actual"
           diff -u "$expected" "$actual"
-          (cd dist && sha256sum shoutx-* | LC_ALL=C sort > SHA256SUMS)
+          (
+            cd dist
+            while IFS= read -r filename; do
+              sha256sum -- "$filename"
+            done < "$expected" > SHA256SUMS
+          )
           (cd dist && sha256sum --check SHA256SUMS)
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:

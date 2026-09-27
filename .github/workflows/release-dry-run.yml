@@ -1,0 +1,167 @@
+name: Release dry run
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - .github/workflows/release-dry-run.yml
+
+permissions:
+  contents: read
+
+jobs:
+  metadata:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      version: ${{ steps.package.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - run: rustup toolchain install 1.98.1 --profile minimal
+      - id: package
+        shell: bash
+        run: |
+          version=$(cargo metadata --format-version 1 --no-deps --locked |
+            jq -er '.packages[] | select(.name == "shoutx") | .version')
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "Unsupported release version"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: metadata
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            target: x86_64-unknown-linux-musl
+            extension: tar.gz
+          - runner: ubuntu-24.04-arm
+            target: aarch64-unknown-linux-musl
+            extension: tar.gz
+          - runner: macos-15-intel
+            target: x86_64-apple-darwin
+            extension: tar.gz
+          - runner: macos-15
+            target: aarch64-apple-darwin
+            extension: tar.gz
+          - runner: windows-2025
+            target: x86_64-pc-windows-msvc
+            extension: zip
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 20
+    env:
+      VERSION: ${{ needs.metadata.outputs.version }}
+      TARGET: ${{ matrix.target }}
+      EXTENSION: ${{ matrix.extension }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Install pinned Rust toolchain
+        shell: bash
+        run: rustup toolchain install 1.98.1 --profile minimal --target "$TARGET"
+      - name: Install musl linker
+        if: runner.os == 'Linux'
+        shell: bash
+        run: sudo apt-get update && sudo apt-get install --yes musl-tools
+      - name: Build locked release binary
+        shell: bash
+        run: cargo +1.98.1 build --release --locked --target "$TARGET"
+      - name: Package and verify POSIX archive
+        if: runner.os != 'Windows'
+        shell: bash
+        env:
+          LC_ALL: C
+          TZ: UTC
+          COPYFILE_DISABLE: "1"
+        run: |
+          root="shoutx-v${VERSION}-${TARGET}"
+          archive="${root}.tar.gz"
+          mkdir -p "dist/$root" verify
+          install -m 0755 "target/$TARGET/release/shoutx" "dist/$root/shoutx"
+          install -m 0644 README.md LICENSE "dist/$root/"
+          "dist/$root/shoutx" --version
+          tar -czf "dist/$archive" -C dist "$root"
+          tar -xzf "dist/$archive" -C verify
+          test "$(find "verify/$root" -type f | wc -l | tr -d ' ')" = 3
+          test -x "verify/$root/shoutx"
+          test -f "verify/$root/README.md"
+          test -f "verify/$root/LICENSE"
+          if [[ "$RUNNER_OS" == "Linux" ]]; then
+            test "$(stat -c '%a' "verify/$root/shoutx")" = 755
+            test "$(stat -c '%a' "verify/$root/README.md")" = 644
+            test "$(stat -c '%a' "verify/$root/LICENSE")" = 644
+          else
+            test "$(stat -f '%Lp' "verify/$root/shoutx")" = 755
+            test "$(stat -f '%Lp' "verify/$root/README.md")" = 644
+            test "$(stat -f '%Lp' "verify/$root/LICENSE")" = 644
+          fi
+          "verify/$root/shoutx" --version
+          rm -rf "dist/$root" verify
+      - name: Package and verify Windows archive
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $root = "shoutx-v${env:VERSION}-${env:TARGET}"
+          $archive = "$root.zip"
+          New-Item -ItemType Directory -Force -Path "dist/$root", "verify" | Out-Null
+          Copy-Item "target/$env:TARGET/release/shoutx.exe" "dist/$root/"
+          Copy-Item README.md, LICENSE "dist/$root/"
+          & "dist/$root/shoutx.exe" --version
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Compress-Archive -Path "dist/$root" -DestinationPath "dist/$archive"
+          Expand-Archive "dist/$archive" -DestinationPath verify
+          $files = Get-ChildItem -File "verify/$root"
+          if ($files.Count -ne 3) { throw "Unexpected archive contents" }
+          & "verify/$root/shoutx.exe" --version
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Remove-Item -Recurse "dist/$root", "verify"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: candidate-${{ matrix.target }}
+          path: dist/shoutx-v${{ needs.metadata.outputs.version }}-${{ matrix.target }}.${{ matrix.extension }}
+          if-no-files-found: error
+          retention-days: 2
+
+  aggregate:
+    needs: [metadata, build]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      VERSION: ${{ needs.metadata.outputs.version }}
+    steps:
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0
+        with:
+          pattern: candidate-*
+          path: dist
+          merge-multiple: true
+      - name: Verify complete artifact set and checksums
+        shell: bash
+        run: |
+          expected=$(mktemp)
+          actual=$(mktemp)
+          for target in \
+            x86_64-unknown-linux-musl \
+            aarch64-unknown-linux-musl \
+            x86_64-apple-darwin \
+            aarch64-apple-darwin
+          do
+            echo "shoutx-v${VERSION}-${target}.tar.gz"
+          done > "$expected"
+          echo "shoutx-v${VERSION}-x86_64-pc-windows-msvc.zip" >> "$expected"
+          LC_ALL=C sort -o "$expected" "$expected"
+          find dist -maxdepth 1 -type f -printf '%f\n' | LC_ALL=C sort > "$actual"
+          diff -u "$expected" "$actual"
+          (cd dist && sha256sum shoutx-* | LC_ALL=C sort > SHA256SUMS)
+          (cd dist && sha256sum --check SHA256SUMS)
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: release-dry-run
+          path: dist/
+          if-no-files-found: error
+          retention-days: 2

@@ -166,7 +166,7 @@ Other recognized boundaries are deferred, candidates, or out of scope:
 
 | Boundary | Status | Primary concern |
 | --- | --- | --- |
-| `$GITHUB_STEP_SUMMARY` | Deferred; no generic Markdown writer planned | GitHub-rendered content integrity rather than runner command-file record injection |
+| `$GITHUB_STEP_SUMMARY` | Out of scope | GitHub-rendered Markdown has no runner command-file record structure to inject into; rendered HTML is sanitized, while content integrity remains the producer's responsibility |
 | stdout `add-mask` workflow command | Implemented | Register one faithfully decoded value for subsequent runner log masking |
 | stdout annotation workflow commands | Implemented | Emit one faithfully decoded notice, warning, or error with validated location metadata |
 | other stdout workflow commands | Deferred | Lines such as `::stop-commands::` and `::group::` are runner control messages |
@@ -187,9 +187,10 @@ Detailed boundary analyses are colocated with their command specifications:
 - [GitHub Actions log-mask command](commands/github-actions-mask.md)
 - [GitHub Actions annotation commands](commands/github-actions-annotations.md)
 
-### Deferred-feature analyses
+### Deferred and out-of-scope analyses
 
-Detailed rationale for deferred features is recorded in decision documents:
+Detailed rationale for deferred and out-of-scope features is recorded in
+decision documents:
 
 - [GitHub Actions artifact declarations](decisions/github-actions-artifacts.md)
 - [POSIX shell-word encoding](decisions/shell-arg.md)

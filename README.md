@@ -342,6 +342,10 @@ compatibility gates.
 - Replacing actionlint, zizmor, CodeQL, or policy engines.
 - A universal `escape` operation independent of destination context.
 - Sanitizing arbitrary documents or command lines.
+- Writing `$GITHUB_STEP_SUMMARY`. A step summary is GitHub-rendered Markdown,
+  not a runner command-file record protocol; GitHub sanitizes the rendered
+  HTML. Links, images, mentions, misleading text, and Markdown structure remain
+  the producer's content-policy responsibility.
 - Making `eval`, dynamic shell source, or unsafe command APIs safe.
 - Raw output disguised as an encoding mode.
 

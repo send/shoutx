@@ -410,8 +410,9 @@ jobs:
 
             raw_log="$RUNNER_TEMP/log-$os.txt"
             log_messages="$RUNNER_TEMP/log-messages-$os.txt"
-            gh run view "${{ github.run_id }}" --job "$job_id" --log > "$raw_log"
-            cut -f4- "$raw_log" > "$log_messages"
+            gh api --allow-escape-sequences \
+              "repos/$GH_REPO/actions/jobs/$job_id/logs" > "$raw_log"
+            sed -E 's/\r$//; s/^[^ ]+ //' "$raw_log" > "$log_messages"
             for expected in \
               '##[notice]notice % :: 日本語' \
               '##[error]error annotation does not fail the step'; do

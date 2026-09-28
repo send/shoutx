@@ -1,11 +1,13 @@
+use std::ffi::OsStr;
+use unicode_general_category::{GeneralCategory, get_general_category};
+
 use crate::{
     cli::{AnnotationRequest, AnnotationSeverity},
     error::ShoutxError,
     input::VALUE_LIMIT,
 };
-use std::ffi::OsStr;
 
-use super::{normalize::strip_final, workflow_command::has_separator_sensitive_prefix};
+use super::normalize::strip_final;
 
 const MESSAGE_UTF16_LIMIT: usize = 4_096;
 
@@ -39,6 +41,16 @@ fn is_prepended_concatenation_mark(character: char) -> bool {
             | '\u{11a84}'..='\u{11a89}'
             | '\u{11d46}'
             | '\u{11f02}'
+    )
+}
+
+fn is_unsafe_message_prefix(character: char) -> bool {
+    matches!(
+        get_general_category(character),
+        GeneralCategory::NonspacingMark
+            | GeneralCategory::SpacingMark
+            | GeneralCategory::EnclosingMark
+            | GeneralCategory::ModifierLetter
     )
 }
 
@@ -156,7 +168,11 @@ pub fn encode(request: AnnotationRequest, mut message: Vec<u8>) -> Result<Vec<u8
             "annotation message is empty or whitespace only",
         ));
     }
-    if has_separator_sensitive_prefix(message_text) {
+    if message_text
+        .chars()
+        .next()
+        .is_some_and(is_unsafe_message_prefix)
+    {
         return Err(ShoutxError::failure(
             "annotation message begins with a separator-sensitive character",
         ));

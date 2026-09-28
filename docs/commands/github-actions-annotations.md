@@ -50,13 +50,11 @@ means the .NET 8 `Char.IsWhiteSpace` set, equivalent for accepted UTF-8 input to
 the Unicode `White_Space` property.
 
 A message whose first Unicode scalar has General_Category `Mn`, `Mc`, `Me`, or
-`Lm` is rejected. This is a conservative superset of observed leading marks
-that affect the pinned runner's culture-sensitive search for the `::` data
-separator, not a claim that every member changes collation. TITLE and FILE
-reject a final scalar with the Unicode `Prepended_Concatenation_Mark` property.
-Those separator-sensitive characters can make the runner skip the intended
-separator from the respective side and reinterpret later message text as
-properties.
+`Lm` is rejected. TITLE and FILE reject a final scalar with the Unicode
+`Prepended_Concatenation_Mark` property. The pinned runner uses a
+culture-sensitive search for the `::` data separator; those characters can
+make it skip that separator from the respective side and reinterpret later
+message text as properties.
 
 The semantic message is limited to 4,096 UTF-16 code units, matching the pinned
 runner's `ExecutionContext.AddIssue` limit. This prevents ordinary input from

@@ -72,9 +72,25 @@ No reusable context encoder is currently planned for v1.0. The former
     supported runner parser and do not rely on host text-mode translation.
 13. Every input field has a documented hard size limit; a destination's encoded
     record limit may impose a smaller effective maximum after framing.
-14. A stdout workflow-command writer emits exactly one command line whose
+14. A stdout workflow-command writer must emit exactly one command line whose
     decoded data equals the accepted value; it does not claim that runner log
     masking prevents every disclosure of that value.
+15. Syntax defined by shoutx uses only ASCII code points. Matching is exact
+    unless a rule explicitly specifies ASCII-only case folding; non-ASCII
+    lookalikes, normalization equivalence, Unicode case folding, and
+    locale-sensitive comparison do not create command names, option names,
+    delimiters, property names, numeric syntax, or escape syntax. A
+    command-specific value may accept strict UTF-8 as opaque data.
+16. A destination guarantee does not rely on the producer observing the
+    consumer process's culture or on a locale-sensitive protocol delimiter.
+    Producer success is not evidence that a separate consumer accepted the
+    record.
+
+The current GitHub Actions stdout parser investigation and the limits of its
+cross-platform evidence are recorded in
+[the workflow-command compatibility note](compatibility/github-actions-workflow-command-parser.md).
+The implemented stdout family is pre-release while the linked
+[framing decision](decisions/github-actions-stdout-framing.md) remains open.
 
 ## Command model
 
@@ -125,8 +141,10 @@ verification plan:
 
 ## Design decisions
 
-Deferred and rejected feature decisions are maintained separately:
+Proposed, accepted, deferred, rejected, and superseded decisions are maintained
+separately under the [decision-record policy](decisions/README.md):
 
+- [GitHub Actions stdout workflow-command framing](decisions/github-actions-stdout-framing.md)
 - [Markdown output](decisions/markdown-output.md)
 - [GitHub Actions artifact declarations](decisions/github-actions-artifacts.md)
 - [POSIX shell-word encoding](decisions/shell-arg.md)

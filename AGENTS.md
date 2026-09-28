@@ -28,9 +28,21 @@ security-relevant CLI behavior before implementing it.
 override the product contract; `docs/implementation-history.md` is historical
 context only.
 
+Preserve a single source of truth for every fact or requirement. Follow the
+ownership map in [`docs/README.md`](docs/README.md); update the authoritative
+document and replace duplicates elsewhere with links. Do not make the README,
+an ADR, a compatibility note, a test plan, and a command specification
+independently normative for the same behavior.
+
 For GitHub Actions behavior, verify claims against current official GitHub
 documentation and the repository-pinned `actions/runner` implementation. Do
 not infer one destination's behavior solely from a shared local parser model.
+For any text protocol, identify whether delimiter and prefix operations are
+byte-wise, ordinal, or locale-sensitive; do not infer consumer acceptance from
+producer success. When behavior can depend on culture or collation, include
+the consumer process, parser fallbacks, ICU/NLS backend, and relevant OS
+generations in the evidence. See the
+[GitHub Actions workflow-command compatibility note](docs/compatibility/github-actions-workflow-command-parser.md).
 
 ## Implementation constraints
 

@@ -235,9 +235,10 @@ resolved commit in the test fixture or dependency metadata. The harness should
 compile or invoke the actual environment-file parser from that checkout; a
 second handwritten transcription is not an independent oracle.
 
-Run the same corpus through the local model and actual runner parser on native
-Linux and Windows hosts. Compare ordered names, exact values, record counts,
-and success or failure. The corpus includes applicable deterministic cases
+Run the same corpus through the local model and actual runner parser on the CI
+platform matrix defined in `.github/workflows/ci.yml`. Compare ordered names,
+exact values, record counts, and success or failure. The corpus includes
+applicable deterministic cases
 from this document and the linked command specifications, including:
 
 - generated valid names and UTF-8 values across every line mode;
@@ -313,7 +314,7 @@ ready until:
   command specifications is automated, including cases outside their normative
   Contract sections;
 - property tests establish the one-input-to-one-record invariant;
-- the pinned runner differential suite passes on Linux and Windows;
+- the pinned runner differential suite passes on the CI platform matrix;
 - supported shell redirection preserves stdout bytes;
 - documentation names the tested runner versions and supported invocations;
   and

@@ -51,8 +51,15 @@ is created:
 - the complete CI and dependency-policy gates pass for the tagged commit; and
 - the tag does not already have a published GitHub release.
 
-In addition to these automated checks, a release containing
-`github-actions:mask` requires the hosted-log gate in
+The stdout workflow-command family (`github-actions:mask`, `notice`, `warning`,
+and `error`) is not release eligible until its locale-sensitive V2 framing has
+been resolved by an accepted framing decision and the real-runner evidence
+required by that decision passes. The options and evidence are maintained in
+the [proposed framing decision](decisions/github-actions-stdout-framing.md) and
+[workflow-command compatibility note](compatibility/github-actions-workflow-command-parser.md).
+
+In addition to that shared gate, a release containing `github-actions:mask`
+requires the hosted-log gate in
 [`github-actions-mask.md`](commands/github-actions-mask.md#process-and-workflow-coverage): completed Linux,
 macOS, and Windows job logs must be inspected from outside the producing job
 and show replacement of fresh runtime-generated markers. Until that evidence

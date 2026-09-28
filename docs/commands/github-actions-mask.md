@@ -6,10 +6,16 @@ remains in [`test-plan.md`](../test-plan.md). The Contract section is normative
 for this command; contradictions with the cross-cutting documents must be
 resolved.
 
+The command is exposed on `main` for pre-release development. Its distribution
+eligibility is governed only by the [release policy](../release.md), and the
+external parser evidence is maintained in the
+[workflow-command compatibility note](../compatibility/github-actions-workflow-command-parser.md).
+The contract below records the intended decoded value and command behavior.
+
 ## Contract
 
-`github-actions:mask [VALUE]` registers one value with the current job's
-runner-side secret masker by writing
+`github-actions:mask [VALUE]` is intended to register one value with the
+current job's runner-side secret masker by writing
 one [`add-mask` workflow command][workflow-mask-command] to stdout. Unlike
 environment-file writers, its successful stdout is intentionally consumed
 directly by the runner and must not be redirected to an environment file.
@@ -41,9 +47,9 @@ then LF with `%0A`. No other character is escaped. This is the encoding used by
 [`@actions/core.setSecret`][toolkit-command] and inverted by the runner's
 workflow-command parser. Escaping `%` first prevents a literal sequence such as
 `%0A` from becoming a line break during runner decoding. Encoding CR and LF
-ensures the process emits one physical command line, and `::` inside the value
-cannot create another command because the runner treats only the first command
-separator as structural.
+ensures the process emits one physical command line. When the runner recognizes
+the intended V2 separator, later `::` is data; the current framing does not
+establish that precondition across cultures.
 
 The implementation computes the encoded length with checked arithmetic and
 constructs the complete line before opening stdout for writing. The 1 MiB
@@ -66,8 +72,10 @@ job-local and affects only subsequent runner output. The command itself is
 configured not to echo its data; when workflow-command echoing is enabled, the
 runner prints a masked placeholder.
 
-The security property is structural integrity and faithful registration of one
-accepted value while workflow-command processing is active. It is not a
+The intended security property is structural integrity and faithful
+registration of one accepted value while workflow-command processing is
+active. The current V2 framing does not satisfy that property across cultures.
+Even after the framing decision is resolved, the property is not a
 confidentiality guarantee. In particular:
 
 - output produced before registration remains visible;
@@ -76,6 +84,10 @@ confidentiality guarantee. In particular:
 - transformed, split, or encoded forms are not necessarily masked unless the
   runner derives that exact form or the caller registers it separately;
 - short or common values can over-mask unrelated log text;
+- a culture-sensitive parse failure can make the runner log the command line
+  itself as ordinary output, exposing the supplied value immediately without
+  registering it; see the
+  [workflow-command compatibility note](../compatibility/github-actions-workflow-command-parser.md);
 - a preceding `stop-commands` command causes the runner to ignore `add-mask`
   until the matching resume token, causing the encoded command line itself to
   be logged as ordinary output; shoutx cannot observe that state; and
@@ -101,12 +113,15 @@ do not generalize it into a raw workflow-command API.
 
 ### Runner behavior and limitations
 
-The security property is structural integrity of one stdout
+The intended security property is structural integrity of one stdout
 `add-mask` workflow command and faithful registration of its decoded value by
 the supported runner while command processing is active. After consuming at
 most one final producer-framing boundary, shoutx preserves the remaining value
 and escapes `%`, CR, and LF so attacker-controlled data cannot terminate the
-physical line or create another workflow command.
+physical line. The current V2 framing does not prevent culture-sensitive parse
+failure and legacy fallback from selecting an attacker-shaped registered
+workflow command from value data; an unrecognized line is logged as ordinary
+output and can expose the value immediately without registering a mask.
 
 Mask registration is itself an integrity-sensitive operation, not authorization
 to let untrusted input choose arbitrary masks. An attacker-selected value can

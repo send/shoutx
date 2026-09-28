@@ -1,5 +1,7 @@
 # Markdown output decision
 
+Status: Accepted
+
 This decision records why GitHub step-summary output and a generic Markdown
 writer are outside `shoutx`'s current scope.
 

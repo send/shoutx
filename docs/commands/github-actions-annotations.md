@@ -7,7 +7,12 @@ policy remains in [`test-plan.md`](../test-plan.md). The Contract section is
 normative for these commands; contradictions with the cross-cutting documents
 must be resolved.
 
-The commands are implemented and exposed by the CLI.
+The commands are exposed on `main` for pre-release development. Their
+distribution eligibility is governed only by the
+[release policy](../release.md), and the external parser evidence is maintained
+in the
+[workflow-command compatibility note](../compatibility/github-actions-workflow-command-parser.md).
+The contract below records the intended decoded values and annotation behavior.
 
 ## Contract
 
@@ -51,10 +56,11 @@ the Unicode `White_Space` property.
 
 A message whose first Unicode scalar has General_Category `Mn`, `Mc`, `Me`, or
 `Lm` is rejected. TITLE and FILE reject a final scalar with the Unicode
-`Prepended_Concatenation_Mark` property. The pinned runner uses a
-culture-sensitive search for the `::` data separator; those characters can
-make it skip that separator from the respective side and reinterpret later
-message text as properties.
+`Prepended_Concatenation_Mark` property. These checks retain the implemented
+behavior for observed separator-movement cases; they are not a complete
+defense. The pinned runner's culture-sensitive `::` search can fail even for
+ordinary ASCII data, and a scalar or Unicode-category denylist cannot establish
+framing safety across cultures and collation-data versions.
 
 The semantic message is limited to 4,096 UTF-16 code units, matching the pinned
 runner's `ExecutionContext.AddIssue` limit. This prevents ordinary input from
@@ -119,9 +125,11 @@ Message data replaces `%`, CR, and LF with `%25`, `%0D`, and `%0A`.
 TITLE and FILE additionally replace `:` and `,` with `%3A` and `%2C`.
 Percent is replaced first so literal escape-looking data remains literal after
 runner decoding. No physical CR or LF occurs before the final LF, and encoded
-property data cannot terminate the command or add another property. An equals
-sign that is not first is data inside a property value because the runner
-splits each property at only its first effective equals delimiter.
+property data cannot terminate the physical command line. When the intended V2
+separator is recognized, it also cannot terminate command metadata or add
+another property. An equals sign that is not first is data inside a property
+value because the runner splits each property at only its first effective
+equals delimiter.
 
 The complete encoded length is calculated with checked arithmetic before
 allocation. All parsing, validation, size checks, encoding, and record
@@ -130,18 +138,23 @@ exit-status, SIGPIPE, and partial-I/O contract applies. Successful output is
 intended for direct runner consumption and must not be redirected to an
 environment file.
 
-The structural guarantee is faithful workflow-command decoding of one accepted
-message and the supplied validated metadata as one selected annotation command
-while workflow-command processing is active. It does not authorize the
-annotation's content, file association, or severity, and it does not guarantee
-provider retention or presentation.
+The intended structural guarantee is faithful workflow-command decoding of
+one accepted message and the supplied validated metadata as one selected
+annotation command while workflow-command processing is active. The current V2
+framing does not satisfy that guarantee across cultures. The eventual
+guarantee will not authorize the annotation's content, file association, or
+severity, or promise provider retention or presentation.
 
 ## Boundary-specific threat analysis
 
 Untrusted MESSAGE, TITLE, or FILE data cannot terminate the physical command
-line, add a property, change severity, or create a second runner command.
-Severity is selected by the command name; there is no raw command name or
-arbitrary-property input.
+line. When the runner recognizes the intended V2 separator, the distinct
+encoders prevent data from adding a property or changing severity. The current
+framing does not establish that precondition across cultures, and legacy
+fallback can select an attacker-shaped registered workflow command from value
+data. A moved V2 separator can also promote later message text into annotation
+properties. Severity is selected by the command name; there is no raw command
+name or arbitrary-property input.
 
 Attacker-controlled content can still mislead readers, associate a diagnostic
 with an unrelated file, create alert fatigue, or consume provider limits. The

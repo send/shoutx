@@ -14,12 +14,20 @@ Status: early implementation. The `github-actions:output`,
 `github-actions:error` commands are implemented. Native binaries, checksums, and provenance are available from
 the [GitHub releases](https://github.com/send/shoutx/releases).
 
-`github-actions:mask` is present on `main` but is not eligible for the next
-binary release until its completed hosted-runner logs have passed the external
-redaction check specified in the test plan.
+The stdout workflow-command family (`mask`, `notice`, `warning`, and `error`)
+is present on `main` but is not currently release eligible. The authoritative
+gate is in the [release policy](docs/release.md); the open design is tracked in
+the [stdout framing decision](docs/decisions/github-actions-stdout-framing.md).
+Environment-file writers do not pass through this stdout parser and retain
+their separate destination-specific contracts.
 
 The native-binary packaging and publication contract is specified in the
 [release design](docs/release.md).
+
+Project documentation follows an explicit
+[single-source-of-truth map](docs/README.md). This README is a user-facing
+overview; command specifications, security scope, design decisions,
+compatibility evidence, and release policy each have one authoritative home.
 
 ## Installation
 
@@ -252,9 +260,9 @@ enforce safe composition. Prefer an argv-capable API, or use `env:` and
   because the runner would not install those masks.
 - Annotation commands reject empty and Unicode-whitespace-only messages and
   limit messages to 4,096 UTF-16 code units to match the pinned runner. They
-  also reject a leading Unicode combining mark because the runner's
-  culture-sensitive separator search can otherwise misparse later message data
-  as annotation properties.
+  also retain pre-release checks for observed Unicode separator-movement cases,
+  but those checks are not a complete defense against the runner's
+  culture-sensitive parser and do not remove the release block above.
 - Encoded output is written to stdout; diagnostics are written to stderr.
 - Values are limited to 1 MiB of UTF-8 before and after normalization. Names
   and `--join-lines-with` separators are limited to 255 bytes.
@@ -382,8 +390,8 @@ mise install
 scripts/test-runner-oracle.sh
 ```
 
-CI installs the same SDK directly and runs the oracle natively on Linux and
-Windows.
+CI installs the same SDK directly and runs the oracle on the
+[platform matrix defined by the test plan](docs/test-plan.md#differential-testing-against-actionsrunner).
 
 Dependency policy is declared in `deny.toml`. Contributors with `cargo-deny`
 installed can run the same vulnerability, license, duplicate-version, and

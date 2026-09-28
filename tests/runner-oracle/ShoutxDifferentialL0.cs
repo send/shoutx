@@ -98,6 +98,23 @@ public sealed class ShoutxDifferentialL0
 
     [Theory]
     [InlineData("\u0600")]
+    [InlineData("\u0605")]
+    [InlineData("\u06DD")]
+    [InlineData("\u070F")]
+    [InlineData("\u0890")]
+    [InlineData("\u0891")]
+    [InlineData("\u08E2")]
+    [InlineData("\u0D4E")]
+    [InlineData("\U000110BD")]
+    [InlineData("\U000110CD")]
+    [InlineData("\U000111C2")]
+    [InlineData("\U000111C3")]
+    [InlineData("\U0001193F")]
+    [InlineData("\U00011941")]
+    [InlineData("\U00011A84")]
+    [InlineData("\U00011A89")]
+    [InlineData("\U00011D46")]
+    [InlineData("\U00011F02")]
     [Trait("Level", "L0")]
     [Trait("Category", "Worker")]
     public void TrailingPropertyCollationMarksCanMoveTheAnnotationSeparator(string suffix)
@@ -116,6 +133,52 @@ public sealed class ShoutxDifferentialL0
             Assert.Equal("tail", actual!.Message);
             Assert.Equal("etc/passwd", actual.Data["file"]);
             Assert.Equal("3", actual.Data["line"]);
+        }
+    }
+
+    [Fact]
+    [Trait("Level", "L0")]
+    [Trait("Category", "Worker")]
+    public void AnnotationFilePathsMatchRunnerTranslation()
+    {
+        var (host, manager, context) = CreateActionCommandContext();
+        using (host)
+        {
+            var issues = new List<Issue>();
+            context.Setup(value => value.AddIssue(
+                    It.IsAny<Issue>(), It.IsAny<ExecutionContextLogOptions>()))
+                .Callback<Issue, ExecutionContextLogOptions>((issue, _) => issues.Add(issue));
+
+            var hostWorkspace = Path.Combine(Path.GetTempPath(), "shoutx-workspace");
+            var containerWorkspace = OperatingSystem.IsWindows()
+                ? @"C:\container\workspace"
+                : "/container/workspace";
+            var containerFile = Path.Combine(containerWorkspace, "src", "file.rs");
+            var container = new ContainerInfo();
+            container.AddPathTranslateMapping(hostWorkspace, containerWorkspace);
+            context.Setup(value => value.GetGitHubContext("workspace")).Returns(hostWorkspace);
+            context.Setup(value => value.GetGitHubContext("repository")).Returns("owner/repo");
+
+            Assert.True(manager.TryProcessCommand(
+                context.Object,
+                $"::warning file={EscapeProperty(containerFile)},line=1::container path",
+                container));
+            var translated = Assert.Single(issues);
+            Assert.Equal("src/file.rs", translated.Data["file"]);
+            Assert.Equal("owner/repo", translated.Data["repo"]);
+
+            if (OperatingSystem.IsWindows())
+            {
+                issues.Clear();
+                var mixed = @"D:\outside/mixed\file.rs";
+                Assert.True(manager.TryProcessCommand(
+                    context.Object,
+                    $"::warning file={EscapeProperty(mixed)},line=1::mixed path",
+                    null!));
+                var normalized = Assert.Single(issues);
+                Assert.Equal(@"D:\outside\mixed\file.rs", normalized.Data["file"]);
+                Assert.Equal("owner/repo", normalized.Data["repo"]);
+            }
         }
     }
 
@@ -735,6 +798,13 @@ public sealed class ShoutxDifferentialL0
 
     private static string Encode(string value) =>
         Convert.ToBase64String(Encoding.UTF8.GetBytes(value));
+
+    private static string EscapeProperty(string value) => value
+        .Replace("%", "%25", StringComparison.Ordinal)
+        .Replace("\r", "%0D", StringComparison.Ordinal)
+        .Replace("\n", "%0A", StringComparison.Ordinal)
+        .Replace(":", "%3A", StringComparison.Ordinal)
+        .Replace(",", "%2C", StringComparison.Ordinal);
 
     private static string Decode(string value) =>
         Encoding.UTF8.GetString(Convert.FromBase64String(value));

@@ -243,12 +243,33 @@ fn text_properties_are_encoded_in_fixed_order() {
                 1,
             );
         }
-        for value in ["prepend\u{0600}", "prepend\u{110bd}"] {
+        for suffix in [
+            '\u{0600}',
+            '\u{0605}',
+            '\u{06dd}',
+            '\u{070f}',
+            '\u{0890}',
+            '\u{0891}',
+            '\u{08e2}',
+            '\u{0d4e}',
+            '\u{110bd}',
+            '\u{110cd}',
+            '\u{111c2}',
+            '\u{111c3}',
+            '\u{1193f}',
+            '\u{11941}',
+            '\u{11a3a}',
+            '\u{11a84}',
+            '\u{11a89}',
+            '\u{11d46}',
+            '\u{11f02}',
+        ] {
+            let value = format!("prepend{suffix}");
             failure(
                 &[
                     "github-actions:notice",
                     option,
-                    value,
+                    &value,
                     ",file=x,line=3::tail",
                 ],
                 None,

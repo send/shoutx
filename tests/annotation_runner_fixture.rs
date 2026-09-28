@@ -115,6 +115,32 @@ fn cases() -> Vec<AnnotationCase> {
             ]),
         ),
         (
+            "notice-multiline-range",
+            request(
+                AnnotationSeverity::Notice,
+                Some("multiline range"),
+                Some("src/range.rs"),
+                Some("1"),
+                Some("2147483647"),
+                None,
+                None,
+            ),
+            "notice",
+            "large multiline range",
+            properties(&[
+                ("title", "multiline range"),
+                ("file", "src/range.rs"),
+                ("line", "1"),
+                ("endLine", "2147483647"),
+            ]),
+            properties(&[
+                ("title", "multiline range"),
+                ("file", "src/range.rs"),
+                ("line", "1"),
+                ("endLine", "2147483647"),
+            ]),
+        ),
+        (
             "warning-internal-equals",
             request(
                 AnnotationSeverity::Warning,

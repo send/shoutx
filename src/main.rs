@@ -93,6 +93,23 @@ fn run() -> Result<(), ShoutxError> {
             };
             output(&shoutx::github_actions::encode_mask(value)?)
         }
+        Action::Annotate(request) => {
+            let message = if let Some(message) = request.message.as_ref() {
+                shoutx::cli::os_bytes(message)?.to_vec()
+            } else {
+                if io::stdin().is_terminal() {
+                    return Err(ShoutxError::usage(
+                        "MESSAGE omitted while stdin is a terminal",
+                    ));
+                }
+                let mut stdin = process_io::stdin_file()
+                    .map_err(|_| ShoutxError::failure("failed to open stdin"))?;
+                shoutx::input::read_bounded(&mut stdin)?
+            };
+            output(&shoutx::github_actions::encode_annotation(
+                request, message,
+            )?)
+        }
     }
 }
 

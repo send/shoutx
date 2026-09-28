@@ -9,6 +9,7 @@ repository = "https://github.com/send/shoutx"
 
 [dependencies]
 getrandom = "0.4.3"
+unicode-general-category = "1.1.0"
 
 [dev-dependencies]
 base64 = { version = "0.23.1", default-features = false, features = ["std"] }

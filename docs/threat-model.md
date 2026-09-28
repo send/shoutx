@@ -168,7 +168,7 @@ Other recognized boundaries are deferred, candidates, or out of scope:
 | --- | --- | --- |
 | `$GITHUB_STEP_SUMMARY` | Deferred; no generic Markdown writer planned | GitHub-rendered content integrity rather than runner command-file record injection |
 | stdout `add-mask` workflow command | Implemented | Register one faithfully decoded value for subsequent runner log masking |
-| stdout annotation workflow commands | Specified candidates; not implemented | Emit one faithfully decoded notice, warning, or error with validated location metadata |
+| stdout annotation workflow commands | Implemented | Emit one faithfully decoded notice, warning, or error with validated location metadata |
 | other stdout workflow commands | Deferred | Lines such as `::stop-commands::` and `::group::` are runner control messages |
 | `$GITHUB_ARTIFACTS` | Deferred; 2026-09-28 hosted-runner gate failed | One file or OCI declaration per line |
 | `$GITHUB_ARTIFACTS_LIST` | Out of scope | Runner-managed, read-only JSON input |
@@ -214,8 +214,8 @@ Detailed rationale for deferred features is recorded in decision documents:
 | Secret exposure through diagnostics | Yes | Do not reproduce input values in diagnostics |
 | Additional workflow commands through mask data | Yes | Percent-escape `%`, CR, and LF and emit one physical `add-mask` line |
 | False mask success for empty or whitespace-only data | Yes | Reject before stdout because the runner would not register it |
-| Additional workflow commands or properties through annotation data | Candidate | Use distinct message/property encoders and emit one physical typed command line |
-| Ordinary annotation truncation or metadata repair | Candidate | Enforce the pinned runner's input message limit and conservative location invariants before stdout |
+| Additional workflow commands or properties through annotation data | Yes | Use distinct message/property encoders and emit one physical typed command line |
+| Ordinary annotation truncation or metadata repair | Yes | Enforce the pinned runner's input message limit and conservative location invariants before stdout |
 | Mask-induced annotation transformation or truncation | No | Runner secret masking occurs after decoding; document that it can change and expand the message |
 | Misleading or excessive attacker-selected annotations | No | Caller authorizes content and severity; shoutx protects only command structure |
 | Disclosure before mask registration or through process tracing | No | Deliver secrets as data, disable tracing, and register before other output |
@@ -308,8 +308,8 @@ Environment-file writer stdout must be redirected to the selected environment
 file. In particular, an unredirected multiline value can place
 attacker-controlled lines on the runner command channel, which is outside the
 environment-file encoding guarantee. Stdout workflow-command writers are the
-deliberate exception: the implemented mask command, and the candidate
-annotation commands if implemented, emit one encoded runner command and must
+deliberate exception: the implemented mask and annotation commands emit one
+encoded runner command and must
 remain connected to the runner log stream rather than being redirected to an
 environment file.
 

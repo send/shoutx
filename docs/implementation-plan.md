@@ -322,16 +322,16 @@ Completed sequencing and superseded increment plans are retained in
 contracts and lasting command-specific implementation constraints live under
 [`commands/`](commands/).
 
-## Next implementation increment
+## Current implementation increment
 
-Implement the specified `github-actions:notice`, `github-actions:warning`, and
-`github-actions:error` family together. The normative contract, focused test
+The specified `github-actions:notice`, `github-actions:warning`, and
+`github-actions:error` family is implemented together. The normative contract, focused test
 matrix, and lasting implementation constraints are maintained in the
 [annotation command specification](commands/github-actions-annotations.md).
 
-Extend the manual CLI parser, workflow-command encoder, pinned C# runner oracle,
-and hosted workflow checks as described there. Do not expose the commands in
-help or README until all three severities satisfy the shared release gates.
+The manual CLI parser, workflow-command encoder, pinned C# runner oracle, and
+hosted workflow checks are extended as described there. The commands are
+exposed in help and README only as one complete family.
 
 ## CI and quality gates
 

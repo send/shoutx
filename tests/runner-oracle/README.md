@@ -5,6 +5,9 @@ This test-only xUnit fixture calls `EnvFileKeyValuePairs` and
 directly. It does not copy or translate the runner's parser implementation.
 It also feeds shoutx-generated `add-mask` commands through the runner's actual
 `ActionCommandManager`, `AddMaskCommandExtension`, and `SecretMasker`.
+Shoutx-generated annotation commands likewise pass through the actual command
+manager and notice, warning, and error extensions, with decoded issue metadata
+compared against the shared corpus.
 The runner's `TestHostContext` intentionally installs only JSON and URI value
 encoders. The derived-mask test mirrors the full encoder registration list from
 the pinned production `Runner.Common/HostContext.cs`; changes to that upstream

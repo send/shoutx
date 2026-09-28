@@ -4,12 +4,14 @@ Prevent injection at CI workflow output boundaries.
 
 `shoutx` safely writes untrusted values from shell-driven workflows to
 destination-specific formats and protocols. The first release targets GitHub
-Actions environment files. Generic context encoders are deferred until a
-concrete destination and safe consumption contract justify one.
+Actions environment files and typed stdout workflow commands. Generic context
+encoders are deferred until a concrete destination and safe consumption
+contract justify one.
 
 Status: early implementation. The `github-actions:output`,
 `github-actions:env`, `github-actions:path`, `github-actions:state`, and
-`github-actions:mask` commands are implemented. Native binaries, checksums, and provenance are available from
+`github-actions:mask`, `github-actions:notice`, `github-actions:warning`, and
+`github-actions:error` commands are implemented. Native binaries, checksums, and provenance are available from
 the [GitHub releases](https://github.com/send/shoutx/releases).
 
 `github-actions:mask` is present on `main` but is not eligible for the next
@@ -107,6 +109,9 @@ GitHub Actions writers:
   shoutx github-actions:state  [--first-line | --join-lines | --join-lines-with STRING | --multiline] NAME [VALUE]
   shoutx github-actions:path   [VALUE]
   shoutx github-actions:mask   [VALUE]
+  shoutx github-actions:notice  [--title TITLE] [--file FILE] [--line N] [--end-line N] [--column N] [--end-column N] [MESSAGE]
+  shoutx github-actions:warning [--title TITLE] [--file FILE] [--line N] [--end-line N] [--column N] [--end-column N] [MESSAGE]
+  shoutx github-actions:error   [--title TITLE] [--file FILE] [--line N] [--end-line N] [--column N] [--end-column N] [MESSAGE]
 
 ```
 
@@ -117,6 +122,9 @@ GitHub Actions writers:
 | `github-actions:path` | One `$GITHUB_PATH` record | One final boundary consumed; others rejected |
 | `github-actions:state` | One `$GITHUB_STATE` record | Internal boundaries rejected by default; explicit normalization |
 | `github-actions:mask` | One stdout `add-mask` command | One final boundary consumed; remaining boundaries percent-escaped |
+| `github-actions:notice` | One stdout notice annotation command | One final boundary consumed; remaining boundaries percent-escaped |
+| `github-actions:warning` | One stdout warning annotation command | One final boundary consumed; remaining boundaries percent-escaped |
+| `github-actions:error` | One stdout error annotation command | One final boundary consumed; remaining boundaries percent-escaped |
 
 Namespaced commands identify the interpretation context, not merely a data
 type. Provider-specific writers use the `PROVIDER:DESTINATION` form. Reusable
@@ -182,6 +190,24 @@ runner to ignore the command. Prefer stdin or a quoted environment variable to
 a literal process argument. A masked value may be suppressed if used as a job
 output, even though same-job step-output use is supported by GitHub.
 
+The annotation commands emit one typed notice, warning, or error workflow
+command directly to the runner. MESSAGE follows the same argv-or-stdin rule as
+`github-actions:mask`, consumes one optional final input boundary, and preserves
+remaining CR and LF through percent encoding. TITLE and FILE are optional
+metadata; locations are positive decimal integers with conservative dependency
+and range checks. For example:
+
+```sh
+lint_message | shoutx github-actions:warning \
+  --title 'Lint finding' --file src/main.rs --line 42 --column 7
+```
+
+The three commands fix severity in the command name and provide no raw property
+interface. `github-actions:error` emits an error annotation but does not itself
+return a failure status or fail the step. Annotation content and file selection
+remain caller-authorized data, and runner limits, feature flags, secret masking,
+and composite-action forwarding can affect retention or presentation.
+
 The commands write encoded records to stdout. The caller deliberately chooses
 the destination file with shell redirection; `shoutx` does not discover or
 modify environment files implicitly. Redirect writer output to the intended
@@ -205,7 +231,7 @@ enforce safe composition. Prefer an argv-capable API, or use `env:` and
 - `--` ends option parsing. Modes are mutually exclusive, extra operands are
   usage errors, and `--join-lines-with=STRING` is accepted.
 - For a command without `NAME`, including `github-actions:path` and
-  `github-actions:mask`, use `--`
+  `github-actions:mask` and the annotation commands, use `--`
   before a value that could begin with `-`.
 - `--help` and `--version` are options only before `NAME`; after `NAME`, those
   tokens are values.
@@ -224,6 +250,11 @@ enforce safe composition. Prefer an argv-capable API, or use `env:` and
   empty line is not a path entry in the runner protocol.
 - `github-actions:mask` also rejects empty and Unicode-whitespace-only values
   because the runner would not install those masks.
+- Annotation commands reject empty and Unicode-whitespace-only messages and
+  limit messages to 4,096 UTF-16 code units to match the pinned runner. They
+  also reject a leading Unicode combining mark because the runner's
+  culture-sensitive separator search can otherwise misparse later message data
+  as annotation properties.
 - Encoded output is written to stdout; diagnostics are written to stderr.
 - Values are limited to 1 MiB of UTF-8 before and after normalization. Names
   and `--join-lines-with` separators are limited to 255 bytes.

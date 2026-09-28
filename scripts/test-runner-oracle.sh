@@ -7,6 +7,7 @@ runner_dir="$root/target/runner-oracle/actions-runner"
 corpus="$root/target/runner-oracle/corpus.json"
 path_corpus="$root/target/runner-oracle/path-corpus.json"
 mask_corpus="$root/target/runner-oracle/mask-corpus.json"
+annotation_corpus="$root/target/runner-oracle/annotation-corpus.json"
 staging_dir=
 
 cleanup() {
@@ -76,6 +77,8 @@ SHOUTX_PATH_CORPUS_PATH="$path_corpus" \
   cargo test --test path_runner_fixture export_path_corpus -- --ignored
 SHOUTX_MASK_CORPUS_PATH="$mask_corpus" \
   cargo test --test mask_runner_fixture export_mask_corpus -- --ignored
+SHOUTX_ANNOTATION_CORPUS_PATH="$annotation_corpus" \
+  cargo test --test annotation_runner_fixture export_annotation_corpus -- --ignored
 cp tests/runner-oracle/ShoutxDifferentialL0.cs \
   "$runner_dir/src/Test/L0/Worker/ShoutxDifferentialL0.cs"
 (
@@ -89,7 +92,7 @@ cp tests/runner-oracle/ShoutxDifferentialL0.cs \
     --configuration Release \
     -p:PackageRuntime="$runtime" \
     -p:NuGetAudit=false
-  SHOUTX_CORPUS="$corpus" SHOUTX_PATH_CORPUS="$path_corpus" SHOUTX_MASK_CORPUS="$mask_corpus" DOTNET_CLI_TELEMETRY_OPTOUT=1 \
+  SHOUTX_CORPUS="$corpus" SHOUTX_PATH_CORPUS="$path_corpus" SHOUTX_MASK_CORPUS="$mask_corpus" SHOUTX_ANNOTATION_CORPUS="$annotation_corpus" DOTNET_CLI_TELEMETRY_OPTOUT=1 \
     dotnet_run test Test/Test.csproj \
     --configuration Release \
     --no-build \

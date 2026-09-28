@@ -176,7 +176,7 @@ public sealed class ShoutxDifferentialL0
                     $"::warning file={EscapeProperty(mixed)},line=1::mixed path",
                     null!));
                 var normalized = Assert.Single(issues);
-                Assert.Equal(@"D:\outside\mixed\file.rs", normalized.Data["file"]);
+                Assert.Equal("D:/outside/mixed/file.rs", normalized.Data["file"]);
                 Assert.Equal("owner/repo", normalized.Data["repo"]);
             }
         }

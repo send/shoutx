@@ -45,28 +45,28 @@ public sealed class ShoutxDifferentialL0
             var (host, manager, context) = CreateActionCommandContext();
             using (host)
             {
-                Issue? actual = null;
+                var actual = new List<Issue>();
                 context.Setup(value => value.AddIssue(
                         It.IsAny<Issue>(), It.IsAny<ExecutionContextLogOptions>()))
-                    .Callback<Issue, ExecutionContextLogOptions>((issue, _) => actual = issue);
+                    .Callback<Issue, ExecutionContextLogOptions>((issue, _) => actual.Add(issue));
 
                 var bytes = Convert.FromBase64String(item.Command);
                 Assert.Equal((byte)'\n', bytes[^1]);
                 var line = Encoding.UTF8.GetString(bytes, 0, bytes.Length - 1);
 
                 Assert.True(manager.TryProcessCommand(context.Object, line, null!));
-                Assert.NotNull(actual);
-                Assert.Equal(item.Severity, actual!.Type.ToString(), ignoreCase: true);
-                Assert.Equal(Decode(item.Message), actual.Message);
+                var issue = Assert.Single(actual);
+                Assert.Equal(item.Severity, issue.Type.ToString(), ignoreCase: true);
+                Assert.Equal(Decode(item.Message), issue.Message);
                 var expectedProperties = OperatingSystem.IsWindows()
                     ? item.WindowsProperties
                     : item.Properties;
-                Assert.Equal(expectedProperties.ContainsKey("file") ? "Code" : "General", actual.Category);
+                Assert.Equal(expectedProperties.ContainsKey("file") ? "Code" : "General", issue.Category);
                 Assert.Equal(
                     expectedProperties.ToDictionary(pair => pair.Key, pair => Decode(pair.Value)),
-                    actual.Data.Where(pair => expectedProperties.ContainsKey(pair.Key))
+                    issue.Data.Where(pair => expectedProperties.ContainsKey(pair.Key))
                         .ToDictionary(pair => pair.Key, pair => pair.Value));
-                Assert.Equal(expectedProperties.Count, actual.Data.Count);
+                Assert.Equal(expectedProperties.Count, issue.Data.Count);
             }
         }
     }

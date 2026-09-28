@@ -6,7 +6,7 @@ use shoutx::cli::{AnnotationRequest, AnnotationSeverity};
 
 #[derive(Serialize)]
 struct AnnotationCase {
-    id: &'static str,
+    id: String,
     command: String,
     severity: &'static str,
     message: String,
@@ -164,11 +164,11 @@ fn cases() -> Vec<AnnotationCase> {
         ),
     ];
 
-    definitions
+    let mut cases: Vec<_> = definitions
         .into_iter()
         .map(
             |(id, request, severity, message, properties, windows_properties)| AnnotationCase {
-                id,
+                id: id.to_owned(),
                 command: encode(
                     &shoutx::github_actions::encode_annotation(
                         request,
@@ -182,7 +182,67 @@ fn cases() -> Vec<AnnotationCase> {
                 windows_properties,
             },
         )
-        .collect()
+        .collect();
+
+    let severities = [
+        (AnnotationSeverity::Notice, "notice"),
+        (AnnotationSeverity::Warning, "warning"),
+        (AnnotationSeverity::Error, "error"),
+    ];
+    let message_fragments = [
+        "plain",
+        "percent%0A",
+        "delimiter::text",
+        "comma,title=value",
+        "line1\r\nline2",
+        "日本語😀",
+        "\u{200b}zero-width",
+        "\u{00ad}soft-hyphen",
+        "\u{feff}byte-order-mark",
+    ];
+    for index in 0..96 {
+        let (severity, severity_name) = severities[index % severities.len()];
+        let message = format!(
+            "generated-{index}-{}-{}",
+            message_fragments[index % message_fragments.len()],
+            message_fragments[(index * 5 + 1) % message_fragments.len()]
+        );
+        let title = format!("title-{index},colon::percent%25-日本語=end");
+        let file = format!("src/generated-{index},colon:percent%25-日本語.rs");
+        let line = (index + 1).to_string();
+        let column = (index % 17 + 1).to_string();
+        let end_column = (index % 17 + 2).to_string();
+        let request = request(
+            severity,
+            Some(&title),
+            Some(&file),
+            Some(&line),
+            Some(&line),
+            Some(&column),
+            Some(&end_column),
+        );
+        let expected = properties(&[
+            ("title", &title),
+            ("file", &file),
+            ("line", &line),
+            ("endLine", &line),
+            ("col", &column),
+            ("endColumn", &end_column),
+        ]);
+        cases.push(AnnotationCase {
+            id: format!("generated-{index}"),
+            command: encode(
+                &shoutx::github_actions::encode_annotation(request, message.as_bytes().to_vec())
+                    .unwrap(),
+            ),
+            severity: severity_name,
+            message: encode(message.as_bytes()),
+            windows_properties: expected.clone(),
+            properties: expected,
+        });
+    }
+
+    cases
 }
 
 #[test]

@@ -243,6 +243,18 @@ fn text_properties_are_encoded_in_fixed_order() {
                 1,
             );
         }
+        for value in ["prepend\u{0600}", "prepend\u{110bd}"] {
+            failure(
+                &[
+                    "github-actions:notice",
+                    option,
+                    value,
+                    ",file=x,line=3::tail",
+                ],
+                None,
+                1,
+            );
+        }
         success(
             &["github-actions:notice", option, "a==b", "message"],
             None,

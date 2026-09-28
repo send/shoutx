@@ -96,6 +96,29 @@ public sealed class ShoutxDifferentialL0
         }
     }
 
+    [Theory]
+    [InlineData("\u0600")]
+    [Trait("Level", "L0")]
+    [Trait("Category", "Worker")]
+    public void TrailingPropertyCollationMarksCanMoveTheAnnotationSeparator(string suffix)
+    {
+        var (host, manager, context) = CreateActionCommandContext();
+        using (host)
+        {
+            Issue? actual = null;
+            context.Setup(value => value.AddIssue(
+                    It.IsAny<Issue>(), It.IsAny<ExecutionContextLogOptions>()))
+                .Callback<Issue, ExecutionContextLogOptions>((issue, _) => actual = issue);
+
+            var line = $"::warning title=safe{suffix}::,file=/etc/passwd,line=3::tail";
+            Assert.True(manager.TryProcessCommand(context.Object, line, null!));
+            Assert.NotNull(actual);
+            Assert.Equal("tail", actual!.Message);
+            Assert.Equal("etc/passwd", actual.Data["file"]);
+            Assert.Equal("3", actual.Data["line"]);
+        }
+    }
+
     [Fact]
     [Trait("Level", "L0")]
     [Trait("Category", "Worker")]
@@ -155,6 +178,11 @@ public sealed class ShoutxDifferentialL0
             }
             Assert.True(manager.TryProcessCommand(
                 context.Object, "::shoutx-stop-token::", null!));
+            Assert.True(manager.TryProcessCommand(
+                context.Object, "::error::annotation processing resumed", null!));
+            Assert.NotNull(actual);
+            Assert.Equal(IssueType.Error, actual!.Type);
+            Assert.Equal("annotation processing resumed", actual.Message);
         }
     }
 

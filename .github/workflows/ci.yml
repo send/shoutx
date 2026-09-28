@@ -116,15 +116,16 @@ jobs:
           printf %s "$SHOUTX_MASK_VALUE" | target/debug/shoutx github-actions:mask
           target/debug/shoutx github-actions:output masked_value "$mask_marker" >> "$GITHUB_OUTPUT"
           printf 'SHOUTX_MASK_BASH_%s_BEGIN%s_END\n' "$RUNNER_OS" "$mask_marker"
+          annotation_file="$GITHUB_WORKSPACE/src/annotation,percent%25-日本語.rs"
           target/debug/shoutx github-actions:notice \
-            --title "shoutx annotation notice $RUNNER_OS" \
-            --file "$GITHUB_WORKSPACE/src/lib.rs" --line 1 'notice % :: 日本語'
+            --title "shoutx annotation notice $RUNNER_OS :: %,日本語" \
+            --file "$annotation_file" --line 1 'notice % :: 日本語'
           target/debug/shoutx github-actions:warning \
-            --title "shoutx annotation warning $RUNNER_OS" \
-            --file "$GITHUB_WORKSPACE/src/lib.rs" --line 1 --column 1 $'warning first\nwarning second 日本語'
+            --title "shoutx annotation warning $RUNNER_OS :: %,日本語" \
+            --file "$annotation_file" --line 1 --column 1 $'warning first\nwarning second 日本語'
           target/debug/shoutx github-actions:error \
-            --title "shoutx annotation error $RUNNER_OS" \
-            --file "$GITHUB_WORKSPACE/src/lib.rs" --line 1 'error annotation does not fail the step'
+            --title "shoutx annotation error $RUNNER_OS :: %,日本語" \
+            --file "$annotation_file" --line 1 'error annotation does not fail the step'
       - name: Verify dogfooded values on POSIX
         if: runner.os != 'Windows'
         shell: bash
@@ -161,17 +162,17 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           target/debug/shoutx.exe github-actions:output masked_value $maskMarker >> $env:GITHUB_OUTPUT
           Write-Output "SHOUTX_MASK_PWSH_WINDOWS_BEGIN${maskMarker}_END"
-          $annotationFile = Join-Path $env:GITHUB_WORKSPACE 'src/lib.rs'
+          $annotationFile = Join-Path $env:GITHUB_WORKSPACE 'src/annotation,percent%25-日本語.rs'
           target/debug/shoutx.exe github-actions:notice `
-            --title 'shoutx annotation notice Windows' `
+            --title 'shoutx annotation notice Windows :: %,日本語' `
             --file $annotationFile --line 1 'notice % :: 日本語'
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           target/debug/shoutx.exe github-actions:warning `
-            --title 'shoutx annotation warning Windows' `
+            --title 'shoutx annotation warning Windows :: %,日本語' `
             --file $annotationFile --line 1 --column 1 "warning first`nwarning second 日本語"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           target/debug/shoutx.exe github-actions:error `
-            --title 'shoutx annotation error Windows' `
+            --title 'shoutx annotation error Windows :: %,日本語' `
             --file $annotationFile --line 1 'error annotation does not fail the step'
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Verify dogfooded values on Windows
@@ -382,18 +383,20 @@ jobs:
               jq 'add' "$pages" > "$annotations"
               if jq -e --arg os "$runner_os" '
                 any(.[]; .annotation_level == "notice" and
-                  .title == "shoutx annotation notice \($os)" and
-                  .message == "notice % :: 日本語" and .path == "src/lib.rs" and
+                  .title == "shoutx annotation notice \($os) :: %,日本語" and
+                  .message == "notice % :: 日本語" and
+                  .path == "src/annotation,percent%25-日本語.rs" and
                   .start_line == 1 and .end_line == 1) and
                 any(.[]; .annotation_level == "warning" and
-                  .title == "shoutx annotation warning \($os)" and
+                  .title == "shoutx annotation warning \($os) :: %,日本語" and
                   .message == "warning first\nwarning second 日本語" and
-                  .path == "src/lib.rs" and .start_line == 1 and
+                  .path == "src/annotation,percent%25-日本語.rs" and .start_line == 1 and
                   .end_line == 1 and .start_column == 1 and .end_column == 1) and
                 any(.[]; .annotation_level == "failure" and
-                  .title == "shoutx annotation error \($os)" and
+                  .title == "shoutx annotation error \($os) :: %,日本語" and
                   .message == "error annotation does not fail the step" and
-                  .path == "src/lib.rs" and .start_line == 1 and .end_line == 1)
+                  .path == "src/annotation,percent%25-日本語.rs" and
+                  .start_line == 1 and .end_line == 1)
               ' "$annotations" >/dev/null; then
                 verified=true
                 break

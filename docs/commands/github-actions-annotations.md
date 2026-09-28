@@ -50,11 +50,11 @@ means the .NET 8 `Char.IsWhiteSpace` set, equivalent for accepted UTF-8 input to
 the Unicode `White_Space` property.
 
 A message whose first Unicode scalar has General_Category `Mn`, `Mc`, `Me`, or
-`Lm` is rejected. The pinned runner uses a culture-sensitive search for the
-`::` data separator; a leading combining mark or certain modifier letters can
-make it skip that separator and reinterpret later message text as properties.
-Rejecting every leading Unicode mark and modifier letter conservatively avoids
-those known collation-sensitive prefixes.
+`Lm` is rejected. TITLE and FILE reject a final scalar with the Unicode
+`Prepended_Concatenation_Mark` property. The pinned runner uses a
+culture-sensitive search for the `::` data separator; those characters can
+make it skip that separator from the respective side and reinterpret later
+message text as properties.
 
 The semantic message is limited to 4,096 UTF-16 code units, matching the pinned
 runner's `ExecutionContext.AddIssue` limit. This prevents ordinary input from
@@ -69,7 +69,8 @@ TITLE and FILE are optional strict UTF-8 text fields. An explicitly supplied
 empty value is an input error because the workflow-command parser would omit
 an empty property. A leading `=` is rejected because the runner's
 empty-entry-removing split would discard it or the complete property. NUL is
-rejected. A final Unicode-whitespace scalar is also rejected for both fields.
+rejected. A final Unicode-whitespace scalar or
+`Prepended_Concatenation_Mark` scalar is also rejected for both fields.
 The runner trims the complete encoded property region before splitting it, so
 accepting such a suffix would make preservation depend on whether another
 property follows it. CR and LF remain accepted because they are escaped before
@@ -193,7 +194,9 @@ NUL, and 1 MiB acquisition cases. Exercise every final-boundary form through
 both message sources, plus multiple terminators and internal mixed boundaries.
 Reject empty and Unicode-whitespace-only semantic messages with status 1 and
 empty stdout. Reject leading `Mn`, `Mc`, `Me`, and `Lm` scalars, including
-cases with a later `::` followed by property-looking message data.
+cases with a later `::` followed by property-looking message data. Reject a
+final `Prepended_Concatenation_Mark` scalar in TITLE and FILE and exercise
+property-looking message data after the separator.
 
 Count the semantic message as UTF-16 code units. Accept 4,096 ASCII or BMP
 units and 2,048 supplementary Unicode scalars. Reject the first unit beyond

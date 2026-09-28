@@ -23,6 +23,29 @@ struct Property<'a> {
     kind: PropertyKind,
 }
 
+fn is_prepended_concatenation_mark(character: char) -> bool {
+    matches!(
+        character,
+        '\u{0600}'..='\u{0605}'
+            | '\u{06dd}'
+            | '\u{070f}'
+            | '\u{0890}'..='\u{0891}'
+            | '\u{08e2}'
+            | '\u{110bd}'
+            | '\u{110cd}'
+    )
+}
+
+fn is_unsafe_message_prefix(character: char) -> bool {
+    matches!(
+        get_general_category(character),
+        GeneralCategory::NonspacingMark
+            | GeneralCategory::SpacingMark
+            | GeneralCategory::EnclosingMark
+            | GeneralCategory::ModifierLetter
+    )
+}
+
 fn bytes(value: &OsStr) -> Result<&[u8], ShoutxError> {
     value
         .to_str()
@@ -55,6 +78,15 @@ fn text_property(value: &OsStr) -> Result<&[u8], ShoutxError> {
     }) {
         return Err(ShoutxError::failure(
             "annotation property ends with whitespace",
+        ));
+    }
+    if text
+        .chars()
+        .next_back()
+        .is_some_and(is_prepended_concatenation_mark)
+    {
+        return Err(ShoutxError::failure(
+            "annotation property ends with a separator-sensitive character",
         ));
     }
     Ok(value)
@@ -128,17 +160,13 @@ pub fn encode(request: AnnotationRequest, mut message: Vec<u8>) -> Result<Vec<u8
             "annotation message is empty or whitespace only",
         ));
     }
-    if message_text.chars().next().is_some_and(|character| {
-        matches!(
-            get_general_category(character),
-            GeneralCategory::NonspacingMark
-                | GeneralCategory::SpacingMark
-                | GeneralCategory::EnclosingMark
-                | GeneralCategory::ModifierLetter
-        )
-    }) {
+    if message_text
+        .chars()
+        .next()
+        .is_some_and(is_unsafe_message_prefix)
+    {
         return Err(ShoutxError::failure(
-            "annotation message begins with a Unicode mark or modifier letter",
+            "annotation message begins with a separator-sensitive character",
         ));
     }
     if message_text.encode_utf16().count() > MESSAGE_UTF16_LIMIT {

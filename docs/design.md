@@ -38,8 +38,7 @@ shoutx github-actions:path   [VALUE]
 shoutx github-actions:mask [VALUE]
 ```
 
-The next provider-command family is specified but not yet implemented or
-exposed by the CLI:
+The typed annotation provider-command family is implemented:
 
 ```text
 shoutx github-actions:notice  [ANNOTATION OPTIONS] [MESSAGE]

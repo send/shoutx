@@ -79,6 +79,18 @@ try {
         throw "PowerShell changed mask stdout bytes"
     }
 
+    $annotationOutput = Join-Path $root 'annotation'
+    & $Binary github-actions:warning `
+        --file 'src/a,b:c.rs' --title 'title%value' `
+        --line 0005 --end-line 05 --column 1 --end-column 9 `
+        "first`n日本語" > $annotationOutput
+    if ($LASTEXITCODE -ne 0) { throw "annotation command failed" }
+    $expectedAnnotation = [Text.Encoding]::UTF8.GetBytes(
+        "::warning title=title%25value,file=src/a%2Cb%3Ac.rs,line=5,endLine=5,col=1,endColumn=9::first%0A日本語`n")
+    if (-not [Linq.Enumerable]::SequenceEqual([byte[]](Get-Content -AsByteStream -Raw $annotationOutput), $expectedAnnotation)) {
+        throw "PowerShell changed annotation stdout bytes"
+    }
+
     & $Binary github-actions:path 'C:\bad;path' > (Join-Path $root 'rejected-path')
     if ($LASTEXITCODE -ne 1 -or (Get-Item (Join-Path $root 'rejected-path')).Length -ne 0) {
         throw "unsafe path was accepted"

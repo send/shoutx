@@ -64,6 +64,25 @@ pub struct MaskRequest {
     pub value: Option<OsString>,
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum AnnotationSeverity {
+    Notice,
+    Warning,
+    Error,
+}
+
+#[derive(Debug)]
+pub struct AnnotationRequest {
+    pub severity: AnnotationSeverity,
+    pub title: Option<OsString>,
+    pub file: Option<OsString>,
+    pub line: Option<OsString>,
+    pub end_line: Option<OsString>,
+    pub column: Option<OsString>,
+    pub end_column: Option<OsString>,
+    pub message: Option<OsString>,
+}
+
 #[derive(Debug)]
 pub enum Action {
     Help,
@@ -71,6 +90,7 @@ pub enum Action {
     Write(WriteRequest),
     WritePath(PathRequest),
     Mask(MaskRequest),
+    Annotate(AnnotationRequest),
 }
 
 fn text(value: &OsStr) -> Result<&str, ShoutxError> {
@@ -96,6 +116,14 @@ pub fn parse(args: Vec<OsString>) -> Result<Action, ShoutxError> {
     }
     if command == "github-actions:mask" {
         return parse_mask(it.collect());
+    }
+    if let Some(severity) = match command {
+        "github-actions:notice" => Some(AnnotationSeverity::Notice),
+        "github-actions:warning" => Some(AnnotationSeverity::Warning),
+        "github-actions:error" => Some(AnnotationSeverity::Error),
+        _ => None,
+    } {
+        return parse_annotation(severity, it.collect());
     }
     let destination = match command {
         "github-actions:output" => Destination::Output,
@@ -195,6 +223,72 @@ pub fn parse(args: Vec<OsString>) -> Result<Action, ShoutxError> {
         name,
         value,
     }))
+}
+
+fn parse_annotation(
+    severity: AnnotationSeverity,
+    tokens: Vec<OsString>,
+) -> Result<Action, ShoutxError> {
+    let mut request = AnnotationRequest {
+        severity,
+        title: None,
+        file: None,
+        line: None,
+        end_line: None,
+        column: None,
+        end_column: None,
+        message: None,
+    };
+    let mut options = true;
+    let mut i = 0;
+    while i < tokens.len() {
+        let token = &tokens[i];
+        let token_text = token.to_str();
+        if request.message.is_none() && options && token_text == Some("--") {
+            options = false;
+            i += 1;
+            continue;
+        }
+        if request.message.is_none() && options && token_text == Some("--help") {
+            return Ok(Action::Help);
+        }
+        if request.message.is_none() && options && token_text == Some("--version") {
+            return Ok(Action::Version);
+        }
+        let field = if request.message.is_none() && options {
+            match token_text {
+                Some("--title") => Some(&mut request.title),
+                Some("--file") => Some(&mut request.file),
+                Some("--line") => Some(&mut request.line),
+                Some("--end-line") => Some(&mut request.end_line),
+                Some("--column") => Some(&mut request.column),
+                Some("--end-column") => Some(&mut request.end_column),
+                _ => None,
+            }
+        } else {
+            None
+        };
+        if let Some(field) = field {
+            if field.is_some() {
+                return Err(ShoutxError::usage("duplicate annotation option"));
+            }
+            let operand = tokens
+                .get(i + 1)
+                .ok_or_else(|| ShoutxError::usage("missing annotation option operand"))?;
+            *field = Some(operand.clone());
+            i += 2;
+            continue;
+        }
+        if request.message.is_none() && options && starts_with_ascii_dash(token) {
+            return Err(ShoutxError::usage("unknown option"));
+        }
+        if request.message.is_some() {
+            return Err(ShoutxError::usage("too many operands"));
+        }
+        request.message = Some(token.clone());
+        i += 1;
+    }
+    Ok(Action::Annotate(request))
 }
 
 fn parse_mask(tokens: Vec<OsString>) -> Result<Action, ShoutxError> {

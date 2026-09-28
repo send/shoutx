@@ -1,13 +1,13 @@
 # GitHub Actions annotation commands
 
-This specification covers the candidate `github-actions:notice`,
+This specification covers the implemented `github-actions:notice`,
 `github-actions:warning`, and `github-actions:error` commands. Cross-cutting
 product invariants remain in [`design.md`](../design.md), and shared testing
 policy remains in [`test-plan.md`](../test-plan.md). The Contract section is
 normative for these commands; contradictions with the cross-cutting documents
 must be resolved.
 
-The commands are specified but not yet implemented or exposed by the CLI.
+The commands are implemented and exposed by the CLI.
 
 ## Contract
 
@@ -48,6 +48,12 @@ or Unicode-whitespace-only message is rejected because the pinned runner does
 not convert it to an uploaded annotation. Here and below, Unicode whitespace
 means the .NET 8 `Char.IsWhiteSpace` set, equivalent for accepted UTF-8 input to
 the Unicode `White_Space` property.
+
+A message whose first Unicode scalar has General_Category `Mn`, `Mc`, or `Me`
+is rejected. The pinned runner uses a culture-sensitive search for the `::`
+data separator; a leading combining mark can make it skip that separator and
+reinterpret later message text as properties. Rejecting every leading Unicode
+mark makes the structural result independent of runner culture and collation.
 
 The semantic message is limited to 4,096 UTF-16 code units, matching the pinned
 runner's `ExecutionContext.AddIssue` limit. This prevents ordinary input from
@@ -185,7 +191,8 @@ Apply the shared argv/stdin precedence, terminal, closed-handle, strict UTF-8,
 NUL, and 1 MiB acquisition cases. Exercise every final-boundary form through
 both message sources, plus multiple terminators and internal mixed boundaries.
 Reject empty and Unicode-whitespace-only semantic messages with status 1 and
-empty stdout.
+empty stdout. Reject leading `Mn`, `Mc`, and `Me` scalars, including cases with
+a later `::` followed by property-looking message data.
 
 Count the semantic message as UTF-16 code units. Accept 4,096 ASCII or BMP
 units and 2,048 supplementary Unicode scalars. Reject the first unit beyond
@@ -290,9 +297,9 @@ repair, message truncation, timeline capacity, path translation, feature-flag
 handling, embedded-context forwarding, secret masking, and stopped-command
 state are destination behavior.
 
-Do not expose the commands in help or README until all three severities pass
-the shared contract suite, pinned-runner oracle, and hosted workflow checks.
-The family ships together.
+The commands are exposed in help and README only as one complete family after
+all three severities pass the shared contract suite, pinned-runner oracle, and
+hosted workflow checks. The family ships together.
 
 ## References
 

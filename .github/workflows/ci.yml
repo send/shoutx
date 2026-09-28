@@ -116,6 +116,15 @@ jobs:
           printf %s "$SHOUTX_MASK_VALUE" | target/debug/shoutx github-actions:mask
           target/debug/shoutx github-actions:output masked_value "$mask_marker" >> "$GITHUB_OUTPUT"
           printf 'SHOUTX_MASK_BASH_%s_BEGIN%s_END\n' "$RUNNER_OS" "$mask_marker"
+          target/debug/shoutx github-actions:notice \
+            --title "shoutx annotation notice $RUNNER_OS" \
+            --file "$GITHUB_WORKSPACE/src/lib.rs" --line 1 'notice % :: 日本語'
+          target/debug/shoutx github-actions:warning \
+            --title "shoutx annotation warning $RUNNER_OS" \
+            --file "$GITHUB_WORKSPACE/src/lib.rs" --line 1 --column 1 $'warning first\nwarning second 日本語'
+          target/debug/shoutx github-actions:error \
+            --title "shoutx annotation error $RUNNER_OS" \
+            --file "$GITHUB_WORKSPACE/src/lib.rs" --line 1 'error annotation does not fail the step'
       - name: Verify dogfooded values on POSIX
         if: runner.os != 'Windows'
         shell: bash
@@ -152,6 +161,19 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           target/debug/shoutx.exe github-actions:output masked_value $maskMarker >> $env:GITHUB_OUTPUT
           Write-Output "SHOUTX_MASK_PWSH_WINDOWS_BEGIN${maskMarker}_END"
+          $annotationFile = Join-Path $env:GITHUB_WORKSPACE 'src/lib.rs'
+          target/debug/shoutx.exe github-actions:notice `
+            --title 'shoutx annotation notice Windows' `
+            --file $annotationFile --line 1 'notice % :: 日本語'
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          target/debug/shoutx.exe github-actions:warning `
+            --title 'shoutx annotation warning Windows' `
+            --file $annotationFile --line 1 --column 1 "warning first`nwarning second 日本語"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          target/debug/shoutx.exe github-actions:error `
+            --title 'shoutx annotation error Windows' `
+            --file $annotationFile --line 1 'error annotation does not fail the step'
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Verify dogfooded values on Windows
         if: runner.os == 'Windows'
         shell: pwsh
@@ -276,12 +298,15 @@ jobs:
           cargo +stable test --test runner_differential_fixture local_model_matches_shared_runner_corpus
           cargo +stable test --test path_runner_fixture local_path_model_matches_shared_corpus
           cargo +stable test --test mask_runner_fixture generated_commands_have_one_physical_line
+          cargo +stable test --test annotation_runner_fixture generated_commands_have_one_physical_line
           $env:SHOUTX_CORPUS_PATH = "$pwd/target/runner-oracle/corpus.json"
           cargo +stable test --test runner_differential_fixture export_runner_corpus -- --ignored
           $env:SHOUTX_PATH_CORPUS_PATH = "$pwd/target/runner-oracle/path-corpus.json"
           cargo +stable test --test path_runner_fixture export_path_corpus -- --ignored
           $env:SHOUTX_MASK_CORPUS_PATH = "$pwd/target/runner-oracle/mask-corpus.json"
           cargo +stable test --test mask_runner_fixture export_mask_corpus -- --ignored
+          $env:SHOUTX_ANNOTATION_CORPUS_PATH = "$pwd/target/runner-oracle/annotation-corpus.json"
+          cargo +stable test --test annotation_runner_fixture export_annotation_corpus -- --ignored
       - name: Build pinned runner oracle
         shell: pwsh
         working-directory: target/runner-oracle/actions-runner/src
@@ -298,6 +323,7 @@ jobs:
           SHOUTX_CORPUS: ${{ github.workspace }}/target/runner-oracle/corpus.json
           SHOUTX_PATH_CORPUS: ${{ github.workspace }}/target/runner-oracle/path-corpus.json
           SHOUTX_MASK_CORPUS: ${{ github.workspace }}/target/runner-oracle/mask-corpus.json
+          SHOUTX_ANNOTATION_CORPUS: ${{ github.workspace }}/target/runner-oracle/annotation-corpus.json
         run: |
           dotnet test Test/Test.csproj `
             --configuration Release `
@@ -305,12 +331,89 @@ jobs:
             --no-restore `
             --filter 'FullyQualifiedName~ShoutxDifferentialL0'
 
+  hosted-annotations:
+    needs: [changes, test]
+    if: ${{ always() }}
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      checks: read
+      contents: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Verify hosted annotation round trips
+        if: ${{ needs.changes.outputs.run_ci == 'true' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          jobs_json="$RUNNER_TEMP/jobs.json"
+          gh api --paginate \
+            "repos/$GH_REPO/actions/runs/${{ github.run_id }}/jobs?filter=latest&per_page=100" \
+            --jq '.jobs[] | [.name, .conclusion, .check_run_url] | @tsv' > "$jobs_json"
+
+          for os in ubuntu-latest macos-latest windows-latest; do
+            job="test ($os)"
+            row=$(awk -F '\t' -v name="$job" '$1 == name { print; exit }' "$jobs_json")
+            conclusion=$(printf '%s\n' "$row" | cut -f2)
+            if [[ "$conclusion" != success ]]; then
+              echo "Expected $job to succeed, got: ${conclusion:-missing}" >&2
+              exit 1
+            fi
+            check_url=$(printf '%s\n' "$row" | cut -f3)
+            endpoint="${check_url#https://api.github.com/}/annotations?per_page=100"
+            annotations="$RUNNER_TEMP/annotations-$os.json"
+            pages="$RUNNER_TEMP/annotation-pages-$os.json"
+            case "$os" in
+              ubuntu-latest) runner_os=Linux ;;
+              macos-latest) runner_os=macOS ;;
+              windows-latest) runner_os=Windows ;;
+            esac
+            verified=false
+            for attempt in {1..6}; do
+              if ! gh api --paginate --slurp "$endpoint" > "$pages"; then
+                echo "$job annotation API request failed (attempt $attempt of 6)"
+                sleep 10
+                continue
+              fi
+              jq 'add' "$pages" > "$annotations"
+              if jq -e --arg os "$runner_os" '
+                any(.[]; .annotation_level == "notice" and
+                  .title == "shoutx annotation notice \($os)" and
+                  .message == "notice % :: 日本語" and .path == "src/lib.rs" and
+                  .start_line == 1 and .end_line == 1) and
+                any(.[]; .annotation_level == "warning" and
+                  .title == "shoutx annotation warning \($os)" and
+                  .message == "warning first\nwarning second 日本語" and
+                  .path == "src/lib.rs" and .start_line == 1 and
+                  .end_line == 1 and .start_column == 1 and .end_column == 1) and
+                any(.[]; .annotation_level == "failure" and
+                  .title == "shoutx annotation error \($os)" and
+                  .message == "error annotation does not fail the step" and
+                  .path == "src/lib.rs" and .start_line == 1 and .end_line == 1)
+              ' "$annotations" >/dev/null; then
+                verified=true
+                break
+              fi
+              echo "$job annotations are not complete yet (attempt $attempt of 6)"
+              sleep 10
+            done
+            if [[ "$verified" != true ]]; then
+              echo "Missing or mismatched shoutx annotations for $job" >&2
+              jq '[.[] | {annotation_level, title, message, path, start_line, end_line, start_column, end_column}]' \
+                "$annotations" >&2
+              exit 1
+            fi
+          done
+
   # The main-branch ruleset requires this stable aggregate check rather than
   # individual matrix checks.
   ci-result:
     name: CI result
     if: ${{ always() }}
-    needs: [changes, dependencies, test, msrv, runner-differential]
+    needs: [changes, dependencies, test, msrv, runner-differential, hosted-annotations]
     timeout-minutes: 5
     runs-on: ubuntu-latest
     steps:
@@ -323,9 +426,14 @@ jobs:
           TEST_RESULT: ${{ needs.test.result }}
           MSRV_RESULT: ${{ needs.msrv.result }}
           RUNNER_DIFFERENTIAL_RESULT: ${{ needs.runner-differential.result }}
+          HOSTED_ANNOTATIONS_RESULT: ${{ needs.hosted-annotations.result }}
         run: |
           if [[ "$CHANGES_RESULT" != "success" ]]; then
             echo "Change detection did not succeed"
+            exit 1
+          fi
+          if [[ "$HOSTED_ANNOTATIONS_RESULT" != "success" ]]; then
+            echo "Hosted annotation verification did not succeed"
             exit 1
           fi
 

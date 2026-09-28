@@ -20,6 +20,7 @@ using GitHub.Runner.Worker.Container;
 using GitHub.Runner.Worker.Container.ContainerHooks;
 using GitHub.Runner.Worker.Handlers;
 using Moq;
+using Sdk.RSWebApi.Contracts;
 using Xunit;
 using Pipelines = GitHub.DistributedTask.Pipelines;
 
@@ -27,6 +28,222 @@ namespace GitHub.Runner.Common.Tests.Worker;
 
 public sealed class ShoutxDifferentialL0
 {
+    [Fact]
+    [Trait("Level", "L0")]
+    [Trait("Category", "Worker")]
+    public void AnnotationCommandsMatchRunnerParserAndExtensions()
+    {
+        var corpusPath = Environment.GetEnvironmentVariable("SHOUTX_ANNOTATION_CORPUS");
+        Assert.False(string.IsNullOrEmpty(corpusPath));
+        var corpus = JsonSerializer.Deserialize<List<AnnotationCase>>(
+            File.ReadAllText(corpusPath!),
+            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        Assert.NotNull(corpus);
+
+        foreach (var item in corpus!)
+        {
+            var (host, manager, context) = CreateActionCommandContext();
+            using (host)
+            {
+                Issue? actual = null;
+                context.Setup(value => value.AddIssue(
+                        It.IsAny<Issue>(), It.IsAny<ExecutionContextLogOptions>()))
+                    .Callback<Issue, ExecutionContextLogOptions>((issue, _) => actual = issue);
+
+                var bytes = Convert.FromBase64String(item.Command);
+                Assert.Equal((byte)'\n', bytes[^1]);
+                var line = Encoding.UTF8.GetString(bytes, 0, bytes.Length - 1);
+
+                Assert.True(manager.TryProcessCommand(context.Object, line, null!));
+                Assert.NotNull(actual);
+                Assert.Equal(item.Severity, actual!.Type.ToString(), ignoreCase: true);
+                Assert.Equal(Decode(item.Message), actual.Message);
+                var expectedProperties = OperatingSystem.IsWindows()
+                    ? item.WindowsProperties
+                    : item.Properties;
+                Assert.Equal(expectedProperties.ContainsKey("file") ? "Code" : "General", actual.Category);
+                Assert.Equal(
+                    expectedProperties.ToDictionary(pair => pair.Key, pair => Decode(pair.Value)),
+                    actual.Data.Where(pair => expectedProperties.ContainsKey(pair.Key))
+                        .ToDictionary(pair => pair.Key, pair => pair.Value));
+                Assert.Equal(expectedProperties.Count, actual.Data.Count);
+            }
+        }
+    }
+
+    [Fact]
+    [Trait("Level", "L0")]
+    [Trait("Category", "Worker")]
+    public void AnnotationFeatureAndStoppedCommandBehaviorMatchesRunner()
+    {
+        var corpusPath = Environment.GetEnvironmentVariable("SHOUTX_ANNOTATION_CORPUS");
+        var corpus = JsonSerializer.Deserialize<List<AnnotationCase>>(
+            File.ReadAllText(corpusPath!),
+            new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
+        string CommandLine(AnnotationCase item)
+        {
+            var bytes = Convert.FromBase64String(item.Command);
+            return Encoding.UTF8.GetString(bytes, 0, bytes.Length - 1);
+        }
+
+        var (host, manager, context) = CreateActionCommandContext();
+        using (host)
+        {
+            Issue? actual = null;
+            context.Setup(value => value.AddIssue(
+                    It.IsAny<Issue>(), It.IsAny<ExecutionContextLogOptions>()))
+                .Callback<Issue, ExecutionContextLogOptions>((issue, _) => actual = issue);
+            context.Object.Global.Variables = new Variables(
+                host, new Dictionary<string, VariableValue>());
+
+            var noticeLine = CommandLine(corpus.First(item => item.Severity == "notice"));
+            Assert.False(manager.TryProcessCommand(context.Object, noticeLine, null!));
+            Assert.Null(actual);
+            var output = new List<string>();
+            context.Setup(value => value.Write(null, It.IsAny<string>()))
+                .Callback<string, string>((_, line) => output.Add(line))
+                .Returns(1);
+            using (var outputManager = new OutputManager(context.Object, manager))
+            {
+                outputManager.OnDataReceived(
+                    null, new ProcessDataReceivedEventArgs(noticeLine));
+            }
+            Assert.Equal([noticeLine], output);
+            Assert.True(manager.TryProcessCommand(
+                context.Object, "::warning::warning remains enabled", null!));
+            Assert.Equal(IssueType.Warning, actual!.Type);
+
+            actual = null;
+            context.Object.Global.Variables = new Variables(
+                host, new Dictionary<string, VariableValue>
+                {
+                    ["DistributedTask.EnhancedAnnotations"] = new VariableValue("true"),
+                });
+            Assert.True(manager.TryProcessCommand(
+                context.Object, "::stop-commands::shoutx-stop-token", null!));
+            foreach (var item in corpus
+                .GroupBy(value => value.Severity)
+                .Select(group => group.First()))
+            {
+                Assert.False(manager.TryProcessCommand(context.Object, CommandLine(item), null!));
+                Assert.Null(actual);
+            }
+            Assert.True(manager.TryProcessCommand(
+                context.Object, "::shoutx-stop-token::", null!));
+        }
+    }
+
+    [Fact]
+    [Trait("Level", "L0")]
+    [Trait("Category", "Worker")]
+    public void IssueToAnnotationConversionDefaultsAndWhitespaceMatchRunner()
+    {
+        var issue = new Issue
+        {
+            Type = IssueType.Warning,
+            Message = "message",
+        };
+        issue.Data["file"] = "src/lib.rs";
+        issue.Data["line"] = "5";
+        issue.Data["col"] = "2";
+        issue.Data["title"] = "title";
+
+        var annotation = issue.ToAnnotation();
+        Assert.NotNull(annotation);
+        var value = annotation!.Value;
+        Assert.Equal(5, value.StartLine);
+        Assert.Equal(5, value.EndLine);
+        Assert.Equal(2, value.StartColumn);
+        Assert.Equal(2, value.EndColumn);
+        Assert.Equal("src/lib.rs", value.Path);
+        Assert.Equal("title", value.Title);
+
+        foreach (var message in new[] { "", " ", "\t", "\u0085", "\u00a0", "\u3000" })
+        {
+            issue.Message = message;
+            Assert.Null(issue.ToAnnotation());
+        }
+    }
+
+    [Fact]
+    [Trait("Level", "L0")]
+    [Trait("Category", "Worker")]
+    public void RealExecutionContextAppliesAnnotationRetentionPolicies()
+    {
+        var (host, root) = CreateRealExecutionContext(fixEmbeddedIssues: true);
+        using (host)
+        {
+            host.SecretMasker.AddValue("s");
+            var child = root.CreateChild(
+                Guid.NewGuid(), "annotations", "annotations", null, null, ActionRunStage.Main);
+            child.AddIssue(new Issue
+            {
+                Type = IssueType.Warning,
+                Message = string.Concat(Enumerable.Repeat("s,", 4096)),
+            }, ExecutionContextLogOptions.Default);
+            for (var index = 0; index < 10; index++)
+            {
+                child.AddIssue(new Issue
+                {
+                    Type = IssueType.Warning,
+                    Message = $"warning {index}",
+                }, ExecutionContextLogOptions.Default);
+            }
+            child.Complete();
+
+            var result = root.Global.StepsResult.Single();
+            Assert.Equal(10, result.Annotations.Count);
+            Assert.Equal(4096, result.Annotations[0].Message.Length);
+            Assert.StartsWith("***", result.Annotations[0].Message);
+
+            var unmasked = root.CreateChild(
+                Guid.NewGuid(), "unmasked", "unmasked", null, null, ActionRunStage.Main);
+            unmasked.AddIssue(
+                new Issue { Type = IssueType.Error, Message = new string('a', 5000) },
+                ExecutionContextLogOptions.Default);
+            unmasked.Complete();
+            Assert.Equal(4096, root.Global.StepsResult.Last().Annotations.Single().Message.Length);
+
+            var whitespace = root.CreateChild(
+                Guid.NewGuid(), "whitespace", "whitespace", null, null, ActionRunStage.Main);
+            whitespace.AddIssue(
+                new Issue { Type = IssueType.Notice, Message = "\u3000" },
+                ExecutionContextLogOptions.Default);
+            whitespace.Complete();
+            Assert.Empty(root.Global.StepsResult.Last().Annotations);
+
+            var parent = root.CreateChild(
+                Guid.NewGuid(), "composite", "composite", null, null, ActionRunStage.Main);
+            var embedded = parent.CreateEmbeddedChild(
+                "scope", "embedded", Guid.NewGuid(), ActionRunStage.Main);
+            embedded.AddIssue(
+                new Issue { Type = IssueType.Error, Message = "embedded" },
+                ExecutionContextLogOptions.Default);
+            embedded.Complete();
+            parent.Complete();
+            Assert.Contains(
+                root.Global.StepsResult.SelectMany(step => step.Annotations),
+                annotation => annotation.Message == "embedded");
+        }
+
+        var (legacyHost, legacyRoot) = CreateRealExecutionContext(fixEmbeddedIssues: false);
+        using (legacyHost)
+        {
+            var parent = legacyRoot.CreateChild(
+                Guid.NewGuid(), "composite", "composite", null, null, ActionRunStage.Main);
+            var embedded = parent.CreateEmbeddedChild(
+                "scope", "embedded", Guid.NewGuid(), ActionRunStage.Main);
+            embedded.AddIssue(
+                new Issue { Type = IssueType.Error, Message = "legacy embedded" },
+                ExecutionContextLogOptions.Default);
+            embedded.Complete();
+            parent.Complete();
+            Assert.DoesNotContain(
+                legacyRoot.Global.StepsResult.SelectMany(step => step.Annotations),
+                annotation => annotation.Message == "legacy embedded");
+        }
+    }
+
     [Fact]
     [Trait("Level", "L0")]
     [Trait("Category", "Worker")]
@@ -475,7 +692,13 @@ public sealed class ShoutxDifferentialL0
         var host = new TestHostContext(
             new ShoutxDifferentialL0(), nameof(CreateActionCommandContext));
         var extensionManager = new Mock<IExtensionManager>();
-        IActionCommandExtension[] commands = [new AddMaskCommandExtension()];
+        IActionCommandExtension[] commands =
+        [
+            new AddMaskCommandExtension(),
+            new NoticeCommandExtension(),
+            new WarningCommandExtension(),
+            new ErrorCommandExtension(),
+        ];
         foreach (var command in commands)
         {
             command.Initialize(host);
@@ -488,8 +711,13 @@ public sealed class ShoutxDifferentialL0
         context.SetupAllProperties();
         context.Setup(value => value.Global).Returns(new GlobalContext());
         context.Object.Global.Variables = new Variables(
-            host, new Dictionary<string, VariableValue>());
+            host, new Dictionary<string, VariableValue>
+            {
+                ["DistributedTask.EnhancedAnnotations"] = new VariableValue("true"),
+            });
         context.Object.Global.JobTelemetry = [];
+        context.Setup(value => value.GetGitHubContext("workspace")).Returns(string.Empty);
+        context.Setup(value => value.GetGitHubContext("repository")).Returns(string.Empty);
         var expressionValues = new DictionaryContextData
         {
             ["env"] =
@@ -500,10 +728,54 @@ public sealed class ShoutxDifferentialL0
 #endif
         };
         context.Setup(value => value.ExpressionValues).Returns(expressionValues);
+        context.Setup(value => value.GetMatchers()).Returns([]);
 
         var manager = new ActionCommandManager();
         manager.Initialize(host);
         return (host, manager, context);
+    }
+
+    private static (TestHostContext Host, Runner.Worker.ExecutionContext Root)
+        CreateRealExecutionContext(bool fixEmbeddedIssues)
+    {
+        var host = new TestHostContext(
+            new ShoutxDifferentialL0(), nameof(CreateRealExecutionContext));
+        Directory.CreateDirectory(host.GetDirectory(WellKnownDirectory.Work));
+        var jobServerQueue = new Mock<IJobServerQueue>();
+        jobServerQueue.Setup(x => x.QueueTimelineRecordUpdate(
+            It.IsAny<Guid>(), It.IsAny<TimelineRecord>()));
+        for (var index = 0; index < 8; index++)
+        {
+            host.EnqueueInstance(new Mock<IPagingLogger>().Object);
+        }
+        host.SetSingleton(jobServerQueue.Object);
+        var configurationStore = new Mock<IConfigurationStore>();
+        configurationStore.Setup(x => x.GetSettings()).Returns(new RunnerSettings());
+        host.SetSingleton(configurationStore.Object);
+
+        var variables = new Dictionary<string, VariableValue>
+        {
+            ["RunService.FixEmbeddedIssues"] = new VariableValue(
+                fixEmbeddedIssues ? "true" : "false"),
+        };
+        var jobRequest = new Pipelines.AgentJobRequestMessage(
+            new TaskOrchestrationPlanReference(), new TimelineReference(), Guid.NewGuid(),
+            "annotations", "annotations", null, null, null, variables,
+            new List<MaskHint>(), new Pipelines.JobResources(),
+            new Pipelines.ContextData.DictionaryContextData(), new Pipelines.WorkspaceOptions(),
+            new List<Pipelines.ActionStep>(), null, null, null, null, null);
+        jobRequest.Resources.Repositories.Add(new Pipelines.RepositoryResource
+        {
+            Alias = Pipelines.PipelineConstants.SelfAlias,
+            Id = "github",
+            Version = "sha1",
+        });
+        jobRequest.ContextData["github"] = new Pipelines.ContextData.DictionaryContextData();
+
+        var root = new Runner.Worker.ExecutionContext();
+        root.Initialize(host);
+        root.InitializeJob(jobRequest, CancellationToken.None);
+        return (host, root);
     }
 
     private sealed record CorpusCase(
@@ -526,6 +798,14 @@ public sealed class ShoutxDifferentialL0
         string Value,
         IReadOnlyList<string> Masked,
         IReadOnlyList<string> Unmasked);
+    private sealed record AnnotationCase(
+        string Id,
+        string Command,
+        string Severity,
+        string Message,
+        IReadOnlyDictionary<string, string> Properties,
+        [property: JsonPropertyName("windows_properties")]
+        IReadOnlyDictionary<string, string> WindowsProperties);
 
     private sealed class ExposedHandler : Handler
     {

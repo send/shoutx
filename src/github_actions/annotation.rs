@@ -134,10 +134,11 @@ pub fn encode(request: AnnotationRequest, mut message: Vec<u8>) -> Result<Vec<u8
             GeneralCategory::NonspacingMark
                 | GeneralCategory::SpacingMark
                 | GeneralCategory::EnclosingMark
+                | GeneralCategory::ModifierLetter
         )
     }) {
         return Err(ShoutxError::failure(
-            "annotation message begins with a Unicode mark",
+            "annotation message begins with a Unicode mark or modifier letter",
         ));
     }
     if message_text.encode_utf16().count() > MESSAGE_UTF16_LIMIT {

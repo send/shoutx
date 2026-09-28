@@ -49,11 +49,12 @@ not convert it to an uploaded annotation. Here and below, Unicode whitespace
 means the .NET 8 `Char.IsWhiteSpace` set, equivalent for accepted UTF-8 input to
 the Unicode `White_Space` property.
 
-A message whose first Unicode scalar has General_Category `Mn`, `Mc`, or `Me`
-is rejected. The pinned runner uses a culture-sensitive search for the `::`
-data separator; a leading combining mark can make it skip that separator and
-reinterpret later message text as properties. Rejecting every leading Unicode
-mark makes the structural result independent of runner culture and collation.
+A message whose first Unicode scalar has General_Category `Mn`, `Mc`, `Me`, or
+`Lm` is rejected. The pinned runner uses a culture-sensitive search for the
+`::` data separator; a leading combining mark or certain modifier letters can
+make it skip that separator and reinterpret later message text as properties.
+Rejecting every leading Unicode mark and modifier letter conservatively avoids
+those known collation-sensitive prefixes.
 
 The semantic message is limited to 4,096 UTF-16 code units, matching the pinned
 runner's `ExecutionContext.AddIssue` limit. This prevents ordinary input from
@@ -191,8 +192,8 @@ Apply the shared argv/stdin precedence, terminal, closed-handle, strict UTF-8,
 NUL, and 1 MiB acquisition cases. Exercise every final-boundary form through
 both message sources, plus multiple terminators and internal mixed boundaries.
 Reject empty and Unicode-whitespace-only semantic messages with status 1 and
-empty stdout. Reject leading `Mn`, `Mc`, and `Me` scalars, including cases with
-a later `::` followed by property-looking message data.
+empty stdout. Reject leading `Mn`, `Mc`, `Me`, and `Lm` scalars, including
+cases with a later `::` followed by property-looking message data.
 
 Count the semantic message as UTF-16 code units. Accept 4,096 ASCII or BMP
 units and 2,048 supplementary Unicode scalars. Reject the first unit beyond

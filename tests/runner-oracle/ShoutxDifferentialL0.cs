@@ -71,6 +71,31 @@ public sealed class ShoutxDifferentialL0
         }
     }
 
+    [Theory]
+    [InlineData("\u0301")]
+    [InlineData("\uFF9E")]
+    [InlineData("\uFF9F")]
+    [Trait("Level", "L0")]
+    [Trait("Category", "Worker")]
+    public void LeadingCollationMarksCanMoveTheAnnotationSeparator(string prefix)
+    {
+        var (host, manager, context) = CreateActionCommandContext();
+        using (host)
+        {
+            Issue? actual = null;
+            context.Setup(value => value.AddIssue(
+                    It.IsAny<Issue>(), It.IsAny<ExecutionContextLogOptions>()))
+                .Callback<Issue, ExecutionContextLogOptions>((issue, _) => actual = issue);
+
+            var line = $"::warning title=safe::{prefix},file=/etc/passwd,line=3::tail";
+            Assert.True(manager.TryProcessCommand(context.Object, line, null!));
+            Assert.NotNull(actual);
+            Assert.Equal("tail", actual!.Message);
+            Assert.Equal("etc/passwd", actual.Data["file"]);
+            Assert.Equal("3", actual.Data["line"]);
+        }
+    }
+
     [Fact]
     [Trait("Level", "L0")]
     [Trait("Category", "Worker")]

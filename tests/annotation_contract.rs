@@ -212,6 +212,9 @@ fn empty_whitespace_nul_and_invalid_text_fail_before_stdout() {
         "\u{0903}message",
         "\u{20dd}message",
         "\u{3099}message",
+        "\u{02b0}message",
+        "\u{ff9e},file=/etc/passwd,line=3::tail",
+        "\u{ff9f},file=/etc/passwd,line=3::tail",
     ] {
         failure(&["github-actions:error", value], None, 1);
         failure(&["github-actions:error"], Some(value.as_bytes()), 1);

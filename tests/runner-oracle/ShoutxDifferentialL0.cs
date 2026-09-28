@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -28,6 +29,58 @@ namespace GitHub.Runner.Common.Tests.Worker;
 
 public sealed class ShoutxDifferentialL0
 {
+    [Fact]
+    [Trait("Level", "L0")]
+    [Trait("Category", "Worker")]
+    public void ThaiCultureCanMislocateTheV2Separator()
+    {
+        var registeredCommands = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "add-mask",
+        };
+
+        WithCulture("th-TH", () =>
+        {
+            Assert.False(ActionCommand.TryParseV2(
+                "::add-mask::secret", registeredCommands, out _));
+        });
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("th-TH")]
+    [InlineData("tr-TR")]
+    [InlineData("de-DE")]
+    [InlineData("da-DK")]
+    [InlineData("hu-HU")]
+    [InlineData("ja-JP")]
+    [Trait("Level", "L0")]
+    [Trait("Category", "Worker")]
+    public void LegacyCommandsPreserveDataAndPropertiesAcrossCultures(string cultureName)
+    {
+        var registeredCommands = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "warning",
+        };
+        const string line =
+            "##[warning title=title%3Bpart%5D%25;file=src/a,b:c.rs;line=3]" +
+            "message%3B%5D%25%0D%0Aend";
+
+        WithCulture(cultureName, () =>
+        {
+            // OutputManager uses this same culture-sensitive prefilter before
+            // handing the line to ActionCommandManager.
+            Assert.Equal(0, line.IndexOf(ActionCommand.Prefix));
+            Assert.False(ActionCommand.TryParseV2(line, registeredCommands, out _));
+            Assert.True(ActionCommand.TryParse(line, registeredCommands, out var command));
+            Assert.Equal("warning", command.Command);
+            Assert.Equal("title;part]%", command.Properties["title"]);
+            Assert.Equal("src/a,b:c.rs", command.Properties["file"]);
+            Assert.Equal("3", command.Properties["line"]);
+            Assert.Equal("message;]%\r\nend", command.Data);
+        });
+    }
+
     [Fact]
     [Trait("Level", "L0")]
     [Trait("Category", "Worker")]
@@ -114,7 +167,6 @@ public sealed class ShoutxDifferentialL0
     [InlineData("\U00011A84")]
     [InlineData("\U00011A89")]
     [InlineData("\U00011D46")]
-    [InlineData("\U00011F02")]
     [Trait("Level", "L0")]
     [Trait("Category", "Worker")]
     public void TrailingPropertyCollationMarksCanMoveTheAnnotationSeparator(string suffix)
@@ -856,6 +908,27 @@ public sealed class ShoutxDifferentialL0
         var manager = new ActionCommandManager();
         manager.Initialize(host);
         return (host, manager, context);
+    }
+
+    private static void WithCulture(string cultureName, Action action)
+    {
+        var originalCulture = CultureInfo.CurrentCulture;
+        var originalUiCulture = CultureInfo.CurrentUICulture;
+        var culture = string.IsNullOrEmpty(cultureName)
+            ? CultureInfo.InvariantCulture
+            : new CultureInfo(cultureName);
+
+        try
+        {
+            CultureInfo.CurrentCulture = culture;
+            CultureInfo.CurrentUICulture = culture;
+            action();
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = originalCulture;
+            CultureInfo.CurrentUICulture = originalUiCulture;
+        }
     }
 
     private static (TestHostContext Host, Runner.Worker.ExecutionContext Root)

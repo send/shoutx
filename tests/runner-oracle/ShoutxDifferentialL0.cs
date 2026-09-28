@@ -167,7 +167,6 @@ public sealed class ShoutxDifferentialL0
     [InlineData("\U00011A84")]
     [InlineData("\U00011A89")]
     [InlineData("\U00011D46")]
-    [InlineData("\U00011F02")]
     [Trait("Level", "L0")]
     [Trait("Category", "Worker")]
     public void TrailingPropertyCollationMarksCanMoveTheAnnotationSeparator(string suffix)

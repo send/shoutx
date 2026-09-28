@@ -267,8 +267,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-latest
+          - os: ubuntu-22.04
             runtime: linux-x64
+          - os: ubuntu-24.04
+            runtime: linux-x64
+          - os: macos-15
+            runtime: osx-arm64
           - os: windows-latest
             runtime: win-x64
     runs-on: ${{ matrix.os }}

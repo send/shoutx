@@ -412,7 +412,8 @@ jobs:
             log_messages="$RUNNER_TEMP/log-messages-$os.txt"
             gh api --allow-escape-sequences \
               "repos/$GH_REPO/actions/jobs/$job_id/logs" > "$raw_log"
-            sed -E 's/\r$//; s/^[^ ]+ //' "$raw_log" > "$log_messages"
+            sed -E 's/\r$//; s/^[0-9]{4}-[0-9]{2}-[0-9]{2}T[^ ]+Z //' \
+              "$raw_log" > "$log_messages"
             for expected in \
               '##[notice]notice % :: 日本語' \
               '##[error]error annotation does not fail the step'; do

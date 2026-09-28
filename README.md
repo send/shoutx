@@ -249,12 +249,14 @@ enforce safe composition. Prefer an argv-capable API, or use `env:` and
 - The `github-actions:path` writer rejects that empty value because an
   empty line is not a path entry in the runner protocol.
 - `github-actions:mask` also rejects empty and Unicode-whitespace-only values
-  because the runner would not install those masks.
+  because the runner would not install those masks. It rejects the same
+  separator-sensitive leading Unicode categories as annotation messages so the
+  runner cannot fall back to an embedded legacy workflow command.
 - Annotation commands reject empty and Unicode-whitespace-only messages and
   limit messages to 4,096 UTF-16 code units to match the pinned runner. They
-  also reject a leading Unicode combining mark because the runner's
-  culture-sensitive separator search can otherwise misparse later message data
-  as annotation properties.
+  also reject conservative Unicode categories containing separator-sensitive
+  leading marks and modifier letters because the runner's culture-sensitive
+  search can otherwise misparse later message data.
 - Encoded output is written to stdout; diagnostics are written to stderr.
 - Values are limited to 1 MiB of UTF-8 before and after normalization. Names
   and `--join-lines-with` separators are limited to 255 bytes.

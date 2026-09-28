@@ -30,6 +30,16 @@ report success without registering a mask. The whitespace classification is
 the .NET 8 `Char.IsWhiteSpace` set, equivalent here to the Unicode
 `White_Space` property. U+FEFF and U+200B are not whitespace under that rule.
 
+A value whose first Unicode scalar has General_Category `Mn`, `Mc`, `Me`, or
+`Lm` is rejected. The pinned runner searches for the V2 `::` data separator
+with a culture-sensitive comparison. Observed leading marks can make it skip
+the intended separator; after V2 parsing fails, the runner also tries its
+unanchored legacy `##[...]` parser. Without an embedded legacy command, the
+line instead becomes ordinary log output, disclosing the value while no mask
+is installed. The four categories are a conservative rejection set, not a
+claim that every member changes collation. Rejecting that superset keeps value
+data from changing or bypassing the parsed command.
+
 Successful output is exactly:
 
 ```text
@@ -41,9 +51,9 @@ then LF with `%0A`. No other character is escaped. This is the encoding used by
 [`@actions/core.setSecret`][toolkit-command] and inverted by the runner's
 workflow-command parser. Escaping `%` first prevents a literal sequence such as
 `%0A` from becoming a line break during runner decoding. Encoding CR and LF
-ensures the process emits one physical command line, and `::` inside the value
-cannot create another command because the runner treats only the first command
-separator as structural.
+ensures the process emits one physical command line. Percent encoding and the
+leading-scalar rule together ensure value data cannot move the effective
+separator or create another V2 or legacy workflow command.
 
 The implementation computes the encoded length with checked arithmetic and
 constructs the complete line before opening stdout for writing. The 1 MiB
@@ -106,7 +116,9 @@ The security property is structural integrity of one stdout
 the supported runner while command processing is active. After consuming at
 most one final producer-framing boundary, shoutx preserves the remaining value
 and escapes `%`, CR, and LF so attacker-controlled data cannot terminate the
-physical line or create another workflow command.
+physical line. The leading-scalar rule additionally prevents the runner's
+culture-sensitive V2 separator search and legacy-parser fallback from treating
+value data as another workflow command.
 
 Mask registration is itself an integrity-sensitive operation, not authorization
 to let untrusted input choose arbitrary masks. An attacker-selected value can
@@ -165,6 +177,9 @@ values and values consisting only of the .NET 8 `Char.IsWhiteSpace` set fail
 with status 1 and empty stdout. Cover ASCII whitespace, NEL, U+1680, the
 U+2000--U+200A range, LINE SEPARATOR, PARAGRAPH SEPARATOR, U+202F, U+205F, and
 U+3000. Verify that U+FEFF and U+200B are accepted as non-whitespace data.
+Reject leading `Mn`, `Mc`, `Me`, and `Lm` scalars with status 1 and empty
+stdout, including U+0301, U+0903, U+20DD, U+02B0, U+FF9E, and U+FF9F followed
+by V2-looking or legacy `##[add-mask]` and `##[stop-commands]` text.
 
 #### Encoding and command structure
 
@@ -181,6 +196,11 @@ LF to `%0A`. Feed the result to the pinned runner parser and verify exactly one
 recognized `add-mask` command whose decoded data equals the accepted semantic
 value. The emitted bytes must contain no physical CR or LF before the final LF
 and must not parse a second command.
+Use the pinned runner to prove that observed separator-sensitive prefixes can
+otherwise bypass the V2 command or reach the legacy parser; do not imply that
+every member of the conservative category superset moves the separator. Cover
+both a bare leading mark, which produces no mask, and an embedded legacy
+command.
 
 Test 1,048,575, 1,048,576, and 1,048,577 raw input bytes before optional final
 producer-boundary consumption, using both low-expansion and worst-case

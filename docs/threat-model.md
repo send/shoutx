@@ -213,8 +213,8 @@ decision documents:
 | Invalid UTF-8 or NUL | Yes | Reject before output begins |
 | Memory exhaustion through large input | Yes | Enforce a documented hard input limit |
 | Secret exposure through diagnostics | Yes | Do not reproduce input values in diagnostics |
-| Additional workflow commands through mask data | Yes | Percent-escape `%`, CR, and LF and emit one physical `add-mask` line |
-| False mask success for empty or whitespace-only data | Yes | Reject before stdout because the runner would not register it |
+| Additional workflow commands through mask data | Yes | Percent-escape `%`, CR, and LF, reject separator-confusing leading scalars, and emit one physical `add-mask` line |
+| False mask success for empty, whitespace-only, or separator-confusing data | Yes | Reject before stdout because the runner would not register the intended value and could log it as ordinary output |
 | Additional workflow commands or properties through annotation data | Yes | Use distinct message/property encoders and emit one physical typed command line |
 | Ordinary annotation truncation or metadata repair | Yes | Enforce the pinned runner's input message limit and conservative location invariants before stdout |
 | Mask-induced annotation transformation or truncation | No | Runner secret masking occurs after decoding; document that it can change and expand the message |

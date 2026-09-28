@@ -153,6 +153,25 @@ fn empty_and_unicode_whitespace_only_values_are_rejected() {
 }
 
 #[test]
+fn separator_sensitive_leading_scalars_are_rejected() {
+    for value in [
+        "\u{0301}##[add-mask]injected",
+        "\u{0903}##[stop-commands]token",
+        "\u{20dd}::warning::injected",
+        "\u{3099}message",
+        "\u{02b0}message",
+        "\u{ff9e}##[add-mask]injected",
+        "\u{ff9f}##[stop-commands]token",
+    ] {
+        let argv = failure(&["github-actions:mask", value], None, 1);
+        assert!(!argv.stderr.windows(8).any(|part| part == b"injected"));
+
+        let stdin = failure(&["github-actions:mask"], Some(value.as_bytes()), 1);
+        assert!(!stdin.stderr.windows(8).any(|part| part == b"injected"));
+    }
+}
+
+#[test]
 fn invalid_text_is_rejected_without_disclosure() {
     let nul = failure(&["github-actions:mask"], Some(b"private\0value"), 1);
     assert!(!nul.stderr.windows(7).any(|part| part == b"private"));

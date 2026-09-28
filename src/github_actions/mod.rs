@@ -5,6 +5,7 @@ mod normalize;
 mod path;
 mod random;
 mod record;
+mod workflow_command;
 
 use std::ffi::OsStr;
 

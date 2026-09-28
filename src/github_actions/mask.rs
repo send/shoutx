@@ -1,6 +1,6 @@
 use crate::{error::ShoutxError, input::VALUE_LIMIT};
 
-use super::normalize::strip_final;
+use super::{normalize::strip_final, workflow_command::has_separator_sensitive_prefix};
 
 const PREFIX: &[u8] = b"::add-mask::";
 
@@ -19,6 +19,11 @@ pub fn encode(mut value: Vec<u8>) -> Result<Vec<u8>, ShoutxError> {
     if text.is_empty() || text.chars().all(char::is_whitespace) {
         return Err(ShoutxError::failure(
             "mask value is empty or whitespace only",
+        ));
+    }
+    if has_separator_sensitive_prefix(text) {
+        return Err(ShoutxError::failure(
+            "mask value begins with a separator-sensitive character",
         ));
     }
 

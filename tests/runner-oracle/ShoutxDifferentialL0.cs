@@ -97,6 +97,44 @@ public sealed class ShoutxDifferentialL0
     }
 
     [Theory]
+    [InlineData("\u0301")]
+    [InlineData("\uFF9E")]
+    [InlineData("\uFF9F")]
+    [Trait("Level", "L0")]
+    [Trait("Category", "Worker")]
+    public void LeadingCollationMarksCanReachTheLegacyCommandParser(string prefix)
+    {
+        var (host, manager, context) = CreateActionCommandContext();
+        using (host)
+        {
+            const string injected = "legacy-injected-mask";
+            var line = $"::add-mask::{prefix}##[add-mask]{injected}";
+
+            Assert.True(manager.TryProcessCommand(context.Object, line, null!));
+            Assert.Equal("***", host.SecretMasker.MaskSecrets(injected));
+        }
+    }
+
+    [Theory]
+    [InlineData("\u0301")]
+    [InlineData("\uFF9E")]
+    [InlineData("\uFF9F")]
+    [Trait("Level", "L0")]
+    [Trait("Category", "Worker")]
+    public void LeadingCollationMarksCanBypassMaskRegistration(string prefix)
+    {
+        var (host, manager, context) = CreateActionCommandContext();
+        using (host)
+        {
+            var value = $"{prefix}unregistered-secret";
+            var line = $"::add-mask::{value}";
+
+            Assert.False(manager.TryProcessCommand(context.Object, line, null!));
+            Assert.Equal(value, host.SecretMasker.MaskSecrets(value));
+        }
+    }
+
+    [Theory]
     [InlineData("\u0600")]
     [InlineData("\u0605")]
     [InlineData("\u06DD")]

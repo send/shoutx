@@ -54,13 +54,13 @@ exhaustive dispatch proves that omitted action variants cannot reach an
 implementation. The artifact verifier independently checks exact help and
 version, successful-form negative invocations, and enumerated binary markers.
 Marker scans use a same-target, same-profile feature-enabled binary as a
-positive control. Annotation protocol prefixes are assembled from fragments,
-so annotation coverage comes from command-name markers rather than a complete
-encoded prefix. Dependency graphs are checked separately for both feature
-configurations. The artifact verifier never prints or uploads captured stdout,
-stderr, help, or version bytes on failure; its reports contain only lengths.
-Release packaging reruns that verifier against every extracted native
-executable.
+positive control. The marker set is the four unstable command names. Protocol
+prefixes are not evidence because compiler optimization need not retain their
+source constants as contiguous bytes. Dependency graphs are checked separately
+for both feature configurations. The artifact verifier never prints or uploads
+captured stdout, stderr, help, or version bytes on failure; its reports contain
+only lengths. Release packaging reruns that verifier against every extracted
+native executable.
 
 ## Notation
 

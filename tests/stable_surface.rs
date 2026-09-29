@@ -3,12 +3,11 @@ use std::{
     process::{Command, Output, Stdio},
 };
 
-const UNSTABLE_MARKERS: [&[u8]; 5] = [
+const UNSTABLE_MARKERS: [&[u8]; 4] = [
     b"github-actions:mask",
     b"github-actions:notice",
     b"github-actions:warning",
     b"github-actions:error",
-    b"::add-mask::",
 ];
 
 fn binary() -> PathBuf {

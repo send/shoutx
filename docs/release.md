@@ -52,6 +52,13 @@ is created:
   for the tagged commit; and
 - the tag does not already have a published GitHub release.
 
+Before publishing the first release after v0.2.0, the maintainer must enable
+GitHub immutable releases for this repository and confirm the setting remains
+enabled. GitHub applies the setting only to future releases, so v0.1.0 and
+v0.2.0 remain mutable and are not covered by this guarantee. Draft assembly is
+retained because assets remain changeable until the release is published; the
+tag and assets become immutable at publication.
+
 Official binaries are built with `--no-default-features`. The release workflow
 asserts that Cargo's default feature set is empty and applies the stable-surface
 source, dependency, and packaged-artifact gates defined by the
@@ -78,6 +85,29 @@ change; a floating `stable` toolchain is not used for release artifacts.
 
 ## Artifact contract
 
+### Setup-action compatibility revision 1
+
+Releases from v0.3.0-rc.1 onward use setup-action artifact contract revision 1
+until a later release explicitly introduces another revision.
+No release in that range is eligible until the immutable-release assertion and
+raw archive-entry gates specified below are implemented in the release
+workflow. This documentation change defines those prerequisites; it does not
+claim that the current workflow already implements them.
+The installer-consumed parts of this revision are:
+
+- the version and tag contract above;
+- the platform-to-target table above;
+- the archive and checksum filenames and grammar in this section;
+- the three logical archive files and their top-level directory below; and
+- the stable `--version` contract in [`design.md`](design.md).
+
+Adding a compatible target or another well-formed checksum-manifest entry does
+not change this revision. Changing an existing target's archive type, naming,
+logical layout, manifest grammar, or stable version output is incompatible and
+requires a new revision coordinated with the official setup action before the
+CLI release. An older action is expected to fail closed when its exact asset or
+layout is absent; it does not infer a new convention.
+
 Archive names are deterministic:
 
 ```text
@@ -93,6 +123,22 @@ shoutx                 # shoutx.exe on Windows
 README.md
 LICENSE
 ```
+
+For installer validation, these are logical filesystem members. A tar archive
+may additionally represent the top-level directory as a directory entry and
+may contain format metadata records that do not create filesystem members. A
+ZIP archive may omit the directory entry. Neither representation permits an
+additional file, link, device, alternate path spelling, duplicate path, or
+case-colliding path. Validation uses the effective member type and path after
+GNU long-name, pax, ZIP64, and other metadata overrides; path-affecting global
+metadata, local/central ZIP name disagreement, encryption, and trailing data
+are not permitted. Ownership, timestamps, compression method, tar dialect, and
+non-path metadata-header encoding are not installer-consumed compatibility
+fields.
+
+An installer extracts only the executable and sets its POSIX mode to `0755`;
+it does not trust an archive header to grant or restrict execution. Windows
+uses the platform executable name and ignores POSIX mode fields.
 
 Executable names, archive paths, and archive member names are constructed from
 workflow constants and the validated version, never from untrusted event text.
@@ -157,6 +203,18 @@ Release publication is serialized so two runs cannot publish the same tag
 concurrently. The workflow has a finite timeout and retains intermediate
 workflow artifacts only long enough to diagnose a failed release.
 
+Immutable-release enforcement is a repository administration setting rather
+than a property granted by the workflow token. Release preparation must stop
+if the maintainer's preflight check shows that setting is not enabled. After
+publication, the workflow must query the release object and require its
+`immutable` field to be true before reporting success. A false result is a
+release incident: that version is permanently ineligible for the setup action
+and a new version is required. Supported setup actions also reject a release
+that does not report itself immutable. Published immutable assets are never
+replaced. Deleting an immutable release removes its assets and makes setup fail;
+GitHub does not permit reusing its tag name. The existing draft retry rules
+apply only before publication.
+
 ## Reproducibility and support boundary
 
 The initial release contract provides repeatable inputs: a tagged commit, locked
@@ -180,6 +238,8 @@ a real release:
 
 - locally testable version and artifact-name validation;
 - archive-content and permission checks for every target;
+- raw archive-entry validation before extraction, including effective paths,
+  member types, duplicates, case collisions, and disallowed metadata overrides;
 - execution of each packaged binary on its native build runner;
 - stable-surface verification of each extracted executable with a separate
   feature-enabled marker-scan control;
@@ -187,6 +247,12 @@ a real release:
 - least-privilege job permissions and full action-SHA pinning;
 - a safe dry run that exercises aggregation without creating a release; and
 - documented checksum and attestation verification commands.
+
+The raw-entry gate uses an independently maintained parser or inspection tool,
+not extraction results and not the setup action's own parser. Its test corpus
+contains both accepted native-runner archives and independently constructed
+malicious entries. The concrete tool and pinned version must be selected and
+reviewed when this prerequisite is implemented.
 
 Creating a tag and publishing a release remain explicit maintainer actions
 after the workflow change is merged.

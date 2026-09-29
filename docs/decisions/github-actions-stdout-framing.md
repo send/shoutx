@@ -109,8 +109,9 @@ schedule changes. Because shoutx cannot reject an unverified worker at runtime,
 the user contract must explain what happens while a new environment is
 untested. Confidentiality, command-selection, property-framing, and annotation
 integrity failures all require a user-visible response and security triage.
-Published release assets are immutable, so the monitor cannot silently extend
-the documentation packaged inside an existing archive.
+The response must follow the authoritative
+[release policy](../release.md) and account for the documentation packaged in
+an existing release rather than defining asset-mutation rules in this record.
 
 The policy remains open among at least these alternatives:
 

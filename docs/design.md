@@ -35,16 +35,21 @@ shoutx github-actions:output [--first-line | --join-lines | --join-lines-with ST
 shoutx github-actions:env    [--first-line | --join-lines | --join-lines-with STRING | --multiline] NAME [VALUE]
 shoutx github-actions:state  [--first-line | --join-lines | --join-lines-with STRING | --multiline] NAME [VALUE]
 shoutx github-actions:path   [VALUE]
-shoutx github-actions:mask [VALUE]
 ```
 
-The typed annotation provider-command family is implemented:
+The stdout workflow-command implementations are retained for research behind
+the opt-in Cargo feature `unstable-github-actions-stdout`:
 
 ```text
+shoutx github-actions:mask    [VALUE]
 shoutx github-actions:notice  [ANNOTATION OPTIONS] [MESSAGE]
 shoutx github-actions:warning [ANNOTATION OPTIONS] [MESSAGE]
 shoutx github-actions:error   [ANNOTATION OPTIONS] [MESSAGE]
 ```
+
+The feature is absent from the default set and from official release binaries.
+Feature-enabled help labels this family unstable, and its version output carries
+the feature name. This research surface is not a compatibility guarantee.
 
 No reusable context encoder is currently planned for v1.0. The former
 `shell:arg` candidate is deferred after boundary review.
@@ -89,7 +94,7 @@ No reusable context encoder is currently planned for v1.0. The former
 The current GitHub Actions stdout parser investigation and the limits of its
 cross-platform evidence are recorded in
 [the workflow-command compatibility note](compatibility/github-actions-workflow-command-parser.md).
-The implemented stdout family is pre-release while the linked
+The compile-time-isolated stdout family is pre-release while the linked
 [framing decision](decisions/github-actions-stdout-framing.md) remains open.
 
 ## Command model

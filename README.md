@@ -3,23 +3,20 @@
 Prevent injection at CI workflow output boundaries.
 
 `shoutx` safely writes untrusted values from shell-driven workflows to
-destination-specific formats and protocols. The first release targets GitHub
-Actions environment files and typed stdout workflow commands. Generic context
-encoders are deferred until a concrete destination and safe consumption
-contract justify one.
+destination-specific formats and protocols. The supported release surface
+targets GitHub Actions environment files. Generic context encoders are deferred
+until a concrete destination and safe consumption contract justify one.
 
 Status: early implementation. The `github-actions:output`,
-`github-actions:env`, `github-actions:path`, `github-actions:state`, and
-`github-actions:mask`, `github-actions:notice`, `github-actions:warning`, and
-`github-actions:error` commands are implemented. Native binaries, checksums, and provenance are available from
+`github-actions:env`, `github-actions:path`, and `github-actions:state` commands
+are supported. Native binaries, checksums, and provenance are available from
 the [GitHub releases](https://github.com/send/shoutx/releases).
 
 The stdout workflow-command family (`mask`, `notice`, `warning`, and `error`)
-is present on `main` but is not currently release eligible. The authoritative
-gate is in the [release policy](docs/release.md); the open design is tracked in
-the [stdout framing decision](docs/decisions/github-actions-stdout-framing.md).
-Environment-file writers do not pass through this stdout parser and retain
-their separate destination-specific contracts.
+is retained behind a compile-time research feature and is absent from official
+binaries. Its framing remains unresolved; see the
+[stdout framing decision](docs/decisions/github-actions-stdout-framing.md).
+Environment-file writers do not pass through that parser.
 
 The native-binary packaging and publication contract is specified in the
 [release design](docs/release.md).
@@ -110,18 +107,19 @@ generate-notes | shoutx github-actions:output --multiline notes >> "$GITHUB_OUTP
 
 ## Commands
 
+<!-- stable-command-surface:start -->
 ```text
-GitHub Actions writers:
+shoutx - safe CI output writers
+
+Usage:
   shoutx github-actions:output [--first-line | --join-lines | --join-lines-with STRING | --multiline] NAME [VALUE]
   shoutx github-actions:env    [--first-line | --join-lines | --join-lines-with STRING | --multiline] NAME [VALUE]
   shoutx github-actions:state  [--first-line | --join-lines | --join-lines-with STRING | --multiline] NAME [VALUE]
   shoutx github-actions:path   [VALUE]
-  shoutx github-actions:mask   [VALUE]
-  shoutx github-actions:notice  [--title TITLE] [--file FILE] [--line N] [--end-line N] [--column N] [--end-column N] [MESSAGE]
-  shoutx github-actions:warning [--title TITLE] [--file FILE] [--line N] [--end-line N] [--column N] [--end-column N] [MESSAGE]
-  shoutx github-actions:error   [--title TITLE] [--file FILE] [--line N] [--end-line N] [--column N] [--end-column N] [MESSAGE]
-
+  shoutx --help
+  shoutx --version
 ```
+<!-- stable-command-surface:end -->
 
 | Command | Produces | Line-break behavior |
 | --- | --- | --- |
@@ -129,10 +127,6 @@ GitHub Actions writers:
 | `github-actions:env` | One `$GITHUB_ENV` record | Internal boundaries rejected by default; explicit normalization |
 | `github-actions:path` | One `$GITHUB_PATH` record | One final boundary consumed; others rejected |
 | `github-actions:state` | One `$GITHUB_STATE` record | Internal boundaries rejected by default; explicit normalization |
-| `github-actions:mask` | One stdout record intended as an `add-mask` command | One final boundary consumed; remaining boundaries percent-escaped |
-| `github-actions:notice` | One stdout notice annotation command | One final boundary consumed; remaining boundaries percent-escaped |
-| `github-actions:warning` | One stdout warning annotation command | One final boundary consumed; remaining boundaries percent-escaped |
-| `github-actions:error` | One stdout error annotation command | One final boundary consumed; remaining boundaries percent-escaped |
 
 Namespaced commands identify the interpretation context, not merely a data
 type. Provider-specific writers use the `PROVIDER:DESTINATION` form. Reusable
@@ -180,44 +174,11 @@ because the runner would treat it differently at the beginning of the file.
 The command provides record framing, not path authorization. An
 attacker-controlled directory could still hijack later command lookup.
 
-`github-actions:mask` writes one stdout record intended to register a value
-with the runner's job-local secret masker. The current stdout framing is not
-release eligible because runner recognition is not guaranteed across cultures;
-see the [stdout framing decision](docs/decisions/github-actions-stdout-framing.md).
-Its successful stdout must go directly to the runner, not to an environment
-file:
-
-```sh
-printf %s "$GENERATED_SECRET" | shoutx github-actions:mask
-```
-
-It consumes one optional final input boundary and percent-escapes `%`, CR, and
-LF into one physical workflow-command line. Empty and Unicode-whitespace-only
-values are rejected because the runner would not register them. Masking affects
-only subsequent runner output and is best-effort: shell tracing or earlier
-output can disclose the value, transformed forms are not universally covered,
-short values can over-mask logs, and an active `stop-commands` region causes the
-runner to ignore the command. Prefer stdin or a quoted environment variable to
-a literal process argument. A masked value may be suppressed if used as a job
-output, even though same-job step-output use is supported by GitHub.
-
-The annotation commands emit one typed notice, warning, or error workflow
-command directly to the runner. MESSAGE follows the same argv-or-stdin rule as
-`github-actions:mask`, consumes one optional final input boundary, and preserves
-remaining CR and LF through percent encoding. TITLE and FILE are optional
-metadata; locations are positive decimal integers with conservative dependency
-and range checks. For example:
-
-```sh
-lint_message | shoutx github-actions:warning \
-  --title 'Lint finding' --file src/main.rs --line 42 --column 7
-```
-
-The three commands fix severity in the command name and provide no raw property
-interface. `github-actions:error` emits an error annotation but does not itself
-return a failure status or fail the step. Annotation content and file selection
-remain caller-authorized data, and runner limits, feature flags, secret masking,
-and composite-action forwarding can affect retention or presentation.
+The repository retains experimental stdout workflow-command implementations
+for parser research and differential testing. They are compile-time excluded
+from normal and official builds and are not a supported CLI surface. Contributor
+details live in the corresponding pre-release command specifications and the
+[isolation decision](docs/decisions/unstable-github-actions-stdout.md).
 
 The commands write encoded records to stdout. The caller deliberately chooses
 the destination file with shell redirection; `shoutx` does not discover or
@@ -241,8 +202,7 @@ enforce safe composition. Prefer an argv-capable API, or use `env:` and
   with `-`.
 - `--` ends option parsing. Modes are mutually exclusive, extra operands are
   usage errors, and `--join-lines-with=STRING` is accepted.
-- For a command without `NAME`, including `github-actions:path` and
-  `github-actions:mask` and the annotation commands, use `--`
+- For a command without `NAME`, including `github-actions:path`, use `--`
   before a value that could begin with `-`.
 - `--help` and `--version` are options only before `NAME`; after `NAME`, those
   tokens are values.
@@ -259,13 +219,6 @@ enforce safe composition. Prefer an argv-capable API, or use `env:` and
   `VALUE` can successfully write an empty record when stdin is empty.
 - The `github-actions:path` writer rejects that empty value because an
   empty line is not a path entry in the runner protocol.
-- `github-actions:mask` also rejects empty and Unicode-whitespace-only values
-  because the runner would not install those masks.
-- Annotation commands reject empty and Unicode-whitespace-only messages and
-  limit messages to 4,096 UTF-16 code units to match the pinned runner. They
-  also retain pre-release checks for observed Unicode separator-movement cases,
-  but those checks are not a complete defense against the runner's
-  culture-sensitive parser and do not remove the release block above.
 - Encoded output is written to stdout; diagnostics are written to stderr.
 - Values are limited to 1 MiB of UTF-8 before and after normalization. Names
   and `--join-lines-with` separators are limited to 255 bytes.
@@ -365,13 +318,8 @@ to recommend.
 
 ## Planned scope
 
-The MVP supports GitHub Actions. Additional providers can add their own
-destination writers without changing the core command model, for example:
-
-```text
-shoutx gitlab-ci:dotenv ...
-shoutx azure-pipelines:variable ...
-```
+The MVP supports GitHub Actions. Additional providers can add namespaced
+destination writers without changing the core command model.
 
 The exact plugin distribution and discovery mechanism is not yet specified.
 

@@ -31,7 +31,7 @@ fn run() -> Result<(), ShoutxError> {
     let args: Vec<OsString> = std::env::args_os().skip(1).collect();
     match shoutx::prepare(args)? {
         Action::Help => output(shoutx::HELP.as_bytes()),
-        Action::Version => output(format!("shoutx {}\n", shoutx::VERSION).as_bytes()),
+        Action::Version => output(shoutx::version_output().as_bytes()),
         Action::Write(request) => {
             shoutx::github_actions::validate_request(&request)?;
             let value = if let Some(value) = request.value.as_ref() {
@@ -78,6 +78,7 @@ fn run() -> Result<(), ShoutxError> {
             };
             output(&shoutx::github_actions::encode_path(value, target_os)?)
         }
+        #[cfg(feature = "unstable-github-actions-stdout")]
         Action::Mask(request) => {
             let value = if let Some(value) = request.value.as_ref() {
                 shoutx::cli::os_bytes(value)?.to_vec()
@@ -93,6 +94,7 @@ fn run() -> Result<(), ShoutxError> {
             };
             output(&shoutx::github_actions::encode_mask(value)?)
         }
+        #[cfg(feature = "unstable-github-actions-stdout")]
         Action::Annotate(request) => {
             let message = if let Some(message) = request.message.as_ref() {
                 shoutx::cli::os_bytes(message)?.to_vec()

@@ -324,14 +324,18 @@ contracts and lasting command-specific implementation constraints live under
 
 ## Current implementation increment
 
-The specified `github-actions:notice`, `github-actions:warning`, and
-`github-actions:error` family is implemented together. The normative contract, focused test
-matrix, and lasting implementation constraints are maintained in the
-[annotation command specification](commands/github-actions-annotations.md).
+The stdout workflow-command implementations are isolated behind the exact
+opt-in Cargo feature `unstable-github-actions-stdout`. The default feature set
+is empty. The command table, action variants, modules, and stdout-only
+dependency are compiled out of stable-surface builds. Default and feature-on
+CI use separate target directories, and feature-on version output identifies
+the research configuration.
 
-The manual CLI parser, workflow-command encoder, pinned C# runner oracle, and
-hosted workflow checks are extended as described there. The commands are
-exposed in help and README only as one complete family.
+The parser dispatches only through one enumerable command table. The release
+configuration asserts its complete stable allowlist, and integration targets
+specific to the research family declare `required-features`. CI explicitly
+selects those targets and carries a feature-on sentinel so a missing feature
+cannot turn intended evidence into a successful zero-test run.
 
 ## CI and quality gates
 

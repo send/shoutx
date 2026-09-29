@@ -6,11 +6,13 @@ remains in [`test-plan.md`](../test-plan.md). The Contract section is normative
 for this command; contradictions with the cross-cutting documents must be
 resolved.
 
-The command is exposed on `main` for pre-release development. Its distribution
-eligibility is governed only by the [release policy](../release.md), and the
-external parser evidence is maintained in the
+The command is available only in source builds that explicitly enable
+`unstable-github-actions-stdout`. It is absent from default and official release
+binaries, and enabling it does not make the contract release eligible. The
+isolation is defined by the [accepted decision](../decisions/unstable-github-actions-stdout.md),
+while external parser evidence is maintained in the
 [workflow-command compatibility note](../compatibility/github-actions-workflow-command-parser.md).
-The contract below records the intended decoded value and command behavior.
+The contract below records research behavior rather than a stable CLI promise.
 
 ## Contract
 

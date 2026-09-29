@@ -174,8 +174,8 @@ Other recognized boundaries are deferred, candidates, or out of scope:
 | Boundary | Status | Primary concern |
 | --- | --- | --- |
 | `$GITHUB_STEP_SUMMARY` | Out of scope | GitHub-rendered Markdown has no runner command-file record structure to inject into; rendered HTML is sanitized, while content integrity remains the producer's responsibility |
-| stdout `add-mask` workflow command | Implemented; framing decision open | Register one faithfully decoded value for subsequent runner log masking |
-| stdout annotation workflow commands | Implemented; framing decision open | Emit one faithfully decoded notice, warning, or error with validated location metadata |
+| stdout `add-mask` workflow command | Research feature; framing decision open; absent from releases | Register one faithfully decoded value for subsequent runner log masking |
+| stdout annotation workflow commands | Research feature; framing decision open; absent from releases | Emit one faithfully decoded notice, warning, or error with validated location metadata |
 | other stdout workflow commands | Deferred | Lines such as `::stop-commands::` and `::group::` are runner control messages |
 | `$GITHUB_ARTIFACTS` | Deferred; 2026-09-28 hosted-runner gate failed | One file or OCI declaration per line |
 | `$GITHUB_ARTIFACTS_LIST` | Out of scope | Runner-managed, read-only JSON input |
@@ -316,11 +316,11 @@ GitHub stdout workflow command.
 Environment-file writer stdout must be redirected to the selected environment
 file. In particular, an unredirected multiline value can place
 attacker-controlled lines on the runner command channel, which is outside the
-environment-file encoding guarantee. Stdout workflow-command writers are the
-deliberate exception: the implemented mask and annotation commands emit one
-encoded runner command and must
-remain connected to the runner log stream rather than being redirected to an
-environment file.
+environment-file encoding guarantee. Feature-enabled stdout workflow-command
+writers are the deliberate research exception: mask and annotation commands
+emit one encoded runner command and must remain connected to the runner log
+stream rather than being redirected to an environment file. They are
+compile-time absent from supported binaries.
 
 Shell redirection is outside the output guarantee. `>` may create or truncate a
 destination before `shoutx` validates input. The documented GitHub Actions usage

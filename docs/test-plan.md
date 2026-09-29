@@ -31,6 +31,37 @@ or size failure must assert empty stdout. Tests that deliberately cause stdout
 I/O failure may observe a prefix and must assert status 1 without assuming
 transactional output.
 
+## Build-configuration matrix
+
+The stable configuration uses `--no-default-features`; the Cargo default
+feature set must remain empty. Its complete command table is exactly `output`,
+`env`, `state`, and `path`. Stable help is byte-equal to the reviewed LF golden,
+and the four stdout research names must produce the ordinary unknown-command
+diagnostic, status 2, and empty stdout with otherwise successful arguments.
+
+The research configuration uses the exact feature
+`unstable-github-actions-stdout`. It runs the mask and annotation contract,
+corpus, hosted, and runner differential suites and identifies itself in help
+and version output. Stable and research builds use separate Cargo target
+directories. Every research CI group explicitly selects its feature and has a
+feature-on sentinel. Focused corpus and oracle jobs explicitly select test
+targets whose `required-features` fail when the feature is missing, then remove
+old corpus files and require fresh non-empty outputs. Implicit Cargo target
+selection alone is not treated as evidence because it may skip a target.
+
+Source-configuration tests check the complete command table; compile-time
+exhaustive dispatch proves that omitted action variants cannot reach an
+implementation. The artifact verifier independently checks exact help and
+version, successful-form negative invocations, and enumerated binary markers.
+Marker scans use a same-target, same-profile feature-enabled binary as a
+positive control. The marker set is the four unstable command names. Protocol
+prefixes are not evidence because compiler optimization need not retain their
+source constants as contiguous bytes. Dependency graphs are checked separately
+for both feature configurations. The artifact verifier never prints or uploads
+captured stdout, stderr, help, or version bytes on failure; its reports contain
+only lengths. Release packaging reruns that verifier against every extracted
+native executable.
+
 ## Notation
 
 Tables use `LF`, `CR`, and `CRLF` for their corresponding bytes. `BOM` means

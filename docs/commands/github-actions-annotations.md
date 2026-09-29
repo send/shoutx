@@ -7,12 +7,14 @@ policy remains in [`test-plan.md`](../test-plan.md). The Contract section is
 normative for these commands; contradictions with the cross-cutting documents
 must be resolved.
 
-The commands are exposed on `main` for pre-release development. Their
-distribution eligibility is governed only by the
-[release policy](../release.md), and the external parser evidence is maintained
-in the
+The commands are available only in source builds that explicitly enable
+`unstable-github-actions-stdout`. They are absent from default and official
+release binaries, and enabling them does not make the contract release
+eligible. The isolation is defined by the
+[accepted decision](../decisions/unstable-github-actions-stdout.md), while
+external parser evidence is maintained in the
 [workflow-command compatibility note](../compatibility/github-actions-workflow-command-parser.md).
-The contract below records the intended decoded values and annotation behavior.
+The contract below records research behavior rather than a stable CLI promise.
 
 ## Contract
 
@@ -314,9 +316,10 @@ repair, message truncation, timeline capacity, path translation, feature-flag
 handling, embedded-context forwarding, secret masking, and stopped-command
 state are destination behavior.
 
-The commands are exposed in help and README only as one complete family after
-all three severities pass the shared contract suite, pinned-runner oracle, and
-hosted workflow checks. The family ships together.
+Feature-enabled help exposes the commands as one explicitly unstable family.
+Default help and the packaged README do not advertise their invocation syntax.
+If the framing decision is accepted later, the three severities still ship
+together only after the shared contract, oracle, hosted, and release gates pass.
 
 ## References
 

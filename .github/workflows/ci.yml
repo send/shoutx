@@ -10,6 +10,15 @@ permissions:
   contents: read
 
 jobs:
+  stable-docs:
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - run: scripts/verify-stable-docs.sh
+
   changes:
     timeout-minutes: 5
     runs-on: ubuntu-latest
@@ -85,18 +94,48 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
+    env:
+      CARGO_TARGET_DIR: target/stable
+      STATE_ACTION_BINARY: ${{ github.workspace }}/target/stable/debug/shoutx
+      STABLE_BINARY: ${{ github.workspace }}/target/stable/debug/shoutx${{ matrix.os == 'windows-latest' && '.exe' || '' }}
+      UNSTABLE_BINARY: ${{ github.workspace }}/target/unstable/debug/shoutx${{ matrix.os == 'windows-latest' && '.exe' || '' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
       - run: rustup toolchain install stable --profile minimal --component clippy
-      - run: cargo +stable test --all-targets
-      - run: cargo +stable clippy --all-targets -- -D warnings
-      - run: cargo +stable build
+      - run: cargo +stable test --all-targets --no-default-features
+        env:
+          SHOUTX_EXPECT_SURFACE: stable
+      - run: cargo +stable clippy --all-targets --no-default-features -- -D warnings
+      - run: cargo +stable build --no-default-features
+      - name: Test unstable stdout research surface
+        shell: pwsh
+        run: |
+          $env:CARGO_TARGET_DIR = 'target/unstable'
+          $env:SHOUTX_EXPECT_SURFACE = 'unstable'
+          cargo +stable test --all-targets --features unstable-github-actions-stdout
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          cargo +stable clippy --all-targets --features unstable-github-actions-stdout -- -D warnings
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          cargo +stable build --features unstable-github-actions-stdout
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $metadata = cargo metadata --format-version 1 --no-deps --locked |
+            ConvertFrom-Json
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $version = ($metadata.packages | Where-Object name -CEQ 'shoutx').version
+          $stableVersion = @(& $env:STABLE_BINARY --version) -join "`n"
+          if ($stableVersion -cne "shoutx $version") {
+            throw 'Stable binary identity mismatch'
+          }
+          $unstableVersion = @(& $env:UNSTABLE_BINARY --version) -join "`n"
+          if ($unstableVersion -cne "shoutx $version (unstable-github-actions-stdout)") {
+            throw 'Unstable binary identity mismatch'
+          }
       - name: Dogfood GitHub action state
         uses: ./tests/workflow-state-action
         with:
-          binary: ${{ github.workspace }}/target/debug/shoutx
+          binary: ${{ env.STATE_ACTION_BINARY }}
       - name: Verify state is not a step environment export
         shell: bash
         run: test -z "${STATE_Result+x}"
@@ -107,23 +146,23 @@ jobs:
         run: |
           dogfood_path="$RUNNER_TEMP/shoutx-dogfood-bin"
           mkdir -p "$dogfood_path"
-          target/debug/shoutx github-actions:output value 'output % 日本語' >> "$GITHUB_OUTPUT"
-          target/debug/shoutx github-actions:output --multiline multiline $'first\nsecond\n' >> "$GITHUB_OUTPUT"
-          target/debug/shoutx github-actions:env SHOUTX_DOGFOOD_ENV 'env % 日本語' >> "$GITHUB_ENV"
-          target/debug/shoutx github-actions:path "$dogfood_path" >> "$GITHUB_PATH"
+          "$STABLE_BINARY" github-actions:output value 'output % 日本語' >> "$GITHUB_OUTPUT"
+          "$STABLE_BINARY" github-actions:output --multiline multiline $'first\nsecond\n' >> "$GITHUB_OUTPUT"
+          "$STABLE_BINARY" github-actions:env SHOUTX_DOGFOOD_ENV 'env % 日本語' >> "$GITHUB_ENV"
+          "$STABLE_BINARY" github-actions:path "$dogfood_path" >> "$GITHUB_PATH"
           mask_marker="shoutx-mask-$(od -An -N16 -tx1 /dev/urandom | tr -d ' \n')"
           export SHOUTX_MASK_VALUE="$mask_marker"
-          printf %s "$SHOUTX_MASK_VALUE" | target/debug/shoutx github-actions:mask
-          target/debug/shoutx github-actions:output masked_value "$mask_marker" >> "$GITHUB_OUTPUT"
+          printf %s "$SHOUTX_MASK_VALUE" | "$UNSTABLE_BINARY" github-actions:mask
+          "$STABLE_BINARY" github-actions:output masked_value "$mask_marker" >> "$GITHUB_OUTPUT"
           printf 'SHOUTX_MASK_BASH_%s_BEGIN%s_END\n' "$RUNNER_OS" "$mask_marker"
           annotation_file="$GITHUB_WORKSPACE/src/annotation,percent%25-日本語.rs"
-          target/debug/shoutx github-actions:notice \
+          "$UNSTABLE_BINARY" github-actions:notice \
             --title "shoutx annotation notice $RUNNER_OS :: %,日本語" \
             --file "$annotation_file" --line 1 'notice % :: 日本語'
-          target/debug/shoutx github-actions:warning \
+          "$UNSTABLE_BINARY" github-actions:warning \
             --title "shoutx annotation warning $RUNNER_OS :: %,日本語" \
             --file "$annotation_file" --line 1 --column 1 $'warning first\nwarning second 日本語'
-          target/debug/shoutx github-actions:error \
+          "$UNSTABLE_BINARY" github-actions:error \
             --title "shoutx annotation error $RUNNER_OS :: %,日本語" \
             --file "$annotation_file" --line 1 'error annotation does not fail the step'
       - name: Verify dogfooded values on POSIX
@@ -144,7 +183,7 @@ jobs:
         shell: sh
         run: |
           mask_marker="shoutx-mask-$(od -An -N16 -tx1 /dev/urandom | tr -d ' \n')"
-          printf %s "$mask_marker" | target/debug/shoutx github-actions:mask
+          printf %s "$mask_marker" | "$UNSTABLE_BINARY" github-actions:mask
           printf 'SHOUTX_MASK_SH_%s_BEGIN%s_END\n' "$RUNNER_OS" "$mask_marker"
       - name: Dogfood GitHub environment files on Windows
         id: dogfood_windows
@@ -153,25 +192,25 @@ jobs:
         run: |
           $dogfoodPath = Join-Path $env:RUNNER_TEMP 'shoutx-dogfood-bin'
           New-Item -ItemType Directory -Force $dogfoodPath | Out-Null
-          target/debug/shoutx.exe github-actions:output value 'output % 日本語' >> $env:GITHUB_OUTPUT
-          target/debug/shoutx.exe github-actions:output --multiline multiline "first`nsecond`n" >> $env:GITHUB_OUTPUT
-          target/debug/shoutx.exe github-actions:env SHOUTX_DOGFOOD_ENV 'env % 日本語' >> $env:GITHUB_ENV
-          target/debug/shoutx.exe github-actions:path $dogfoodPath >> $env:GITHUB_PATH
+          & $env:STABLE_BINARY github-actions:output value 'output % 日本語' >> $env:GITHUB_OUTPUT
+          & $env:STABLE_BINARY github-actions:output --multiline multiline "first`nsecond`n" >> $env:GITHUB_OUTPUT
+          & $env:STABLE_BINARY github-actions:env SHOUTX_DOGFOOD_ENV 'env % 日本語' >> $env:GITHUB_ENV
+          & $env:STABLE_BINARY github-actions:path $dogfoodPath >> $env:GITHUB_PATH
           $maskMarker = "shoutx-mask-$([guid]::NewGuid())"
-          $maskMarker | target/debug/shoutx.exe github-actions:mask
+          $maskMarker | & $env:UNSTABLE_BINARY github-actions:mask
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          target/debug/shoutx.exe github-actions:output masked_value $maskMarker >> $env:GITHUB_OUTPUT
+          & $env:STABLE_BINARY github-actions:output masked_value $maskMarker >> $env:GITHUB_OUTPUT
           Write-Output "SHOUTX_MASK_PWSH_WINDOWS_BEGIN${maskMarker}_END"
           $annotationFile = Join-Path $env:GITHUB_WORKSPACE 'src/annotation,percent%25-日本語.rs'
-          target/debug/shoutx.exe github-actions:notice `
+          & $env:UNSTABLE_BINARY github-actions:notice `
             --title 'shoutx annotation notice Windows :: %,日本語' `
             --file $annotationFile --line 1 'notice % :: 日本語'
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          target/debug/shoutx.exe github-actions:warning `
+          & $env:UNSTABLE_BINARY github-actions:warning `
             --title 'shoutx annotation warning Windows :: %,日本語' `
             --file $annotationFile --line 1 --column 1 "warning first`nwarning second 日本語"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          target/debug/shoutx.exe github-actions:error `
+          & $env:UNSTABLE_BINARY github-actions:error `
             --title 'shoutx annotation error Windows :: %,日本語' `
             --file $annotationFile --line 1 'error annotation does not fail the step'
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
@@ -193,8 +232,10 @@ jobs:
         if: runner.os != 'Windows'
         shell: sh
         run: |
-          sh tests/workflow-smoke/posix.sh target/debug/shoutx sh
-          bash tests/workflow-smoke/posix.sh target/debug/shoutx bash
+          sh tests/workflow-smoke/posix.sh "$STABLE_BINARY" sh stable
+          sh tests/workflow-smoke/posix.sh "$UNSTABLE_BINARY" sh unstable
+          bash tests/workflow-smoke/posix.sh "$STABLE_BINARY" bash stable
+          bash tests/workflow-smoke/posix.sh "$UNSTABLE_BINARY" bash unstable
       - name: Dash smoke tests
         id: dash_smoke
         if: runner.os == 'Linux'
@@ -202,10 +243,11 @@ jobs:
         run: |
           command -v dash
           dpkg-query --show --showformat='dash ${Version}\n' dash
-          dash tests/workflow-smoke/posix.sh target/debug/shoutx dash
-          target/debug/shoutx github-actions:output value 'dash % 日本語' >> "$GITHUB_OUTPUT"
+          dash tests/workflow-smoke/posix.sh "$STABLE_BINARY" dash stable
+          dash tests/workflow-smoke/posix.sh "$UNSTABLE_BINARY" dash unstable
+          "$STABLE_BINARY" github-actions:output value 'dash % 日本語' >> "$GITHUB_OUTPUT"
           mask_marker="shoutx-mask-$(od -An -N16 -tx1 /dev/urandom | tr -d ' \n')"
-          printf %s "$mask_marker" | target/debug/shoutx github-actions:mask
+          printf %s "$mask_marker" | "$UNSTABLE_BINARY" github-actions:mask
           printf 'SHOUTX_MASK_DASH_LINUX_BEGIN%s_END\n' "$mask_marker"
       - name: Verify Dash workflow output
         if: runner.os == 'Linux'
@@ -216,7 +258,9 @@ jobs:
       - name: PowerShell smoke tests
         if: runner.os == 'Windows'
         shell: pwsh
-        run: tests/workflow-smoke/windows.ps1 -Binary target/debug/shoutx.exe
+        run: |
+          tests/workflow-smoke/windows.ps1 -Binary $env:STABLE_BINARY
+          tests/workflow-smoke/windows.ps1 -Binary $env:UNSTABLE_BINARY -UnstableStdout
       - name: Invalid Windows standard handles
         if: runner.os == 'Windows'
         shell: pwsh
@@ -230,19 +274,23 @@ jobs:
             "`"$devcmd`" -no_logo -arch=x64 && cl.exe /nologo /W4 /WX tests\workflow-smoke\windows_invalid_handle.c /Fe:target\windows_invalid_handle.exe"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           target/windows_invalid_handle.exe `
-            (Resolve-Path target/debug/shoutx.exe)
+            (Resolve-Path $env:STABLE_BINARY)
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Git Bash smoke tests
         if: runner.os == 'Windows'
         shell: pwsh
         env:
-          SHOUTX_BIN: ${{ github.workspace }}\target\debug\shoutx.exe
+          SHOUTX_STABLE_BIN: ${{ env.STABLE_BINARY }}
+          SHOUTX_UNSTABLE_BIN: ${{ env.UNSTABLE_BINARY }}
         run: |
           & "$env:ProgramFiles\Git\bin\bash.exe" -lc `
-            'tests/workflow-smoke/posix.sh "$(cygpath -u "$SHOUTX_BIN")" bash'
+            'tests/workflow-smoke/posix.sh "$(cygpath -u "$SHOUTX_STABLE_BIN")" bash stable'
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           & "$env:ProgramFiles\Git\bin\bash.exe" -lc `
-            'set -euo pipefail; marker="shoutx-mask-$(od -An -N16 -tx1 /dev/urandom | tr -d " \n")"; printf %s "$marker" | "$(cygpath -u "$SHOUTX_BIN")" github-actions:mask; printf "SHOUTX_MASK_GIT_BASH_WINDOWS_BEGIN%s_END\n" "$marker"'
+            'tests/workflow-smoke/posix.sh "$(cygpath -u "$SHOUTX_UNSTABLE_BIN")" bash unstable'
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & "$env:ProgramFiles\Git\bin\bash.exe" -lc `
+            'set -euo pipefail; marker="shoutx-mask-$(od -An -N16 -tx1 /dev/urandom | tr -d " \n")"; printf %s "$marker" | "$(cygpath -u "$SHOUTX_UNSTABLE_BIN")" github-actions:mask; printf "SHOUTX_MASK_GIT_BASH_WINDOWS_BEGIN%s_END\n" "$marker"'
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
   msrv:
@@ -256,8 +304,10 @@ jobs:
           persist-credentials: false
       - run: rustup toolchain install 1.85.0 --profile minimal --component clippy,rustfmt
       - run: cargo +1.85.0 fmt --all -- --check
-      - run: cargo +1.85.0 test --all-targets
-      - run: cargo +1.85.0 clippy --all-targets -- -D warnings
+      - run: SHOUTX_EXPECT_SURFACE=stable CARGO_TARGET_DIR=target/msrv-stable cargo +1.85.0 test --all-targets --no-default-features
+      - run: CARGO_TARGET_DIR=target/msrv-stable cargo +1.85.0 clippy --all-targets --no-default-features -- -D warnings
+      - run: SHOUTX_EXPECT_SURFACE=unstable CARGO_TARGET_DIR=target/msrv-unstable cargo +1.85.0 test --all-targets --features unstable-github-actions-stdout
+      - run: CARGO_TARGET_DIR=target/msrv-unstable cargo +1.85.0 clippy --all-targets --features unstable-github-actions-stdout -- -D warnings
 
   runner-differential:
     needs: changes
@@ -300,18 +350,30 @@ jobs:
       - name: Generate and validate shared corpus
         shell: pwsh
         run: |
-          cargo +stable test --test runner_differential_fixture local_model_matches_shared_runner_corpus
-          cargo +stable test --test path_runner_fixture local_path_model_matches_shared_corpus
-          cargo +stable test --test mask_runner_fixture generated_commands_have_one_physical_line
-          cargo +stable test --test annotation_runner_fixture generated_commands_have_one_physical_line
+          $PSNativeCommandUseErrorActionPreference = $true
+          $env:CARGO_TARGET_DIR = 'target/oracle-stable'
+          cargo +stable test --no-default-features --test runner_differential_fixture
+          cargo +stable test --no-default-features --test path_runner_fixture
+          $env:CARGO_TARGET_DIR = 'target/oracle-unstable'
+          cargo +stable test --features unstable-github-actions-stdout --test mask_runner_fixture
+          cargo +stable test --features unstable-github-actions-stdout --test annotation_runner_fixture
           $env:SHOUTX_CORPUS_PATH = "$pwd/target/runner-oracle/corpus.json"
-          cargo +stable test --test runner_differential_fixture export_runner_corpus -- --ignored
+          Remove-Item -ErrorAction Ignore $env:SHOUTX_CORPUS_PATH
+          $env:CARGO_TARGET_DIR = 'target/oracle-stable'
+          cargo +stable test --no-default-features --test runner_differential_fixture export_runner_corpus -- --ignored
           $env:SHOUTX_PATH_CORPUS_PATH = "$pwd/target/runner-oracle/path-corpus.json"
-          cargo +stable test --test path_runner_fixture export_path_corpus -- --ignored
+          Remove-Item -ErrorAction Ignore $env:SHOUTX_PATH_CORPUS_PATH
+          cargo +stable test --no-default-features --test path_runner_fixture export_path_corpus -- --ignored
           $env:SHOUTX_MASK_CORPUS_PATH = "$pwd/target/runner-oracle/mask-corpus.json"
-          cargo +stable test --test mask_runner_fixture export_mask_corpus -- --ignored
+          Remove-Item -ErrorAction Ignore $env:SHOUTX_MASK_CORPUS_PATH
+          $env:CARGO_TARGET_DIR = 'target/oracle-unstable'
+          cargo +stable test --features unstable-github-actions-stdout --test mask_runner_fixture export_mask_corpus -- --ignored
           $env:SHOUTX_ANNOTATION_CORPUS_PATH = "$pwd/target/runner-oracle/annotation-corpus.json"
-          cargo +stable test --test annotation_runner_fixture export_annotation_corpus -- --ignored
+          Remove-Item -ErrorAction Ignore $env:SHOUTX_ANNOTATION_CORPUS_PATH
+          cargo +stable test --features unstable-github-actions-stdout --test annotation_runner_fixture export_annotation_corpus -- --ignored
+          foreach ($corpus in @($env:SHOUTX_CORPUS_PATH, $env:SHOUTX_PATH_CORPUS_PATH, $env:SHOUTX_MASK_CORPUS_PATH, $env:SHOUTX_ANNOTATION_CORPUS_PATH)) {
+            if (-not (Test-Path $corpus) -or (Get-Item $corpus).Length -eq 0) { throw "Missing fresh corpus" }
+          }
       - name: Build pinned runner oracle
         shell: pwsh
         working-directory: target/runner-oracle/actions-runner/src
@@ -451,7 +513,7 @@ jobs:
   ci-result:
     name: CI result
     if: ${{ always() }}
-    needs: [changes, dependencies, test, msrv, runner-differential, hosted-annotations]
+    needs: [stable-docs, changes, dependencies, test, msrv, runner-differential, hosted-annotations]
     timeout-minutes: 5
     runs-on: ubuntu-latest
     steps:
@@ -459,6 +521,7 @@ jobs:
         shell: bash
         env:
           RUN_CI: ${{ needs.changes.outputs.run_ci }}
+          STABLE_DOCS_RESULT: ${{ needs.stable-docs.result }}
           CHANGES_RESULT: ${{ needs.changes.result }}
           DEPENDENCIES_RESULT: ${{ needs.dependencies.result }}
           TEST_RESULT: ${{ needs.test.result }}
@@ -466,6 +529,10 @@ jobs:
           RUNNER_DIFFERENTIAL_RESULT: ${{ needs.runner-differential.result }}
           HOSTED_ANNOTATIONS_RESULT: ${{ needs.hosted-annotations.result }}
         run: |
+          if [[ "$STABLE_DOCS_RESULT" != "success" ]]; then
+            echo "Stable documentation verification did not succeed"
+            exit 1
+          fi
           if [[ "$CHANGES_RESULT" != "success" ]]; then
             echo "Change detection did not succeed"
             exit 1

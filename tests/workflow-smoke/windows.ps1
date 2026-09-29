@@ -1,4 +1,7 @@
-param([Parameter(Mandatory = $true)][string]$Binary)
+param(
+    [Parameter(Mandatory = $true)][string]$Binary,
+    [switch]$UnstableStdout
+)
 
 $ErrorActionPreference = 'Stop'
 if ($PSVersionTable.PSVersion -lt [version]'7.4') {
@@ -69,26 +72,28 @@ try {
         throw "PowerShell changed path stdout bytes"
     }
 
-    $maskOutput = Join-Path $root 'mask'
-    & pwsh -NoProfile -Command `
-        '[Console]::OpenStandardOutput().Write([Text.Encoding]::UTF8.GetBytes("mask%value`r`n"))' |
-        & $Binary github-actions:mask > $maskOutput
-    if ($LASTEXITCODE -ne 0) { throw "mask command failed" }
-    $expectedMask = [Text.Encoding]::UTF8.GetBytes("::add-mask::mask%25value`n")
-    if (-not [Linq.Enumerable]::SequenceEqual([byte[]](Get-Content -AsByteStream -Raw $maskOutput), $expectedMask)) {
-        throw "PowerShell changed mask stdout bytes"
-    }
+    if ($UnstableStdout) {
+        $maskOutput = Join-Path $root 'mask'
+        & pwsh -NoProfile -Command `
+            '[Console]::OpenStandardOutput().Write([Text.Encoding]::UTF8.GetBytes("mask%value`r`n"))' |
+            & $Binary github-actions:mask > $maskOutput
+        if ($LASTEXITCODE -ne 0) { throw "mask command failed" }
+        $expectedMask = [Text.Encoding]::UTF8.GetBytes("::add-mask::mask%25value`n")
+        if (-not [Linq.Enumerable]::SequenceEqual([byte[]](Get-Content -AsByteStream -Raw $maskOutput), $expectedMask)) {
+            throw "PowerShell changed mask stdout bytes"
+        }
 
-    $annotationOutput = Join-Path $root 'annotation'
-    & $Binary github-actions:warning `
-        --file 'src/a,b:c.rs' --title 'title%value' `
-        --line 0005 --end-line 05 --column 1 --end-column 9 `
-        "first`n日本語" > $annotationOutput
-    if ($LASTEXITCODE -ne 0) { throw "annotation command failed" }
-    $expectedAnnotation = [Text.Encoding]::UTF8.GetBytes(
-        "::warning title=title%25value,file=src/a%2Cb%3Ac.rs,line=5,endLine=5,col=1,endColumn=9::first%0A日本語`n")
-    if (-not [Linq.Enumerable]::SequenceEqual([byte[]](Get-Content -AsByteStream -Raw $annotationOutput), $expectedAnnotation)) {
-        throw "PowerShell changed annotation stdout bytes"
+        $annotationOutput = Join-Path $root 'annotation'
+        & $Binary github-actions:warning `
+            --file 'src/a,b:c.rs' --title 'title%value' `
+            --line 0005 --end-line 05 --column 1 --end-column 9 `
+            "first`n日本語" > $annotationOutput
+        if ($LASTEXITCODE -ne 0) { throw "annotation command failed" }
+        $expectedAnnotation = [Text.Encoding]::UTF8.GetBytes(
+            "::warning title=title%25value,file=src/a%2Cb%3Ac.rs,line=5,endLine=5,col=1,endColumn=9::first%0A日本語`n")
+        if (-not [Linq.Enumerable]::SequenceEqual([byte[]](Get-Content -AsByteStream -Raw $annotationOutput), $expectedAnnotation)) {
+            throw "PowerShell changed annotation stdout bytes"
+        }
     }
 
     & $Binary github-actions:path 'C:\bad;path' > (Join-Path $root 'rejected-path')

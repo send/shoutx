@@ -7,8 +7,17 @@ on:
       - v*
   pull_request:
     paths:
+      - Cargo.lock
+      - Cargo.toml
+      - .gitattributes
       - .github/scripts/install-shoutx.sh
       - .github/workflows/release.yml
+      - scripts/verify-stable-docs.sh
+      - src/**
+      - tests/fixtures/stable-help.txt
+      - tests/cli_contract.rs
+      - tests/stable_surface.rs
+      - rust-toolchain.toml
 
 permissions:
   contents: read
@@ -18,6 +27,47 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  release-gates:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Install pinned Rust toolchain
+        shell: bash
+        run: |
+          toolchain=$(sed -n 's/^channel = "\([^"]*\)"$/\1/p' rust-toolchain.toml)
+          if [[ ! "$toolchain" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Rust toolchain must be one exact stable version" >&2
+            exit 1
+          fi
+          rustup toolchain install "$toolchain" --profile minimal
+          printf 'TOOLCHAIN=%s\n' "$toolchain" >> "$GITHUB_ENV"
+      - name: Verify stable contract with release feature flags
+        run: |
+          scripts/verify-stable-docs.sh
+          SHOUTX_EXPECT_SURFACE=stable CARGO_TARGET_DIR=target/release-gates \
+            cargo +"$TOOLCHAIN" test --all-targets --locked --no-default-features
+      - name: Verify exact Cargo feature table
+        shell: bash
+        run: |
+          features=$(cargo metadata --format-version 1 --no-deps --locked |
+            jq -c '.packages[] | select(.name == "shoutx") | .features')
+          test "$features" = '{"default":[],"unstable-github-actions-stdout":["dep:unicode-general-category"]}'
+          cargo tree --locked --no-default-features -e normal > target/stable-tree.txt
+          if grep -F 'unicode-general-category' target/stable-tree.txt; then
+            echo "Stable dependency graph includes the unstable stdout dependency" >&2
+            exit 1
+          fi
+          cargo tree --locked --features unstable-github-actions-stdout -e normal |
+            grep -F 'unicode-general-category'
+      - uses: EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25
+        with:
+          command: check
+          arguments: --all-features --locked
+          command-arguments: advisories bans licenses sources
+
   metadata:
     permissions:
       contents: read
@@ -91,7 +141,7 @@ jobs:
           "$shoutx" github-actions:output publish true >> "$GITHUB_OUTPUT"
 
   build:
-    needs: metadata
+    needs: [metadata, release-gates]
     strategy:
       fail-fast: false
       matrix:
@@ -131,7 +181,38 @@ jobs:
         run: sudo apt-get update && sudo apt-get install --yes musl-tools
       - name: Build locked release binary
         shell: bash
-        run: cargo +"$TOOLCHAIN" build --release --locked --target "$TARGET"
+        run: |
+          CARGO_TARGET_DIR=target/release-stable cargo +"$TOOLCHAIN" build \
+            --release --locked --no-default-features --target "$TARGET"
+          CARGO_TARGET_DIR=target/release-unstable cargo +"$TOOLCHAIN" build \
+            --release --locked --features unstable-github-actions-stdout --target "$TARGET"
+      - name: Verify stable and unstable artifact identities
+        shell: bash
+        run: |
+          suffix=
+          if [[ "$RUNNER_OS" == Windows ]]; then suffix=.exe; fi
+          stable="target/release-stable/$TARGET/release/shoutx$suffix"
+          unstable="target/release-unstable/$TARGET/release/shoutx$suffix"
+          test "$($stable --version)" = "shoutx $VERSION"
+          test "$($unstable --version)" = "shoutx $VERSION (unstable-github-actions-stdout)"
+          SHOUTX_EXPECT_SURFACE=stable CARGO_TARGET_DIR=target/release-stable \
+            cargo +"$TOOLCHAIN" test --release --locked --no-default-features \
+              --target "$TARGET" --test cli_contract
+          SHOUTX_VERIFY_BINARY="$stable" SHOUTX_VERIFY_REQUIRE_EXTERNAL=1 \
+            SHOUTX_EXPECT_SURFACE=stable \
+            CARGO_TARGET_DIR=target/verifier-stable \
+            cargo +"$TOOLCHAIN" test --locked --no-default-features --test stable_surface
+          SHOUTX_VERIFY_BINARY="$unstable" SHOUTX_VERIFY_REQUIRE_EXTERNAL=1 \
+            SHOUTX_EXPECT_SURFACE=unstable \
+            CARGO_TARGET_DIR=target/verifier-unstable \
+            cargo +"$TOOLCHAIN" test --locked --features unstable-github-actions-stdout --test stable_surface
+          cargo tree --locked --no-default-features --target "$TARGET" -e normal > target/stable-target-tree.txt
+          if grep -F 'unicode-general-category' target/stable-target-tree.txt; then
+            echo "Stable target dependency graph includes the unstable stdout dependency" >&2
+            exit 1
+          fi
+          cargo tree --locked --features unstable-github-actions-stdout --target "$TARGET" -e normal |
+            grep -F 'unicode-general-category'
       - name: Package and verify POSIX archive
         if: runner.os != 'Windows'
         shell: bash
@@ -143,9 +224,8 @@ jobs:
           root="shoutx-v${VERSION}-${TARGET}"
           archive="${root}.tar.gz"
           mkdir -p "dist/$root" verify
-          install -m 0755 "target/$TARGET/release/shoutx" "dist/$root/shoutx"
+          install -m 0755 "target/release-stable/$TARGET/release/shoutx" "dist/$root/shoutx"
           install -m 0644 README.md LICENSE "dist/$root/"
-          "dist/$root/shoutx" --version
           tar -czf "dist/$archive" -C dist "$root"
           tar -xzf "dist/$archive" -C verify
           test "$(find "verify/$root" -type f | wc -l | tr -d ' ')" = 3
@@ -161,7 +241,11 @@ jobs:
             test "$(stat -f '%Lp' "verify/$root/README.md")" = 644
             test "$(stat -f '%Lp' "verify/$root/LICENSE")" = 644
           fi
-          "verify/$root/shoutx" --version
+          SHOUTX_VERIFY_BINARY="$GITHUB_WORKSPACE/verify/$root/shoutx" \
+            SHOUTX_VERIFY_REQUIRE_EXTERNAL=1 \
+            SHOUTX_EXPECT_SURFACE=stable \
+            CARGO_TARGET_DIR=target/verifier-extracted \
+            cargo +"$TOOLCHAIN" test --locked --no-default-features --test stable_surface
           rm -rf "dist/$root" verify
       - name: Package and verify Windows archive
         if: runner.os == 'Windows'
@@ -170,15 +254,17 @@ jobs:
           $root = "shoutx-v${env:VERSION}-${env:TARGET}"
           $archive = "$root.zip"
           New-Item -ItemType Directory -Force -Path "dist/$root", "verify" | Out-Null
-          Copy-Item "target/$env:TARGET/release/shoutx.exe" "dist/$root/"
+          Copy-Item "target/release-stable/$env:TARGET/release/shoutx.exe" "dist/$root/"
           Copy-Item README.md, LICENSE "dist/$root/"
-          & "dist/$root/shoutx.exe" --version
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           Compress-Archive -Path "dist/$root" -DestinationPath "dist/$archive"
           Expand-Archive "dist/$archive" -DestinationPath verify
           $files = Get-ChildItem -File "verify/$root"
           if ($files.Count -ne 3) { throw "Unexpected archive contents" }
-          & "verify/$root/shoutx.exe" --version
+          $env:SHOUTX_VERIFY_BINARY = "$pwd/verify/$root/shoutx.exe"
+          $env:SHOUTX_VERIFY_REQUIRE_EXTERNAL = '1'
+          $env:SHOUTX_EXPECT_SURFACE = 'stable'
+          $env:CARGO_TARGET_DIR = 'target/verifier-extracted'
+          cargo "+$env:TOOLCHAIN" test --locked --no-default-features --test stable_surface
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           Remove-Item -Recurse "dist/$root", "verify"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a

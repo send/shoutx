@@ -48,23 +48,22 @@ is created:
 - neither the tag nor the Cargo version contains a `+BUILD` metadata component;
 - removing the leading `v` produces exactly the Cargo package version;
 - `Cargo.lock` is current and all builds use `--locked`;
-- the complete CI and dependency-policy gates pass for the tagged commit; and
+- the release workflow reruns the stable contract and dependency-policy gates
+  for the tagged commit; and
 - the tag does not already have a published GitHub release.
 
-The stdout workflow-command family (`github-actions:mask`, `notice`, `warning`,
-and `error`) is not release eligible until its locale-sensitive V2 framing has
-been resolved by an accepted framing decision and the real-runner evidence
-required by that decision passes. The options and evidence are maintained in
-the [proposed framing decision](decisions/github-actions-stdout-framing.md) and
-[workflow-command compatibility note](compatibility/github-actions-workflow-command-parser.md).
+Official binaries are built with `--no-default-features`. The release workflow
+asserts that Cargo's default feature set is empty and applies the stable-surface
+source, dependency, and packaged-artifact gates defined by the
+[test plan](test-plan.md) to every native target. Feature-enabled controls used
+by those gates are never copied into `dist` or uploaded.
 
-In addition to that shared gate, a release containing `github-actions:mask`
-requires the hosted-log gate in
-[`github-actions-mask.md`](commands/github-actions-mask.md#process-and-workflow-coverage): completed Linux,
-macOS, and Windows job logs must be inspected from outside the producing job
-and show replacement of fresh runtime-generated markers. Until that evidence
-is recorded, maintainers must not create a release tag for a commit exposing
-the command.
+The release workflow reruns the stable contract suite and `cargo deny
+--all-features --locked` itself. A successful aggregate CI result whose relevant
+jobs were skipped is therefore not sufficient release evidence. Detailed shared
+checks are maintained in the [test plan](test-plan.md); rationale for
+compile-time isolation is in the
+[stdout isolation decision](decisions/unstable-github-actions-stdout.md).
 
 A version with a prerelease component, such as `0.1.0-rc.1`, is published as a
 GitHub prerelease and is excluded from GitHub's latest-release selection. A
@@ -134,7 +133,8 @@ artifacts. Third-party actions remain pinned to full commit digests.
 The workflow performs the release in these phases:
 
 1. validate the tag, Cargo version, lockfile, and tagged commit;
-2. build and test each target without publication permissions;
+2. rerun stable contract and dependency-policy gates, then build and test each
+   target without publication permissions;
 3. collect all expected archives and reject missing, extra, or duplicate
    filenames;
 4. create and independently verify `SHA256SUMS`;
@@ -181,6 +181,8 @@ a real release:
 - locally testable version and artifact-name validation;
 - archive-content and permission checks for every target;
 - execution of each packaged binary on its native build runner;
+- stable-surface verification of each extracted executable with a separate
+  feature-enabled marker-scan control;
 - checksum-manifest verification after workflow-artifact transfer;
 - least-privilege job permissions and full action-SHA pinning;
 - a safe dry run that exercises aggregation without creating a release; and

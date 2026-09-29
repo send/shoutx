@@ -1,4 +1,6 @@
+#[cfg(feature = "unstable-github-actions-stdout")]
 mod annotation;
+#[cfg(feature = "unstable-github-actions-stdout")]
 mod mask;
 mod name;
 mod normalize;
@@ -10,7 +12,9 @@ use std::ffi::OsStr;
 
 use crate::{cli::WriteRequest, error::ShoutxError, input::VALUE_LIMIT};
 
+#[cfg(feature = "unstable-github-actions-stdout")]
 pub use annotation::encode as encode_annotation;
+#[cfg(feature = "unstable-github-actions-stdout")]
 pub use mask::encode as encode_mask;
 pub use path::encode as encode_path;
 pub use random::{OsRandom, RandomSource};

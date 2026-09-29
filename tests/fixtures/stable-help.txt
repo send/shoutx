@@ -1,0 +1,9 @@
+shoutx - safe CI output writers
+
+Usage:
+  shoutx github-actions:output [--first-line | --join-lines | --join-lines-with STRING | --multiline] NAME [VALUE]
+  shoutx github-actions:env    [--first-line | --join-lines | --join-lines-with STRING | --multiline] NAME [VALUE]
+  shoutx github-actions:state  [--first-line | --join-lines | --join-lines-with STRING | --multiline] NAME [VALUE]
+  shoutx github-actions:path   [VALUE]
+  shoutx --help
+  shoutx --version

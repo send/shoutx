@@ -36,10 +36,12 @@ collation-data version.
 Before parsing, `OutputManager` uses culture-sensitive searches for either
 `::` or `##[` as a prefilter. The command manager then tries the V2 parser
 first and its legacy `##[command]data` parser second. The legacy parser searches
-for `##[` anywhere in the line rather than requiring it at the start. A
-misparsed V2 line can consequently be treated as ordinary log output or execute
-an attacker-shaped registered workflow command if value data contains
-legacy-looking syntax.
+for `##[` anywhere in the line rather than requiring it at the start. A failed
+V2 parse is treated as ordinary log output when legacy parsing also fails. If
+the culture-sensitive legacy search succeeds, however, a registered workflow
+command found later in the line is executed; value data containing
+legacy-looking syntax can therefore become command syntax. The known `th-TH`
+counterexample establishes the ordinary-output path, not this second condition.
 
 The observable consequences differ by command:
 
@@ -58,10 +60,15 @@ does not override their separate destination-specific compatibility contracts.
 ## Evidence and environment variation
 
 PR #42 added a pinned-runner regression proving the ASCII-only `th-TH` V2
-failure and comparing the legacy parser under selected cultures. The oracle
-runs on Ubuntu 22.04, Ubuntu 24.04, macOS, and Windows. The current tests do not
-record the active globalization backend or its version, so this note does not
-infer ICU or NLS solely from the operating-system label.
+failure and comparing the legacy parser under selected cultures. The current
+fixture also drives the counterexample through `OutputManager`, proving
+ordinary logging after failed recognition. A separate `OutputManager` case
+proves that a failed V2 parse can execute a registered legacy command found
+later in the same line; it does not claim that this fallback occurs under the
+known `th-TH` counterexample. The oracle runs on Ubuntu 22.04, Ubuntu 24.04,
+macOS, and Windows. The current tests do not record the active globalization
+backend or its version, so this note does not infer ICU or NLS solely from the
+operating-system label.
 
 That expansion also exposed a separate portability assumption in an existing
 test. An assertion expecting U+11F02 to move the V2 separator passed on the
@@ -94,6 +101,7 @@ records maintainer-owned follow-up timing.
 
 - [`ActionCommand.cs` in the pinned runner][pinned-parser]
 - [`ActionCommandManager.cs` in the pinned runner][pinned-manager]
+- [`OutputManager.cs` in the pinned runner][pinned-output-manager]
 - [`ShoutxDifferentialL0.cs`](../../tests/runner-oracle/ShoutxDifferentialL0.cs)
 - [PR #42](https://github.com/send/shoutx/pull/42)
 - [Issue #43](https://github.com/send/shoutx/issues/43)
@@ -101,5 +109,6 @@ records maintainer-owned follow-up timing.
 
 [pinned-parser]: https://github.com/actions/runner/blob/v2.337.0/src/Runner.Common/ActionCommand.cs
 [pinned-manager]: https://github.com/actions/runner/blob/v2.337.0/src/Runner.Worker/ActionCommandManager.cs
+[pinned-output-manager]: https://github.com/actions/runner/blob/v2.337.0/src/Runner.Worker/Handlers/OutputManager.cs
 [dotnet-guide]: https://learn.microsoft.com/en-us/dotnet/core/extensions/performing-culture-insensitive-string-operations
 [u11f02-run]: https://github.com/send/shoutx/actions/runs/36451589798/job/109027454250

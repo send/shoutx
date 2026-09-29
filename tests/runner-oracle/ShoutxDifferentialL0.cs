@@ -32,18 +32,56 @@ public sealed class ShoutxDifferentialL0
     [Fact]
     [Trait("Level", "L0")]
     [Trait("Category", "Worker")]
-    public void ThaiCultureCanMislocateTheV2Separator()
+    public void ThaiCultureV2FailureIsLoggedAsOrdinaryOutput()
     {
-        var registeredCommands = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-        {
-            "add-mask",
-        };
-
         WithCulture("th-TH", () =>
         {
+            var registeredCommands = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "add-mask",
+            };
             Assert.False(ActionCommand.TryParseV2(
                 "::add-mask::secret", registeredCommands, out _));
+
+            var (host, manager, context) = CreateActionCommandContext();
+            using (host)
+            {
+                var output = new List<string>();
+                context.Setup(value => value.Write(null, It.IsAny<string>()))
+                    .Callback<string, string>((_, line) => output.Add(line))
+                    .Returns(1);
+
+                using var outputManager = new OutputManager(context.Object, manager);
+                outputManager.OnDataReceived(
+                    null, new ProcessDataReceivedEventArgs("::add-mask::secret"));
+                Assert.Equal(["::add-mask::secret"], output);
+                Assert.Equal("secret", host.SecretMasker.MaskSecrets("secret"));
+
+            }
         });
+    }
+
+    [Fact]
+    [Trait("Level", "L0")]
+    [Trait("Category", "Worker")]
+    public void FailedV2ParseCanExecuteRegisteredLegacyCommandLaterInLine()
+    {
+        var (host, manager, context) = CreateActionCommandContext();
+        using (host)
+        {
+            var output = new List<string>();
+            context.Setup(value => value.Write(null, It.IsAny<string>()))
+                .Callback<string, string>((_, line) => output.Add(line))
+                .Returns(1);
+
+            using var outputManager = new OutputManager(context.Object, manager);
+            outputManager.OnDataReceived(
+                null,
+                new ProcessDataReceivedEventArgs(
+                    "::not-registered::message ##[add-mask]fallback-secret"));
+            Assert.Empty(output);
+            Assert.Equal("***", host.SecretMasker.MaskSecrets("fallback-secret"));
+        }
     }
 
     [Theory]

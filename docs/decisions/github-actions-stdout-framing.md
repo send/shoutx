@@ -25,8 +25,10 @@ This record must not restate its culture matrix or parser transcript.
   worker accepted the record.
 - A security claim must survive the supported OS and globalization backends
   without a culture allowlist maintained by guesswork.
-- The design must account for older self-hosted runners as well as current
-  hosted runners.
+- Before a framing decision is accepted, the project must define the minimum
+  supported self-hosted runner version. The design must account for every
+  distinct parser implementation from that baseline through the current
+  pinned runner, as well as current hosted runners.
 
 ## Considered options
 
@@ -90,11 +92,19 @@ exception.
 
 ## Verification requirements
 
-The pinned runner oracle must enumerate every .NET culture available in each
-supported CI environment and exercise both the output prefilter and command
-manager. For every culture it must prove the fixed prefix position, selected
-command, decoded properties, decoded data, and command-extension side effect.
-Failures must identify the culture and observed parse result.
+The self-hosted runner baseline is an unresolved prerequisite, not an implied
+claim that the current pinned-runner tests cover older versions. Before this
+record can become Accepted, the project must identify the minimum supported
+self-hosted runner version and the distinct stdout parser implementations
+between that version and the current pinned runner. The oracle and command-
+extension corpus must run against each identified implementation.
+
+For every tested runner implementation, the oracle must enumerate every .NET
+culture available in each supported CI environment and exercise both the
+output prefilter and command manager. For every culture it must prove the fixed
+prefix position, selected command, decoded properties, decoded data, and
+command-extension side effect. Failures must identify the runner version,
+culture, and observed parse result.
 
 The CI environments must span the supported Linux generations, macOS, and
 Windows. Tests must report rather than infer the active globalization backend

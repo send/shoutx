@@ -129,7 +129,7 @@ GitHub Actions writers:
 | `github-actions:env` | One `$GITHUB_ENV` record | Internal boundaries rejected by default; explicit normalization |
 | `github-actions:path` | One `$GITHUB_PATH` record | One final boundary consumed; others rejected |
 | `github-actions:state` | One `$GITHUB_STATE` record | Internal boundaries rejected by default; explicit normalization |
-| `github-actions:mask` | One stdout `add-mask` command | One final boundary consumed; remaining boundaries percent-escaped |
+| `github-actions:mask` | One stdout record intended as an `add-mask` command | One final boundary consumed; remaining boundaries percent-escaped |
 | `github-actions:notice` | One stdout notice annotation command | One final boundary consumed; remaining boundaries percent-escaped |
 | `github-actions:warning` | One stdout warning annotation command | One final boundary consumed; remaining boundaries percent-escaped |
 | `github-actions:error` | One stdout error annotation command | One final boundary consumed; remaining boundaries percent-escaped |
@@ -180,9 +180,12 @@ because the runner would treat it differently at the beginning of the file.
 The command provides record framing, not path authorization. An
 attacker-controlled directory could still hijack later command lookup.
 
-`github-actions:mask` registers one value with the runner's job-local secret
-masker. Its successful stdout must go directly to the runner, not to an
-environment file:
+`github-actions:mask` writes one stdout record intended to register a value
+with the runner's job-local secret masker. The current stdout framing is not
+release eligible because runner recognition is not guaranteed across cultures;
+see the [stdout framing decision](docs/decisions/github-actions-stdout-framing.md).
+Its successful stdout must go directly to the runner, not to an environment
+file:
 
 ```sh
 printf %s "$GENERATED_SECRET" | shoutx github-actions:mask

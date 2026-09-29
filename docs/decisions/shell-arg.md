@@ -1,5 +1,7 @@
 # POSIX shell-word encoder decision
 
+Status: Deferred
+
 This decision records why the former `shell:arg` candidate is deferred.
 
 ## Decision

@@ -46,6 +46,13 @@ caller controls how values reach the process and where stdout is redirected.
 The operating system controls process I/O. GitHub Actions controls the
 environment-file parser and downstream runtime behavior.
 
+For stdout workflow commands, the runner worker is a separate consumer whose
+current culture and collation backend are not reliably observable by shoutx.
+An exit status of zero from the producer does not prove that this consumer
+recognized the emitted record. The known parser behavior and compatibility
+evidence are documented in the
+[workflow-command compatibility note](compatibility/github-actions-workflow-command-parser.md).
+
 GitHub creates distinct environment-file paths while running a step or action.
 The runner reads these files after processing the producer.
 `$GITHUB_OUTPUT`, `$GITHUB_ENV`, `$GITHUB_PATH`, and `$GITHUB_STATE` are
@@ -167,8 +174,8 @@ Other recognized boundaries are deferred, candidates, or out of scope:
 | Boundary | Status | Primary concern |
 | --- | --- | --- |
 | `$GITHUB_STEP_SUMMARY` | Out of scope | GitHub-rendered Markdown has no runner command-file record structure to inject into; rendered HTML is sanitized, while content integrity remains the producer's responsibility |
-| stdout `add-mask` workflow command | Implemented | Register one faithfully decoded value for subsequent runner log masking |
-| stdout annotation workflow commands | Implemented | Emit one faithfully decoded notice, warning, or error with validated location metadata |
+| stdout `add-mask` workflow command | Implemented; framing decision open | Register one faithfully decoded value for subsequent runner log masking |
+| stdout annotation workflow commands | Implemented; framing decision open | Emit one faithfully decoded notice, warning, or error with validated location metadata |
 | other stdout workflow commands | Deferred | Lines such as `::stop-commands::` and `::group::` are runner control messages |
 | `$GITHUB_ARTIFACTS` | Deferred; 2026-09-28 hosted-runner gate failed | One file or OCI declaration per line |
 | `$GITHUB_ARTIFACTS_LIST` | Out of scope | Runner-managed, read-only JSON input |
@@ -213,9 +220,10 @@ decision documents:
 | Invalid UTF-8 or NUL | Yes | Reject before output begins |
 | Memory exhaustion through large input | Yes | Enforce a documented hard input limit |
 | Secret exposure through diagnostics | Yes | Do not reproduce input values in diagnostics |
-| Additional workflow commands through mask data | Yes | Percent-escape `%`, CR, and LF and emit one physical `add-mask` line |
+| Additional workflow commands through mask data | Yes | Current V2 escaping prevents physical-line injection but not culture-sensitive fallback selecting an attacker-shaped registered workflow command, or ordinary logging of an unrecognized line that exposes the mask value immediately; the framing guarantee remains unresolved |
+| Stdout command loss or reinterpretation through locale-sensitive delimiter search | Yes | Treat the framing guarantee as unresolved; the proposed decision record owns the resolution and required evidence |
 | False mask success for empty or whitespace-only data | Yes | Reject before stdout because the runner would not register it |
-| Additional workflow commands or properties through annotation data | Yes | Use distinct message/property encoders and emit one physical typed command line |
+| Additional workflow commands or properties through annotation data | Yes | Current V2 encoders prevent physical-line injection but do not make separator search culture-independent; the framing guarantee remains unresolved |
 | Ordinary annotation truncation or metadata repair | Yes | Enforce the pinned runner's input message limit and conservative location invariants before stdout |
 | Mask-induced annotation transformation or truncation | No | Runner secret masking occurs after decoding; document that it can change and expand the message |
 | Misleading or excessive attacker-selected annotations | No | Caller authorizes content and severity; shoutx protects only command structure |
@@ -328,11 +336,13 @@ appends to runner-created files with `>>`.
 - failures do not suggest retry commands containing the original value.
 
 For environment-file writers, GitHub's log masking and summary masking remain
-defense-in-depth rather than part of the `shoutx` guarantee. The mask command
-guarantees only construction and runner registration of one accepted value,
-not comprehensive confidentiality. Successfully writing a secret to an output,
-environment variable, PATH entry, summary, command argument, or later parser
-may still disclose or misuse it.
+defense-in-depth rather than part of the `shoutx` guarantee. The mask command's
+intended guarantee is construction and runner registration of one accepted
+value, not comprehensive confidentiality; its current framing does not yet
+satisfy that guarantee across cultures. The authoritative behavior is in the
+[mask command specification](commands/github-actions-mask.md). Successfully
+writing a secret to an output, environment variable, PATH entry, summary,
+command argument, or later parser may still disclose or misuse it.
 
 ## Concurrency and lifecycle
 

@@ -1,5 +1,7 @@
 # GitHub Actions artifact declaration decision
 
+Status: Deferred
+
 This document records the deferred `$GITHUB_ARTIFACTS` candidate and the
 conditions for reconsidering it.
 

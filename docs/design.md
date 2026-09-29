@@ -145,6 +145,7 @@ Proposed, accepted, deferred, rejected, and superseded decisions are maintained
 separately under the [decision-record policy](decisions/README.md):
 
 - [GitHub Actions stdout workflow-command framing](decisions/github-actions-stdout-framing.md)
+- [Unstable GitHub Actions stdout command isolation](decisions/unstable-github-actions-stdout.md)
 - [Markdown output](decisions/markdown-output.md)
 - [GitHub Actions artifact declarations](decisions/github-actions-artifacts.md)
 - [POSIX shell-word encoding](decisions/shell-arg.md)

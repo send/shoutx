@@ -97,8 +97,8 @@ Run applicable cases for `github-actions:output`, `github-actions:env`, and
 | Mode after name | `COMMAND NAME --first-line` | Token is the value |
 | Help before name | `COMMAND --help` | Help on stdout, status 0 |
 | Help after name | `COMMAND NAME --help` | Token is the value |
-| Version in option position | `shoutx --version` | Version on stdout, status 0 |
-| Command version before name | `COMMAND --version` | Version on stdout, status 0 |
+| Version in option position | `shoutx --version` | Exact stable bytes from the design contract on stdout, empty stderr, status 0 |
+| Command version before name | `COMMAND --version` | Exact stable bytes from the design contract on stdout, empty stderr, status 0 |
 | Version after name | `COMMAND NAME --version` | Token is the value |
 | Missing name | `COMMAND` with any stdin state | Do not read stdin; usage diagnostic, status 2 |
 | Extra operand | `COMMAND NAME A B` | Usage diagnostic, status 2, empty stdout |

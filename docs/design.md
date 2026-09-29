@@ -97,6 +97,16 @@ cross-platform evidence are recorded in
 The compile-time-isolated stdout family is pre-release while the linked
 [framing decision](decisions/github-actions-stdout-framing.md) remains open.
 
+## Distribution integrations
+
+An official GitHub Action will install an exact released `shoutx` version from
+the native artifacts without duplicating their publication contract. Its
+repository boundary, verification requirements, and initial no-cache policy
+are recorded in the
+[official setup action decision](decisions/official-setup-action.md). The
+action is not part of the current CLI surface and is not available until its
+separate repository publishes an immutable release.
+
 ## Command model
 
 Provider writers use `PROVIDER:DESTINATION`. Reusable encoders use
@@ -129,6 +139,11 @@ general CLI convention for other options.
 
 `--help` and `--version` are recognized only while options are being parsed.
 After `NAME`, the same tokens are values rather than options.
+
+An official stable binary writes exactly `shoutx VERSION` followed by LF for
+`--version`, where `VERSION` is its Cargo package version. It writes no stderr
+and exits 0. Feature-enabled research builds append a feature label and are not
+official release artifacts.
 
 Encoded output is written to stdout and diagnostics to stderr. This preserves
 normal Unix composition and keeps destination selection visible in the calling

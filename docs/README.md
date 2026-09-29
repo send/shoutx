@@ -14,6 +14,7 @@ appropriate owner and replace the duplicate with a link.
 | Versioned observations about external parsers and runtimes | [`compatibility/`](compatibility/) |
 | Shared verification policy | [`test-plan.md`](test-plan.md) |
 | Release eligibility and publication policy | [`release.md`](release.md) |
+| Artifact contract consumed by integrations | [`release.md`](release.md) |
 | Intended implementation architecture | [`implementation-plan.md`](implementation-plan.md) |
 | Completed implementation sequence | [`implementation-history.md`](implementation-history.md) |
 | User-facing overview and examples | [`../README.md`](../README.md) |
@@ -23,6 +24,12 @@ available behavior and links to the normative command and release documents.
 Compatibility notes record evidence, not product guarantees. Decision records
 explain why a contract was chosen, but the resulting observable behavior lives
 only in the command specification.
+
+Cross-repository integrations record their adoption rationale and security
+constraints in [`decisions/`](decisions/). Once an integration repository
+exists, its observable interface and implementation-specific behavior are
+owned there; this repository continues to own only the `shoutx` artifact and
+CLI contracts that integration consumes.
 
 When a decision changes, add or update the relevant decision record first,
 then change the authoritative contract. Historical rationale should not be

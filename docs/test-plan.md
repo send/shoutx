@@ -313,7 +313,7 @@ an ICU fast-path precondition was observed. Unknown/NLS observations must not
 be presented as confirmation of an ICU source argument. Preserve failure
 evidence as well as successful results; absence of fresh evidence fails CI.
 
-This is a package-backed parser probe, not an unmodified hosted Worker process
+This is a package-backed component probe, not an unmodified hosted Worker process
 measurement or proof of every Unicode sequence, culture, backend, or runner
 version. Under Invariant Culture and `en-US`, also drive the package's actual
 OutputManager, ActionCommandManager, command extensions, SecretMasker and

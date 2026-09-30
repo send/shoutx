@@ -104,7 +104,9 @@ class HarnessTests(unittest.TestCase):
         original = {"PATH": "/bin", "DOTNET_ROOT": "/sdk", "LANG": "en_US.UTF-8",
                     "DOTNET_STARTUP_HOOKS": "private", "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT": "1",
                     "COMPlus_ReadyToRun": "0", "CORECLR_ENABLE_PROFILING": "1", "DYLD_INSERT_LIBRARIES": "private",
-                    "ICU_DATA": "/private/data"}
+                    "ICU_DATA": "/private/data", "RUNNER_TEST_GET_REPOSITORY_PATH_FAILSAFE": "1",
+                    "GITHUB_ACTIONS_RUNNER_ISSUE_MATCHER_TIMEOUT": "1",
+                    "ACTIONS_ALLOW_UNSECURE_STOPCOMMAND_TOKENS": "true"}
         env, removed = harness.probe_environment(original)
         self.assertEqual(env, {"PATH": "/bin", "DOTNET_ROOT": "/sdk", "LANG": "en_US.UTF-8"})
         self.assertEqual(set(removed), set(original) - set(env))
@@ -143,8 +145,11 @@ class HarnessTests(unittest.TestCase):
         core = {"file": "core.dll", "sha256": "a", "inPackage": True, "informationalVersion": "8+runtime"}
         parser = {"file": "parser.dll", "sha256": "b", "inPackage": True, "informationalVersion": "2+runner"}
         worker = {"file": "worker.dll", "sha256": "c", "inPackage": True, "informationalVersion": "2+runner"}
-        report = {"coreLibrary": core, "parserAssembly": parser, "workerAssembly": worker, "loadedManagedAssemblies": [core, parser, worker]}
-        files = {"core.dll": "a", "parser.dll": "b", "worker.dll": "c"}
+        masker = {"file": "Sdk.dll", "sha256": "d", "inPackage": True}
+        report = {"coreLibrary": core, "parserAssembly": parser, "workerAssembly": worker, "maskerAssembly": masker,
+                  "loadedManagedAssemblies": [core, parser, worker, masker],
+                  "dynamicAssemblyNames": ["ProxyBuilder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null"]}
+        files = {"core.dll": "a", "parser.dll": "b", "worker.dll": "c", "Sdk.dll": "d"}
         harness.verify_managed(report, files, pins)
         for field, value in (("file", "foreign.dll"), ("sha256", "wrong"), ("inPackage", False), ("informationalVersion", "9+other")):
             bad = json.loads(json.dumps(report))
@@ -160,9 +165,13 @@ class HarnessTests(unittest.TestCase):
         bad["loadedManagedAssemblies"][1]["sha256"] = "other"
         with self.assertRaises(ValueError):
             harness.verify_managed(bad, files, pins)
-        for key in ("loadedManagedAssemblies", "coreLibrary", "parserAssembly", "workerAssembly"):
+        for key in ("loadedManagedAssemblies", "coreLibrary", "parserAssembly", "workerAssembly", "maskerAssembly", "dynamicAssemblyNames"):
             bad = dict(report)
             del bad[key]
+            with self.assertRaises(ValueError):
+                harness.verify_managed(bad, files, pins)
+        for key, value in (("dynamicAssemblyNames", ["foreign"]), ("maskerAssembly", {**masker, "sha256": "wrong"})):
+            bad = {**report, key: value}
             with self.assertRaises(ValueError):
                 harness.verify_managed(bad, files, pins)
 

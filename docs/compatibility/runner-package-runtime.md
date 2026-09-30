@@ -21,7 +21,8 @@ not Runner or its runtime. The host trace must select CoreCLR from the package;
 loaded `System.Private.CoreLib`, `Runner.Common` and `Runner.Worker` must also come from its
 directory and match the extracted-file digests. The end-of-test loaded managed
 assembly snapshot is checked the same way (except the separately hashed probe
-and runtime-generated service-double assemblies, whose names are recorded).
+and runtime-generated service-double assemblies, whose names are checked
+against the observed DispatchProxy builder identity).
 Their informational versions
 must name the pinned runtime and Runner commits. All original extracted bin
 files are hashed again after the probe; adding `Probe.dll` is the only change.
@@ -117,25 +118,42 @@ through packaged `OutputManager.OnDataReceived`, `ActionCommandManager`, the
 four real command extensions and `ExecutionContext`. Each case has fresh job,
 step, command-manager and `SecretMasker` state. `ExecutionContext.Write`,
 `AddIssue` and step `Complete` are not mocked: assertions observe redacted log
-lines, retained timeline issues and completion-time annotation conversion.
+lines at both the console queue and paging-logger input, retained timeline
+issues and completion-time annotation conversion. Actual paging-file bytes,
+timestamps, rotation and upload are not simulated or claimed.
 Worker identity must match the pinned Runner build as well as its archive hash.
 
 Only host service discovery, settings and external log/server sinks are strict
 in-process service doubles. Unexpected calls fail instead of silently returning
 defaults or opening a network connection. The real packaged SecretMasker uses
 the encoder registrations copied from the pinned HostContext constructor;
-HostContext startup itself is not executed. Dynamic dispatch-proxy assemblies
+Pin updates must re-check this registration list against HostContext and the
+service-double line counter against PagingLogger; neither is an upstream API
+promise. HostContext startup itself is not executed. Dynamic dispatch-proxy assemblies
 are test infrastructure, not substituted Runner implementations. Problem
 matchers, containers, server upload and live job-worker startup are not tested
 by this suite. Hosted checks remain separate evidence of actual upload/UI
 behavior, not a consequence of local completion success.
 
+The corpus fixture deliberately sets `github.workspace` and
+`github.repository` to empty strings, matching the source oracle's corpus
+context. Its file metadata expectations do not claim realistic workspace
+relativization or production `repo` insertion (including Windows separator
+rewriting); separate source-oracle path scenarios own that coverage.
+The entry point is a decoded .NET string event: native stdout decoding and
+physical-line splitting in ProcessInvoker/StepHost remain hosted-test concerns.
+The parser phase validates wire framing before the effects phase removes LF.
+Whitespace-only input and overlong messages rejected by shoutx, issue caps,
+mask-expansion truncation and feature-disabled behavior remain broader
+source-oracle cases rather than reachable paths in these accepted corpora.
+
 For both Invariant Culture and `en-US`, the suite checks:
 
-- exact and fixture-defined derived masks, absence of raw command echo or
+- exact-value masking and a changed result for fixture-defined derived samples
+  (not a promise that every sample becomes only `***`), absence of raw command echo or
   unexpected issues, and subsequent `ExecutionContext.Write` redaction;
 - each notification's severity, message, category, platform-specific metadata,
-  runner-added step/log numbers, single log entry with echo enabled, retained
+  runner-added step/first-log numbers, single log entry with echo enabled, retained
   annotation and unchanged successful step result;
 - four synthetic stop/wrong-token/resume sequences: stopped lines are ordinary
   unredacted output and have no mask/issue effect, an incorrect token does not
@@ -149,6 +167,13 @@ culture. Coverage is checked separately from the earlier scalar parser sweep.
 These are bounded command-effects observations, not a resolution of `th-TH`,
 new Unicode acceptance, or stdout release eligibility. The earlier four-OS
 table above predates this extension and is not evidence for these new checks.
+
+The [first command-effects matrix run](https://github.com/send/shoutx/actions/runs/36711931190)
+at head `7a046d8` / tested merge `82b8fea7ff04cfbbd17eb5a314e2bb4ebd95c1ce`
+passed these counts under both cultures on all four OS labels. Downloaded
+artifacts confirmed the pinned Worker build and package identities. Later
+review hardening adds the second log-sink comparison and stricter diagnostics;
+that earlier run does not claim to test those additions.
 
 ## Reproduction and retained evidence
 
@@ -167,6 +192,9 @@ Runtime instrumentation, additional-dependency and globalization override
 environment variables are removed for probe execution; their names, never
 values, are recorded. Ordinary host discovery and locale variables remain;
 the two tested cultures are explicitly selected inside the probe.
+The three ambient OutputManager/stop-token test-policy overrides are removed
+as well. `worker-trace.log` is a deliberately disabled trace sink, reopened for
+each culture; it is not behavioral evidence or a record of both cultures.
 
 Each `runner-package-evidence-OS-RID` CI artifact retains, for 30 days:
 

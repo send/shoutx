@@ -7,6 +7,8 @@ using System.Text.Json;
 using GitHub.Runner.Common;
 
 // Only synthetic corpus data enters this probe. It never registers a worker.
+sealed class ProbeFailure(string rule) : Exception(rule);
+
 static class Program
 {
     sealed record IcuObservation(string binding, uint versionRaw, string? version);
@@ -31,7 +33,7 @@ static class Program
         { "add-mask", "notice", "warning", "error" };
     static void Require(bool condition, string rule)
     {
-        if (!condition) throw new InvalidOperationException(rule);
+        if (!condition) throw new ProbeFailure(rule);
     }
 
     static object Identity(Assembly assembly, string directory)
@@ -129,6 +131,7 @@ static class Program
             report["coreLibrary"] = Identity(typeof(object).Assembly, directory);
             report["parserAssembly"] = Identity(typeof(ActionCommand).Assembly, directory);
             report["workerAssembly"] = Identity(typeof(GitHub.Runner.Worker.ActionCommandManager).Assembly, directory);
+            report["maskerAssembly"] = Identity(typeof(GitHub.DistributedTask.Logging.SecretMasker).Assembly, directory);
             report["runtime"] = RuntimeInformation.FrameworkDescription;
             report["os"] = RuntimeInformation.OSDescription;
             report["architecture"] = RuntimeInformation.ProcessArchitecture.ToString();
@@ -161,6 +164,8 @@ static class Program
                 phase = "annotation-corpus";
                 observation["annotationCases"] = Corpus(args[2], false);
                 phase = "worker-effects";
+                testCase = null;
+                WorkerProbe.CurrentCase = new { suite = "worker-setup" };
                 observation["workerEffects"] = WorkerProbe.Run(args[1], args[2], Path.Combine(Path.GetDirectoryName(args[0])!, "worker-trace.log"));
                 phase = "scalar-checks";
                 observation["scalarChecks"] = ScalarChecks();
@@ -171,7 +176,7 @@ static class Program
         {
             report["errorType"] = error.GetType().Name;
             if (error.InnerException is not null) report["innerErrorType"] = error.InnerException.GetType().Name;
-            if (error is InvalidOperationException) report["errorRule"] = error.Message;
+            if (error is ProbeFailure) report["errorRule"] = error.Message;
             report["failedPhase"] = phase;
             report["testCase"] = testCase;
             if (phase == "worker-effects") report["workerCase"] = WorkerProbe.CurrentCase;

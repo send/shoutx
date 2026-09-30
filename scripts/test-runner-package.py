@@ -124,7 +124,10 @@ def probe_environment(environment):
     allowed_dotnet = {"DOTNET_ROOT", "DOTNET_ROOT_X64", "DOTNET_ROOT_ARM64",
                       "DOTNET_ROOT(X86)", "DOTNET_CLI_HOME"}
     removed = sorted(key for key in environment if key.upper().startswith(prefixes)
-                     or key.upper() in {"CLR_ICU_VERSION_OVERRIDE", "ICU_DATA"}
+                     or key.upper() in {"CLR_ICU_VERSION_OVERRIDE", "ICU_DATA",
+                         "RUNNER_TEST_GET_REPOSITORY_PATH_FAILSAFE",
+                         "GITHUB_ACTIONS_RUNNER_ISSUE_MATCHER_TIMEOUT",
+                         "ACTIONS_ALLOW_UNSECURE_STOPCOMMAND_TOKENS"}
                      or (key.upper().startswith("DOTNET_") and key.upper() not in allowed_dotnet))
     return {key: value for key, value in environment.items() if key not in removed}, removed
 
@@ -158,9 +161,10 @@ def verify_coreclr(trace, binary, rid):
 def verify_managed(probe, files, pins):
     identities = probe.get("loadedManagedAssemblies")
     core, parser, worker = probe.get("coreLibrary"), probe.get("parserAssembly"), probe.get("workerAssembly")
-    if not isinstance(identities, list) or not identities or not core or not parser or not worker:
+    masker = probe.get("maskerAssembly")
+    if not isinstance(identities, list) or not identities or not core or not parser or not worker or not masker:
         raise ValueError("incomplete loaded assembly evidence")
-    for identity in [core, parser, worker, *identities]:
+    for identity in [core, parser, worker, masker, *identities]:
         if (not isinstance(identity, dict) or identity.get("inPackage") is not True
                 or identity.get("file") not in files
                 or files[identity["file"]] != identity.get("sha256")):
@@ -171,6 +175,8 @@ def verify_managed(probe, files, pins):
         raise ValueError("parser build differs from pinned Runner source")
     if worker.get("informationalVersion") != f'{pins["runnerVersion"]}+{pins["runnerCommit"]}':
         raise ValueError("worker build differs from pinned Runner source")
+    if probe.get("dynamicAssemblyNames") != ["ProxyBuilder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null"]:
+        raise ValueError("unexpected dynamic assembly evidence")
 
 
 def main():

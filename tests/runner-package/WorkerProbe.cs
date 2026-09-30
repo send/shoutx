@@ -31,20 +31,22 @@ static class WorkerProbe
     static int unexpectedCalls;
     static void Require(bool value, string rule)
     {
-        if (!value) throw new InvalidOperationException(rule);
+        if (!value) throw new ProbeFailure(rule);
     }
     static string Decode(JsonElement item) => Encoding.UTF8.GetString(Convert.FromBase64String(item.GetString()!));
     static string Wire(JsonElement item) => Decode(item.GetProperty("command"))[..^1];
     static object Unexpected(MethodInfo method)
     {
         unexpectedCalls++;
-        throw new InvalidOperationException("unexpected worker service call: " + method.Name);
+        throw new ProbeFailure("unexpected worker service call: " + method.Name);
     }
 
     sealed class Fixture : IDisposable
     {
         public readonly SecretMasker Masker = new();
         public readonly List<string> Logs = new();
+        readonly List<string> consoleHistory = new();
+        readonly Dictionary<Guid, List<string>> pageHistory = new();
         public readonly RunnerContext Root;
         public readonly IExecutionContext Step;
         public readonly OutputManager Output;
@@ -68,7 +70,10 @@ static class WorkerProbe
                         var record = (TimelineRecord)args[1]!;
                         if (record.RecordType == "Task") Record = record;
                         return null;
-                    case "QueueWebConsoleLine": Logs.Add((string)args[1]!); return null;
+                    case "QueueWebConsoleLine":
+                        Logs.Add((string)args[1]!);
+                        consoleHistory.Add((string)args[1]!);
+                        return null;
                     case "add_JobServerQueueThrottling":
                     case "remove_JobServerQueueThrottling": return null;
                     default: return Unexpected(method);
@@ -95,12 +100,18 @@ static class WorkerProbe
                 if (method.Name == "CreateService" && method.GetGenericArguments().Single() == typeof(IPagingLogger))
                 {
                     long lines = 0;
-                    return ServiceDouble.Create<IPagingLogger>((call, _) => {
+                    var writes = new List<string>();
+                    return ServiceDouble.Create<IPagingLogger>((call, values) => {
                         switch (call.Name)
                         {
                             case "get_TotalLines": return lines;
-                            case "Write": lines++; return null;
-                            case "Setup": case "End": return null;
+                            case "Write":
+                                string message = (string)values[0]!;
+                                writes.Add(message);
+                                lines += 1 + message.Count(c => c == '\n');
+                                return null;
+                            case "Setup": pageHistory.Add((Guid)values[1]!, writes); return null;
+                            case "End": return null;
                             default: return Unexpected(call);
                         }
                     });
@@ -125,6 +136,7 @@ static class WorkerProbe
                 ["repository"] = new Pipelines.ContextData.StringContextData("") };
             Root.InitializeJob(job, CancellationToken.None);
             Step = Root.CreateChild(Guid.NewGuid(), "probe", "probe", null, null, ActionRunStage.Main);
+            Require(Record is not null, "worker did not queue task record");
             var manager = new ActionCommandManager();
             manager.Initialize(host);
             Output = new OutputManager(Step, manager);
@@ -134,18 +146,21 @@ static class WorkerProbe
         {
             Output.OnDataReceived(null, new ProcessDataReceivedEventArgs(line));
             Require(Step.CommandResult is null, "worker extension failed");
+            Require(unexpectedCalls == 0, "worker swallowed an unexpected service call");
         }
         public void Complete()
         {
             Require(!completed, "step completed twice");
             Require(Step.Complete() == TaskResult.Succeeded, "annotation changed step result");
+            Require(pageHistory[Record.Id].SequenceEqual(consoleHistory), "persisted and console log sinks differ");
+            Root.Complete();
+            Require(unexpectedCalls == 0, "worker swallowed an unexpected service call");
             completed = true;
         }
         public void Dispose()
         {
             Output.Dispose();
-            if (!completed) Complete();
-            Root.Complete();
+            // Never run/assert additional worker effects while unwinding a failure.
             Masker.Dispose();
         }
     }
@@ -173,6 +188,7 @@ static class WorkerProbe
                 Require(fixture.Masker.MaskSecrets(Decode(value)) == Decode(value), "unexpected derived mask");
             fixture.Step.Write(null, Decode(item.GetProperty("value")));
             Require(fixture.Logs.SequenceEqual(new[] { "***" }), "subsequent log not redacted");
+            fixture.Complete();
             maskCases++;
         }
         foreach (var item in annotations.RootElement.EnumerateArray())
@@ -207,6 +223,7 @@ static class WorkerProbe
             const string secret = "probe-secret-ASCII";
             string wire = $"::{command}::{secret}";
             fixture.Send("::stop-commands::package-probe-resume-token");
+            Require(fixture.Logs.SequenceEqual(new[] { "::stop-commands::***" }), "stop token echo not masked");
             fixture.Logs.Clear();
             fixture.Send(wire);
             Require(fixture.Logs.SequenceEqual(new[] { wire }), "stopped command not logged literally");
@@ -217,6 +234,7 @@ static class WorkerProbe
             Require(fixture.Logs.SequenceEqual(new[] { wire }) && fixture.Record.Issues.Count == 0 && fixture.Masker.MaskSecrets(secret) == secret,
                 "wrong token resumed commands");
             fixture.Send("::package-probe-resume-token::");
+            Require(fixture.Logs.Last() == "::***::", "resume token echo not masked");
             fixture.Logs.Clear();
             fixture.Send(wire);
             if (command == "add-mask")
@@ -228,6 +246,7 @@ static class WorkerProbe
             else
                 Require(fixture.Record.Issues.Count == 1 && fixture.Record.Issues[0].Message == secret &&
                     fixture.Logs.SequenceEqual(new[] { $"##[{command}]{secret}" }), "resumed annotation missing");
+            fixture.Complete();
             stoppedCases++;
         }
         CurrentCase = new { suite = "worker-echo-and-masked-annotation" };

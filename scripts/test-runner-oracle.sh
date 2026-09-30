@@ -108,5 +108,6 @@ cp tests/runner-oracle/ShoutxDifferentialL0.cs \
     --configuration Release \
     --no-build \
     --no-restore \
-    --filter 'FullyQualifiedName~ShoutxDifferentialL0'
+    --filter 'FullyQualifiedName~ShoutxDifferentialL0' \
+    --logger 'console;verbosity=detailed'
 )

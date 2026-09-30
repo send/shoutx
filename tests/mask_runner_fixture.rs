@@ -4,7 +4,7 @@ use std::{fs, path::PathBuf};
 
 #[derive(Serialize)]
 struct MaskCase {
-    id: &'static str,
+    id: String,
     command: String,
     value: String,
     masked: Vec<String>,
@@ -16,11 +16,29 @@ fn encode(value: &[u8]) -> String {
 }
 
 fn cases() -> Vec<MaskCase> {
-    [
+    let mut cases: Vec<_> = [
         (
             "plain",
             b"secret".as_slice(),
             vec![b"before secret after".as_slice()],
+            vec![b"public".as_slice()],
+        ),
+        (
+            "interior-combining",
+            "e\u{0301} ##[warning]literal".as_bytes(),
+            vec!["e\u{0301} ##[warning]literal".as_bytes()],
+            vec![b"public".as_slice()],
+        ),
+        (
+            "format-before-combining",
+            "a\u{200b}\u{0301}secret ##[warning]literal".as_bytes(),
+            vec!["a\u{200b}\u{0301}secret ##[warning]literal".as_bytes()],
+            vec![b"public".as_slice()],
+        ),
+        (
+            "bom-before-combining",
+            "a\u{feff}\u{0301}secret".as_bytes(),
+            vec!["a\u{feff}\u{0301}secret".as_bytes()],
             vec![b"public".as_slice()],
         ),
         (
@@ -43,8 +61,8 @@ fn cases() -> Vec<MaskCase> {
         ),
         (
             "multibyte-utf8",
-            "秘密🔐".as_bytes(),
-            vec!["before 秘密🔐 after".as_bytes()],
+            "a秘密🔐".as_bytes(),
+            vec!["before a秘密🔐 after".as_bytes()],
             vec!["公開".as_bytes()],
         ),
         (
@@ -67,13 +85,63 @@ fn cases() -> Vec<MaskCase> {
     ]
     .into_iter()
     .map(|(id, value, masked, unmasked)| MaskCase {
-        id,
+        id: id.to_owned(),
         command: encode(&shoutx::github_actions::encode_mask(value.to_vec()).unwrap()),
         value: encode(value),
         masked: masked.into_iter().map(encode).collect(),
         unmasked: unmasked.into_iter().map(encode).collect(),
     })
-    .collect()
+    .collect();
+    for (id, prefix) in [
+        ("zwj", "\u{200d}"),
+        ("zwnj", "\u{200c}"),
+        ("transparent-chain", "\u{200c}\u{200d}\u{e0020}\u{e007f}"),
+        (
+            "transparent-control-before-combining",
+            "\u{200d}\u{200b}\u{0301}",
+        ),
+        ("tag-space", "\u{e0020}"),
+        ("cancel-tag", "\u{e007f}"),
+        ("space-before-combining", " \u{0301}"),
+    ] {
+        let value = format!("a{prefix}secret ##[warning]literal");
+        cases.push(MaskCase {
+            id: id.to_owned(),
+            command: encode(
+                &shoutx::github_actions::encode_mask(value.as_bytes().to_vec()).unwrap(),
+            ),
+            value: encode(value.as_bytes()),
+            masked: vec![encode(value.as_bytes())],
+            unmasked: vec![encode(b"public")],
+        });
+    }
+    for first in (b' '..=b'~').chain(*b"\r\n") {
+        for (index, tail) in [
+            "\u{0301}",
+            "\u{200d}\u{0301}",
+            "\u{0e33}",
+            "\u{0eb3}",
+            "\u{1f3fb}",
+            "\u{e0020}\u{1f3fb}",
+            "日本語😀",
+            "\u{10ffff}",
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            let value = format!("{}{tail} ##[warning]literal::tail", char::from(first));
+            cases.push(MaskCase {
+                id: format!("ascii-boundary-{first}-{index}"),
+                command: encode(
+                    &shoutx::github_actions::encode_mask(value.as_bytes().to_vec()).unwrap(),
+                ),
+                value: encode(value.as_bytes()),
+                masked: vec![encode(value.as_bytes())],
+                unmasked: vec![encode(b"public")],
+            });
+        }
+    }
+    cases
 }
 
 #[test]

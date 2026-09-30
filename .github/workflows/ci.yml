@@ -155,15 +155,15 @@ jobs:
           printf %s "$SHOUTX_MASK_VALUE" | "$UNSTABLE_BINARY" github-actions:mask
           "$STABLE_BINARY" github-actions:output masked_value "$mask_marker" >> "$GITHUB_OUTPUT"
           printf 'SHOUTX_MASK_BASH_%s_BEGIN%s_END\n' "$RUNNER_OS" "$mask_marker"
-          annotation_file="$GITHUB_WORKSPACE/src/annotation,percent%25-日本語.rs"
+          annotation_file="$GITHUB_WORKSPACE/src/annotation,percent%25-ASCII.rs"
           "$UNSTABLE_BINARY" github-actions:notice \
-            --title "shoutx annotation notice $RUNNER_OS :: %,日本語" \
+            --title "shoutx annotation notice $RUNNER_OS :: %,ASCII" \
             --file "$annotation_file" --line 1 'notice % :: 日本語'
           "$UNSTABLE_BINARY" github-actions:warning \
-            --title "shoutx annotation warning $RUNNER_OS :: %,日本語" \
+            --title "shoutx annotation warning $RUNNER_OS :: %,ASCII" \
             --file "$annotation_file" --line 1 --column 1 $'warning first\nwarning second 日本語'
           "$UNSTABLE_BINARY" github-actions:error \
-            --title "shoutx annotation error $RUNNER_OS :: %,日本語" \
+            --title "shoutx annotation error $RUNNER_OS :: %,ASCII" \
             --file "$annotation_file" --line 1 'error annotation does not fail the step'
       - name: Verify dogfooded values on POSIX
         if: runner.os != 'Windows'
@@ -201,17 +201,17 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           & $env:STABLE_BINARY github-actions:output masked_value $maskMarker >> $env:GITHUB_OUTPUT
           Write-Output "SHOUTX_MASK_PWSH_WINDOWS_BEGIN${maskMarker}_END"
-          $annotationFile = Join-Path $env:GITHUB_WORKSPACE 'src/annotation,percent%25-日本語.rs'
+          $annotationFile = Join-Path $env:GITHUB_WORKSPACE 'src/annotation,percent%25-ASCII.rs'
           & $env:UNSTABLE_BINARY github-actions:notice `
-            --title 'shoutx annotation notice Windows :: %,日本語' `
+            --title 'shoutx annotation notice Windows :: %,ASCII' `
             --file $annotationFile --line 1 'notice % :: 日本語'
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           & $env:UNSTABLE_BINARY github-actions:warning `
-            --title 'shoutx annotation warning Windows :: %,日本語' `
+            --title 'shoutx annotation warning Windows :: %,ASCII' `
             --file $annotationFile --line 1 --column 1 "warning first`nwarning second 日本語"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           & $env:UNSTABLE_BINARY github-actions:error `
-            --title 'shoutx annotation error Windows :: %,日本語' `
+            --title 'shoutx annotation error Windows :: %,ASCII' `
             --file $annotationFile --line 1 'error annotation does not fail the step'
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Verify dogfooded values on Windows
@@ -396,7 +396,8 @@ jobs:
             --configuration Release `
             --no-build `
             --no-restore `
-            --filter 'FullyQualifiedName~ShoutxDifferentialL0'
+            --filter 'FullyQualifiedName~ShoutxDifferentialL0' `
+            --logger 'console;verbosity=detailed'
 
   hosted-annotations:
     needs: [changes, test]
@@ -449,19 +450,19 @@ jobs:
               jq 'add' "$pages" > "$annotations"
               if jq -e --arg os "$runner_os" '
                 any(.[]; .annotation_level == "notice" and
-                  .title == "shoutx annotation notice \($os) :: %,日本語" and
+                  .title == "shoutx annotation notice \($os) :: %,ASCII" and
                   .message == "notice % :: 日本語" and
-                  .path == "src/annotation,percent%25-日本語.rs" and
+                  .path == "src/annotation,percent%25-ASCII.rs" and
                   .start_line == 1 and .end_line == 1) and
                 any(.[]; .annotation_level == "warning" and
-                  .title == "shoutx annotation warning \($os) :: %,日本語" and
+                  .title == "shoutx annotation warning \($os) :: %,ASCII" and
                   .message == "warning first\nwarning second 日本語" and
-                  .path == "src/annotation,percent%25-日本語.rs" and .start_line == 1 and
+                  .path == "src/annotation,percent%25-ASCII.rs" and .start_line == 1 and
                   .end_line == 1 and .start_column == 1 and .end_column == 1) and
                 any(.[]; .annotation_level == "failure" and
-                  .title == "shoutx annotation error \($os) :: %,日本語" and
+                  .title == "shoutx annotation error \($os) :: %,ASCII" and
                   .message == "error annotation does not fail the step" and
-                  .path == "src/annotation,percent%25-日本語.rs" and
+                  .path == "src/annotation,percent%25-ASCII.rs" and
                   .start_line == 1 and .end_line == 1)
               ' "$annotations" >/dev/null; then
                 verified=true

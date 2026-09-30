@@ -69,6 +69,22 @@ Required fallback. If no framing satisfies the product guarantee, the mask and
 annotation family remains excluded from releases while environment-file
 writers continue independently.
 
+## Interim research mitigation
+
+Input-dependent misparsing under Invariant Culture and `en-US` is the current
+mitigation target. Use an explicit ASCII boundary allowlist rather than
+extending a Unicode denylist. Constrain the encoded header and first encoded
+data character; retain Unicode only after that inspected boundary. Reject
+unrepresentable inputs before output rather than altering the value. This
+deliberately sacrifices non-ASCII message starts and metadata in the research
+feature. The derivation and its runtime limits live in the compatibility note,
+not in a universal safety claim.
+Keep the exact input rules in the command specifications. Explicit-culture
+runner tests must cover rejection counterexamples and accepted-value fidelity.
+The `th-TH` ASCII failure is deferred, not fixed or shown to be unreachable.
+This prioritization does not accept V2 framing, establish a supported-culture
+allowlist, or remove the research feature / release exclusion.
+
 ## Decision
 
 No wire format is accepted by this proposed record yet. Before acceptance, the
@@ -132,10 +148,11 @@ contracts of environment-file writers.
 
 - Work on additional stdout workflow commands, including `debug`, remains
   paused.
-- Existing Unicode-category guards are only pre-release observations and
+- Existing annotation and mask prefix guards are only pre-release observations and
   cannot justify release eligibility.
-- UTF-8 values are not narrowed to ASCII and are never silently deleted or
-  normalized to make framing succeed.
+- The interim research allowlist narrows boundary data and annotation metadata;
+  accepted values are never silently deleted, prefixed, or normalized to make
+  framing succeed. Expanding Unicode acceptance requires a new derivation.
 - An accepted decision will require one coordinated change to mask,
   annotations, their shared private encoder, and their normative command
   specifications.

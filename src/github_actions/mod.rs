@@ -7,6 +7,8 @@ mod normalize;
 mod path;
 mod random;
 mod record;
+#[cfg(feature = "unstable-github-actions-stdout")]
+mod stdout_guard;
 
 use std::ffi::OsStr;
 

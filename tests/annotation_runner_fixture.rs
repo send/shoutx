@@ -98,7 +98,7 @@ fn cases() -> Vec<AnnotationCase> {
                 Some("0009"),
             ),
             "error",
-            "位置 😀",
+            "position 位置 😀",
             properties(&[
                 ("title", "range"),
                 ("line", "5"),
@@ -144,7 +144,7 @@ fn cases() -> Vec<AnnotationCase> {
             "warning-internal-equals",
             request(
                 AnnotationSeverity::Warning,
-                Some("a==b\u{200b}"),
+                Some("a==b"),
                 None,
                 None,
                 None,
@@ -152,15 +152,15 @@ fn cases() -> Vec<AnnotationCase> {
                 None,
             ),
             "warning",
-            "\u{200b}message",
-            properties(&[("title", "a==b\u{200b}")]),
-            properties(&[("title", "a==b\u{200b}")]),
+            "a\u{200b}message",
+            properties(&[("title", "a==b")]),
+            properties(&[("title", "a==b")]),
         ),
         (
             "notice-soft-hyphen",
             request(
                 AnnotationSeverity::Notice,
-                Some("title\u{00ad}"),
+                Some("title-soft-hyphen"),
                 None,
                 None,
                 None,
@@ -168,15 +168,15 @@ fn cases() -> Vec<AnnotationCase> {
                 None,
             ),
             "notice",
-            "\u{00ad}message",
-            properties(&[("title", "title\u{00ad}")]),
-            properties(&[("title", "title\u{00ad}")]),
+            "a\u{00ad}message",
+            properties(&[("title", "title-soft-hyphen")]),
+            properties(&[("title", "title-soft-hyphen")]),
         ),
         (
             "error-byte-order-mark",
             request(
                 AnnotationSeverity::Error,
-                Some("title\u{feff}"),
+                Some("title-bom"),
                 None,
                 None,
                 None,
@@ -184,9 +184,9 @@ fn cases() -> Vec<AnnotationCase> {
                 None,
             ),
             "error",
-            "\u{feff}message",
-            properties(&[("title", "title\u{feff}")]),
-            properties(&[("title", "title\u{feff}")]),
+            "a\u{feff}message",
+            properties(&[("title", "title-bom")]),
+            properties(&[("title", "title-bom")]),
         ),
     ];
 
@@ -209,6 +209,45 @@ fn cases() -> Vec<AnnotationCase> {
             },
         )
         .collect();
+
+    for (id, prefix) in [
+        ("zwj", "\u{200d}"),
+        ("zwnj", "\u{200c}"),
+        ("transparent-chain", "\u{200c}\u{200d}\u{e0020}\u{e007f}"),
+        (
+            "transparent-control-before-combining",
+            "\u{200d}\u{200b}\u{0301}",
+        ),
+        ("tag-space", "\u{e0020}"),
+        ("cancel-tag", "\u{e007f}"),
+        ("space-before-combining", " \u{0301}"),
+        ("format-before-combining", "\u{200b}\u{0301}"),
+        ("bom-before-combining", "\u{feff}\u{0301}"),
+    ] {
+        let message = format!("a{prefix}message ##[warning]literal");
+        cases.push(AnnotationCase {
+            id: id.to_owned(),
+            command: encode(
+                &shoutx::github_actions::encode_annotation(
+                    request(
+                        AnnotationSeverity::Warning,
+                        None,
+                        None,
+                        None,
+                        None,
+                        None,
+                        None,
+                    ),
+                    message.as_bytes().to_vec(),
+                )
+                .unwrap(),
+            ),
+            severity: "warning",
+            message: encode(message.as_bytes()),
+            properties: properties(&[]),
+            windows_properties: properties(&[]),
+        });
+    }
 
     let severities = [
         (AnnotationSeverity::Notice, "notice"),
@@ -233,8 +272,8 @@ fn cases() -> Vec<AnnotationCase> {
             message_fragments[index % message_fragments.len()],
             message_fragments[(index * 5 + 1) % message_fragments.len()]
         );
-        let title = format!("title-{index},colon::percent%25-日本語=end");
-        let file = format!("src/generated-{index},colon:percent%25-日本語.rs");
+        let title = format!("title-{index},colon::percent%25-ASCII=end");
+        let file = format!("src/generated-{index},colon:percent%25-ASCII.rs");
         let line = (index + 1).to_string();
         let column = (index % 17 + 1).to_string();
         let end_column = (index % 17 + 2).to_string();
@@ -268,6 +307,73 @@ fn cases() -> Vec<AnnotationCase> {
         });
     }
 
+    for first in (b' '..=b'~').chain(*b"\r\n") {
+        for title in [
+            format!("{}az", char::from(first)),
+            format!("az{}", char::from(first)),
+        ] {
+            if title.starts_with('=') || title.ends_with(' ') {
+                continue;
+            }
+            let message = "A\u{0301} ##[error]literal::tail";
+            let expected = properties(&[("title", &title)]);
+            cases.push(AnnotationCase {
+                id: format!("property-boundary-{first}-{}", encode(title.as_bytes())),
+                command: encode(
+                    &shoutx::github_actions::encode_annotation(
+                        request(
+                            AnnotationSeverity::Warning,
+                            Some(&title),
+                            None,
+                            None,
+                            None,
+                            None,
+                            None,
+                        ),
+                        message.as_bytes().to_vec(),
+                    )
+                    .unwrap(),
+                ),
+                severity: "warning",
+                message: encode(message.as_bytes()),
+                properties: expected.clone(),
+                windows_properties: expected,
+            });
+        }
+        for (index, tail) in [
+            "\u{0301}",
+            "\u{200d}\u{0301}",
+            "\u{0e33}",
+            "\u{0eb3}",
+            "\u{1f3fb}",
+            "\u{e0020}\u{1f3fb}",
+            "日本語😀",
+            "\u{10ffff}",
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            for (severity, name) in severities {
+                let message = format!("{}{tail} ##[error]literal::tail", char::from(first));
+                let title = format!("a{}z", char::from(first));
+                let expected = properties(&[("title", &title)]);
+                cases.push(AnnotationCase {
+                    id: format!("ascii-boundary-{name}-{first}-{index}"),
+                    command: encode(
+                        &shoutx::github_actions::encode_annotation(
+                            request(severity, Some(&title), None, None, None, None, None),
+                            message.as_bytes().to_vec(),
+                        )
+                        .unwrap(),
+                    ),
+                    severity: name,
+                    message: encode(message.as_bytes()),
+                    properties: expected.clone(),
+                    windows_properties: expected,
+                });
+            }
+        }
+    }
     cases
 }
 

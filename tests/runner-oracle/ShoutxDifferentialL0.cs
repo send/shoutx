@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
@@ -23,12 +24,77 @@ using GitHub.Runner.Worker.Handlers;
 using Moq;
 using Sdk.RSWebApi.Contracts;
 using Xunit;
+using Xunit.Abstractions;
 using Pipelines = GitHub.DistributedTask.Pipelines;
 
 namespace GitHub.Runner.Common.Tests.Worker;
 
 public sealed class ShoutxDifferentialL0
 {
+    private readonly ITestOutputHelper? _output;
+    public ShoutxDifferentialL0(ITestOutputHelper output) => _output = output;
+    private ShoutxDifferentialL0() { }
+
+    [Fact]
+    [Trait("Level", "L0")]
+    [Trait("Category", "Worker")]
+    public void RecordGlobalizationEnvironment()
+    {
+        var mode = typeof(CultureInfo).Assembly.GetType("System.Globalization.GlobalizationMode");
+        object? Flag(string name) => mode?.GetProperty(name,
+            BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public)?.GetValue(null);
+        var invariant = Flag("Invariant");
+        var nls = Flag("UseNls");
+        var hybrid = Flag("Hybrid");
+        // Read the runtime flags; do not infer the backend from the OS label.
+        var backend = invariant is true ? "Invariant" : nls is true ? "NLS" :
+            hybrid is true ? "Hybrid" : invariant is false && nls is false ? "ICU" : "Unknown";
+        foreach (var culture in new[] { CultureInfo.InvariantCulture, new CultureInfo("en-US") })
+            _output!.WriteLine(JsonSerializer.Serialize(new {
+                runtime = RuntimeInformation.FrameworkDescription,
+                runtimeBuild = typeof(object).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion,
+                os = RuntimeInformation.OSDescription,
+                architecture = RuntimeInformation.ProcessArchitecture.ToString(),
+                backend, invariant, nls, hybrid, culture = culture.Name,
+                sortVersion = culture.CompareInfo.Version.FullVersion,
+                sortId = culture.CompareInfo.Version.SortId,
+                nativeBackendVersion = "not independently observed; sortVersion is collation data, not a library version"
+            }));
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("en-US")]
+    [Trait("Level", "L0")]
+    [Trait("Category", "Worker")]
+    public void AsciiBoundaryKeepsEveryNonNulUnicodeScalarInData(string culture)
+    {
+        WithCulture(culture, () =>
+        {
+            var registered = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "add-mask", "warning" };
+            foreach (var header in new[] { "::add-mask::", "::warning title=ascii-'%3A%2C%25%0D%0A,file=src/a-b'c.rs::" })
+            foreach (var first in new[] { 'A', ':', '%', ' ', '-', '\'', '#', '0' })
+            for (var scalar = 1; scalar <= 0x10ffff; scalar++)
+            {
+                if (scalar is >= 0xd800 and <= 0xdfff) continue;
+                var data = first + char.ConvertFromUtf32(scalar) + " ##[error]literal::tail";
+                var encoded = data.Replace("%", "%25").Replace("\r", "%0D").Replace("\n", "%0A");
+                var line = header + encoded;
+                Assert.Equal(header.Length - 2, line.IndexOf("::", 2));
+                Assert.True(ActionCommand.TryParseV2(line, registered, out var parsed));
+                Assert.Equal(header.StartsWith("::add-mask", StringComparison.Ordinal) ? "add-mask" : "warning", parsed.Command);
+                Assert.Equal(data, parsed.Data);
+                if (parsed.Command == "warning")
+                {
+                    Assert.Equal(2, parsed.Properties.Count);
+                    Assert.Equal("ascii-':,%\r\n", parsed.Properties["title"]);
+                    Assert.Equal("src/a-b'c.rs", parsed.Properties["file"]);
+                }
+                else Assert.Empty(parsed.Properties);
+            }
+        });
+    }
+
     [Fact]
     [Trait("Level", "L0")]
     [Trait("Category", "Worker")]
@@ -85,6 +151,50 @@ public sealed class ShoutxDifferentialL0
     }
 
     [Theory]
+    [InlineData("\u0301")]
+    [InlineData("\u0903")]
+    [InlineData("\u20DD")]
+    [InlineData("\uFF9E")]
+    [InlineData("\uFF9F")]
+    [InlineData("\u0E33")]
+    [InlineData("\u0EB3")]
+    [InlineData("\U0001F3FB")]
+    [InlineData("\U0001F3FC")]
+    [InlineData("\U0001F3FD")]
+    [InlineData("\U0001F3FE")]
+    [InlineData("\U0001F3FF")]
+    [InlineData("\u200D\u0301")]
+    [InlineData("\u200C\u0E33")]
+    [InlineData("\U000E0020\U0001F3FB")]
+    [InlineData("\u200C\u200D\U000E0020\U000E007F\u0301")]
+    [Trait("Level", "L0")]
+    [Trait("Category", "Worker")]
+    public void CombiningMaskPrefixCanSelectLegacyWarning(string prefix)
+    {
+        foreach (var culture in new[] { "", "en-US" })
+        {
+            WithCulture(culture, () =>
+            {
+                var value = prefix + "synthetic-value ##[warning]fallback";
+                var (host, manager, context) = CreateActionCommandContext();
+                using (host)
+                {
+                    var issues = new List<Issue>();
+                    context.Setup(item => item.AddIssue(It.IsAny<Issue>(), It.IsAny<ExecutionContextLogOptions>()))
+                        .Callback<Issue, ExecutionContextLogOptions>((issue, _) => issues.Add(issue));
+                    using var outputManager = new OutputManager(context.Object, manager);
+                    outputManager.OnDataReceived(null, new ProcessDataReceivedEventArgs("::add-mask::" + value));
+                    var issue = Assert.Single(issues);
+                    Assert.Equal(IssueType.Warning, issue.Type);
+                    Assert.Equal("fallback", issue.Message);
+                    Assert.Equal(value, host.SecretMasker.MaskSecrets(value));
+                    context.Verify(item => item.Write(null, It.IsAny<string>()), Times.Never);
+                }
+            });
+        }
+    }
+
+    [Theory]
     [InlineData("")]
     [InlineData("th-TH")]
     [InlineData("tr-TR")]
@@ -124,6 +234,12 @@ public sealed class ShoutxDifferentialL0
     [Trait("Category", "Worker")]
     public void AnnotationCommandsMatchRunnerParserAndExtensions()
     {
+        foreach (var culture in new[] { "", "en-US" })
+            WithCulture(culture, AnnotationCorpusMatchesRunner);
+    }
+
+    private void AnnotationCorpusMatchesRunner()
+    {
         var corpusPath = Environment.GetEnvironmentVariable("SHOUTX_ANNOTATION_CORPUS");
         Assert.False(string.IsNullOrEmpty(corpusPath));
         var corpus = JsonSerializer.Deserialize<List<AnnotationCase>>(
@@ -145,7 +261,12 @@ public sealed class ShoutxDifferentialL0
                 Assert.Equal((byte)'\n', bytes[^1]);
                 var line = Encoding.UTF8.GetString(bytes, 0, bytes.Length - 1);
 
-                Assert.True(manager.TryProcessCommand(context.Object, line, null!));
+                var separator = line.IndexOf("::", 2, StringComparison.Ordinal);
+                Assert.Equal(separator, line.IndexOf("::", 2));
+                Assert.All(line.AsSpan(0, separator + 3).ToArray(), character => Assert.InRange(character, ' ', '~'));
+                using var outputManager = new OutputManager(context.Object, manager);
+                outputManager.OnDataReceived(null, new ProcessDataReceivedEventArgs(line));
+                context.Verify(value => value.Write(null, It.IsAny<string>()), Times.Never);
                 var issue = Assert.Single(actual);
                 Assert.Equal(item.Severity, issue.Type.ToString(), ignoreCase: true);
                 Assert.Equal(Decode(item.Message), issue.Message);
@@ -455,6 +576,12 @@ public sealed class ShoutxDifferentialL0
     [Trait("Category", "Worker")]
     public void AddMaskCommandsMatchRunnerParserAndMasker()
     {
+        foreach (var culture in new[] { "", "en-US" })
+            WithCulture(culture, MaskCorpusMatchesRunner);
+    }
+
+    private void MaskCorpusMatchesRunner()
+    {
         var corpusPath = Environment.GetEnvironmentVariable("SHOUTX_MASK_CORPUS");
         Assert.False(string.IsNullOrEmpty(corpusPath));
         var corpus = JsonSerializer.Deserialize<List<MaskCase>>(
@@ -471,7 +598,18 @@ public sealed class ShoutxDifferentialL0
                 Assert.Equal((byte)'\n', bytes[^1]);
                 var line = Encoding.UTF8.GetString(bytes, 0, bytes.Length - 1);
 
-                Assert.True(manager.TryProcessCommand(context.Object, line, null!));
+                Assert.Equal(10, line.IndexOf("::", 2));
+                Assert.InRange(line[12], ' ', '~');
+                Assert.True(ActionCommand.TryParseV2(line,
+                    new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "add-mask" }, out var parsed));
+                Assert.Equal("add-mask", parsed.Command);
+                Assert.Empty(parsed.Properties);
+                Assert.Equal(Decode(item.Value), parsed.Data);
+                using var outputManager = new OutputManager(context.Object, manager);
+                outputManager.OnDataReceived(null, new ProcessDataReceivedEventArgs(line));
+                context.Verify(value => value.Write(null, It.IsAny<string>()), Times.Never);
+                context.Verify(value => value.AddIssue(It.IsAny<Issue>(),
+                    It.IsAny<ExecutionContextLogOptions>()), Times.Never);
                 Assert.Equal("***", host.SecretMasker.MaskSecrets(Decode(item.Value)));
                 foreach (var masked in item.Masked)
                 {

@@ -145,7 +145,7 @@ fn message_framing_encoding_and_utf16_limit_are_exact() {
         run(&["github-actions:notice", &bmp], None).status.code(),
         Some(0)
     );
-    let supplementary = "😀".repeat(2_048);
+    let supplementary = format!("aa{}", "😀".repeat(2_047));
     assert_eq!(
         run(&["github-actions:notice", &supplementary], None)
             .status
@@ -153,6 +153,14 @@ fn message_framing_encoding_and_utf16_limit_are_exact() {
         Some(0)
     );
     failure(&["github-actions:notice", &(bmp + "a")], None, 1);
+    let unicode_bmp = format!("a{}", "日".repeat(4_095));
+    assert_eq!(
+        run(&["github-actions:notice", &unicode_bmp], None)
+            .status
+            .code(),
+        Some(0)
+    );
+    failure(&["github-actions:notice", &(unicode_bmp + "日")], None, 1);
     failure(&["github-actions:notice", &(supplementary + "😀")], None, 1);
     failure(
         &["github-actions:notice", &format!("{}😀", "a".repeat(4_095))],
@@ -200,11 +208,7 @@ fn empty_whitespace_nul_and_invalid_text_fail_before_stdout() {
     ] {
         failure(&["github-actions:error", value], None, 1);
     }
-    success(
-        &["github-actions:error", "\u{feff}"],
-        None,
-        "::error::\u{feff}\n".as_bytes(),
-    );
+    failure(&["github-actions:error", "\u{feff}"], None, 1);
     failure(&["github-actions:error"], Some(b"private\0message"), 1);
     failure(&["github-actions:error"], Some(b"private\xffmessage"), 1);
     for value in [
@@ -218,6 +222,180 @@ fn empty_whitespace_nul_and_invalid_text_fail_before_stdout() {
     ] {
         failure(&["github-actions:error", value], None, 1);
         failure(&["github-actions:error"], Some(value.as_bytes()), 1);
+    }
+}
+
+#[test]
+fn all_severities_reject_legacy_fallback_payloads_without_output() {
+    for command in [
+        "github-actions:notice",
+        "github-actions:warning",
+        "github-actions:error",
+    ] {
+        for prefix in [
+            '\u{0301}',
+            '\u{034f}',
+            '\u{0903}',
+            '\u{20dd}',
+            '\u{02b0}',
+            '\u{ff9e}',
+            '\u{ff9f}',
+            '\u{e0100}',
+            '\u{0e33}',
+            '\u{0eb3}',
+            '\u{1f3fb}',
+            '\u{1f3fc}',
+            '\u{1f3fd}',
+            '\u{1f3fe}',
+            '\u{1f3ff}',
+            '\u{1d165}',
+            '\u{16fe0}',
+        ] {
+            let value = format!("{prefix}private ##[warning]fallback");
+            for output in [
+                failure(&[command, &value], None, 1),
+                failure(&[command], Some(value.as_bytes()), 1),
+            ] {
+                assert_eq!(
+                    output.stderr,
+                    b"error: annotation message is outside the ASCII boundary policy\n"
+                );
+            }
+        }
+    }
+}
+
+#[test]
+fn transparent_leaders_cannot_hide_a_sensitive_message_prefix() {
+    for command in [
+        "github-actions:notice",
+        "github-actions:warning",
+        "github-actions:error",
+    ] {
+        for prefix in [
+            "\u{200d}\u{0301}",
+            "\u{200c}\u{0e33}",
+            "\u{e0020}\u{1f3fb}",
+            "\u{200c}\u{200d}\u{e0020}\u{e007f}\u{0301}",
+        ] {
+            let value = format!("{prefix}private ##[warning]fallback");
+            for output in [
+                failure(&[command, &value], None, 1),
+                failure(&[command], Some(value.as_bytes()), 1),
+            ] {
+                assert_eq!(
+                    output.stderr,
+                    b"error: annotation message is outside the ASCII boundary policy\n"
+                );
+            }
+        }
+    }
+}
+
+#[test]
+fn ascii_boundary_and_whole_header_allowlists_are_exact() {
+    for severity in ["notice", "warning", "error"] {
+        let command = format!("github-actions:{severity}");
+        for first in 1u8..=127 {
+            let value = format!(
+                "{}\u{0301}日本語😀 ##[error]literal::tail",
+                char::from(first)
+            );
+            if (32..=126).contains(&first) || first == 10 || first == 13 {
+                let encoded = value
+                    .replace('%', "%25")
+                    .replace('\r', "%0D")
+                    .replace('\n', "%0A");
+                let expected = format!("::{severity}::{encoded}\n");
+                success(&[&command, "--", &value], None, expected.as_bytes());
+                success(&[&command], Some(value.as_bytes()), expected.as_bytes());
+            } else {
+                for output in [
+                    failure(&[&command, &value], None, 1),
+                    failure(&[&command], Some(value.as_bytes()), 1),
+                ] {
+                    assert_eq!(
+                        output.stderr,
+                        b"error: annotation message is outside the ASCII boundary policy\n"
+                    );
+                }
+            }
+        }
+        for value in [
+            "日本語",
+            "😀",
+            "é",
+            "\u{200b}",
+            "\u{00ad}",
+            "\u{feff}",
+            "\u{200d}",
+            "\u{e007f}",
+            "\u{10ffff}",
+        ] {
+            for output in [
+                failure(&[&command, value], None, 1),
+                failure(&[&command], Some(value.as_bytes()), 1),
+            ] {
+                assert_eq!(
+                    output.stderr,
+                    b"error: annotation message is outside the ASCII boundary policy\n"
+                );
+            }
+        }
+    }
+    for field in ["title", "file"] {
+        let option = format!("--{field}");
+        for scalar in (1u8..=127).map(char::from).chain([
+            '日',
+            '😀',
+            '\u{200d}',
+            '\u{0600}',
+            '\u{10ffff}',
+            '\u{0085}',
+            '\u{00a0}',
+            '\u{3000}',
+            '\u{200b}',
+            '\u{00ad}',
+            '\u{feff}',
+        ]) {
+            // Exercise internal bytes as well as a bad last byte. A final ASCII
+            // byte must not hide a disallowed scalar earlier in the header.
+            let value = format!("a{scalar}z");
+            if scalar.is_ascii() && ((' '..='~').contains(&scalar) || matches!(scalar, '\r' | '\n'))
+            {
+                for value in [value, format!("{scalar}az"), format!("az{scalar}")] {
+                    if value.starts_with('=') || value.ends_with(' ') {
+                        continue; // Separate existing property validation tests cover these.
+                    }
+                    let encoded = value
+                        .replace('%', "%25")
+                        .replace('\r', "%0D")
+                        .replace('\n', "%0A")
+                        .replace(':', "%3A")
+                        .replace(',', "%2C");
+                    let expected = format!("::warning {field}={encoded}::message\n");
+                    success(
+                        &["github-actions:warning", &option, &value, "message"],
+                        None,
+                        expected.as_bytes(),
+                    );
+                }
+            } else {
+                for value in [format!("{scalar}az"), value, format!("az{scalar}")] {
+                    let output = failure(
+                        &["github-actions:warning", &option, &value, "message"],
+                        None,
+                        1,
+                    );
+                    let expected = if value.ends_with(char::is_whitespace) {
+                        "error: annotation property ends with whitespace\n"
+                    } else {
+                        "error: annotation property is outside the ASCII header policy\n"
+                    };
+                    assert_eq!(output.stderr, expected.as_bytes());
+                }
+            }
+        }
     }
 }
 
@@ -237,11 +415,19 @@ fn text_properties_are_encoded_in_fixed_order() {
     );
     for option in ["--title", "--file"] {
         for value in ["", "=", "=x", "==x", "space ", "tab\t", "nbsp\u{00a0}"] {
-            failure(
+            let output = failure(
                 &["github-actions:notice", option, value, "message"],
                 None,
                 1,
             );
+            let expected = if value.is_empty() {
+                "error: annotation property is empty\n"
+            } else if value.starts_with('=') {
+                "error: annotation property begins with equals\n"
+            } else {
+                "error: annotation property ends with whitespace\n"
+            };
+            assert_eq!(output.stderr, expected.as_bytes());
         }
         for suffix in [
             '\u{0600}',

@@ -21,6 +21,11 @@ pub fn encode(mut value: Vec<u8>) -> Result<Vec<u8>, ShoutxError> {
             "mask value is empty or whitespace only",
         ));
     }
+    if !super::stdout_guard::has_allowed_data_prefix(&value) {
+        return Err(ShoutxError::failure(
+            "mask value is outside the ASCII boundary policy",
+        ));
+    }
 
     let escaped_len = value.iter().try_fold(0usize, |length, byte| {
         length.checked_add(if matches!(byte, b'%' | b'\r' | b'\n') {

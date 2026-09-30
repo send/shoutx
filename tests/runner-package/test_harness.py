@@ -104,7 +104,9 @@ class HarnessTests(unittest.TestCase):
         original = {"PATH": "/bin", "DOTNET_ROOT": "/sdk", "LANG": "en_US.UTF-8",
                     "DOTNET_STARTUP_HOOKS": "private", "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT": "1",
                     "COMPlus_ReadyToRun": "0", "CORECLR_ENABLE_PROFILING": "1", "DYLD_INSERT_LIBRARIES": "private",
-                    "ICU_DATA": "/private/data"}
+                    "ICU_DATA": "/private/data", "RUNNER_TEST_GET_REPOSITORY_PATH_FAILSAFE": "1",
+                    "GITHUB_ACTIONS_RUNNER_ISSUE_MATCHER_TIMEOUT": "1",
+                    "ACTIONS_ALLOW_UNSECURE_STOPCOMMAND_TOKENS": "true"}
         env, removed = harness.probe_environment(original)
         self.assertEqual(env, {"PATH": "/bin", "DOTNET_ROOT": "/sdk", "LANG": "en_US.UTF-8"})
         self.assertEqual(set(removed), set(original) - set(env))
@@ -116,7 +118,10 @@ class HarnessTests(unittest.TestCase):
             for kind in ("mask", "annotation"):
                 (evidence / f"{kind}-corpus.json").write_text("[{}]")
             report = {"cultures": [{"culture": name, "scalarChecks": 17793008,
-                                    "maskCases": 1, "annotationCases": 1} for name in ("", "en-US")]}
+                                    "maskCases": 1, "annotationCases": 1,
+                                    "workerEffects": {"maskCases": 1, "annotationCases": 1,
+                                                      "stoppedCases": 4, "echoAndMaskedAnnotationCases": 1}}
+                                  for name in ("", "en-US")]}
             harness.verify_coverage(report, evidence)
             for field, value in (("scalarChecks", 0), ("maskCases", 0), ("culture", "th-TH")):
                 bad = json.loads(json.dumps(report))
@@ -125,22 +130,52 @@ class HarnessTests(unittest.TestCase):
                     harness.verify_coverage(bad, evidence)
             with self.assertRaises(ValueError):
                 harness.verify_coverage({"cultures": []}, evidence)
+            for field in ("maskCases", "annotationCases", "stoppedCases", "echoAndMaskedAnnotationCases"):
+                bad = json.loads(json.dumps(report))
+                bad["cultures"][0]["workerEffects"][field] = 0
+                with self.assertRaises(ValueError):
+                    harness.verify_coverage(bad, evidence)
+            bad = json.loads(json.dumps(report))
+            del bad["cultures"][0]["workerEffects"]
+            with self.assertRaises(ValueError):
+                harness.verify_coverage(bad, evidence)
 
     def test_managed_identity_is_fail_closed(self):
         pins = {"runtimeVersion": "8", "runtimeCommit": "runtime", "runnerVersion": "2", "runnerCommit": "runner"}
         core = {"file": "core.dll", "sha256": "a", "inPackage": True, "informationalVersion": "8+runtime"}
         parser = {"file": "parser.dll", "sha256": "b", "inPackage": True, "informationalVersion": "2+runner"}
-        report = {"coreLibrary": core, "parserAssembly": parser, "loadedManagedAssemblies": [core, parser]}
-        files = {"core.dll": "a", "parser.dll": "b"}
+        worker = {"file": "worker.dll", "sha256": "c", "inPackage": True, "informationalVersion": "2+runner"}
+        masker = {"file": "Sdk.dll", "sha256": "d", "inPackage": True}
+        report = {"status": "passed", "coreLibrary": core, "parserAssembly": parser, "workerAssembly": worker, "maskerAssembly": masker,
+                  "loadedManagedAssemblies": [core, parser, worker, masker],
+                  "dynamicAssemblyNames": ["ProxyBuilder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null"]}
+        files = {"core.dll": "a", "parser.dll": "b", "worker.dll": "c", "Sdk.dll": "d"}
         harness.verify_managed(report, files, pins)
+        harness.verify_managed({**report, "status": "failed", "dynamicAssemblyNames": []}, files, pins)
+        for status, names in (("passed", []), ("failed", ["foreign"]), ("failed", None)):
+            with self.assertRaises(ValueError):
+                harness.verify_managed({**report, "status": status, "dynamicAssemblyNames": names}, files, pins)
         for field, value in (("file", "foreign.dll"), ("sha256", "wrong"), ("inPackage", False), ("informationalVersion", "9+other")):
             bad = json.loads(json.dumps(report))
             bad["coreLibrary"][field] = value
             with self.assertRaises(ValueError):
                 harness.verify_managed(bad, files, pins)
-        for key in ("loadedManagedAssemblies", "coreLibrary", "parserAssembly"):
+        for key in ("parserAssembly", "workerAssembly"):
+            bad = json.loads(json.dumps(report))
+            bad[key]["informationalVersion"] = "other"
+            with self.assertRaises(ValueError):
+                harness.verify_managed(bad, files, pins)
+        bad = json.loads(json.dumps(report))
+        bad["loadedManagedAssemblies"][1]["sha256"] = "other"
+        with self.assertRaises(ValueError):
+            harness.verify_managed(bad, files, pins)
+        for key in ("loadedManagedAssemblies", "coreLibrary", "parserAssembly", "workerAssembly", "maskerAssembly", "dynamicAssemblyNames"):
             bad = dict(report)
             del bad[key]
+            with self.assertRaises(ValueError):
+                harness.verify_managed(bad, files, pins)
+        for key, value in (("dynamicAssemblyNames", ["foreign"]), ("maskerAssembly", {**masker, "sha256": "wrong"})):
+            bad = {**report, key: value}
             with self.assertRaises(ValueError):
                 harness.verify_managed(bad, files, pins)
 

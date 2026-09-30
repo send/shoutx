@@ -18,9 +18,11 @@ from the network at test time.
 `Microsoft.NETCore.App` 8.0.30 framework. The probe uses that unmodified file
 and `Runner.Worker.deps.json` with `dotnet exec`. The SDK builds the small probe,
 not Runner or its runtime. The host trace must select CoreCLR from the package;
-loaded `System.Private.CoreLib` and `Runner.Common` must also come from its
+loaded `System.Private.CoreLib`, `Runner.Common` and `Runner.Worker` must also come from its
 directory and match the extracted-file digests. The end-of-test loaded managed
-assembly snapshot is checked the same way (except the separately hashed probe).
+assembly snapshot is checked the same way (except the separately hashed probe
+and runtime-generated service-double assemblies, whose names are checked
+against the observed DispatchProxy builder identity).
 Their informational versions
 must name the pinned runtime and Runner commits. All original extracted bin
 files are hashed again after the probe; adding `Probe.dll` is the only change.
@@ -56,8 +58,9 @@ settings, not an observation of the live worker's culture. For each culture it
 parses the generated Rust mask/annotation corpora with the packaged
 `ActionCommand.TryParseV2`, comparing the exact command, data, properties and
 separator position. It additionally tests every non-NUL scalar after eight
-ASCII starts for mask and an annotation header. The source-built oracle still
-owns OutputManager, command extension, masking, and path-translation checks.
+ASCII starts for mask and an annotation header. The package command-effects
+suite below complements this parser-only check. The source-built oracle still
+covers broader policy, container/path translation and feature-flag scenarios.
 
 Globalization-mode properties/fields and the instance ASCII fast-path flag are
 recorded when exposed. Missing metadata is null, not false. Where the ASCII
@@ -74,7 +77,7 @@ ICU version 0 and not permission to substitute the sort version.
 The source-precondition result requires no positive NLS/Hybrid flag, invariant
 mode false, the ASCII flag true and a nonzero ICU version. In the inspected
 source that ASCII flag is initialized on the ICU path, not the NLS path.
-Overall `passed` means the package-identity and finite parser checks passed;
+Overall `passed` means the package-identity, finite parser and command-effects checks passed;
 it deliberately does not require ICU preconditions. A future unknown/NLS run
 can pass those checks without confirming the ICU source argument.
 
@@ -108,6 +111,70 @@ hostfxr was 10.0.12; launcher version is not the tested runtime version.
 Windows exposed `UseNls=false`; Unix omitted that metadata. Missing flags
 remain null rather than being filled in from the OS label.
 
+## Package command-effects probe
+
+The follow-up to PR #55 runs the complete generated mask/annotation corpora
+through packaged `OutputManager.OnDataReceived`, `ActionCommandManager`, the
+four real command extensions and `ExecutionContext`. Each case has fresh job,
+step, command-manager and `SecretMasker` state. `ExecutionContext.Write`,
+`AddIssue` and step `Complete` are not mocked: assertions observe redacted log
+lines at both the console queue and paging-logger input, retained timeline
+issues and completion-time annotation conversion. Actual paging-file bytes,
+timestamps, rotation and upload are not simulated or claimed.
+Worker identity must match the pinned Runner build as well as its archive hash.
+
+Only host service discovery, settings and external log/server sinks are strict
+in-process service doubles. Unexpected calls fail instead of silently returning
+defaults or opening a network connection. The real packaged SecretMasker uses
+the encoder registrations copied from the pinned HostContext constructor;
+Pin updates must re-check this registration list against HostContext and the
+service-double line counter against PagingLogger; neither is an upstream API
+promise. HostContext startup itself is not executed. Dynamic dispatch-proxy assemblies
+are test infrastructure, not substituted Runner implementations. Problem
+matchers, containers, server upload and live job-worker startup are not tested
+by this suite. Hosted checks remain separate evidence of actual upload/UI
+behavior, not a consequence of local completion success.
+
+The corpus fixture deliberately sets `github.workspace` and
+`github.repository` to empty strings, matching the source oracle's corpus
+context. Its file metadata expectations do not claim realistic workspace
+relativization or production `repo` insertion (including Windows separator
+rewriting); separate source-oracle path scenarios own that coverage.
+The entry point is a decoded .NET string event: native stdout decoding and
+physical-line splitting in ProcessInvoker/StepHost remain hosted-test concerns.
+The parser phase validates wire framing before the effects phase removes LF.
+Whitespace-only input and overlong messages rejected by shoutx, issue caps,
+mask-expansion truncation and feature-disabled behavior remain broader
+source-oracle cases rather than reachable paths in these accepted corpora.
+
+For both Invariant Culture and `en-US`, the suite checks:
+
+- exact-value masking and a changed result for fixture-defined derived samples
+  (not a promise that every sample becomes only `***`), absence of raw command echo or
+  unexpected issues, and subsequent `ExecutionContext.Write` redaction;
+- each notification's severity, message, category, platform-specific metadata,
+  runner-added step/first-log numbers, single log entry with echo enabled, retained
+  annotation and unchanged successful step result;
+- four synthetic stop/wrong-token/resume sequences: stopped lines are ordinary
+  unredacted output and have no mask/issue effect, an incorrect token does not
+  resume processing, and the matching token restores each command;
+- masked `add-mask` echo and a masked annotation with completion-time default
+  end positions, title and file preserved.
+
+The local macOS ARM64 run on 2026-09-30 passed 793 mask and 2,632 annotation
+effect cases, four stop/resume cases and one echo/masked-annotation case per
+culture. Coverage is checked separately from the earlier scalar parser sweep.
+These are bounded command-effects observations, not a resolution of `th-TH`,
+new Unicode acceptance, or stdout release eligibility. The earlier four-OS
+table above predates this extension and is not evidence for these new checks.
+
+The [first command-effects matrix run](https://github.com/send/shoutx/actions/runs/36711931190)
+at head `7a046d8` / tested merge `82b8fea7ff04cfbbd17eb5a314e2bb4ebd95c1ce`
+passed these counts under both cultures on all four OS labels. Downloaded
+artifacts confirmed the pinned Worker build and package identities. Later
+review hardening adds the second log-sink comparison and stricter diagnostics;
+that earlier run does not claim to test those additions.
+
 ## Reproduction and retained evidence
 
 With Python 3.10+, the pinned .NET SDK and Cargo available:
@@ -125,14 +192,18 @@ Runtime instrumentation, additional-dependency and globalization override
 environment variables are removed for probe execution; their names, never
 values, are recorded. Ordinary host discovery and locale variables remain;
 the two tested cultures are explicitly selected inside the probe.
+The three ambient OutputManager/stop-token test-policy overrides are removed
+as well. `worker-trace.log` is a deliberately disabled trace sink, reopened for
+each culture; it is not behavioral evidence or a record of both cultures.
 
 Each `runner-package-evidence-OS-RID` CI artifact retains, for 30 days:
 
 - `evidence.json`: status, pins, package identity, worker configuration,
   selected CoreCLR digest, CI/image identity, harness/probe digests, tool
   versions, removed environment names and host-trace digest;
-- `probe.json`: runtime/parser identities, globalization observations,
-  explicit cultures and parser-test counts;
+- `probe.json`: runtime/parser/worker identities, globalization observations,
+  explicit cultures, parser-test and command-effects counts, and synthetic
+  service-double assembly names;
 - original extracted bin digests, inspected .NET source snapshots, synthetic
   corpora, build/execution logs and `corehost.log`;
 - source-built oracle TRX results, including its runtime observations.

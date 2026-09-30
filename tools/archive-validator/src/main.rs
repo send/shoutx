@@ -1,3 +1,4 @@
+use flate2::bufread::DeflateDecoder;
 use flate2::bufread::GzDecoder;
 use std::collections::BTreeSet;
 use std::env;
@@ -387,6 +388,10 @@ fn validate_zip_payloads(path: &Path, root: &str) -> Result<()> {
             continue;
         }
         check_path(entry.name_raw(), root, true)?;
+        let compression = entry.compression();
+        let data_start = entry.data_start();
+        let compressed_size = entry.compressed_size();
+        let expected_size = entry.size();
         let copied = std::io::copy(
             &mut entry.by_ref().take(MAX_EXPANDED_BYTES - total + 1),
             &mut std::io::sink(),
@@ -400,6 +405,35 @@ fn validate_zip_payloads(path: &Path, root: &str) -> Result<()> {
         if copied != entry.size() {
             return Err(invalid("expanded ZIP size disagrees with metadata"));
         }
+        drop(entry);
+        if compression == zip::CompressionMethod::Deflated {
+            validate_raw_deflate(path, data_start, compressed_size, expected_size)?;
+        }
+    }
+    Ok(())
+}
+
+fn validate_raw_deflate(
+    path: &Path,
+    data_start: u64,
+    compressed_size: u64,
+    expected_size: u64,
+) -> Result<()> {
+    let mut file = File::open(path)?;
+    file.seek(SeekFrom::Start(data_start))?;
+    let compressed_len = usize::try_from(compressed_size)?;
+    let mut compressed = vec![0_u8; compressed_len];
+    file.read_exact(&mut compressed)?;
+    let mut decoder = DeflateDecoder::new(Cursor::new(&compressed));
+    let expanded = std::io::copy(
+        &mut decoder.by_ref().take(MAX_EXPANDED_BYTES + 1),
+        &mut std::io::sink(),
+    )?;
+    if expanded != expected_size {
+        return Err(invalid("raw deflate size disagrees with ZIP metadata"));
+    }
+    if usize::try_from(decoder.into_inner().position())? != compressed.len() {
+        return Err(invalid("data after deflate end marker is not permitted"));
     }
     Ok(())
 }
@@ -485,7 +519,7 @@ fn main() {
 mod tests {
     use super::{validate_raw_tar, validate_tar, validate_zip};
     use flate2::Compression;
-    use flate2::write::GzEncoder;
+    use flate2::write::{DeflateEncoder, GzEncoder};
     use std::fs;
     use std::io::Write;
     use std::path::PathBuf;
@@ -563,10 +597,20 @@ mod tests {
     }
 
     fn raw_zip(local_name_override: Option<&[u8]>, encrypted: bool) -> Vec<u8> {
+        raw_zip_with_method(local_name_override, encrypted, false)
+    }
+
+    fn raw_zip_with_method(
+        local_name_override: Option<&[u8]>,
+        encrypted: bool,
+        deflated: bool,
+    ) -> Vec<u8> {
         struct Central {
             name: Vec<u8>,
             crc: u32,
             size: u32,
+            compressed_size: u32,
+            method: u16,
             offset: u32,
         }
         let mut bytes = Vec::new();
@@ -582,25 +626,35 @@ mod tests {
                 &name
             };
             let contents = leaf.as_bytes();
+            let compressed = if deflated {
+                let mut encoder = DeflateEncoder::new(Vec::new(), Compression::default());
+                encoder.write_all(contents).unwrap();
+                encoder.finish().unwrap()
+            } else {
+                contents.to_vec()
+            };
+            let method = if deflated { 8 } else { 0 };
             let crc = crc32fast::hash(contents);
             let offset = u32::try_from(bytes.len()).unwrap();
             bytes.extend_from_slice(b"PK\x03\x04");
             push_u16(&mut bytes, 20);
             push_u16(&mut bytes, u16::from(encrypted));
-            push_u16(&mut bytes, 0);
+            push_u16(&mut bytes, method);
             push_u16(&mut bytes, 0);
             push_u16(&mut bytes, 0);
             push_u32(&mut bytes, crc);
-            push_u32(&mut bytes, u32::try_from(contents.len()).unwrap());
+            push_u32(&mut bytes, u32::try_from(compressed.len()).unwrap());
             push_u32(&mut bytes, u32::try_from(contents.len()).unwrap());
             push_u16(&mut bytes, u16::try_from(local_name.len()).unwrap());
             push_u16(&mut bytes, 0);
             bytes.extend_from_slice(local_name);
-            bytes.extend_from_slice(contents);
+            bytes.extend_from_slice(&compressed);
             central.push(Central {
                 name,
                 crc,
                 size: u32::try_from(contents.len()).unwrap(),
+                compressed_size: u32::try_from(compressed.len()).unwrap(),
+                method,
                 offset,
             });
         }
@@ -610,11 +664,11 @@ mod tests {
             push_u16(&mut bytes, 0x0314);
             push_u16(&mut bytes, 20);
             push_u16(&mut bytes, u16::from(encrypted));
-            push_u16(&mut bytes, 0);
+            push_u16(&mut bytes, entry.method);
             push_u16(&mut bytes, 0);
             push_u16(&mut bytes, 0);
             push_u32(&mut bytes, entry.crc);
-            push_u32(&mut bytes, entry.size);
+            push_u32(&mut bytes, entry.compressed_size);
             push_u32(&mut bytes, entry.size);
             push_u16(&mut bytes, u16::try_from(entry.name.len()).unwrap());
             push_u16(&mut bytes, 0);
@@ -641,12 +695,16 @@ mod tests {
     fn accepts_independently_constructed_archives() {
         let tar = temporary("tar.gz");
         let zip = temporary("zip");
+        let deflated_zip = temporary("zip");
         fs::write(&tar, raw_tar(None)).unwrap();
         fs::write(&zip, raw_zip(None, false)).unwrap();
+        fs::write(&deflated_zip, raw_zip_with_method(None, false, true)).unwrap();
         assert!(validate_tar(&tar, ROOT).is_ok());
         assert!(validate_zip(&zip, ROOT).is_ok());
+        assert!(validate_zip(&deflated_zip, ROOT).is_ok());
         fs::remove_file(tar).unwrap();
         fs::remove_file(zip).unwrap();
+        fs::remove_file(deflated_zip).unwrap();
     }
 
     #[test]
@@ -789,6 +847,41 @@ mod tests {
         fs::write(&path, bytes).unwrap();
         let error = error_message(validate_zip(&path, ROOT));
         assert!(error.to_ascii_lowercase().contains("checksum"), "{error}");
+        fs::remove_file(path).unwrap();
+    }
+
+    #[test]
+    fn rejects_data_after_deflate_end_marker() {
+        let path = temporary("zip");
+        let mut bytes = raw_zip_with_method(None, false, true);
+        let first_name_len = usize::from(super::u16_at(&bytes, 26).unwrap());
+        let first_compressed = super::u32_at(&bytes, 18).unwrap();
+        let insertion = 30 + first_name_len + usize::try_from(first_compressed).unwrap();
+        bytes.insert(insertion, 0);
+        bytes[18..22].copy_from_slice(&(first_compressed + 1).to_le_bytes());
+
+        let eocd = bytes.len() - 22;
+        let old_central = super::u32_at(&bytes[eocd..], 16).unwrap();
+        let new_central = old_central + 1;
+        bytes[eocd + 16..eocd + 20].copy_from_slice(&new_central.to_le_bytes());
+        let mut central = usize::try_from(new_central).unwrap();
+        for index in 0..3 {
+            if index == 0 {
+                let size = super::u32_at(&bytes[central..], 20).unwrap();
+                bytes[central + 20..central + 24].copy_from_slice(&(size + 1).to_le_bytes());
+            } else {
+                let offset = super::u32_at(&bytes[central..], 42).unwrap();
+                bytes[central + 42..central + 46].copy_from_slice(&(offset + 1).to_le_bytes());
+            }
+            let name_len = usize::from(super::u16_at(&bytes[central..], 28).unwrap());
+            central += 46 + name_len;
+        }
+
+        fs::write(&path, bytes).unwrap();
+        assert_eq!(
+            error_message(validate_zip(&path, ROOT)),
+            "data after deflate end marker is not permitted"
+        );
         fs::remove_file(path).unwrap();
     }
 

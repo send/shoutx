@@ -82,7 +82,7 @@ jobs:
         with:
           command: check
           manifest-path: tools/archive-validator/Cargo.toml
-          arguments: --config ${{ github.workspace }}/deny.toml --locked
+          arguments: --config deny.toml --locked
           command-arguments: advisories bans licenses sources
 
   metadata:

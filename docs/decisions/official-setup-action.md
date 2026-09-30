@@ -45,8 +45,8 @@ CLI source change and release checkout.
 
 ### Create a separate JavaScript action
 
-Accepted. The intended repository is `send/setup-shoutx`; its availability
-must be confirmed before implementation begins. The separate repository owns
+Accepted. The action is published in
+[`send/setup-shoutx`](https://github.com/send/setup-shoutx). The separate repository owns
 the action interface, implementation, and release lifecycle, while this
 repository continues to own the CLI release artifacts it consumes.
 
@@ -56,8 +56,10 @@ Create an official JavaScript action in a separate repository. Use the Node 24
 action runtime supplied by a compatible GitHub Actions runner. Do not invoke
 the caller's default shell or system `tar`, `unzip`, or PowerShell.
 
-The example shape is illustrative until the action repository defines its
-public `action.yml`:
+The action repository defines its public
+[`action.yml`](https://github.com/send/setup-shoutx/blob/eb61a2361c6c0e0d37ab9cca1c50e998b4a94c24/action.yml).
+See the [installation example](../../README.md#installation) for concrete pins;
+the interface shape is:
 
 ```yaml
 - uses: send/setup-shoutx@ACTION_REF
@@ -68,7 +70,7 @@ public `action.yml`:
 ```
 
 This record owns the cross-repository security constraints below. The action
-repository's `action.yml`, README, threat model, and tests will own its exact
+repository's `action.yml`, README, security documentation, and tests own its exact
 input names, outputs, diagnostics, limits, and exit behavior. If they diverge,
 the action repository must still satisfy this record or this record must be
 superseded first. It may implement a compatibility mapping for the subset it
@@ -245,6 +247,13 @@ full action commit SHA, an exact CLI version, and the expected `SHA256SUMS`
 digest.
 Retain at least one bootstrap path that builds or tests the checked-out CLI
 without the setup action so an installer failure cannot prevent repair.
+
+The initial adoption uses the action only in the release workflow's metadata
+job. Its pins are maintained in that workflow. The normal CI change detector
+retains the existing digest-pinned shell bootstrap, and the release-gates job
+builds and tests the checked-out CLI without depending on the metadata job or
+the setup action. Do not replace these independent repair paths as part of
+routine action-version updates.
 
 ## Verification requirements
 

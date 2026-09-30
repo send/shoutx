@@ -28,6 +28,24 @@ compatibility evidence, and release policy each have one authoritative home.
 
 ## Installation
 
+For GitHub Actions, use the official
+[`send/setup-shoutx`](https://github.com/send/setup-shoutx) action. This example
+pins the action commit, CLI version, and checksum manifest independently:
+
+```yaml
+- uses: send/setup-shoutx@eb61a2361c6c0e0d37ab9cca1c50e998b4a94c24 # v0.1.0
+  with:
+    shoutx-version: '0.3.0-rc.1'
+    checksums-sha256: b280ecb4122b02c0961638c0eb84bae6932af55193c3ea9ae2aa2b02ef8afa99
+    github-token: ${{ github.token }}
+- run: shoutx --version
+```
+
+Run setup before untrusted steps and grant the job only the permissions it
+needs (`contents: read` is sufficient for installation). The CLI version above
+is an explicitly selected prerelease. See the action repository for supported
+runners, inputs, and verification limits.
+
 Download the archive for your platform and `SHA256SUMS` from the
 [latest GitHub release](https://github.com/send/shoutx/releases/latest). Verify
 the archive before extracting it, then place `shoutx` (`shoutx.exe` on Windows)

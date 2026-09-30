@@ -33,6 +33,19 @@ transactional output.
 
 ## Build-configuration matrix
 
+### Complementary static analysis
+
+The [CodeQL workflow](../.github/workflows/codeql.yml) analyzes Rust and GitHub
+Actions with the security-extended query suite on pull requests, main updates,
+and a weekly schedule. It runs independently of the CI change detector so
+scheduled queries can inspect unchanged code. Rust uses CodeQL's supported
+`none` build mode, not a replacement stable/research Cargo build matrix.
+CodeQL supplements Clippy, dependency checks, and the contract tests; a clean
+scan does not prove output framing, empty-stdout failure behavior, or runner
+compatibility. Required CI and release gates remain unchanged.
+
+### Executable configurations
+
 The stable configuration uses `--no-default-features`; the Cargo default
 feature set must remain empty. Its complete command table is exactly `output`,
 `env`, `state`, and `path`. Stable help is byte-equal to the reviewed LF golden,

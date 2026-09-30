@@ -36,9 +36,11 @@ GitHub release binaries. Users may still build from the repository with Cargo.
 ## Version and tag contract
 
 Release versions follow SemVer as represented by Cargo, except that the initial
-release process prohibits build metadata. A release tag is `vVERSION`, where
-`VERSION` is exactly the `[package].version` from `Cargo.toml`; for example,
-package version `0.1.0` uses tag `v0.1.0`.
+release process prohibits build metadata. Revision 1 also limits `VERSION` to
+55 ASCII bytes so every member path fits the TAR name field without an
+extension record. A release tag is `vVERSION`, where `VERSION` is exactly the
+`[package].version` from `Cargo.toml`; for example, package version `0.1.0` uses
+tag `v0.1.0`.
 
 The release workflow validates all of the following before any public release
 is created:

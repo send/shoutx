@@ -130,6 +130,10 @@ jobs:
             echo "Unsupported release version"
             exit 1
           fi
+          if [[ ${#version} -gt 55 ]]; then
+            echo "Release version exceeds the revision-1 archive path limit"
+            exit 1
+          fi
           "$shoutx" github-actions:output version "$version" >> "$GITHUB_OUTPUT"
           "$shoutx" github-actions:output tag "v$version" >> "$GITHUB_OUTPUT"
           if [[ "$version" == *-* ]]; then

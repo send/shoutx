@@ -261,10 +261,11 @@ fn validate_zip(path: &Path, root: &str) -> Result<()> {
         if local_flags & 9 != 0 {
             return Err(invalid("encrypted or data-descriptor ZIP local entry"));
         }
-        if local_flags & !0x0800 != 0 {
+        let local_method = u16_at(&header, 8)?;
+        let allowed_flags = 0x0800 | if local_method == 8 { 0x0006 } else { 0 };
+        if local_flags & !allowed_flags != 0 {
             return Err(invalid("unsupported ZIP general-purpose flags"));
         }
-        let local_method = u16_at(&header, 8)?;
         let local_version_needed = u16_at(&header, 4)?;
         let local_modified_time = u16_at(&header, 10)?;
         let local_modified_date = u16_at(&header, 12)?;
@@ -353,7 +354,7 @@ fn validate_zip(path: &Path, root: &str) -> Result<()> {
             if !entry.is_dir() {
                 return Err(invalid("top-level ZIP entry is not a directory"));
             }
-            if entry.size() != 0 || entry.compressed_size() != 0 {
+            if entry.size() != 0 {
                 return Err(invalid("top-level ZIP directory has payload data"));
             }
         } else {
@@ -384,9 +385,6 @@ fn validate_zip_payloads(path: &Path, root: &str) -> Result<()> {
     let mut total = 0_u64;
     for index in 0..archive.len() {
         let mut entry = archive.by_index(index)?;
-        if entry.is_dir() {
-            continue;
-        }
         check_path(entry.name_raw(), root, true)?;
         let compression = entry.compression();
         let data_start = entry.data_start();
@@ -521,7 +519,7 @@ mod tests {
     use flate2::Compression;
     use flate2::write::{DeflateEncoder, GzEncoder};
     use std::fs;
-    use std::io::Write;
+    use std::io::{Cursor, Write};
     use std::path::PathBuf;
     use std::sync::atomic::{AtomicU64, Ordering};
 
@@ -691,20 +689,39 @@ mod tests {
         bytes
     }
 
+    fn zip_with_deflated_directory() -> Vec<u8> {
+        let cursor = Cursor::new(Vec::new());
+        let mut writer = zip::ZipWriter::new(cursor);
+        let options = zip::write::SimpleFileOptions::default()
+            .compression_method(zip::CompressionMethod::Deflated);
+        writer.start_file(format!("{ROOT}/"), options).unwrap();
+        for leaf in ["shoutx.exe", "README.md", "LICENSE"] {
+            writer
+                .start_file(format!("{ROOT}/{leaf}"), options)
+                .unwrap();
+            writer.write_all(leaf.as_bytes()).unwrap();
+        }
+        writer.finish().unwrap().into_inner()
+    }
+
     #[test]
     fn accepts_independently_constructed_archives() {
         let tar = temporary("tar.gz");
         let zip = temporary("zip");
         let deflated_zip = temporary("zip");
+        let directory_zip = temporary("zip");
         fs::write(&tar, raw_tar(None)).unwrap();
         fs::write(&zip, raw_zip(None, false)).unwrap();
         fs::write(&deflated_zip, raw_zip_with_method(None, false, true)).unwrap();
+        fs::write(&directory_zip, zip_with_deflated_directory()).unwrap();
         assert!(validate_tar(&tar, ROOT).is_ok());
         assert!(validate_zip(&zip, ROOT).is_ok());
         assert!(validate_zip(&deflated_zip, ROOT).is_ok());
+        assert!(validate_zip(&directory_zip, ROOT).is_ok());
         fs::remove_file(tar).unwrap();
         fs::remove_file(zip).unwrap();
         fs::remove_file(deflated_zip).unwrap();
+        fs::remove_file(directory_zip).unwrap();
     }
 
     #[test]
@@ -882,6 +899,19 @@ mod tests {
             error_message(validate_zip(&path, ROOT)),
             "data after deflate end marker is not permitted"
         );
+        fs::remove_file(path).unwrap();
+    }
+
+    #[test]
+    fn accepts_deflate_compressor_option_flags() {
+        let path = temporary("zip");
+        let mut bytes = raw_zip_with_method(None, false, true);
+        bytes[6..8].copy_from_slice(&2_u16.to_le_bytes());
+        let eocd = bytes.len() - 22;
+        let central = usize::try_from(super::u32_at(&bytes[eocd..], 16).unwrap()).unwrap();
+        bytes[central + 8..central + 10].copy_from_slice(&2_u16.to_le_bytes());
+        fs::write(&path, bytes).unwrap();
+        assert!(validate_zip(&path, ROOT).is_ok());
         fs::remove_file(path).unwrap();
     }
 

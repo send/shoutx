@@ -140,6 +140,11 @@ def verify_coverage(probe, evidence):
             count = len(json.loads((evidence / f"{kind}-corpus.json").read_text()))
             if count == 0 or culture.get(f"{kind}Cases") != count:
                 raise ValueError("incomplete corpus coverage")
+            if culture.get("workerEffects", {}).get(f"{kind}Cases") != count:
+                raise ValueError("incomplete worker corpus coverage")
+        effects = culture.get("workerEffects", {})
+        if effects.get("stoppedCases") != 4 or effects.get("echoAndMaskedAnnotationCases") != 1:
+            raise ValueError("incomplete worker state coverage")
 
 
 def verify_coreclr(trace, binary, rid):
@@ -152,10 +157,10 @@ def verify_coreclr(trace, binary, rid):
 
 def verify_managed(probe, files, pins):
     identities = probe.get("loadedManagedAssemblies")
-    core, parser = probe.get("coreLibrary"), probe.get("parserAssembly")
-    if not isinstance(identities, list) or not identities or not core or not parser:
+    core, parser, worker = probe.get("coreLibrary"), probe.get("parserAssembly"), probe.get("workerAssembly")
+    if not isinstance(identities, list) or not identities or not core or not parser or not worker:
         raise ValueError("incomplete loaded assembly evidence")
-    for identity in [core, parser, *identities]:
+    for identity in [core, parser, worker, *identities]:
         if (not isinstance(identity, dict) or identity.get("inPackage") is not True
                 or identity.get("file") not in files
                 or files[identity["file"]] != identity.get("sha256")):
@@ -164,6 +169,8 @@ def verify_managed(probe, files, pins):
         raise ValueError("runtime build differs from inspected source")
     if parser.get("informationalVersion") != f'{pins["runnerVersion"]}+{pins["runnerCommit"]}':
         raise ValueError("parser build differs from pinned Runner source")
+    if worker.get("informationalVersion") != f'{pins["runnerVersion"]}+{pins["runnerCommit"]}':
+        raise ValueError("worker build differs from pinned Runner source")
 
 
 def main():
@@ -177,7 +184,7 @@ def main():
     rid = {("Linux", "x86_64"): "linux-x64", ("Darwin", "arm64"): "osx-arm64",
            ("Windows", "AMD64"): "win-x64"}.get((platform.system(), platform.machine()))
     record = {"schemaVersion": 1, "status": "failed", "rid": rid, "pins": pins,
-              "scope": "published-package parser probe; not a live Worker process",
+              "scope": "published-package parser and command-effects probe; not a live Worker process",
               "githubRunId": os.environ.get("GITHUB_RUN_ID"),
               "githubSha": os.environ.get("GITHUB_SHA"),
               "imageOS": os.environ.get("ImageOS"), "imageVersion": os.environ.get("ImageVersion")}
@@ -186,7 +193,7 @@ def main():
             raise ValueError("unsupported package probe platform")
         record["pythonVersion"] = platform.python_version()
         record["sourceDigests"] = {name: digest(ROOT / name) for name in (
-            "scripts/test-runner-package.py", "tests/runner-package/Program.cs", "tests/runner-package/Probe.csproj")}
+            "scripts/test-runner-package.py", "tests/runner-package/Program.cs", "tests/runner-package/WorkerProbe.cs", "tests/runner-package/Probe.csproj")}
         record["rustcVersion"] = subprocess.check_output(["rustc", "--version"], cwd=ROOT, text=True).strip()
         with tempfile.TemporaryDirectory(prefix="shoutx-runner-package-") as temporary:
             work = Path(temporary).resolve()

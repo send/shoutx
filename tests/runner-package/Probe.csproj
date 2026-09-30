@@ -10,10 +10,14 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Program.cs" />
+    <Compile Include="WorkerProbe.cs" />
     <Reference Include="Runner.Common">
       <HintPath>$(RunnerBin)/Runner.Common.dll</HintPath>
       <Private>false</Private>
       <ExternallyResolved>true</ExternallyResolved>
     </Reference>
+    <Reference Include="Runner.Worker"><HintPath>$(RunnerBin)/Runner.Worker.dll</HintPath><Private>false</Private><ExternallyResolved>true</ExternallyResolved></Reference>
+    <Reference Include="Runner.Sdk"><HintPath>$(RunnerBin)/Runner.Sdk.dll</HintPath><Private>false</Private><ExternallyResolved>true</ExternallyResolved></Reference>
+    <Reference Include="Sdk"><HintPath>$(RunnerBin)/Sdk.dll</HintPath><Private>false</Private><ExternallyResolved>true</ExternallyResolved></Reference>
   </ItemGroup>
 </Project>

@@ -1,0 +1,252 @@
+using System.Diagnostics;
+using System.Reflection;
+using System.Text;
+using System.Text.Json;
+using GitHub.DistributedTask.WebApi;
+using GitHub.DistributedTask.Logging;
+using GitHub.Runner.Common;
+using GitHub.Runner.Sdk;
+using GitHub.Runner.Worker;
+using GitHub.Runner.Worker.Handlers;
+using Pipelines = GitHub.DistributedTask.Pipelines;
+using RunnerContext = GitHub.Runner.Worker.ExecutionContext;
+
+// Strict transport/service doubles only. No parser, command, masker, Write,
+// AddIssue or completion implementation is replaced or copied into this probe.
+public class ServiceDouble : DispatchProxy
+{
+    public Func<MethodInfo, object?[], object?> Handler = null!;
+    protected override object? Invoke(MethodInfo? method, object?[]? args) => Handler(method!, args!);
+    public static T Create<T>(Func<MethodInfo, object?[], object?> handler) where T : class
+    {
+        T value = Create<T, ServiceDouble>();
+        ((ServiceDouble)(object)value).Handler = handler;
+        return value;
+    }
+}
+
+static class WorkerProbe
+{
+    public static object? CurrentCase;
+    static int unexpectedCalls;
+    static void Require(bool value, string rule)
+    {
+        if (!value) throw new InvalidOperationException(rule);
+    }
+    static string Decode(JsonElement item) => Encoding.UTF8.GetString(Convert.FromBase64String(item.GetString()!));
+    static string Wire(JsonElement item) => Decode(item.GetProperty("command"))[..^1];
+    static object Unexpected(MethodInfo method)
+    {
+        unexpectedCalls++;
+        throw new InvalidOperationException("unexpected worker service call: " + method.Name);
+    }
+
+    sealed class Fixture : IDisposable
+    {
+        public readonly SecretMasker Masker = new();
+        public readonly List<string> Logs = new();
+        public readonly RunnerContext Root;
+        public readonly IExecutionContext Step;
+        public readonly OutputManager Output;
+        public TimelineRecord Record = null!;
+        bool completed;
+
+        public Fixture(Tracing trace)
+        {
+            // Same production HostContext encoder registrations at the pinned revision.
+            foreach (ValueEncoder encoder in new ValueEncoder[] {
+                ValueEncoders.Base64StringEscape, ValueEncoders.Base64StringEscapeShift1,
+                ValueEncoders.Base64StringEscapeShift2, ValueEncoders.CommandLineArgumentEscape,
+                ValueEncoders.ExpressionStringEscape, ValueEncoders.JsonStringEscape,
+                ValueEncoders.UriDataEscape, ValueEncoders.XmlDataEscape, ValueEncoders.TrimDoubleQuotes,
+                ValueEncoders.PowerShellPreAmpersandEscape, ValueEncoders.PowerShellPostAmpersandEscape })
+                Masker.AddValueEncoder(encoder);
+            var queue = ServiceDouble.Create<IJobServerQueue>((method, args) => {
+                switch (method.Name)
+                {
+                    case "QueueTimelineRecordUpdate":
+                        var record = (TimelineRecord)args[1]!;
+                        if (record.RecordType == "Task") Record = record;
+                        return null;
+                    case "QueueWebConsoleLine": Logs.Add((string)args[1]!); return null;
+                    case "add_JobServerQueueThrottling":
+                    case "remove_JobServerQueueThrottling": return null;
+                    default: return Unexpected(method);
+                }
+            });
+            var config = ServiceDouble.Create<IConfigurationStore>((method, _) =>
+                method.Name == "GetSettings" ? new RunnerSettings() : Unexpected(method));
+            var commands = new List<IActionCommandExtension> {
+                new AddMaskCommandExtension(), new NoticeCommandExtension(),
+                new WarningCommandExtension(), new ErrorCommandExtension() };
+            var extensions = ServiceDouble.Create<IExtensionManager>((method, _) =>
+                method.Name == "GetExtensions" && method.GetGenericArguments().Single() == typeof(IActionCommandExtension)
+                    ? commands : Unexpected(method));
+            var host = ServiceDouble.Create<IHostContext>((method, _) => {
+                if (method.Name == "GetTrace") return trace;
+                if (method.Name == "get_SecretMasker") return Masker;
+                if (method.Name == "GetService")
+                {
+                    var type = method.GetGenericArguments().Single();
+                    if (type == typeof(IJobServerQueue)) return queue;
+                    if (type == typeof(IConfigurationStore)) return config;
+                    if (type == typeof(IExtensionManager)) return extensions;
+                }
+                if (method.Name == "CreateService" && method.GetGenericArguments().Single() == typeof(IPagingLogger))
+                {
+                    long lines = 0;
+                    return ServiceDouble.Create<IPagingLogger>((call, _) => {
+                        switch (call.Name)
+                        {
+                            case "get_TotalLines": return lines;
+                            case "Write": lines++; return null;
+                            case "Setup": case "End": return null;
+                            default: return Unexpected(call);
+                        }
+                    });
+                }
+                return Unexpected(method);
+            });
+            foreach (var command in commands) command.Initialize(host);
+            Root = new RunnerContext();
+            Root.Initialize(host);
+            var variables = new Dictionary<string, VariableValue> {
+                ["DistributedTask.EnhancedAnnotations"] = new("true") };
+            var job = new Pipelines.AgentJobRequestMessage(
+                new TaskOrchestrationPlanReference(), new TimelineReference(), Guid.NewGuid(),
+                "probe", "probe", null, null, null, variables,
+                new List<MaskHint>(), new Pipelines.JobResources(),
+                new Pipelines.ContextData.DictionaryContextData(), new Pipelines.WorkspaceOptions(),
+                new List<Pipelines.ActionStep>(), null, null, null, null, null);
+            job.Resources.Repositories.Add(new Pipelines.RepositoryResource {
+                Alias = Pipelines.PipelineConstants.SelfAlias, Id = "github", Version = "synthetic" });
+            job.ContextData["github"] = new Pipelines.ContextData.DictionaryContextData {
+                ["workspace"] = new Pipelines.ContextData.StringContextData(""),
+                ["repository"] = new Pipelines.ContextData.StringContextData("") };
+            Root.InitializeJob(job, CancellationToken.None);
+            Step = Root.CreateChild(Guid.NewGuid(), "probe", "probe", null, null, ActionRunStage.Main);
+            var manager = new ActionCommandManager();
+            manager.Initialize(host);
+            Output = new OutputManager(Step, manager);
+        }
+
+        public void Send(string line)
+        {
+            Output.OnDataReceived(null, new ProcessDataReceivedEventArgs(line));
+            Require(Step.CommandResult is null, "worker extension failed");
+        }
+        public void Complete()
+        {
+            Require(!completed, "step completed twice");
+            Require(Step.Complete() == TaskResult.Succeeded, "annotation changed step result");
+            completed = true;
+        }
+        public void Dispose()
+        {
+            Output.Dispose();
+            if (!completed) Complete();
+            Root.Complete();
+            Masker.Dispose();
+        }
+    }
+
+    public static object Run(string maskPath, string annotationPath, string tracePath)
+    {
+        unexpectedCalls = 0;
+        using var traceMasker = new SecretMasker();
+        using var listener = new HostTraceListener(tracePath);
+        using var trace = new Tracing("package-worker-probe", traceMasker,
+            new SourceSwitch("package-worker-probe", "Off"), listener);
+        using var masks = JsonDocument.Parse(File.ReadAllBytes(maskPath));
+        using var annotations = JsonDocument.Parse(File.ReadAllBytes(annotationPath));
+        int maskCases = 0, annotationCases = 0;
+        foreach (var item in masks.RootElement.EnumerateArray())
+        {
+            CurrentCase = new { suite = "worker-mask", index = maskCases };
+            using var fixture = new Fixture(trace);
+            fixture.Send(Wire(item));
+            Require(fixture.Logs.Count == 0 && fixture.Record.Issues.Count == 0, "mask command leaked or created issue");
+            Require(fixture.Masker.MaskSecrets(Decode(item.GetProperty("value"))) == "***", "full value not masked");
+            foreach (var value in item.GetProperty("masked").EnumerateArray())
+                Require(fixture.Masker.MaskSecrets(Decode(value)) != Decode(value), "derived mask missing");
+            foreach (var value in item.GetProperty("unmasked").EnumerateArray())
+                Require(fixture.Masker.MaskSecrets(Decode(value)) == Decode(value), "unexpected derived mask");
+            fixture.Step.Write(null, Decode(item.GetProperty("value")));
+            Require(fixture.Logs.SequenceEqual(new[] { "***" }), "subsequent log not redacted");
+            maskCases++;
+        }
+        foreach (var item in annotations.RootElement.EnumerateArray())
+        {
+            CurrentCase = new { suite = "worker-annotation", index = annotationCases };
+            using var fixture = new Fixture(trace);
+            fixture.Step.EchoOnActionCommand = true;
+            fixture.Send(Wire(item));
+            Require(fixture.Record.Issues.Count == 1, "annotation issue count mismatch");
+            var issue = fixture.Record.Issues.Single();
+            string message = Decode(item.GetProperty("message"));
+            string severity = item.GetProperty("severity").GetString()!;
+            Require(string.Equals(issue.Type.ToString(), severity, StringComparison.OrdinalIgnoreCase), "annotation severity mismatch");
+            Require(issue.Message == message, "annotation message mismatch");
+            var properties = item.GetProperty(OperatingSystem.IsWindows() ? "windows_properties" : "properties");
+            Require(issue.Category == (properties.TryGetProperty("file", out _) ? "Code" : "General"), "annotation category mismatch");
+            Require(issue.Data.Count == properties.EnumerateObject().Count() + 2, "annotation property count mismatch");
+            foreach (var property in properties.EnumerateObject())
+                Require(issue.Data.TryGetValue(property.Name, out var value) && value == Decode(property.Value), "annotation property mismatch");
+            Require(issue.Data["stepNumber"] == "1" && issue.Data["logFileLineNumber"] == "1", "annotation provenance mismatch");
+            Require(fixture.Logs.SequenceEqual(new[] { $"##[{severity}]{message}" }), "annotation log or echo mismatch");
+            fixture.Complete();
+            var saved = fixture.Root.Global.StepsResult.Single().Annotations;
+            Require(saved.Count == 1 && saved[0].Message == message, "completion annotation mismatch");
+            annotationCases++;
+        }
+        int stoppedCases = 0;
+        foreach (string command in new[] { "add-mask", "notice", "warning", "error" })
+        {
+            CurrentCase = new { suite = "worker-stop-resume", command };
+            using var fixture = new Fixture(trace);
+            const string secret = "probe-secret-ASCII";
+            string wire = $"::{command}::{secret}";
+            fixture.Send("::stop-commands::package-probe-resume-token");
+            fixture.Logs.Clear();
+            fixture.Send(wire);
+            Require(fixture.Logs.SequenceEqual(new[] { wire }), "stopped command not logged literally");
+            Require(fixture.Record.Issues.Count == 0 && fixture.Masker.MaskSecrets(secret) == secret, "stopped command had side effect");
+            fixture.Send("::package-probe-wrong-token::");
+            fixture.Logs.Clear();
+            fixture.Send(wire);
+            Require(fixture.Logs.SequenceEqual(new[] { wire }) && fixture.Record.Issues.Count == 0 && fixture.Masker.MaskSecrets(secret) == secret,
+                "wrong token resumed commands");
+            fixture.Send("::package-probe-resume-token::");
+            fixture.Logs.Clear();
+            fixture.Send(wire);
+            if (command == "add-mask")
+            {
+                Require(fixture.Logs.Count == 0 && fixture.Record.Issues.Count == 0, "resumed mask leaked");
+                fixture.Step.Write(null, secret);
+                Require(fixture.Logs.SequenceEqual(new[] { "***" }), "resumed mask not applied");
+            }
+            else
+                Require(fixture.Record.Issues.Count == 1 && fixture.Record.Issues[0].Message == secret &&
+                    fixture.Logs.SequenceEqual(new[] { $"##[{command}]{secret}" }), "resumed annotation missing");
+            stoppedCases++;
+        }
+        CurrentCase = new { suite = "worker-echo-and-masked-annotation" };
+        using (var fixture = new Fixture(trace))
+        {
+            fixture.Step.EchoOnActionCommand = true;
+            fixture.Send("::add-mask::probe-sensitive");
+            Require(fixture.Logs.SequenceEqual(new[] { "::add-mask::***" }), "mask echo revealed value");
+            fixture.Logs.Clear();
+            fixture.Send("::warning title=title,file=src/a.rs,line=5,col=2::before probe-sensitive after");
+            Require(fixture.Logs.SequenceEqual(new[] { "##[warning]before *** after" }), "annotation redaction mismatch");
+            fixture.Complete();
+            var saved = fixture.Root.Global.StepsResult.Single().Annotations.Single();
+            Require(saved.Message == "before *** after" && saved.Path == "src/a.rs" && saved.Title == "title" &&
+                saved.StartLine == 5 && saved.EndLine == 5 && saved.StartColumn == 2 && saved.EndColumn == 2,
+                "masked completion annotation mismatch");
+        }
+        Require(maskCases > 0 && annotationCases > 0, "empty worker corpus");
+        Require(unexpectedCalls == 0, "worker swallowed an unexpected service call");
+        return new { maskCases, annotationCases, stoppedCases, echoAndMaskedAnnotationCases = 1 };
+    }
+}

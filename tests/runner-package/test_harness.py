@@ -116,7 +116,10 @@ class HarnessTests(unittest.TestCase):
             for kind in ("mask", "annotation"):
                 (evidence / f"{kind}-corpus.json").write_text("[{}]")
             report = {"cultures": [{"culture": name, "scalarChecks": 17793008,
-                                    "maskCases": 1, "annotationCases": 1} for name in ("", "en-US")]}
+                                    "maskCases": 1, "annotationCases": 1,
+                                    "workerEffects": {"maskCases": 1, "annotationCases": 1,
+                                                      "stoppedCases": 4, "echoAndMaskedAnnotationCases": 1}}
+                                  for name in ("", "en-US")]}
             harness.verify_coverage(report, evidence)
             for field, value in (("scalarChecks", 0), ("maskCases", 0), ("culture", "th-TH")):
                 bad = json.loads(json.dumps(report))
@@ -125,20 +128,39 @@ class HarnessTests(unittest.TestCase):
                     harness.verify_coverage(bad, evidence)
             with self.assertRaises(ValueError):
                 harness.verify_coverage({"cultures": []}, evidence)
+            for field in ("maskCases", "annotationCases", "stoppedCases", "echoAndMaskedAnnotationCases"):
+                bad = json.loads(json.dumps(report))
+                bad["cultures"][0]["workerEffects"][field] = 0
+                with self.assertRaises(ValueError):
+                    harness.verify_coverage(bad, evidence)
+            bad = json.loads(json.dumps(report))
+            del bad["cultures"][0]["workerEffects"]
+            with self.assertRaises(ValueError):
+                harness.verify_coverage(bad, evidence)
 
     def test_managed_identity_is_fail_closed(self):
         pins = {"runtimeVersion": "8", "runtimeCommit": "runtime", "runnerVersion": "2", "runnerCommit": "runner"}
         core = {"file": "core.dll", "sha256": "a", "inPackage": True, "informationalVersion": "8+runtime"}
         parser = {"file": "parser.dll", "sha256": "b", "inPackage": True, "informationalVersion": "2+runner"}
-        report = {"coreLibrary": core, "parserAssembly": parser, "loadedManagedAssemblies": [core, parser]}
-        files = {"core.dll": "a", "parser.dll": "b"}
+        worker = {"file": "worker.dll", "sha256": "c", "inPackage": True, "informationalVersion": "2+runner"}
+        report = {"coreLibrary": core, "parserAssembly": parser, "workerAssembly": worker, "loadedManagedAssemblies": [core, parser, worker]}
+        files = {"core.dll": "a", "parser.dll": "b", "worker.dll": "c"}
         harness.verify_managed(report, files, pins)
         for field, value in (("file", "foreign.dll"), ("sha256", "wrong"), ("inPackage", False), ("informationalVersion", "9+other")):
             bad = json.loads(json.dumps(report))
             bad["coreLibrary"][field] = value
             with self.assertRaises(ValueError):
                 harness.verify_managed(bad, files, pins)
-        for key in ("loadedManagedAssemblies", "coreLibrary", "parserAssembly"):
+        for key in ("parserAssembly", "workerAssembly"):
+            bad = json.loads(json.dumps(report))
+            bad[key]["informationalVersion"] = "other"
+            with self.assertRaises(ValueError):
+                harness.verify_managed(bad, files, pins)
+        bad = json.loads(json.dumps(report))
+        bad["loadedManagedAssemblies"][1]["sha256"] = "other"
+        with self.assertRaises(ValueError):
+            harness.verify_managed(bad, files, pins)
+        for key in ("loadedManagedAssemblies", "coreLibrary", "parserAssembly", "workerAssembly"):
             bad = dict(report)
             del bad[key]
             with self.assertRaises(ValueError):

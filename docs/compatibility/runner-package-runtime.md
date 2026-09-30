@@ -18,9 +18,10 @@ from the network at test time.
 `Microsoft.NETCore.App` 8.0.30 framework. The probe uses that unmodified file
 and `Runner.Worker.deps.json` with `dotnet exec`. The SDK builds the small probe,
 not Runner or its runtime. The host trace must select CoreCLR from the package;
-loaded `System.Private.CoreLib` and `Runner.Common` must also come from its
+loaded `System.Private.CoreLib`, `Runner.Common` and `Runner.Worker` must also come from its
 directory and match the extracted-file digests. The end-of-test loaded managed
-assembly snapshot is checked the same way (except the separately hashed probe).
+assembly snapshot is checked the same way (except the separately hashed probe
+and runtime-generated service-double assemblies, whose names are recorded).
 Their informational versions
 must name the pinned runtime and Runner commits. All original extracted bin
 files are hashed again after the probe; adding `Probe.dll` is the only change.
@@ -56,8 +57,9 @@ settings, not an observation of the live worker's culture. For each culture it
 parses the generated Rust mask/annotation corpora with the packaged
 `ActionCommand.TryParseV2`, comparing the exact command, data, properties and
 separator position. It additionally tests every non-NUL scalar after eight
-ASCII starts for mask and an annotation header. The source-built oracle still
-owns OutputManager, command extension, masking, and path-translation checks.
+ASCII starts for mask and an annotation header. The package command-effects
+suite below complements this parser-only check. The source-built oracle still
+covers broader policy, container/path translation and feature-flag scenarios.
 
 Globalization-mode properties/fields and the instance ASCII fast-path flag are
 recorded when exposed. Missing metadata is null, not false. Where the ASCII
@@ -74,7 +76,7 @@ ICU version 0 and not permission to substitute the sort version.
 The source-precondition result requires no positive NLS/Hybrid flag, invariant
 mode false, the ASCII flag true and a nonzero ICU version. In the inspected
 source that ASCII flag is initialized on the ICU path, not the NLS path.
-Overall `passed` means the package-identity and finite parser checks passed;
+Overall `passed` means the package-identity, finite parser and command-effects checks passed;
 it deliberately does not require ICU preconditions. A future unknown/NLS run
 can pass those checks without confirming the ICU source argument.
 
@@ -108,6 +110,46 @@ hostfxr was 10.0.12; launcher version is not the tested runtime version.
 Windows exposed `UseNls=false`; Unix omitted that metadata. Missing flags
 remain null rather than being filled in from the OS label.
 
+## Package command-effects probe
+
+The follow-up to PR #55 runs the complete generated mask/annotation corpora
+through packaged `OutputManager.OnDataReceived`, `ActionCommandManager`, the
+four real command extensions and `ExecutionContext`. Each case has fresh job,
+step, command-manager and `SecretMasker` state. `ExecutionContext.Write`,
+`AddIssue` and step `Complete` are not mocked: assertions observe redacted log
+lines, retained timeline issues and completion-time annotation conversion.
+Worker identity must match the pinned Runner build as well as its archive hash.
+
+Only host service discovery, settings and external log/server sinks are strict
+in-process service doubles. Unexpected calls fail instead of silently returning
+defaults or opening a network connection. The real packaged SecretMasker uses
+the encoder registrations copied from the pinned HostContext constructor;
+HostContext startup itself is not executed. Dynamic dispatch-proxy assemblies
+are test infrastructure, not substituted Runner implementations. Problem
+matchers, containers, server upload and live job-worker startup are not tested
+by this suite. Hosted checks remain separate evidence of actual upload/UI
+behavior, not a consequence of local completion success.
+
+For both Invariant Culture and `en-US`, the suite checks:
+
+- exact and fixture-defined derived masks, absence of raw command echo or
+  unexpected issues, and subsequent `ExecutionContext.Write` redaction;
+- each notification's severity, message, category, platform-specific metadata,
+  runner-added step/log numbers, single log entry with echo enabled, retained
+  annotation and unchanged successful step result;
+- four synthetic stop/wrong-token/resume sequences: stopped lines are ordinary
+  unredacted output and have no mask/issue effect, an incorrect token does not
+  resume processing, and the matching token restores each command;
+- masked `add-mask` echo and a masked annotation with completion-time default
+  end positions, title and file preserved.
+
+The local macOS ARM64 run on 2026-09-30 passed 793 mask and 2,632 annotation
+effect cases, four stop/resume cases and one echo/masked-annotation case per
+culture. Coverage is checked separately from the earlier scalar parser sweep.
+These are bounded command-effects observations, not a resolution of `th-TH`,
+new Unicode acceptance, or stdout release eligibility. The earlier four-OS
+table above predates this extension and is not evidence for these new checks.
+
 ## Reproduction and retained evidence
 
 With Python 3.10+, the pinned .NET SDK and Cargo available:
@@ -131,8 +173,9 @@ Each `runner-package-evidence-OS-RID` CI artifact retains, for 30 days:
 - `evidence.json`: status, pins, package identity, worker configuration,
   selected CoreCLR digest, CI/image identity, harness/probe digests, tool
   versions, removed environment names and host-trace digest;
-- `probe.json`: runtime/parser identities, globalization observations,
-  explicit cultures and parser-test counts;
+- `probe.json`: runtime/parser/worker identities, globalization observations,
+  explicit cultures, parser-test and command-effects counts, and synthetic
+  service-double assembly names;
 - original extracted bin digests, inspected .NET source snapshots, synthetic
   corpora, build/execution logs and `corehost.log`;
 - source-built oracle TRX results, including its runtime observations.

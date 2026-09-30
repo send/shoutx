@@ -315,8 +315,23 @@ evidence as well as successful results; absence of fresh evidence fails CI.
 
 This is a package-backed parser probe, not an unmodified hosted Worker process
 measurement or proof of every Unicode sequence, culture, backend, or runner
-version. Existing source-built integration tests still own command-manager and
-OutputManager behavior. Neither result changes stdout release eligibility.
+version. Under Invariant Culture and `en-US`, also drive the package's actual
+OutputManager, ActionCommandManager, command extensions, SecretMasker and
+ExecutionContext issue/log handling. Keep only host service discovery, log
+storage and server queues synthetic; unexpected service calls fail the probe.
+Do not rebuild or transcribe those production implementations.
+
+Use fresh execution state for every corpus case. Check complete and derived
+mask registration, subsequent redacted log output, annotation severity,
+message and platform-specific properties. Require stopped commands to be
+ordinary log output with no mask/issue effect, then verify matching-token
+resume restores each command. Include echo suppression, masked annotation
+messages and real step-completion annotation conversion. Record executed case
+counts and the loaded Worker/SDK assembly identities; missing coverage fails
+the harness. Server upload, problem matchers, containers and all other cultures
+remain outside this package suite, with broader policies covered by the
+source-built oracle and live hosted checks. Neither suite changes stdout
+release eligibility or the deferred `th-TH` decision.
 
 ## Shell and workflow matrix
 

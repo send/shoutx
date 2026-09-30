@@ -128,6 +128,7 @@ static class Program
             string directory = Path.TrimEndingDirectorySeparator(Path.GetFullPath(AppContext.BaseDirectory));
             report["coreLibrary"] = Identity(typeof(object).Assembly, directory);
             report["parserAssembly"] = Identity(typeof(ActionCommand).Assembly, directory);
+            report["workerAssembly"] = Identity(typeof(GitHub.Runner.Worker.ActionCommandManager).Assembly, directory);
             report["runtime"] = RuntimeInformation.FrameworkDescription;
             report["os"] = RuntimeInformation.OSDescription;
             report["architecture"] = RuntimeInformation.ProcessArchitecture.ToString();
@@ -159,6 +160,8 @@ static class Program
                 observation["maskCases"] = Corpus(args[1], true);
                 phase = "annotation-corpus";
                 observation["annotationCases"] = Corpus(args[2], false);
+                phase = "worker-effects";
+                observation["workerEffects"] = WorkerProbe.Run(args[1], args[2], Path.Combine(Path.GetDirectoryName(args[0])!, "worker-trace.log"));
                 phase = "scalar-checks";
                 observation["scalarChecks"] = ScalarChecks();
             }
@@ -171,6 +174,7 @@ static class Program
             if (error is InvalidOperationException) report["errorRule"] = error.Message;
             report["failedPhase"] = phase;
             report["testCase"] = testCase;
+            if (phase == "worker-effects") report["workerCase"] = WorkerProbe.CurrentCase;
             Console.Error.WriteLine("package probe failed; see evidence (no corpus values logged)");
         }
         finally
@@ -181,6 +185,8 @@ static class Program
                 report["loadedManagedAssemblies"] = AppDomain.CurrentDomain.GetAssemblies()
                     .Where(a => !a.IsDynamic && a != typeof(Program).Assembly)
                     .Select(a => Identity(a, directory)).ToArray();
+                report["dynamicAssemblyNames"] = AppDomain.CurrentDomain.GetAssemblies()
+                    .Where(a => a.IsDynamic).Select(a => a.FullName).ToArray();
             }
             catch (Exception error)
             {

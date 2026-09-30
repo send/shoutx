@@ -72,8 +72,13 @@ writers continue independently.
 ## Interim research mitigation
 
 Input-dependent misparsing under Invariant Culture and `en-US` is the current
-mitigation target. Apply the annotation message-prefix guard to mask values,
-rejecting unrepresentable inputs before output rather than altering the value.
+mitigation target. Use an explicit ASCII boundary allowlist rather than
+extending a Unicode denylist. Constrain the encoded header and first encoded
+data character; retain Unicode only after that inspected boundary. Reject
+unrepresentable inputs before output rather than altering the value. This
+deliberately sacrifices non-ASCII message starts and metadata in the research
+feature. The derivation and its runtime limits live in the compatibility note,
+not in a universal safety claim.
 Keep the exact input rules in the command specifications. Explicit-culture
 runner tests must cover rejection counterexamples and accepted-value fidelity.
 The `th-TH` ASCII failure is deferred, not fixed or shown to be unreachable.
@@ -145,8 +150,9 @@ contracts of environment-file writers.
   paused.
 - Existing annotation and mask prefix guards are only pre-release observations and
   cannot justify release eligibility.
-- UTF-8 values are not narrowed to ASCII and are never silently deleted or
-  normalized to make framing succeed.
+- The interim research allowlist narrows boundary data and annotation metadata;
+  accepted values are never silently deleted, prefixed, or normalized to make
+  framing succeed. Expanding Unicode acceptance requires a new derivation.
 - An accepted decision will require one coordinated change to mask,
   annotations, their shared private encoder, and their normative command
   specifications.

@@ -140,16 +140,8 @@ fn empty_and_unicode_whitespace_only_values_are_rejected() {
         failure(&["github-actions:mask"], Some(value.as_bytes()), 1);
     }
 
-    success(
-        &["github-actions:mask", "\u{feff}"],
-        None,
-        "::add-mask::\u{feff}\n".as_bytes(),
-    );
-    success(
-        &["github-actions:mask", "\u{200b}"],
-        None,
-        "::add-mask::\u{200b}\n".as_bytes(),
-    );
+    failure(&["github-actions:mask", "\u{feff}"], None, 1);
+    failure(&["github-actions:mask", "\u{200b}"], None, 1);
 }
 
 #[test]
@@ -187,7 +179,7 @@ fn separator_sensitive_prefixes_fail_without_disclosing_or_changing_the_value() 
                 ] {
                     assert_eq!(
                         output.stderr,
-                        b"error: mask value begins with a separator-sensitive character\n"
+                        b"error: mask value is outside the ASCII boundary policy\n"
                     );
                 }
             }
@@ -195,9 +187,9 @@ fn separator_sensitive_prefixes_fail_without_disclosing_or_changing_the_value() 
     }
     for value in [
         "e\u{0301}",
-        "秘密\u{0301}",
-        "\u{200b}\u{0301}secret",
-        "\u{feff}\u{0301}secret",
+        "a秘密\u{0301}",
+        "a\u{200b}\u{0301}secret",
+        "a\u{feff}\u{0301}secret",
         "plain ##[warning]data",
     ] {
         let expected = format!("::add-mask::{value}\n");
@@ -225,7 +217,63 @@ fn transparent_leaders_cannot_hide_a_sensitive_prefix() {
         ] {
             assert_eq!(
                 output.stderr,
-                b"error: mask value begins with a separator-sensitive character\n"
+                b"error: mask value is outside the ASCII boundary policy\n"
+            );
+        }
+    }
+}
+
+#[test]
+fn ascii_boundary_allowlist_is_exact_and_preserves_the_unicode_tail() {
+    for first in 1u8..=127 {
+        let value = format!(
+            "{}\u{0301}秘密😀 ##[warning]literal::tail",
+            char::from(first)
+        );
+        if (32..=126).contains(&first) || first == 10 || first == 13 {
+            let encoded = value
+                .replace('%', "%25")
+                .replace('\r', "%0D")
+                .replace('\n', "%0A");
+            let expected = format!("::add-mask::{encoded}\n");
+            success(
+                &["github-actions:mask", "--", &value],
+                None,
+                expected.as_bytes(),
+            );
+            success(
+                &["github-actions:mask"],
+                Some(value.as_bytes()),
+                expected.as_bytes(),
+            );
+        } else {
+            for output in [
+                failure(&["github-actions:mask", &value], None, 1),
+                failure(&["github-actions:mask"], Some(value.as_bytes()), 1),
+            ] {
+                assert_eq!(
+                    output.stderr,
+                    b"error: mask value is outside the ASCII boundary policy\n"
+                );
+            }
+        }
+    }
+    for value in [
+        "秘密",
+        "😀",
+        "é",
+        "\u{200b}",
+        "\u{200d}",
+        "\u{e007f}",
+        "\u{10ffff}",
+    ] {
+        for output in [
+            failure(&["github-actions:mask", value], None, 1),
+            failure(&["github-actions:mask"], Some(value.as_bytes()), 1),
+        ] {
+            assert_eq!(
+                output.stderr,
+                b"error: mask value is outside the ASCII boundary policy\n"
             );
         }
     }

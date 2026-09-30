@@ -38,10 +38,10 @@ report success without registering a mask. The whitespace classification is
 the .NET 8 `Char.IsWhiteSpace` set, equivalent here to the Unicode
 `White_Space` property. U+FEFF and U+200B are not whitespace under that rule.
 
-After producer framing, apply the shared separator-sensitive data-prefix rule
-defined in the [annotation input policy](github-actions-annotations.md).
-Reject a matching value with status 1, empty stdout, and a fixed diagnostic
-that does not contain the value. The
+After producer framing, apply the shared ASCII data-boundary allowlist
+defined in the [annotation input policy](github-actions-annotations.md#command-line-grammar-and-input).
+Reject a value outside the allowlist with status 1, empty stdout, and the fixed
+diagnostic `mask value is outside the ASCII boundary policy`. The
 [compatibility note](../compatibility/github-actions-workflow-command-parser.md)
 records the observed delimiter failure and fallback. Do not delete, normalize,
 or replace any scalar: registering a changed string would not faithfully mask
@@ -197,15 +197,15 @@ boundaries, and a final boundary following invalid UTF-8 or NUL. Empty semantic
 values and values consisting only of the .NET 8 `Char.IsWhiteSpace` set fail
 with status 1 and empty stdout. Cover ASCII whitespace, NEL, U+1680, the
 U+2000--U+200A range, LINE SEPARATOR, PARAGRAPH SEPARATOR, U+202F, U+205F, and
-U+3000. Verify that U+FEFF and U+200B are accepted as non-whitespace data.
+U+3000. U+FEFF and U+200B are not whitespace, but are rejected at the data
+boundary; preserve them after an allowed first scalar.
 
-Through argv and stdin, reject leading `Mn`, `Mc`, `Me`, and `Lm` scalars,
-including U+0301, U+034F, U+0903, U+20DD, U+02B0, U+FF9E, and U+FF9F.
-Cover supplementary-plane category members and every explicitly listed scalar.
-Include sensitive scalars hidden behind the shared rule's skipped leading run.
-Include both ordinary suffixes and `::` / `##[warning]`-looking suffixes and
-assert the exact fixed diagnostic, status 1, and empty stdout. Preserve interior
-combining characters and accepted format-character prefixes byte-for-byte.
+Through argv and stdin, cover every ASCII first byte and representative
+non-ASCII first scalars, including Japanese, emoji, marks, and format characters.
+Exhaustively check the shared allowlist over Unicode scalar values. Include
+ordinary and `::` / `##[warning]`-looking suffixes; assert the exact fixed
+diagnostic, status 1, and empty stdout on rejection. Preserve Unicode after
+an allowed first scalar byte-for-byte.
 Run the accepted mask corpus through the pinned runner under both Invariant
 Culture and `en-US`, checking exact decoded data before mask registration.
 

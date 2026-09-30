@@ -73,23 +73,23 @@ The accepted mask and annotation corpora are also exercised explicitly under
 both cultures. These are source-built oracle checks, not claims of exhaustive
 Unicode coverage or measurements of a published hosted worker's runtime.
 
-The shared category lookup currently uses `unicode-general-category` 1.1.0,
-whose tables declare Unicode 16.0.0. This producer table does not establish a
+The earlier category-based mitigation used `unicode-general-category` 1.1.0,
+whose tables declare Unicode 16.0.0. That producer table did not establish a
 match with the worker's ICU/NLS data: newly assigned scalars, Unicode-version
-skew, and differences between category and collation behavior remain limits
-of this bounded mitigation. The category set is conservative, not a claim
+skew, and differences between category and collation behavior limited that
+mitigation. The category set was conservative, not a claim
 that every rejected scalar reproduces the U+0301 failure.
 Additional local Invariant Culture / `en-US` probes found U+0E33, U+0EB3,
 and all five U+1F3FB--U+1F3FF scalars fail V2 parsing despite being outside
 the category set. The oracle includes these as raw fallback counterexamples;
-the command specifications include them explicitly in prefix rejection.
+the current ASCII boundary policy also rejects them at the boundary.
 This input-dependent issue with Thai/Lao characters is distinct from the
 deferred `th-TH` culture failure for ordinary ASCII input.
 Sequences U+200D U+0301, U+200C U+0E33, and U+E0020 U+1F3FB also fail
 under both cultures despite beginning outside the category set. Tests include
 these and a mixed run of joining/tag scalars followed by U+0301. The shared
-input rule therefore looks past its specified leading run for validation,
-without changing accepted output bytes.
+input rule previously looked past a specified leading run for validation.
+The current allowlist rejects that leading run instead.
 
 PR #42 added a pinned-runner regression proving the ASCII-only `th-TH` V2
 failure and comparing the legacy parser under selected cultures. The current
@@ -98,15 +98,17 @@ ordinary logging after failed recognition. A separate `OutputManager` case
 proves that a failed V2 parse can execute a registered legacy command found
 later in the same line; it does not claim that this fallback occurs under the
 known `th-TH` counterexample. The oracle runs on Ubuntu 22.04, Ubuntu 24.04,
-macOS, and Windows. The current tests do not record the active globalization
-backend or its version, so this note does not infer ICU or NLS solely from the
-operating-system label.
+macOS, and Windows. The oracle now records runtime/build, OS, architecture,
+culture, internal globalization-mode flags, and `CompareInfo.Version`. Its
+backend label follows observed flags rather than the OS label. The native
+backend library version is not observed; the sort version is not a substitute
+for that version. Earlier runs did not record these fields.
 
 That expansion also exposed a separate portability assumption in an existing
 test. An assertion expecting U+11F02 to move the V2 separator passed on the
 newer environments but failed on Ubuntu 22.04, where the runner decoded the
 earlier separator instead. The scalar was removed from the shared portable
-runner-oracle assertions; its producer-side rejection remains implemented. The
+runner-oracle assertions; the ASCII header policy now rejects it. The
 failed [PR #42 CI run][u11f02-run] is evidence that a
 Unicode category or scalar denylist cannot stand in for the destination parser:
 the same runner source and .NET SDK can behave differently across platform
@@ -115,6 +117,54 @@ collation data.
 The tests are evidence and regression detection, not proof over all present
 or future cultures. They do not establish a supported-culture allowlist or
 show that a Unicode scalar or category restriction can repair V2 framing.
+
+## ASCII boundary allowlist derivation
+
+The narrow producer policy is specified in the
+[annotation contract](../commands/github-actions-annotations.md#command-line-grammar-and-input)
+and shared by mask. It restricts the complete encoded header and the first
+encoded data character to printable ASCII. It does not restrict subsequent
+Unicode data. This deliberately rejects Japanese/emoji message starts and
+non-ASCII TITLE/FILE values instead of changing their meaning.
+
+This is a sufficient-condition argument for an inspected implementation, not
+a guarantee made by the public Runner or .NET API. In the
+[.NET 8.0.0 ICU comparison implementation](https://github.com/dotnet/runtime/blob/v8.0.0/src/libraries/System.Private.CoreLib/src/System/Globalization/CompareInfo.Icu.cs),
+Invariant and English sort names enable `_isAsciiEqualityOrdinal`. With
+`CompareOptions.None`, `IcuIndexOfCore` can use `IndexOfOrdinalHelper`: it
+falls back to native collation when special/non-ASCII characters are encountered
+in the searched region or immediately after a candidate match. Otherwise an
+ASCII match returns its ordinal position without inspecting the remaining tail.
+`HighCharTable` is false throughout U+0020--U+007E, including apostrophe
+(U+0027) and hyphen (U+002D); neither forces a native fallback in this code.
+
+For shoutx's fixed command prefix, escaped ASCII properties, and ASCII first
+encoded data character, the intended `::` separator is found on that fast
+path. Property colons are escaped, so there is no earlier property separator.
+Restricting only the last property character would not provide this argument:
+non-ASCII earlier in the header could force native collation first. The initial
+`StartsWith("::")` similarly has a fixed ASCII command character after its
+match. Successful V2 parsing prevents the command manager's legacy fallback.
+The `OutputManager` prefilter is only a boolean gate and sees the initial `::`.
+CR/LF and percent escaping produce ASCII wire characters while preserving the
+decoded value; arbitrary Unicode escape notation is not decoded by Runner.
+
+ICU's [string-search documentation](https://unicode-org.github.io/icu/userguide/collation/string-search.html)
+describes grapheme-boundary restrictions, explaining why general categories
+alone were insufficient. The allowlist argument above avoids relying on a
+producer-maintained approximation of those Unicode boundaries.
+
+The source inspected here is .NET **8.0.0**, not a verified source identity
+for every later .NET 8 patch. NLS, hybrid globalization, other cultures, and
+future implementation changes are outside this source argument. In particular,
+the known `th-TH` failure is not fixed. The commands remain research-only.
+The oracle records its actual runtime and tests every non-NUL Unicode scalar
+after each of `A`, `:`, `%`, space, `-`, apostrophe, `#`, and `0`, for mask and
+an annotation header with TITLE/FILE under Invariant and `en-US`.
+Generated producer corpora additionally combine every allowed first scalar
+with selected hostile Unicode tails, check exact data/properties, and exercise
+the command manager. These finite checks detect regressions; they are not
+exhaustive over Unicode sequences, backends, or runtime versions.
 
 ## Self-hosted runner version snapshot
 

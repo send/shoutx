@@ -22,27 +22,6 @@ struct Property<'a> {
     kind: PropertyKind,
 }
 
-fn is_prepended_concatenation_mark(character: char) -> bool {
-    matches!(
-        character,
-        '\u{0600}'..='\u{0605}'
-            | '\u{06dd}'
-            | '\u{070f}'
-            | '\u{0890}'..='\u{0891}'
-            | '\u{08e2}'
-            | '\u{0d4e}'
-            | '\u{110bd}'
-            | '\u{110cd}'
-            | '\u{111c2}'..='\u{111c3}'
-            | '\u{1193f}'
-            | '\u{11941}'
-            | '\u{11a3a}'
-            | '\u{11a84}'..='\u{11a89}'
-            | '\u{11d46}'
-            | '\u{11f02}'
-    )
-}
-
 fn bytes(value: &OsStr) -> Result<&[u8], ShoutxError> {
     value
         .to_str()
@@ -77,13 +56,13 @@ fn text_property(value: &OsStr) -> Result<&[u8], ShoutxError> {
             "annotation property ends with whitespace",
         ));
     }
-    if text
-        .chars()
-        .next_back()
-        .is_some_and(is_prepended_concatenation_mark)
+    if !value
+        .iter()
+        .copied()
+        .all(super::stdout_guard::is_allowed_boundary_byte)
     {
         return Err(ShoutxError::failure(
-            "annotation property ends with a separator-sensitive character",
+            "annotation property is outside the ASCII header policy",
         ));
     }
     Ok(value)
@@ -157,9 +136,9 @@ pub fn encode(request: AnnotationRequest, mut message: Vec<u8>) -> Result<Vec<u8
             "annotation message is empty or whitespace only",
         ));
     }
-    if super::stdout_guard::has_sensitive_data_prefix(message_text) {
+    if !super::stdout_guard::has_allowed_data_prefix(&message) {
         return Err(ShoutxError::failure(
-            "annotation message begins with a separator-sensitive character",
+            "annotation message is outside the ASCII boundary policy",
         ));
     }
     if message_text.encode_utf16().count() > MESSAGE_UTF16_LIMIT {

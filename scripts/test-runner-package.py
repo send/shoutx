@@ -111,10 +111,35 @@ def extract_bin(archive, destination):
                     save(name, member.size, member.mode, stream)
 
 
-def run(command, evidence, label, env=None, cwd=ROOT):
+def run(command, evidence, label, env=None, cwd=ROOT, check=True):
     with (evidence / (label + ".log")).open("wb") as log:
-        subprocess.run(command, cwd=cwd, env=env, stdout=log, stderr=subprocess.STDOUT,
-                       check=True, timeout=600)
+        return subprocess.run(command, cwd=cwd, env=env, stdout=log, stderr=subprocess.STDOUT,
+                              check=check, timeout=600).returncode
+
+
+def probe_environment(environment):
+    # Keep ordinary host discovery, but don't inherit runtime instrumentation,
+    # additional code/deps, or globalization overrides. Record names, not values.
+    prefixes = ("COMPLUS_", "CORECLR_", "COR_", "COREHOST_", "LD_", "DYLD_")
+    allowed_dotnet = {"DOTNET_ROOT", "DOTNET_ROOT_X64", "DOTNET_ROOT_ARM64",
+                      "DOTNET_ROOT(X86)", "DOTNET_CLI_HOME"}
+    removed = sorted(key for key in environment if key.upper().startswith(prefixes)
+                     or key.upper() == "CLR_ICU_VERSION_OVERRIDE"
+                     or (key.upper().startswith("DOTNET_") and key.upper() not in allowed_dotnet))
+    return {key: value for key, value in environment.items() if key not in removed}, removed
+
+
+def verify_coverage(probe, evidence):
+    cultures = probe["cultures"]
+    if [culture["culture"] for culture in cultures] != ["", "en-US"]:
+        raise ValueError("unexpected culture coverage")
+    for culture in cultures:
+        if culture.get("scalarChecks") != 17793008:
+            raise ValueError("incomplete scalar coverage")
+        for kind in ("mask", "annotation"):
+            count = len(json.loads((evidence / f"{kind}-corpus.json").read_text()))
+            if count == 0 or culture.get(f"{kind}Cases") != count:
+                raise ValueError("incomplete corpus coverage")
 
 
 def verify_coreclr(trace, binary, rid):
@@ -143,6 +168,10 @@ def main():
     try:
         if rid not in pins["packages"]:
             raise ValueError("unsupported package probe platform")
+        record["pythonVersion"] = platform.python_version()
+        record["sourceDigests"] = {name: digest(ROOT / name) for name in (
+            "scripts/test-runner-package.py", "tests/runner-package/Program.cs", "tests/runner-package/Probe.csproj")}
+        record["rustcVersion"] = subprocess.check_output(["rustc", "--version"], cwd=ROOT, text=True).strip()
         with tempfile.TemporaryDirectory(prefix="shoutx-runner-package-") as temporary:
             work = Path(temporary).resolve()
             record["phase"] = "select-sdk"
@@ -158,8 +187,10 @@ def main():
             pin = pins["packages"][rid]
             name = f'actions-runner-{rid}-{pins["runnerVersion"]}.{pin["extension"]}'
             url = f'https://github.com/actions/runner/releases/download/v{pins["runnerVersion"]}/{name}'
-            archive = args.archive.resolve() if args.archive else work / name
-            if not args.archive:
+            archive = work / name
+            if args.archive:
+                shutil.copyfile(args.archive.resolve(), archive)
+            else:
                 download(url, archive, pin["size"])
             verify(archive, pin["sha256"], pin["size"])
             record["package"] = {"url": url, "sha256": digest(archive), "size": archive.stat().st_size}
@@ -173,9 +204,10 @@ def main():
             if config["runtimeOptions"].get("includedFrameworks") != expected or "framework" in config["runtimeOptions"]:
                 raise ValueError("unexpected worker runtime config")
             for source in pins["sources"]:
-                path = evidence / source["name"]
+                path = work / source["name"]
                 download(source["url"], path, 1024 * 1024)
                 verify(path, source["sha256"])
+                shutil.copyfile(path, evidence / source["name"])
             record["phase"] = "build-probe-and-corpora"
             for kind in ("mask", "annotation"):
                 env = os.environ.copy()
@@ -185,27 +217,30 @@ def main():
                      "--test", f"{kind}_runner_fixture", f"export_{kind}_corpus", "--", "--ignored"],
                     evidence, f"generate-{kind}", env)
             run(["dotnet", "build", str(ROOT / "tests/runner-package/Probe.csproj"), "-c", "Release",
+                 "-nodeReuse:false", "-p:UseSharedCompilation=false",
                  f"-p:RunnerBin={binary}", f"-p:BaseIntermediateOutputPath={work / 'obj'}/",
                  "-o", str(work / "probe")], evidence, "build-probe", cwd=work)
             shutil.copyfile(work / "probe/Probe.dll", binary / "Probe.dll")
+            record["probeSha256"] = digest(binary / "Probe.dll")
             # Self-contained worker config selects local hostpolicy/coreclr, not SDK runtime.
-            probe_env = os.environ.copy()
+            probe_env, record["removedEnvironmentNames"] = probe_environment(os.environ)
             probe_env["COREHOST_TRACE"] = "1"
             probe_env["COREHOST_TRACEFILE"] = str(evidence / "corehost.log")
             record["phase"] = "execute-probe"
-            run(["dotnet", "exec", "--runtimeconfig", str(binary / "Runner.Worker.runtimeconfig.json"),
+            exit_code = run(["dotnet", "exec", "--runtimeconfig", str(binary / "Runner.Worker.runtimeconfig.json"),
                  "--depsfile", str(binary / "Runner.Worker.deps.json"), str(binary / "Probe.dll"),
                  str(evidence / "probe.json"), str(evidence / "mask-corpus.json"),
-                 str(evidence / "annotation-corpus.json")], evidence, "execute-probe", probe_env, cwd=work)
+                 str(evidence / "annotation-corpus.json")], evidence, "execute-probe", probe_env, cwd=work, check=False)
+            record["probeExitCode"] = exit_code
             record["phase"] = "verify-loaded-identities"
-            coreclr = verify_coreclr((evidence / "corehost.log").read_text(encoding="utf-8"), binary, rid)
+            trace = (evidence / "corehost.log").read_text(encoding="utf-8")
+            record["launcherHostFxr"] = re.findall(r"^Resolved fxr \[(.*)\]", trace, re.MULTILINE)
+            record["launcherHostFxrBuild"] = re.findall(r"^--- Invoked hostfxr_main_startupinfo \[(.*)\]", trace, re.MULTILINE)
+            coreclr = verify_coreclr(trace, binary, rid)
             record["selectedCoreClr"] = {"file": coreclr, "sha256": files[coreclr]}
             record["corehostTraceSha256"] = digest(evidence / "corehost.log")
             probe = json.loads((evidence / "probe.json").read_text())
-            if probe["status"] != "passed":
-                raise ValueError("probe did not pass")
-            for key in ("coreLibrary", "parserAssembly"):
-                identity = probe[key]
+            for identity in [probe["coreLibrary"], probe["parserAssembly"], *probe["loadedManagedAssemblies"]]:
                 if files.get(identity["file"]) != identity["sha256"]:
                     raise ValueError("loaded assembly differs from package")
             build = f'{pins["runtimeVersion"]}+{pins["runtimeCommit"]}'
@@ -214,15 +249,17 @@ def main():
             runner_build = f'{pins["runnerVersion"]}+{pins["runnerCommit"]}'
             if probe["parserAssembly"]["informationalVersion"] != runner_build:
                 raise ValueError("parser build differs from pinned Runner source")
-            for culture in probe["cultures"]:
-                icu = culture["icu"]
-                if icu is not None and files.get(icu["file"]) != icu["sha256"]:
-                    raise ValueError("ICU bridge differs from package")
+            if {p.name for p in binary.iterdir()} != set(files) | {"Probe.dll"}:
+                raise ValueError("unexpected package directory additions")
             for name, sha in files.items():
                 if digest(binary / name) != sha:
                     raise ValueError("package binary changed during probe")
-            record["status"] = "passed"
-            record["phase"] = "complete"
+            if exit_code != 0 or probe["status"] != "passed":
+                raise ValueError("probe did not pass")
+            verify_coverage(probe, evidence)
+            record["phase"] = "cleanup"
+        record["status"] = "passed"
+        record["phase"] = "complete"
     except Exception as error:
         record["errorType"] = type(error).__name__
         if isinstance(error, ValueError):

@@ -401,6 +401,8 @@ jobs:
             --logger 'trx;LogFileName=runner-oracle.trx' `
             --results-directory '${{ github.workspace }}/target/runner-oracle-results'
       - name: Test published Runner runtime and parser
+        env:
+          RUSTUP_TOOLCHAIN: stable
         shell: pwsh
         run: |
           python -B tests/runner-package/test_harness.py

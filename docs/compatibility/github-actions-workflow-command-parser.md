@@ -227,7 +227,7 @@ apply to GitHub Enterprise Server.
 
 The source-built oracle executes v2.337.0. The additional
 [package-backed probe](runner-package-runtime.md) checks its distributed
-parser/runtime, but neither tests v2.336.0 or establishes a supported
+parser/runtime, but neither tests v2.336.0 nor establishes a supported
 self-hosted compatibility matrix. This section records evidence only; the
 proposed interpretation and unresolved policy live in the framing decision.
 

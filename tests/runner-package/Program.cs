@@ -9,34 +9,23 @@ using GitHub.Runner.Common;
 // Only synthetic corpus data enters this probe. It never registers a worker.
 static class Program
 {
-    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    delegate int GetIcuVersion();
-    sealed record IcuObservation(string file, string sha256, uint versionRaw, string? version);
+    sealed record IcuObservation(string binding, uint versionRaw, string? version);
+    static string phase = "initialization";
+    static object? testCase;
 
     static IcuObservation? ObserveIcuVersion(object? invariant, object? ascii)
     {
         // The inspected IcuInitSortHandle sets this flag; don't initialize ICU
         // artificially on NLS/invariant runs just to obtain a version number.
         if (invariant is not false || ascii is not true) return null;
-        string file = OperatingSystem.IsWindows() ? "System.Globalization.Native.dll" :
-            OperatingSystem.IsMacOS() ? "libSystem.Globalization.Native.dylib" : "libSystem.Globalization.Native.so";
-        string path = Path.Combine(AppContext.BaseDirectory, file);
-        try
-        {
-            // Explicit path: do not accidentally probe an SDK/system bridge.
-            IntPtr handle = NativeLibrary.Load(path);
-            try
-            {
-                var get = Marshal.GetDelegateForFunctionPointer<GetIcuVersion>(
-                    NativeLibrary.GetExport(handle, "GlobalizationNative_GetICUVersion"));
-                uint version = unchecked((uint)get());
-                string? text = version == 0 ? null : $"{version >> 24}.{(version >> 16) & 255}.{(version >> 8) & 255}.{version & 255}";
-                return new(file, Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(path))).ToLowerInvariant(), version, text);
-            }
-            finally { NativeLibrary.Free(handle); }
-        }
-        catch (DllNotFoundException) { return null; }
-        catch (EntryPointNotFoundException) { return null; }
+        // Invoke CoreLib's own binding. Loading the standalone native shim can
+        // query a separate, uninitialized instance on statically linked CoreCLR.
+        var method = typeof(object).Assembly.GetType("Interop+Globalization")?.GetMethod(
+            "GetICUVersion", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+        if (method is null) return null;
+        uint version = unchecked((uint)(int)method.Invoke(null, null)!);
+        string? text = version == 0 ? null : $"{version >> 24}.{(version >> 16) & 255}.{(version >> 8) & 255}.{version & 255}";
+        return new("CoreLib:Interop.Globalization.GetICUVersion", version, text);
     }
     static readonly HashSet<string> Commands = new(StringComparer.OrdinalIgnoreCase)
         { "add-mask", "notice", "warning", "error" };
@@ -74,6 +63,7 @@ static class Program
         int count = 0;
         foreach (var item in corpus.RootElement.EnumerateArray())
         {
+            testCase = new { corpus = mask ? "mask" : "annotation", index = count };
             string wire = Decode(item.GetProperty("command"));
             Require(wire.EndsWith('\n') && !wire[..^1].Contains('\n') && !wire.Contains('\r'), "wire framing mismatch");
             string line = wire[..^1];
@@ -86,7 +76,9 @@ static class Program
             if (mask) Require(parsed.Properties.Count == 0, "unexpected mask properties");
             else
             {
-                // This is parser-level evidence, before OS-dependent file translation.
+                // Parser-level evidence before file translation. Current fixtures'
+                // POSIX post-extension properties equal their wire-level values;
+                // a future transformed fixture needs a separate parser expectation.
                 var expected = item.GetProperty("properties");
                 Require(parsed.Properties.Count == expected.EnumerateObject().Count(), "property count mismatch");
                 foreach (var property in expected.EnumerateObject())
@@ -106,6 +98,7 @@ static class Program
         for (int scalar = 1; scalar <= 0x10ffff; scalar++)
         {
             if (scalar is >= 0xd800 and <= 0xdfff) continue;
+            testCase = new { header = header.StartsWith("::add-mask", StringComparison.Ordinal) ? "mask" : "annotation", first = (int)first, scalar };
             string data = first + char.ConvertFromUtf32(scalar) + " ##[error]literal::tail";
             string line = header + DataEscape(data);
             Require(line.IndexOf("::", 2) == header.Length - 2, "scalar separator moved");
@@ -145,25 +138,45 @@ static class Program
                 var compare = CultureInfo.CurrentCulture.CompareInfo;
                 object? ascii = typeof(CompareInfo).GetField("_isAsciiEqualityOrdinal", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(compare);
                 var icu = ObserveIcuVersion(invariant, ascii);
-                cultures.Add(new {
-                    culture = name, sortVersion = compare.Version.FullVersion, sortId = compare.Version.SortId,
-                    asciiEqualityOrdinal = ascii, icu,
-                    icuSourcePreconditionsObserved = invariant is false && ascii is true && icu?.versionRaw is > 0,
-                    maskCases = Corpus(args[1], true), annotationCases = Corpus(args[2], false), scalarChecks = ScalarChecks()
-                });
+                var observation = new Dictionary<string, object?> {
+                    ["culture"] = name, ["sortVersion"] = compare.Version.FullVersion, ["sortId"] = compare.Version.SortId,
+                    ["asciiEqualityOrdinal"] = ascii, ["icu"] = icu,
+                    ["icuSourcePreconditionsObserved"] = invariant is false && ascii is true && icu?.versionRaw is > 0
+                };
+                cultures.Add(observation);
+                phase = "mask-corpus";
+                observation["maskCases"] = Corpus(args[1], true);
+                phase = "annotation-corpus";
+                observation["annotationCases"] = Corpus(args[2], false);
+                phase = "scalar-checks";
+                observation["scalarChecks"] = ScalarChecks();
             }
             report["status"] = "passed";
-            return 0;
         }
         catch (Exception error)
         {
             report["errorType"] = error.GetType().Name;
+            if (error is InvalidOperationException) report["errorRule"] = error.Message;
+            report["failedPhase"] = phase;
+            report["testCase"] = testCase;
             Console.Error.WriteLine("package probe failed; see evidence (no corpus values logged)");
-            return 1;
         }
         finally
         {
+            try
+            {
+                string directory = Path.TrimEndingDirectorySeparator(Path.GetFullPath(AppContext.BaseDirectory));
+                report["loadedManagedAssemblies"] = AppDomain.CurrentDomain.GetAssemblies()
+                    .Where(a => !a.IsDynamic && a != typeof(Program).Assembly)
+                    .Select(a => Identity(a, directory)).ToArray();
+            }
+            catch (Exception error)
+            {
+                report["status"] = "failed";
+                report["identityErrorType"] = error.GetType().Name;
+            }
             if (args.Length > 0) File.WriteAllText(args[0], JsonSerializer.Serialize(report, new JsonSerializerOptions { WriteIndented = true }));
         }
+        return Equals(report["status"], "passed") ? 0 : 1;
     }
 }

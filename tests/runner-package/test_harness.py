@@ -1,6 +1,7 @@
 """Offline safety/regression checks for the package evidence harness."""
 import importlib.util
 import io
+import json
 from pathlib import Path
 import stat
 import tarfile
@@ -98,6 +99,31 @@ class HarnessTests(unittest.TestCase):
         for text in ("", line + line, line.replace("package-bin", "sdk-bin")):
             with self.assertRaises(ValueError):
                 harness.verify_coreclr(text, binary, "linux-x64")
+
+    def test_runtime_overrides_are_removed_without_recording_values(self):
+        original = {"PATH": "/bin", "DOTNET_ROOT": "/sdk", "LANG": "en_US.UTF-8",
+                    "DOTNET_STARTUP_HOOKS": "private", "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT": "1",
+                    "COMPlus_ReadyToRun": "0", "CORECLR_ENABLE_PROFILING": "1", "DYLD_INSERT_LIBRARIES": "private"}
+        env, removed = harness.probe_environment(original)
+        self.assertEqual(env, {"PATH": "/bin", "DOTNET_ROOT": "/sdk", "LANG": "en_US.UTF-8"})
+        self.assertEqual(set(removed), set(original) - set(env))
+        self.assertIn("DOTNET_STARTUP_HOOKS", original)
+
+    def test_coverage_must_be_complete(self):
+        with tempfile.TemporaryDirectory() as root:
+            evidence = Path(root)
+            for kind in ("mask", "annotation"):
+                (evidence / f"{kind}-corpus.json").write_text("[{}]")
+            report = {"cultures": [{"culture": name, "scalarChecks": 17793008,
+                                    "maskCases": 1, "annotationCases": 1} for name in ("", "en-US")]}
+            harness.verify_coverage(report, evidence)
+            for field, value in (("scalarChecks", 0), ("maskCases", 0), ("culture", "th-TH")):
+                bad = json.loads(json.dumps(report))
+                bad["cultures"][0][field] = value
+                with self.assertRaises(ValueError):
+                    harness.verify_coverage(bad, evidence)
+            with self.assertRaises(ValueError):
+                harness.verify_coverage({"cultures": []}, evidence)
 
 
 if __name__ == "__main__":

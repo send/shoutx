@@ -15,6 +15,7 @@ FIELDS = ("annotation_level", "title", "message", "path", "start_line",
           "end_line", "start_column", "end_column")
 BEGIN = "SHOUTX_HOSTED_BOUNDARIES_BEGIN"
 END = "SHOUTX_HOSTED_BOUNDARIES_END"
+FINISH = "SHOUTX_HOSTED_TEST_SEQUENCE_COMPLETE"
 IDENTITY = "SHOUTX_HOSTED_IDENTITY="
 
 
@@ -53,7 +54,7 @@ def emit():
     binary = os.environ["UNSTABLE_BINARY"]
     identity = {name: os.environ.get(name) for name in
                 ("GITHUB_RUN_ID", "GITHUB_RUN_ATTEMPT", "GITHUB_SHA", "RUNNER_OS",
-                 "RUNNER_ARCH", "ImageOS", "ImageVersion")}
+                 "RUNNER_ARCH", "ImageOS", "ImageVersion", "SHOUTX_SOURCE_HEAD")}
     if not all(identity.values()):
         raise ValueError("hosted identity is incomplete")
     write_line(IDENTITY + json.dumps(identity, sort_keys=True))
@@ -93,6 +94,8 @@ def log_lines(raw):
     # Do not use splitlines(): Unicode line separators are value data.
     # GitHub's downloaded job log may have one UTF-8 BOM at the file start.
     raw = raw.removeprefix("\ufeff")
+    # This corpus has neither CR-final data lines nor timestamp-shaped starts
+    # on continuation lines. Extend this model before adding those cases.
     return [re.sub(r"^\d{4}-\d{2}-\d{2}T\S+Z ", "", line.removesuffix("\r"))
             for line in raw.split("\n")]
 
@@ -109,10 +112,12 @@ def expected_block():
     return lines
 
 
-def verify(raw, actual, runner_os, run_id, attempt, sha):
+def verify(raw, actual, runner_os, run_id, attempt, sha, head):
     lines = log_lines(raw)
     if lines.count(BEGIN) != 1 or lines.count(END) != 1:
         raise ValueError("missing or duplicate experiment boundaries")
+    if lines.count(FINISH) != 1 or lines.index(FINISH) <= lines.index(END):
+        raise ValueError("missing or misplaced final test sentinel")
     if lines[lines.index(BEGIN) + 1:lines.index(END)] != expected_block():
         raise ValueError("hosted log content/order/count mismatch")
     for _, marker in mask_values(run_id, attempt, runner_os):
@@ -120,7 +125,8 @@ def verify(raw, actual, runner_os, run_id, attempt, sha):
             raise ValueError("synthetic mask marker leaked")
     expected = annotations()
     # Scope API matching by either message OR title; lost metadata and fallback
-    # warnings still get counted. Exact block comparison catches other effects.
+    # warnings still get counted. The block comparison covers log-visible
+    # effects in this corpus, not arbitrary silent commands or other steps.
     observed = [item for item in actual if "shoutx-boundary-" in (item.get("title") or "")
                 or "shoutx-boundary-" in (item.get("message") or "")]
     project = lambda item: tuple(item.get(field) for field in FIELDS)
@@ -131,7 +137,7 @@ def verify(raw, actual, runner_os, run_id, attempt, sha):
         raise ValueError("missing or duplicate hosted identity")
     identity = identities[0]
     for name, value in (("GITHUB_RUN_ID", run_id), ("GITHUB_RUN_ATTEMPT", attempt),
-                        ("GITHUB_SHA", sha), ("RUNNER_OS", runner_os)):
+                        ("GITHUB_SHA", sha), ("RUNNER_OS", runner_os), ("SHOUTX_SOURCE_HEAD", head)):
         if identity.get(name) != value:
             raise ValueError("hosted identity mismatch")
     if not all(isinstance(identity.get(name), str) and identity[name]
@@ -141,7 +147,10 @@ def verify(raw, actual, runner_os, run_id, attempt, sha):
                 if (match := re.fullmatch(r"Current runner version: '([0-9]+\.[0-9]+\.[0-9]+)'", line))]
     if len(versions) != 1:
         raise ValueError("missing or ambiguous Runner version")
+    pins = json.loads((Path(__file__).resolve().parents[1] / "runner-package/pins.json").read_text())
     return {"status": "passed", "identity": identity, "runnerVersion": versions[0],
+            "pinnedRunnerVersion": pins["runnerVersion"],
+            "runnerMatchesPin": versions[0] == pins["runnerVersion"],
             "workerCulture": None, "workerGlobalizationBackend": None,
             "maskCases": len(STARTS), "annotationCases": len(expected),
             "logSha256": hashlib.sha256(raw.encode("utf-8")).hexdigest()}
@@ -149,7 +158,7 @@ def verify(raw, actual, runner_os, run_id, attempt, sha):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("mode", choices=("emit", "verify"))
+    parser.add_argument("mode", choices=("emit", "verify", "finish"))
     parser.add_argument("--log", type=Path)
     parser.add_argument("--annotations", type=Path)
     parser.add_argument("--os", choices=("Linux", "macOS", "Windows"))
@@ -160,6 +169,8 @@ def main():
     try:
         if args.mode == "emit":
             emit()
+        elif args.mode == "finish":
+            write_line(FINISH)
         else:
             args.evidence.parent.mkdir(parents=True, exist_ok=True)
             args.evidence.write_text('{"status": "failed"}\n', encoding="utf-8")
@@ -167,9 +178,10 @@ def main():
             raw = args.log.read_bytes().decode("utf-8")
             report = verify(raw, json.loads(args.annotations.read_text(encoding="utf-8")),
                             args.os, os.environ["GITHUB_RUN_ID"], args.source_attempt,
-                            os.environ["GITHUB_SHA"])
+                            os.environ["GITHUB_SHA"], os.environ["SHOUTX_SOURCE_HEAD"])
             report["harnessSha256"] = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
             report["jobId"] = args.job_id
+            report["verifierAttempt"] = os.environ["GITHUB_RUN_ATTEMPT"]
             report["annotationsSha256"] = hashlib.sha256(args.annotations.read_bytes()).hexdigest()
             args.evidence.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     except (ValueError, KeyError, OSError, TypeError, AttributeError):

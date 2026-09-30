@@ -350,7 +350,9 @@ legacy-looking warning syntax and V2-looking error syntax as data. Compare
 exact title, workspace-relative file, severity, message, line and column fields
 from the completed job's paginated annotations API, including multiplicity.
 The dedicated step emits ten annotations per severity, at the pinned Runner's
-per-step retention cap; existing smoke annotations run in other steps.
+per-step retention cap; existing smoke annotations run in other steps. This is
+not an overflow test. The job deliberately emits 33 corpus/smoke annotations;
+retention remains verified by API results, not an assumed server capacity.
 
 Eight distinct synthetic mask canaries include command-looking tails. Register
 all masks while command processing is active. Suspend command processing only
@@ -358,10 +360,16 @@ while printing subsequent canary samples: otherwise legacy syntax embedded in
 ordinary log text can itself execute before masking. Resume before annotations,
 whose successful effects also test resumption. Compare the complete delimited
 log block, not only substring presence: require exactly one redacted sentinel
-per case, exact annotation log text/order, and no extra commands or messages.
+per case, exact annotation log text/order, and no extra log-visible effects in
+that block or tagged annotations. Silent command effects and unrelated steps'
+annotations are outside this observation.
 Scan the entire completed log for each synthetic marker, including an encoded
 failed registration. This does not test raw legacy-looking log data while
 command processing is active or promise arbitrary transformed-secret masking.
+Debug-logging runs are not valid evidence for the exact-log experiment. Require
+the final ordinary test-step sentinel after the experiment, and retry both log
+and annotation retrieval. This rejects a response truncated before that sentinel;
+it does not attest transport completeness after it or cover post-action output.
 
 The existing `hosted-annotations` job performs this read-only verification
 within PR and main CI, using only Actions/Checks/Contents read permissions.
@@ -372,13 +380,16 @@ or late/missing API results must not pass. Offline negative controls mutate
 logs, annotation fields/counts, identity and mask leaks to test rejection.
 
 Retain per-OS reports for 30 days in `hosted-boundary-evidence`: source run,
-attempt, tested SHA, job ID, Runner version from its setup log, child-visible
+attempt, tested merge SHA and source head SHA, verifier attempt, job ID,
+Runner version from its setup log, child-visible
 OS/architecture/image identity, case counts and log/API/harness digests.
 Missing identity fails the experiment.
 The attempt is taken from each source job's API metadata, not the verifier's
 attempt, so retrying only failed jobs does not relabel earlier successful jobs.
-These observations do not measure the
-live worker's culture, runtime or globalization backend; culture/backend remain
+Also record the oracle's pinned version and whether the observed version matches
+it. A different version's passing result is evidence for that observed Runner,
+not for the pinned implementation. These observations do not measure the live
+worker's culture, runtime or globalization backend; culture/backend remain
 explicitly unknown. Failure reports and partial artifacts are not passing
 evidence; require all three reports and the successful verifier job. Only
 synthetic canaries are used; reports do not contain full job logs or raw mask

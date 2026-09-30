@@ -157,8 +157,11 @@ describes grapheme-boundary restrictions, explaining why general categories
 alone were insufficient. The allowlist argument above avoids relying on a
 producer-maintained approximation of those Unicode boundaries.
 
-The source inspected here is .NET **8.0.0**, not a verified source identity
-for every later .NET 8 patch. NLS, hybrid globalization, other cultures, and
+The source originally inspected here is .NET **8.0.0**. The
+[published-package investigation](runner-package-runtime.md) additionally
+checks the corresponding case-sensitive path at a specific **8.0.30** commit
+and binds package execution to its build identity. It does not establish the
+same behavior for every later .NET 8 patch. NLS, hybrid globalization, other cultures, and
 future implementation changes are outside this source argument. In particular,
 the known `th-TH` failure is not fixed. The commands remain research-only.
 The oracle records its actual runtime and tests every non-NUL Unicode scalar
@@ -222,8 +225,9 @@ GitHub documents a general 30-day self-hosted update requirement. Its September
 eligibility and says that the announced Enterprise Cloud enforcement does not
 apply to GitHub Enterprise Server.
 
-The current oracle builds and executes only v2.337.0 source. It does not test
-v2.336.0 or a published runner package and therefore does not establish a
+The source-built oracle executes v2.337.0. The additional
+[package-backed probe](runner-package-runtime.md) checks its distributed
+parser/runtime, but neither tests v2.336.0 nor establishes a supported
 self-hosted compatibility matrix. This section records evidence only; the
 proposed interpretation and unresolved policy live in the framing decision.
 

@@ -13,6 +13,7 @@ on:
       - .github/scripts/install-shoutx.sh
       - .github/workflows/release.yml
       - scripts/verify-stable-docs.sh
+      - tools/archive-validator/**
       - src/**
       - tests/fixtures/stable-help.txt
       - tests/cli_contract.rs
@@ -42,7 +43,8 @@ jobs:
             echo "Rust toolchain must be one exact stable version" >&2
             exit 1
           fi
-          rustup toolchain install "$toolchain" --profile minimal
+          rustup toolchain install "$toolchain" --profile minimal \
+            --component clippy --component rustfmt
           printf 'TOOLCHAIN=%s\n' "$toolchain" >> "$GITHUB_ENV"
       - name: Verify stable contract with release feature flags
         run: |
@@ -62,10 +64,24 @@ jobs:
           fi
           cargo tree --locked --features unstable-github-actions-stdout -e normal |
             grep -F 'unicode-general-category'
+      - name: Verify release archive validator
+        shell: bash
+        run: |
+          cargo +"$TOOLCHAIN" fmt \
+            --manifest-path tools/archive-validator/Cargo.toml --all -- --check
+          cargo +"$TOOLCHAIN" test --locked \
+            --manifest-path tools/archive-validator/Cargo.toml
+          cargo +"$TOOLCHAIN" clippy --all-targets --locked \
+            --manifest-path tools/archive-validator/Cargo.toml -- -D warnings
       - uses: EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25
         with:
           command: check
           arguments: --all-features --locked
+          command-arguments: advisories bans licenses sources
+      - uses: EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25
+        with:
+          command: check
+          arguments: --manifest-path tools/archive-validator/Cargo.toml --config ${{ github.workspace }}/deny.toml --locked
           command-arguments: advisories bans licenses sources
 
   metadata:
@@ -420,21 +436,36 @@ jobs:
             gh release edit "$TAG" --draft=false --prerelease=false --latest
           fi
 
+          release=$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$TAG")
+          if [[ "$(jq -r '.immutable' <<< "$release")" != "true" ]]; then
+            echo "Published release is not immutable; this version is ineligible"
+            exit 1
+          fi
+
   aggregate:
     needs: [metadata, build]
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     env:
       VERSION: ${{ needs.metadata.outputs.version }}
+      TOOLCHAIN: ${{ needs.metadata.outputs.toolchain }}
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Install pinned Rust toolchain
+        shell: bash
+        run: rustup toolchain install "$TOOLCHAIN" --profile minimal
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
         with:
           pattern: candidate-*
-          path: dist
+          path: ${{ runner.temp }}/release-candidates
           merge-multiple: true
       - name: Verify complete artifact set and checksums
         shell: bash
         run: |
+          test -z "$(git status --porcelain --untracked-files=all)"
+          candidate_dir="$RUNNER_TEMP/release-candidates"
           expected=$(mktemp)
           actual=$(mktemp)
           for target in \
@@ -447,18 +478,29 @@ jobs:
           done > "$expected"
           echo "shoutx-v${VERSION}-x86_64-pc-windows-msvc.zip" >> "$expected"
           LC_ALL=C sort -o "$expected" "$expected"
-          find dist -maxdepth 1 -type f -printf '%f\n' | LC_ALL=C sort > "$actual"
+          find "$candidate_dir" -maxdepth 1 -type f -printf '%f\n' | LC_ALL=C sort > "$actual"
           diff -u "$expected" "$actual"
+          validated=0
+          while IFS= read -r filename; do
+            root=${filename%.tar.gz}
+            root=${root%.zip}
+            echo "Validating $filename"
+            cargo +"$TOOLCHAIN" run --quiet --locked \
+              --manifest-path tools/archive-validator/Cargo.toml -- \
+              "$candidate_dir/$filename" "$root" </dev/null
+            validated=$((validated + 1))
+          done < "$expected"
+          test "$validated" -eq 5
           (
-            cd dist
+            cd "$candidate_dir"
             while IFS= read -r filename; do
               sha256sum -- "$filename"
             done < "$expected" > SHA256SUMS
           )
-          (cd dist && sha256sum --check SHA256SUMS)
+          (cd "$candidate_dir" && sha256sum --check SHA256SUMS)
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: release-assets
-          path: dist/
+          path: ${{ runner.temp }}/release-candidates/
           if-no-files-found: error
           retention-days: 2

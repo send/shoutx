@@ -9,6 +9,9 @@ on:
 permissions:
   contents: read
 
+env:
+  SHOUTX_SOURCE_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+
 jobs:
   stable-docs:
     timeout-minutes: 5
@@ -139,6 +142,12 @@ jobs:
       - name: Verify state is not a step environment export
         shell: bash
         run: test -z "${STATE_Result+x}"
+      - name: Test hosted boundary verifier offline
+        shell: bash
+        run: python -B tests/workflow-smoke/test_hosted_boundaries.py
+      - name: Exercise hosted stdout boundaries
+        shell: bash
+        run: python -B tests/workflow-smoke/hosted_boundaries.py emit
       - name: Dogfood GitHub environment files on POSIX
         id: dogfood_posix
         if: runner.os != 'Windows'
@@ -293,6 +302,10 @@ jobs:
             'set -euo pipefail; marker="shoutx-mask-$(od -An -N16 -tx1 /dev/urandom | tr -d " \n")"; printf %s "$marker" | "$(cygpath -u "$SHOUTX_UNSTABLE_BIN")" github-actions:mask; printf "SHOUTX_MASK_GIT_BASH_WINDOWS_BEGIN%s_END\n" "$marker"'
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
+      - name: Mark hosted test sequence complete
+        shell: bash
+        run: python -B tests/workflow-smoke/hosted_boundaries.py finish
+
   msrv:
     needs: changes
     if: ${{ needs.changes.outputs.run_ci == 'true' }}
@@ -423,7 +436,7 @@ jobs:
   hosted-annotations:
     needs: [changes, test]
     if: ${{ always() }}
-    timeout-minutes: 5
+    timeout-minutes: 10
     runs-on: ubuntu-latest
     permissions:
       actions: read
@@ -433,6 +446,10 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       GH_REPO: ${{ github.repository }}
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        if: ${{ needs.changes.outputs.run_ci == 'true' }}
+        with:
+          persist-credentials: false
       - name: Verify hosted annotation round trips
         if: ${{ needs.changes.outputs.run_ci == 'true' }}
         shell: bash
@@ -441,10 +458,15 @@ jobs:
           jobs_json="$RUNNER_TEMP/jobs.json"
           gh api --paginate \
             "repos/$GH_REPO/actions/runs/${{ github.run_id }}/jobs?filter=latest&per_page=100" \
-            --jq '.jobs[] | [.name, .conclusion, .check_run_url, .id] | @tsv' > "$jobs_json"
+            --jq '.jobs[] | [.name, .conclusion, .check_run_url, .id, .run_attempt] | @tsv' > "$jobs_json"
 
           for os in ubuntu-latest macos-latest windows-latest; do
             job="test ($os)"
+            count=$(awk -F '\t' -v name="$job" '$1 == name { count += 1 } END { print count + 0 }' "$jobs_json")
+            if [[ "$count" != 1 ]]; then
+              echo "Expected exactly one $job" >&2
+              exit 1
+            fi
             row=$(awk -F '\t' -v name="$job" '$1 == name { print; exit }' "$jobs_json")
             conclusion=$(printf '%s\n' "$row" | cut -f2)
             if [[ "$conclusion" != success ]]; then
@@ -453,6 +475,7 @@ jobs:
             fi
             check_url=$(printf '%s\n' "$row" | cut -f3)
             job_id=$(printf '%s\n' "$row" | cut -f4)
+            source_attempt=$(printf '%s\n' "$row" | cut -f5)
             endpoint="${check_url#https://api.github.com/}/annotations?per_page=100"
             annotations="$RUNNER_TEMP/annotations-$os.json"
             pages="$RUNNER_TEMP/annotation-pages-$os.json"
@@ -494,25 +517,39 @@ jobs:
             done
             if [[ "$verified" != true ]]; then
               echo "Missing or mismatched shoutx annotations for $job" >&2
-              jq '[.[] | {annotation_level, title, message, path, start_line, end_line, start_column, end_column}]' \
-                "$annotations" >&2
               exit 1
             fi
 
             raw_log="$RUNNER_TEMP/log-$os.txt"
             log_messages="$RUNNER_TEMP/log-messages-$os.txt"
-            curl --fail --silent --show-error --location \
-              --header "Authorization: Bearer $GH_TOKEN" \
-              --header 'X-GitHub-Api-Version: 2022-11-28' \
-              "https://api.github.com/repos/$GH_REPO/actions/jobs/$job_id/logs" \
-              > "$raw_log"
+            boundary_verified=false
+            for attempt in {1..6}; do
+              if curl --fail --silent --show-error --location --max-time 30 \
+                  --header "Authorization: Bearer $GH_TOKEN" \
+                  --header 'X-GitHub-Api-Version: 2026-03-10' \
+                  "https://api.github.com/repos/$GH_REPO/actions/jobs/$job_id/logs" > "$raw_log" &&
+                gh api --paginate --slurp "$endpoint" > "$pages" &&
+                jq 'add' "$pages" > "$annotations" &&
+                python -B tests/workflow-smoke/hosted_boundaries.py verify \
+                  --log "$raw_log" --annotations "$annotations" --os "$runner_os" \
+                  --job-id "$job_id" --source-attempt "$source_attempt" \
+                  --evidence "$RUNNER_TEMP/hosted-boundary-evidence/$os.json"; then
+                boundary_verified=true
+                break
+              fi
+              echo "$job boundary evidence is not verified (attempt $attempt of 6)"
+              sleep 10
+            done
+            if [[ "$boundary_verified" != true ]]; then
+              exit 1
+            fi
             sed -E 's/\r$//; s/^[0-9]{4}-[0-9]{2}-[0-9]{2}T[^ ]+Z //' \
               "$raw_log" > "$log_messages"
             for expected in \
               '##[notice]notice % :: 日本語' \
               '##[error]error annotation does not fail the step'; do
               if [[ $(grep -Fxc -- "$expected" "$log_messages") -ne 1 ]]; then
-                echo "Missing or duplicated exact log line for $job: $expected" >&2
+                echo "Missing or duplicated exact log line for $job" >&2
                 exit 1
               fi
             done
@@ -528,7 +565,16 @@ jobs:
               echo "Missing or duplicated exact multiline warning log text for $job" >&2
               exit 1
             fi
+
           done
+      - name: Retain hosted boundary observations
+        if: ${{ always() && needs.changes.outputs.run_ci == 'true' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: hosted-boundary-evidence
+          path: ${{ runner.temp }}/hosted-boundary-evidence/
+          if-no-files-found: error
+          retention-days: 30
 
   # The main-branch ruleset requires this stable aggregate check rather than
   # individual matrix checks.

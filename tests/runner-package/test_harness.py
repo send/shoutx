@@ -146,11 +146,15 @@ class HarnessTests(unittest.TestCase):
         parser = {"file": "parser.dll", "sha256": "b", "inPackage": True, "informationalVersion": "2+runner"}
         worker = {"file": "worker.dll", "sha256": "c", "inPackage": True, "informationalVersion": "2+runner"}
         masker = {"file": "Sdk.dll", "sha256": "d", "inPackage": True}
-        report = {"coreLibrary": core, "parserAssembly": parser, "workerAssembly": worker, "maskerAssembly": masker,
+        report = {"status": "passed", "coreLibrary": core, "parserAssembly": parser, "workerAssembly": worker, "maskerAssembly": masker,
                   "loadedManagedAssemblies": [core, parser, worker, masker],
                   "dynamicAssemblyNames": ["ProxyBuilder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null"]}
         files = {"core.dll": "a", "parser.dll": "b", "worker.dll": "c", "Sdk.dll": "d"}
         harness.verify_managed(report, files, pins)
+        harness.verify_managed({**report, "status": "failed", "dynamicAssemblyNames": []}, files, pins)
+        for status, names in (("passed", []), ("failed", ["foreign"]), ("failed", None)):
+            with self.assertRaises(ValueError):
+                harness.verify_managed({**report, "status": status, "dynamicAssemblyNames": names}, files, pins)
         for field, value in (("file", "foreign.dll"), ("sha256", "wrong"), ("inPackage", False), ("informationalVersion", "9+other")):
             bad = json.loads(json.dumps(report))
             bad["coreLibrary"][field] = value

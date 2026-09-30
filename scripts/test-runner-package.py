@@ -175,7 +175,11 @@ def verify_managed(probe, files, pins):
         raise ValueError("parser build differs from pinned Runner source")
     if worker.get("informationalVersion") != f'{pins["runnerVersion"]}+{pins["runnerCommit"]}':
         raise ValueError("worker build differs from pinned Runner source")
-    if probe.get("dynamicAssemblyNames") != ["ProxyBuilder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null"]:
+    allowed_dynamic = ["ProxyBuilder, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null"]
+    dynamic = probe.get("dynamicAssemblyNames")
+    # An earlier parser/culture failure can occur before the first service
+    # double is created. Don't mislabel that as a foreign-assembly failure.
+    if dynamic not in ([], allowed_dynamic) or (probe.get("status") == "passed" and dynamic != allowed_dynamic):
         raise ValueError("unexpected dynamic assembly evidence")
 
 

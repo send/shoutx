@@ -5,6 +5,7 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import tempfile
 import unittest
 from unittest.mock import patch
 
@@ -145,6 +146,40 @@ class HostedTests(unittest.TestCase):
                 run.return_value = subprocess.CompletedProcess([], status, stderr=stderr)
                 with self.assertRaises(ValueError):
                     probe.invoke("binary", "mask", [], "synthetic")
+
+    def test_summary_match_mismatch_and_incomplete(self):
+        with tempfile.TemporaryDirectory() as directory:
+            directory = Path(directory)
+            context = {"GITHUB_RUN_ID": "123", "GITHUB_RUN_ATTEMPT": "2",
+                       "GITHUB_SHA": "a" * 40, "SHOUTX_SOURCE_HEAD": "b" * 40}
+            for label, os_name in (("ubuntu-latest", "Linux"), ("macos-latest", "macOS"),
+                                   ("windows-latest", "Windows")):
+                report = self.verify()
+                report["identity"]["RUNNER_OS"] = os_name
+                report["verifierAttempt"] = "2"
+                (directory / (label + ".json")).write_text(json.dumps(report))
+            text, complete = probe.summarize(directory, context)
+            self.assertTrue(complete)
+            self.assertEqual(text.count("| MATCH |"), 3)
+            target = directory / "windows-latest.json"
+            original = json.loads(target.read_text())
+            different = {**original, "runnerVersion": "9.9.9", "runnerMatchesPin": False}
+            target.write_text(json.dumps(different))
+            text, complete = probe.summarize(directory, context)
+            self.assertTrue(complete)  # Drift is a visible observation, not a test failure.
+            self.assertIn("DIFFERS - review required", text)
+            for field, value in (("status", "failed"), ("maskCases", 0), ("verifierAttempt", "1"),
+                                 ("runnerMatchesPin", "true"), ("runnerVersion", "<unsafe>|payload")):
+                target.write_text(json.dumps({**original, field: value}))
+                text, complete = probe.summarize(directory, context)
+                self.assertFalse(complete)
+                self.assertNotIn("<unsafe>", text)
+            target.write_text(json.dumps(original))
+            self.assertFalse(probe.summarize(directory, {**context, "GITHUB_SHA": "stale"})[1])
+            target.write_text("not json")
+            self.assertFalse(probe.summarize(directory, context)[1])
+            target.unlink()
+            self.assertFalse(probe.summarize(directory, context)[1])
 
     def test_real_producer_wire_bytes(self):
         if not os.environ.get("UNSTABLE_BINARY"):

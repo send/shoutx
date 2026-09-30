@@ -278,7 +278,8 @@ or argv. Shell tests must also confirm that stdout uses one LF-terminated
 command on Windows without depending on text-mode newline conversion.
 
 The external verifier is a `workflow_run` workflow stored on the default
-branch. It runs only for successful `push` executions of CI on `main`, obtains
+branch. It runs only for successful `push`, `schedule`, or `workflow_dispatch`
+executions of CI on `main` from this repository, obtains
 the completed log archive with read-only Actions permission, and never checks
 out or executes code from the triggering revision. Runtime-generated values
 remain unknown to the verifier: fixed per-OS and per-shell sentinels prove

@@ -156,9 +156,56 @@ def verify(raw, actual, runner_os, run_id, attempt, sha, head):
             "logSha256": hashlib.sha256(raw.encode("utf-8")).hexdigest()}
 
 
+def summarize(directory, context):
+    """Summarize fresh verified reports, never raw logs/API values."""
+    pinned = json.loads((Path(__file__).resolve().parents[1] / "runner-package/pins.json").read_text())["runnerVersion"]
+    rows = ["## Hosted Runner compatibility observations", "",
+            "| OS | Observed Runner | Pinned Runner | Comparison | Image / version |",
+            "| --- | --- | --- | --- | --- |"]
+    complete = True
+    mismatch = False
+    for label, runner_os in (("ubuntu-latest", "Linux"), ("macos-latest", "macOS"),
+                             ("windows-latest", "Windows")):
+        try:
+            report = json.loads((directory / (label + ".json")).read_text(encoding="utf-8"))
+            identity = report["identity"]
+            if (report["status"] != "passed" or report["maskCases"] != len(STARTS)
+                    or report["annotationCases"] != len(annotations())
+                    or report["pinnedRunnerVersion"] != pinned
+                    or identity["RUNNER_OS"] != runner_os
+                    or report["verifierAttempt"] != context["GITHUB_RUN_ATTEMPT"]
+                    or any(identity[key] != context[key] for key in
+                           ("GITHUB_RUN_ID", "GITHUB_SHA", "SHOUTX_SOURCE_HEAD"))):
+                raise ValueError("incomplete evidence")
+            version = report["runnerVersion"]
+            matches = version == pinned
+            if report["runnerMatchesPin"] is not matches:
+                raise ValueError("inconsistent comparison")
+            image, image_version = identity["ImageOS"], identity["ImageVersion"]
+            # Narrow display grammar prevents Markdown/HTML/control injection.
+            for value in (version, pinned, image, image_version):
+                if not isinstance(value, str) or not re.fullmatch(r"[A-Za-z0-9_.-]{1,80}", value):
+                    raise ValueError("invalid display field")
+            comparison = "MATCH" if matches else "DIFFERS - review required"
+            mismatch |= not matches
+            rows.append(f"| {runner_os} | {version} | {pinned} | {comparison} | {image} / {image_version} |")
+        except (ValueError, KeyError, OSError, TypeError, AttributeError):
+            complete = False
+            rows.append(f"| {runner_os} | unavailable | unavailable | INCOMPLETE | unavailable |")
+    rows += ["", "These are hosted behavioral observations, not a support guarantee.",
+             "Worker culture/backend remain unknown; version equality is not package identity."]
+    if mismatch:
+        rows += ["", "A hosted Runner differs from the pin. Review its source/runtime and results;",
+                 "update pins only in a separately reviewed PR. No pin was changed automatically."]
+    if not complete:
+        rows += ["", "Evidence is incomplete or stale. Do not treat this run as passing evidence."]
+    rows += ["", "Consult the CI result and the separate completed-log verifier as well.", ""]
+    return "\n".join(rows), complete
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("mode", choices=("emit", "verify", "finish"))
+    parser.add_argument("mode", choices=("emit", "verify", "finish", "summary"))
     parser.add_argument("--log", type=Path)
     parser.add_argument("--annotations", type=Path)
     parser.add_argument("--os", choices=("Linux", "macOS", "Windows"))
@@ -171,6 +218,11 @@ def main():
             emit()
         elif args.mode == "finish":
             write_line(FINISH)
+        elif args.mode == "summary":
+            summary, complete = summarize(args.evidence, os.environ)
+            with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as output:
+                output.write(summary)
+            return 0 if complete else 1
         else:
             args.evidence.parent.mkdir(parents=True, exist_ok=True)
             args.evidence.write_text('{"status": "failed"}\n', encoding="utf-8")

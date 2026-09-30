@@ -5,6 +5,9 @@ on:
   pull_request:
   push:
     branches: [main]
+  schedule:
+    - cron: '37 3 * * 3' # Wednesday 03:37 UTC / 12:37 JST
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -21,6 +24,8 @@ jobs:
         with:
           persist-credentials: false
       - run: scripts/verify-stable-docs.sh
+      - name: Test CI event scope
+        run: python3 -B tests/workflow-smoke/test_ci_scope.py
 
   changes:
     timeout-minutes: 5
@@ -44,34 +49,8 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           shoutx="$RUNNER_TEMP/shoutx-bootstrap/bin/shoutx"
-          if [[ "$EVENT_NAME" == "push" && "$BASE_SHA" =~ ^0+$ ]]; then
-            "$shoutx" github-actions:output run_ci true >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          if [[ "$EVENT_NAME" == "pull_request" ]]; then
-            range="$BASE_SHA...$HEAD_SHA"
-          else
-            range="$BASE_SHA..$HEAD_SHA"
-          fi
-
-          set +e
-          git diff --quiet "$range" -- . \
-            ':(exclude)AGENTS.md' \
-            ':(exclude)README.md' \
-            ':(exclude)SECURITY.md' \
-            ':(exclude)docs/**'
-          status=$?
-          set -e
-
-          case "$status" in
-            0) "$shoutx" github-actions:output run_ci false >> "$GITHUB_OUTPUT" ;;
-            1) "$shoutx" github-actions:output run_ci true >> "$GITHUB_OUTPUT" ;;
-            *)
-              echo "Change detection failed with status $status; running full CI"
-              "$shoutx" github-actions:output run_ci true >> "$GITHUB_OUTPUT"
-              ;;
-          esac
+          run_ci=$(bash .github/scripts/ci-scope.sh)
+          "$shoutx" github-actions:output run_ci "$run_ci" >> "$GITHUB_OUTPUT"
 
   dependencies:
     needs: changes
@@ -567,6 +546,9 @@ jobs:
             fi
 
           done
+      - name: Summarize hosted Runner compatibility
+        if: ${{ always() && needs.changes.outputs.run_ci == 'true' }}
+        run: python -B tests/workflow-smoke/hosted_boundaries.py summary --evidence "$RUNNER_TEMP/hosted-boundary-evidence"
       - name: Retain hosted boundary observations
         if: ${{ always() && needs.changes.outputs.run_ci == 'true' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a

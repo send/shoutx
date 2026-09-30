@@ -377,8 +377,8 @@ it does not attest transport completeness after it or cover post-action output.
 The existing `hosted-annotations` job performs this read-only verification
 within PR and main CI, using only Actions/Checks/Contents read permissions.
 It checks out the same tested revision; unlike the default-branch
-`workflow_run` mask verifier, it is not a trusted external release gate. Keep
-that existing verifier and shell cases unchanged. Missing, duplicated, changed
+`workflow_run` mask verifier, it is not a trusted external release gate. Retain
+that independent verifier and its shell cases. Missing, duplicated, changed
 or late/missing API results must not pass. Offline negative controls mutate
 logs, annotation fields/counts, identity and mask leaks to test rejection.
 
@@ -398,6 +398,40 @@ evidence; require all three reports and the successful verifier job. Only
 synthetic canaries are used; reports do not contain full job logs or raw mask
 values. This finite matrix neither expands accepted input nor resolves the
 deferred `th-TH` issue nor changes stdout release eligibility.
+
+### Continuing compatibility checks
+
+CI runs weekly on Wednesday at 03:37 UTC (12:37 JST) and can be started manually
+with `workflow_dispatch`. These events unconditionally select full CI, including
+the source/package Runner matrices and live hosted tests, even without code
+changes. PR and push events retain their documentation-only skip behavior.
+The external completed-log mask verifier also accepts successful scheduled and
+manual CI runs, but only on `main` in this repository; it keeps read-only Actions
+permission and never checks out triggering code. Manual runs on other refs do
+not receive that external verification.
+
+The hosted verification job always attempts a step summary when full CI was
+selected. It shows each observed Runner version against the existing pin and
+records the current image/version. A mismatch is conspicuous review-required
+drift, not automatic failure of successful behavioral checks or permission to
+claim support. Missing, failed, inconsistent or stale reports produce an
+incomplete summary and fail the summary step. Require the CI result and the
+separate completed-log verifier, not just the summary table. Reports retain
+their existing 30-day lifetime; there is no historical image-diff service here.
+
+Maintainers should inspect source/runtime changes and fresh results after a
+version mismatch, and update pins only in a separately reviewed PR. This job
+does not fetch/execute a newly released Runner, change pins, create issues,
+contact upstream or expand the support/release boundary. It detects changes to
+the observed hosted Runner and behavior, not every new self-hosted release.
+
+The [GitHub event documentation](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule)
+notes that scheduled runs use the default branch, may be delayed or dropped,
+and public-repository schedules can be disabled after 60 days without activity.
+Manual dispatch requires the workflow to exist on the default branch. Confirm
+fresh successful runs periodically; an enabled cron is not evidence of execution.
+The schedule/manual trigger itself must be exercised after merge; PR CI and
+offline event-routing tests are not proof that those triggers fired.
 
 ## Shell and workflow matrix
 

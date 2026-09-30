@@ -143,7 +143,7 @@ contracts of environment-file writers.
 
 - Work on additional stdout workflow commands, including `debug`, remains
   paused.
-- Existing annotation and mask Unicode-category guards are only pre-release observations and
+- Existing annotation and mask prefix guards are only pre-release observations and
   cannot justify release eligibility.
 - UTF-8 values are not narrowed to ASCII and are never silently deleted or
   normalized to make framing succeed.

@@ -67,7 +67,7 @@ beginning with a separator-sensitive scalar and containing
 registration. Unlike the unregistered-command fallback example, this input
 starts with a registered V2 command. The
 [mask specification](../commands/github-actions-mask.md) defines producer
-rejection for this input; this is a regression of the consumer defect, not an
+rejection for this input; this is a regression test for the consumer defect, not an
 accepted output.
 The accepted mask and annotation corpora are also exercised explicitly under
 both cultures. These are source-built oracle checks, not claims of exhaustive
@@ -85,6 +85,11 @@ the category set. The oracle includes these as raw fallback counterexamples;
 the command specifications include them explicitly in prefix rejection.
 This input-dependent issue with Thai/Lao characters is distinct from the
 deferred `th-TH` culture failure for ordinary ASCII input.
+Sequences U+200D U+0301, U+200C U+0E33, and U+E0020 U+1F3FB also fail
+under both cultures despite beginning outside the category set. Tests include
+these and a mixed run of joining/tag scalars followed by U+0301. The shared
+input rule therefore looks past its specified leading run for validation,
+without changing accepted output bytes.
 
 PR #42 added a pinned-runner regression proving the ASCII-only `th-TH` V2
 failure and comparing the legacy parser under selected cultures. The current

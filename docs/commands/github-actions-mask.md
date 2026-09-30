@@ -38,15 +38,14 @@ report success without registering a mask. The whitespace classification is
 the .NET 8 `Char.IsWhiteSpace` set, equivalent here to the Unicode
 `White_Space` property. U+FEFF and U+200B are not whitespace under that rule.
 
-After producer framing, reject a value whose first Unicode scalar has
-General_Category `Mn`, `Mc`, `Me`, or `Lm`, or is U+0E33, U+0EB3, or
-U+1F3FB--U+1F3FF, with status 1, empty stdout, and a
-fixed diagnostic that does not contain the value. This matches the annotation
-message-prefix guard; the
+After producer framing, apply the shared separator-sensitive data-prefix rule
+defined in the [annotation input policy](github-actions-annotations.md).
+Reject a matching value with status 1, empty stdout, and a fixed diagnostic
+that does not contain the value. The
 [compatibility note](../compatibility/github-actions-workflow-command-parser.md)
 records the observed delimiter failure and fallback. Do not delete, normalize,
-or replace that scalar: registering a changed string would not faithfully mask
-the original value. Interior scalars in these categories remain data.
+or replace any scalar: registering a changed string would not faithfully mask
+the original value. Scalars beyond the inspected prefix remain data.
 This is a bounded research mitigation, not a complete framing guarantee; the
 known `th-TH` ASCII failure remains unresolved and is deferred by the
 [framing decision](../decisions/github-actions-stdout-framing.md).
@@ -203,6 +202,7 @@ U+3000. Verify that U+FEFF and U+200B are accepted as non-whitespace data.
 Through argv and stdin, reject leading `Mn`, `Mc`, `Me`, and `Lm` scalars,
 including U+0301, U+034F, U+0903, U+20DD, U+02B0, U+FF9E, and U+FF9F.
 Cover supplementary-plane category members and every explicitly listed scalar.
+Include sensitive scalars hidden behind the shared rule's skipped leading run.
 Include both ordinary suffixes and `::` / `##[warning]`-looking suffixes and
 assert the exact fixed diagnostic, status 1, and empty stdout. Preserve interior
 combining characters and accepted format-character prefixes byte-for-byte.

@@ -262,6 +262,33 @@ fn all_severities_reject_legacy_fallback_payloads_without_output() {
 }
 
 #[test]
+fn transparent_leaders_cannot_hide_a_sensitive_message_prefix() {
+    for command in [
+        "github-actions:notice",
+        "github-actions:warning",
+        "github-actions:error",
+    ] {
+        for prefix in [
+            "\u{200d}\u{0301}",
+            "\u{200c}\u{0e33}",
+            "\u{e0020}\u{1f3fb}",
+            "\u{200c}\u{200d}\u{e0020}\u{e007f}\u{0301}",
+        ] {
+            let value = format!("{prefix}private ##[warning]fallback");
+            for output in [
+                failure(&[command, &value], None, 1),
+                failure(&[command], Some(value.as_bytes()), 1),
+            ] {
+                assert_eq!(
+                    output.stderr,
+                    b"error: annotation message begins with a separator-sensitive character\n"
+                );
+            }
+        }
+    }
+}
+
+#[test]
 fn text_properties_are_encoded_in_fixed_order() {
     success(
         &[

@@ -56,11 +56,15 @@ not convert it to an uploaded annotation. Here and below, Unicode whitespace
 means the .NET 8 `Char.IsWhiteSpace` set, equivalent for accepted UTF-8 input to
 the Unicode `White_Space` property.
 
-A message whose first Unicode scalar has General_Category `Mn`, `Mc`, `Me`, or
-`Lm`, or is U+0E33, U+0EB3, or U+1F3FB--U+1F3FF, is rejected.
+A message is rejected by the shared **separator-sensitive data-prefix rule**:
+for validation only, skip an initial run of U+200C, U+200D, and
+U+E0020--U+E007F; reject if the next scalar has Unicode 16.0 General_Category
+`Mn`, `Mc`, `Me`, or `Lm`, or is U+0E33, U+0EB3, or U+1F3FB--U+1F3FF.
+Do not remove the skipped scalars from accepted output. If no scalar remains,
+this rule alone does not reject the value. The same rule applies to mask data.
 TITLE and FILE reject a final scalar with the Unicode
-`Prepended_Concatenation_Mark` property. These checks retain the implemented
-behavior for observed separator-movement cases; they are not a complete
+`Prepended_Concatenation_Mark` property. These checks mitigate observed
+separator-movement cases; they are not a complete
 defense. The pinned runner's culture-sensitive `::` search can fail even for
 ordinary ASCII data, and a scalar or Unicode-category denylist cannot establish
 framing safety across cultures and collation-data versions.
@@ -215,7 +219,8 @@ cases with a later `::` followed by property-looking message data. Reject a
 final `Prepended_Concatenation_Mark` scalar in TITLE and FILE and exercise
 property-looking message data after the separator.
 For all three severities and both input sources, include a leading rejected
-scalar followed by a legacy-looking `##[warning]` payload; assert status 1,
+scalar followed by a legacy-looking `##[warning]` payload, including sensitive
+scalars hidden behind the rule's skipped leading run. Assert status 1,
 empty stdout, and the exact value-free diagnostic. Run the accepted annotation
 corpus under both Invariant Culture and `en-US` in the pinned runner oracle.
 

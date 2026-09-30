@@ -213,6 +213,11 @@ fn cases() -> Vec<AnnotationCase> {
     for (id, prefix) in [
         ("zwj", "\u{200d}"),
         ("zwnj", "\u{200c}"),
+        ("transparent-chain", "\u{200c}\u{200d}\u{e0020}\u{e007f}"),
+        (
+            "transparent-control-before-combining",
+            "\u{200d}\u{200b}\u{0301}",
+        ),
         ("tag-space", "\u{e0020}"),
         ("cancel-tag", "\u{e007f}"),
         ("space-before-combining", " \u{0301}"),

@@ -97,6 +97,10 @@ public sealed class ShoutxDifferentialL0
     [InlineData("\U0001F3FD")]
     [InlineData("\U0001F3FE")]
     [InlineData("\U0001F3FF")]
+    [InlineData("\u200D\u0301")]
+    [InlineData("\u200C\u0E33")]
+    [InlineData("\U000E0020\U0001F3FB")]
+    [InlineData("\u200C\u200D\U000E0020\U000E007F\u0301")]
     [Trait("Level", "L0")]
     [Trait("Category", "Worker")]
     public void CombiningMaskPrefixCanSelectLegacyWarning(string prefix)

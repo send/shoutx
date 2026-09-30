@@ -211,6 +211,27 @@ fn separator_sensitive_prefixes_fail_without_disclosing_or_changing_the_value() 
 }
 
 #[test]
+fn transparent_leaders_cannot_hide_a_sensitive_prefix() {
+    for prefix in [
+        "\u{200d}\u{0301}",
+        "\u{200c}\u{0e33}",
+        "\u{e0020}\u{1f3fb}",
+        "\u{200c}\u{200d}\u{e0020}\u{e007f}\u{0301}",
+    ] {
+        let value = format!("{prefix}private ##[warning]fallback");
+        for output in [
+            failure(&["github-actions:mask", &value], None, 1),
+            failure(&["github-actions:mask"], Some(value.as_bytes()), 1),
+        ] {
+            assert_eq!(
+                output.stderr,
+                b"error: mask value begins with a separator-sensitive character\n"
+            );
+        }
+    }
+}
+
+#[test]
 fn invalid_text_is_rejected_without_disclosure() {
     let nul = failure(&["github-actions:mask"], Some(b"private\0value"), 1);
     assert!(!nul.stderr.windows(7).any(|part| part == b"private"));

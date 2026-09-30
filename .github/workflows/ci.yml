@@ -139,6 +139,12 @@ jobs:
       - name: Verify state is not a step environment export
         shell: bash
         run: test -z "${STATE_Result+x}"
+      - name: Test hosted boundary verifier offline
+        shell: bash
+        run: python -B tests/workflow-smoke/test_hosted_boundaries.py
+      - name: Exercise hosted stdout boundaries
+        shell: bash
+        run: python -B tests/workflow-smoke/hosted_boundaries.py emit
       - name: Dogfood GitHub environment files on POSIX
         id: dogfood_posix
         if: runner.os != 'Windows'
@@ -423,7 +429,7 @@ jobs:
   hosted-annotations:
     needs: [changes, test]
     if: ${{ always() }}
-    timeout-minutes: 5
+    timeout-minutes: 10
     runs-on: ubuntu-latest
     permissions:
       actions: read
@@ -433,6 +439,10 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       GH_REPO: ${{ github.repository }}
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        if: ${{ needs.changes.outputs.run_ci == 'true' }}
+        with:
+          persist-credentials: false
       - name: Verify hosted annotation round trips
         if: ${{ needs.changes.outputs.run_ci == 'true' }}
         shell: bash
@@ -445,6 +455,11 @@ jobs:
 
           for os in ubuntu-latest macos-latest windows-latest; do
             job="test ($os)"
+            count=$(awk -F '\t' -v name="$job" '$1 == name { count += 1 } END { print count + 0 }' "$jobs_json")
+            if [[ "$count" != 1 ]]; then
+              echo "Expected exactly one $job" >&2
+              exit 1
+            fi
             row=$(awk -F '\t' -v name="$job" '$1 == name { print; exit }' "$jobs_json")
             conclusion=$(printf '%s\n' "$row" | cut -f2)
             if [[ "$conclusion" != success ]]; then
@@ -528,7 +543,33 @@ jobs:
               echo "Missing or duplicated exact multiline warning log text for $job" >&2
               exit 1
             fi
+
+            boundary_verified=false
+            for attempt in {1..6}; do
+              if gh api --paginate --slurp "$endpoint" > "$pages" &&
+                jq 'add' "$pages" > "$annotations" &&
+                python -B tests/workflow-smoke/hosted_boundaries.py verify \
+                  --log "$raw_log" --annotations "$annotations" --os "$runner_os" \
+                  --job-id "$job_id" \
+                  --evidence "$RUNNER_TEMP/hosted-boundary-evidence/$os.json"; then
+                boundary_verified=true
+                break
+              fi
+              echo "$job boundary evidence is not verified (attempt $attempt of 6)"
+              sleep 10
+            done
+            if [[ "$boundary_verified" != true ]]; then
+              exit 1
+            fi
           done
+      - name: Retain hosted boundary observations
+        if: ${{ always() && needs.changes.outputs.run_ci == 'true' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: hosted-boundary-evidence
+          path: ${{ runner.temp }}/hosted-boundary-evidence/
+          if-no-files-found: error
+          retention-days: 30
 
   # The main-branch ruleset requires this stable aggregate check rather than
   # individual matrix checks.

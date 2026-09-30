@@ -333,6 +333,55 @@ remain outside this package suite, with broader policies covered by the
 source-built oracle and live hosted checks. Neither suite changes stdout
 release eligibility or the deferred `th-TH` decision.
 
+### Live hosted stdout boundary experiment
+
+The ordinary three-OS hosted test matrix additionally runs
+[`hosted_boundaries.py`](../tests/workflow-smoke/hosted_boundaries.py) against
+the research binary, with native child stdout inherited directly by the live
+Runner. Binary stdin receives UTF-8 bytes; this is not additional shell argv or
+pipeline-transcoding coverage. Separate offline tests capture and compare
+exact producer bytes before testing consumer effects.
+
+The bounded corpus uses eight ASCII starts (`A`, `:`, `%`, space, `-`, apostrophe,
+`#`, `0`) followed immediately by a combining mark and hostile Unicode/command-
+looking tails. Annotation cases additionally start with CR and LF; all three
+severities exercise Unicode, literal escape-looking text, a decoded newline,
+legacy-looking warning syntax and V2-looking error syntax as data. Compare
+exact title, workspace-relative file, severity, message, line and column fields
+from the completed job's paginated annotations API, including multiplicity.
+The dedicated step emits ten annotations per severity, at the pinned Runner's
+per-step retention cap; existing smoke annotations run in other steps.
+
+Eight distinct synthetic mask canaries include command-looking tails. Register
+all masks while command processing is active. Suspend command processing only
+while printing subsequent canary samples: otherwise legacy syntax embedded in
+ordinary log text can itself execute before masking. Resume before annotations,
+whose successful effects also test resumption. Compare the complete delimited
+log block, not only substring presence: require exactly one redacted sentinel
+per case, exact annotation log text/order, and no extra commands or messages.
+Scan the entire completed log for each synthetic marker, including an encoded
+failed registration. This does not test raw legacy-looking log data while
+command processing is active or promise arbitrary transformed-secret masking.
+
+The existing `hosted-annotations` job performs this read-only verification
+within PR and main CI, using only Actions/Checks/Contents read permissions.
+It checks out the same tested revision; unlike the default-branch
+`workflow_run` mask verifier, it is not a trusted external release gate. Keep
+that existing verifier and shell cases unchanged. Missing, duplicated, changed
+or late/missing API results must not pass. Offline negative controls mutate
+logs, annotation fields/counts, identity and mask leaks to test rejection.
+
+Retain per-OS reports for 30 days in `hosted-boundary-evidence`: source run,
+attempt, tested SHA, job ID, Runner version from its setup log, child-visible
+OS/architecture/image identity, case counts and log/API/harness digests.
+Missing identity fails the experiment. These observations do not measure the
+live worker's culture, runtime or globalization backend; culture/backend remain
+explicitly unknown. Failure reports and partial artifacts are not passing
+evidence; require all three reports and the successful verifier job. Only
+synthetic canaries are used; reports do not contain full job logs or raw mask
+values. This finite matrix neither expands accepted input nor resolves the
+deferred `th-TH` issue nor changes stdout release eligibility.
+
 ## Shell and workflow matrix
 
 The release matrix should capture executable stdout bytes before testing runner

@@ -81,7 +81,8 @@ jobs:
       - uses: EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25
         with:
           command: check
-          arguments: --manifest-path tools/archive-validator/Cargo.toml --config ${{ github.workspace }}/deny.toml --locked
+          manifest-path: tools/archive-validator/Cargo.toml
+          arguments: --config ${{ github.workspace }}/deny.toml --locked
           command-arguments: advisories bans licenses sources
 
   metadata:

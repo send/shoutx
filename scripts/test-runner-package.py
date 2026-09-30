@@ -111,9 +111,9 @@ def extract_bin(archive, destination):
                     save(name, member.size, member.mode, stream)
 
 
-def run(command, evidence, label, env=None):
+def run(command, evidence, label, env=None, cwd=ROOT):
     with (evidence / (label + ".log")).open("wb") as log:
-        subprocess.run(command, cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT,
+        subprocess.run(command, cwd=cwd, env=env, stdout=log, stderr=subprocess.STDOUT,
                        check=True, timeout=600)
 
 
@@ -143,12 +143,18 @@ def main():
     try:
         if rid not in pins["packages"]:
             raise ValueError("unsupported package probe platform")
-        sdk = subprocess.check_output(["dotnet", "--version"], cwd=ROOT, text=True).strip()
-        if sdk != pins["sdkVersion"]:
-            raise ValueError("unexpected build SDK")
-        record["buildSdk"] = sdk
         with tempfile.TemporaryDirectory(prefix="shoutx-runner-package-") as temporary:
             work = Path(temporary).resolve()
+            record["phase"] = "select-sdk"
+            # Hosted images contain newer SDKs too; setup-dotnet does not select
+            # a default. Keep the selection local, with no repository-wide change.
+            (work / "global.json").write_text(json.dumps({"sdk": {
+                "version": pins["sdkVersion"], "rollForward": "disable"}}))
+            sdk = subprocess.check_output(["dotnet", "--version"], cwd=work, text=True).strip()
+            record["buildSdk"] = sdk
+            if sdk != pins["sdkVersion"]:
+                raise ValueError("unexpected build SDK")
+            record["phase"] = "verify-package"
             pin = pins["packages"][rid]
             name = f'actions-runner-{rid}-{pins["runnerVersion"]}.{pin["extension"]}'
             url = f'https://github.com/actions/runner/releases/download/v{pins["runnerVersion"]}/{name}'
@@ -170,6 +176,7 @@ def main():
                 path = evidence / source["name"]
                 download(source["url"], path, 1024 * 1024)
                 verify(path, source["sha256"])
+            record["phase"] = "build-probe-and-corpora"
             for kind in ("mask", "annotation"):
                 env = os.environ.copy()
                 env["CARGO_TARGET_DIR"] = str(work / "cargo")
@@ -177,18 +184,20 @@ def main():
                 run(["cargo", "test", "--locked", "--features", "unstable-github-actions-stdout",
                      "--test", f"{kind}_runner_fixture", f"export_{kind}_corpus", "--", "--ignored"],
                     evidence, f"generate-{kind}", env)
-            run(["dotnet", "build", "tests/runner-package/Probe.csproj", "-c", "Release",
+            run(["dotnet", "build", str(ROOT / "tests/runner-package/Probe.csproj"), "-c", "Release",
                  f"-p:RunnerBin={binary}", f"-p:BaseIntermediateOutputPath={work / 'obj'}/",
-                 "-o", str(work / "probe")], evidence, "build-probe")
+                 "-o", str(work / "probe")], evidence, "build-probe", cwd=work)
             shutil.copyfile(work / "probe/Probe.dll", binary / "Probe.dll")
             # Self-contained worker config selects local hostpolicy/coreclr, not SDK runtime.
             probe_env = os.environ.copy()
             probe_env["COREHOST_TRACE"] = "1"
             probe_env["COREHOST_TRACEFILE"] = str(evidence / "corehost.log")
+            record["phase"] = "execute-probe"
             run(["dotnet", "exec", "--runtimeconfig", str(binary / "Runner.Worker.runtimeconfig.json"),
                  "--depsfile", str(binary / "Runner.Worker.deps.json"), str(binary / "Probe.dll"),
                  str(evidence / "probe.json"), str(evidence / "mask-corpus.json"),
-                 str(evidence / "annotation-corpus.json")], evidence, "execute-probe", probe_env)
+                 str(evidence / "annotation-corpus.json")], evidence, "execute-probe", probe_env, cwd=work)
+            record["phase"] = "verify-loaded-identities"
             coreclr = verify_coreclr((evidence / "corehost.log").read_text(encoding="utf-8"), binary, rid)
             record["selectedCoreClr"] = {"file": coreclr, "sha256": files[coreclr]}
             record["corehostTraceSha256"] = digest(evidence / "corehost.log")
@@ -213,8 +222,11 @@ def main():
                 if digest(binary / name) != sha:
                     raise ValueError("package binary changed during probe")
             record["status"] = "passed"
+            record["phase"] = "complete"
     except Exception as error:
         record["errorType"] = type(error).__name__
+        if isinstance(error, ValueError):
+            record["errorRule"] = str(error)
         print("Runner package evidence failed; inspect the evidence directory.")
         return 1
     finally:

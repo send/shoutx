@@ -36,9 +36,11 @@ GitHub release binaries. Users may still build from the repository with Cargo.
 ## Version and tag contract
 
 Release versions follow SemVer as represented by Cargo, except that the initial
-release process prohibits build metadata. A release tag is `vVERSION`, where
-`VERSION` is exactly the `[package].version` from `Cargo.toml`; for example,
-package version `0.1.0` uses tag `v0.1.0`.
+release process prohibits build metadata. Revision 1 also limits `VERSION` to
+55 ASCII bytes so every member path fits the TAR name field without an
+extension record. A release tag is `vVERSION`, where `VERSION` is exactly the
+`[package].version` from `Cargo.toml`; for example, package version `0.1.0` uses
+tag `v0.1.0`.
 
 The release workflow validates all of the following before any public release
 is created:
@@ -88,11 +90,10 @@ change; a floating `stable` toolchain is not used for release artifacts.
 ### Setup-action compatibility revision 1
 
 Releases from v0.3.0-rc.1 onward use setup-action artifact contract revision 1
-until a later release explicitly introduces another revision.
-No release in that range is eligible until the immutable-release assertion and
-raw archive-entry gates specified below are implemented in the release
-workflow. This documentation change defines those prerequisites; it does not
-claim that the current workflow already implements them.
+until a later release explicitly introduces another revision. The release
+workflow enforces the immutable-release assertion and raw archive-entry gates
+specified below; releases before v0.3.0-rc.1 did not pass those gates and are
+not eligible for the official setup action.
 The installer-consumed parts of this revision are:
 
 - the version and tag contract above;
@@ -125,16 +126,24 @@ LICENSE
 ```
 
 For installer validation, these are logical filesystem members. A tar archive
-may additionally represent the top-level directory as a directory entry and
-may contain format metadata records that do not create filesystem members. A
-ZIP archive may omit the directory entry. Neither representation permits an
-additional file, link, device, alternate path spelling, duplicate path, or
-case-colliding path. Validation uses the effective member type and path after
-GNU long-name, pax, ZIP64, and other metadata overrides; path-affecting global
-metadata, local/central ZIP name disagreement, encryption, and trailing data
-are not permitted. Ownership, timestamps, compression method, tar dialect, and
-non-path metadata-header encoding are not installer-consumed compatibility
-fields.
+may additionally represent the top-level directory as a directory entry, and
+a ZIP archive may omit that entry. Neither representation permits an additional
+file, link, device, alternate path spelling, duplicate path, or case-colliding
+path. A represented top-level directory has no payload data.
+Revision 1 deliberately excludes all pax records, GNU long-name and long-link
+records, TAR prefix and linkname fields, ZIP extra fields (including ZIP64 and
+Unicode path overrides), local/central ZIP metadata disagreement, encryption,
+data descriptors, archive and per-entry ZIP comments, multi-disk ZIPs, and
+prepended, interstitial, or trailing data. Base-256 TAR size fields are also
+excluded. A `tar.gz` contains exactly one gzip member, and TAR entry padding is
+zero-filled. Raw TAR paths use the same spelling as their logical paths and the
+header uses a recognized ustar or GNU-ustar magic and version. These encodings
+are unnecessary for the fixed, short ASCII layout and would introduce
+parser-precedence differences without user value. ZIP entries may use only
+stored or deflate compression. Ownership,
+timestamps, the choice between those two compression methods, tar dialect
+within these restrictions, and non-path metadata-header encoding are not
+installer-consumed compatibility fields.
 
 An installer extracts only the executable and sets its POSIX mode to `0755`;
 it does not trust an archive header to grant or restrict execution. Windows
@@ -238,8 +247,9 @@ a real release:
 
 - locally testable version and artifact-name validation;
 - archive-content and permission checks for every target;
-- raw archive-entry validation before extraction, including effective paths,
-  member types, duplicates, case collisions, and disallowed metadata overrides;
+- raw archive-entry validation before extraction, including exact expected
+  paths (which rejects case variants), member types, duplicates, and disallowed
+  metadata overrides;
 - execution of each packaged binary on its native build runner;
 - stable-surface verification of each extracted executable with a separate
   feature-enabled marker-scan control;
@@ -248,11 +258,16 @@ a real release:
 - a safe dry run that exercises aggregation without creating a release; and
 - documented checksum and attestation verification commands.
 
-The raw-entry gate uses an independently maintained parser or inspection tool,
-not extraction results and not the setup action's own parser. Its test corpus
-contains both accepted native-runner archives and independently constructed
-malicious entries. The concrete tool and pinned version must be selected and
-reviewed when this prerequisite is implemented.
+The raw-entry gate is the independent Rust crate under
+`tools/archive-validator`. Its separate lockfile is the source of truth for the
+parser versions; the tool is not linked into the `shoutx` executable and is not
+shared with the setup action. The gate inspects parser-resolved logical entries
+as well as raw TAR metadata and ZIP local and central headers before extraction.
+Its test corpus contains accepted independently constructed archives and
+independently constructed malicious entries. The release workflow additionally
+applies the same verifier to every native-runner archive before checksums are
+generated. The verifier limits both archive input and expanded archive data to
+256 MiB.
 
 Creating a tag and publishing a release remain explicit maintainer actions
 after the workflow change is merged.

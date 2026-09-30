@@ -132,10 +132,11 @@ separate evidence.
 7. Hash the archive and require both the manifest entry and the release API's
    asset digest to match.
 8. Inspect and extract according to the logical-member contract in
-   [`release.md`](../release.md), applying its rules to effective paths after
-   every archive metadata override. Reject the complete archive before making
-   an executable available. Extract only the executable and impose fixed
-   executable permissions rather than trusting archive mode bits.
+   [`release.md`](../release.md), rejecting metadata forms excluded by that
+   revision before resolving the permitted logical members. Reject the complete
+   archive before making an executable available. Extract only the executable
+   and impose fixed executable permissions rather than trusting archive mode
+   bits.
 9. Run the extracted executable by absolute path with closed stdin, captured
    stdout and stderr, a timeout, an output bound, and a minimal fixed
    environment that retains only OS-required runtime variables. Require the

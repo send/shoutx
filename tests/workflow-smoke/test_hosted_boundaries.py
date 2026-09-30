@@ -1,5 +1,6 @@
 """Offline negative controls; live GitHub results remain separate evidence."""
 import copy
+import io
 import json
 import os
 from pathlib import Path
@@ -8,6 +9,14 @@ import unittest
 from unittest.mock import patch
 
 import hosted_boundaries as probe
+
+
+class SafeTextResult(unittest.TextTestResult):
+    def _exc_info_to_string(self, err, test):
+        # Even a traceback source line or a literal-golden assertion diff can
+        # contain legacy workflow syntax. Suppress all exception details here;
+        # unittest still identifies the failing test and exits unsuccessfully.
+        return "Hosted boundary offline check failed; diagnostic payload suppressed.\n"
 
 
 class HostedTests(unittest.TestCase):
@@ -67,6 +76,8 @@ class HostedTests(unittest.TestCase):
         raw = self.fixture()
         identity_line = next(line for line in raw.split("\n") if probe.IDENTITY in line)
         mutations = [raw + identity_line + "\n", raw + "Current runner version: '2.337.0'\n",
+                     raw + probe.FINISH + "\n",
+                     raw.replace(probe.FINISH, "").replace(probe.BEGIN, probe.FINISH + "\n" + probe.BEGIN),
                      raw.replace('"RUNNER_OS": "Linux"', '"RUNNER_OS": "Windows"'),
                      raw.replace('"GITHUB_RUN_ID": "123"', '"GITHUB_RUN_ID": "456"'),
                      raw.replace('"RUNNER_ARCH": "X64"', '"RUNNER_ARCH": null'),
@@ -75,6 +86,17 @@ class HostedTests(unittest.TestCase):
         for mutation in mutations:
             with self.assertRaises(ValueError):
                 self.verify(mutation)
+
+    def test_failure_output_never_contains_payload_or_source(self):
+        class Failing(unittest.TestCase):
+            def runTest(self):
+                self.assertEqual("##[warning]synthetic", "::error::synthetic")
+        output = io.StringIO()
+        result = unittest.TextTestRunner(stream=output, resultclass=SafeTextResult).run(Failing())
+        self.assertFalse(result.wasSuccessful())
+        self.assertNotIn("synthetic", output.getvalue())
+        self.assertNotIn("##[", output.getvalue())
+        self.assertNotIn("::error", output.getvalue())
 
     def test_literal_log_excerpt_and_untimestamped_continuations(self):
         self.assertEqual(probe.expected_block()[:3], ["::stop-commands::***",
@@ -154,4 +176,4 @@ class HostedTests(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    unittest.main(testRunner=unittest.TextTestRunner(resultclass=SafeTextResult))

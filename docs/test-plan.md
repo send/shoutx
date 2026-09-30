@@ -363,6 +363,9 @@ log block, not only substring presence: require exactly one redacted sentinel
 per case, exact annotation log text/order, and no extra log-visible effects in
 that block or tagged annotations. Silent command effects and unrelated steps'
 annotations are outside this observation.
+Log comparison removes timestamps; the API's complete-message and multiplicity
+checks distinguish a command-looking continuation from a separately executed
+annotation whose rendered log text could otherwise look the same.
 Scan the entire completed log for each synthetic marker, including an encoded
 failed registration. This does not test raw legacy-looking log data while
 command processing is active or promise arbitrary transformed-secret masking.

@@ -78,6 +78,8 @@ class HostedTests(unittest.TestCase):
             self.verify(actual=original + [{"message": "shoutx-boundary-mask-injected"}])
 
     def test_timestamp_and_cr_handling(self):
+        self.assertEqual(self.verify("\ufeff" + self.fixture())["runnerVersion"], "2.337.0")
+        self.assertEqual(probe.log_lines("\ufeffa\n\ufeffb"), ["a", "\ufeffb"])
         self.assertEqual(probe.log_lines("2026-09-30T00:00:00Z a\r\nb\u2028c\n"),
                          ["a", "b\u2028c", ""])
         self.assertEqual(probe.log_lines("##[notice]\rdata\n"), ["##[notice]\rdata", ""])

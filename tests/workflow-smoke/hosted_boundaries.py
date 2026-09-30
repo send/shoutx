@@ -91,6 +91,8 @@ def invoke(binary, command, options, value):
 
 def log_lines(raw):
     # Do not use splitlines(): Unicode line separators are value data.
+    # GitHub's downloaded job log may have one UTF-8 BOM at the file start.
+    raw = raw.removeprefix("\ufeff")
     return [re.sub(r"^\d{4}-\d{2}-\d{2}T\S+Z ", "", line.removesuffix("\r"))
             for line in raw.split("\n")]
 
@@ -153,6 +155,7 @@ def main():
     parser.add_argument("--os", choices=("Linux", "macOS", "Windows"))
     parser.add_argument("--evidence", type=Path)
     parser.add_argument("--job-id", type=int)
+    parser.add_argument("--source-attempt")
     args = parser.parse_args()
     try:
         if args.mode == "emit":
@@ -163,7 +166,7 @@ def main():
             # Preserve CR and UTF-8 strictly; no universal-newline conversion.
             raw = args.log.read_bytes().decode("utf-8")
             report = verify(raw, json.loads(args.annotations.read_text(encoding="utf-8")),
-                            args.os, os.environ["GITHUB_RUN_ID"], os.environ["GITHUB_RUN_ATTEMPT"],
+                            args.os, os.environ["GITHUB_RUN_ID"], args.source_attempt,
                             os.environ["GITHUB_SHA"])
             report["harnessSha256"] = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
             report["jobId"] = args.job_id

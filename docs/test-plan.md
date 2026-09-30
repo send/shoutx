@@ -374,7 +374,10 @@ logs, annotation fields/counts, identity and mask leaks to test rejection.
 Retain per-OS reports for 30 days in `hosted-boundary-evidence`: source run,
 attempt, tested SHA, job ID, Runner version from its setup log, child-visible
 OS/architecture/image identity, case counts and log/API/harness digests.
-Missing identity fails the experiment. These observations do not measure the
+Missing identity fails the experiment.
+The attempt is taken from each source job's API metadata, not the verifier's
+attempt, so retrying only failed jobs does not relabel earlier successful jobs.
+These observations do not measure the
 live worker's culture, runtime or globalization backend; culture/backend remain
 explicitly unknown. Failure reports and partial artifacts are not passing
 evidence; require all three reports and the successful verifier job. Only

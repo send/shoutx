@@ -37,13 +37,20 @@ static class Program
     static object Identity(Assembly assembly, string directory)
     {
         string path = Path.GetFullPath(assembly.Location);
-        Require(Path.GetDirectoryName(path) == directory, "assembly escaped package directory");
-        return new {
-            file = Path.GetFileName(path),
-            sha256 = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(path))).ToLowerInvariant(),
-            informationalVersion = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion,
-            moduleVersionId = assembly.ManifestModule.ModuleVersionId
+        var identity = new Dictionary<string, object?> {
+            ["path"] = path,
+            ["inPackage"] = string.Equals(Path.GetDirectoryName(path), directory,
+                OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal),
+            ["file"] = Path.GetFileName(path)
         };
+        try
+        {
+            identity["sha256"] = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(path))).ToLowerInvariant();
+            identity["informationalVersion"] = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+            identity["moduleVersionId"] = assembly.ManifestModule.ModuleVersionId;
+        }
+        catch (Exception error) { identity["readErrorType"] = error.GetType().Name; }
+        return identity;
     }
 
     static object? ModeFlag(string name)
@@ -134,6 +141,8 @@ static class Program
             report["cultures"] = cultures;
             foreach (string name in new[] { "", "en-US" })
             {
+                phase = "culture-setup";
+                testCase = new { culture = name };
                 CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo(name);
                 var compare = CultureInfo.CurrentCulture.CompareInfo;
                 object? ascii = typeof(CompareInfo).GetField("_isAsciiEqualityOrdinal", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(compare);
@@ -141,7 +150,9 @@ static class Program
                 var observation = new Dictionary<string, object?> {
                     ["culture"] = name, ["sortVersion"] = compare.Version.FullVersion, ["sortId"] = compare.Version.SortId,
                     ["asciiEqualityOrdinal"] = ascii, ["icu"] = icu,
-                    ["icuSourcePreconditionsObserved"] = invariant is false && ascii is true && icu?.versionRaw is > 0
+                    ["backendObserved"] = invariant is true ? "Invariant" : nls is true ? "NLS" : hybrid is true ? "Hybrid" :
+                        invariant is false && ascii is true && icu?.versionRaw is > 0 ? "ICU" : "Unknown",
+                    ["icuSourcePreconditionsObserved"] = invariant is false && nls is not true && hybrid is not true && ascii is true && icu?.versionRaw is > 0
                 };
                 cultures.Add(observation);
                 phase = "mask-corpus";
@@ -156,6 +167,7 @@ static class Program
         catch (Exception error)
         {
             report["errorType"] = error.GetType().Name;
+            if (error.InnerException is not null) report["innerErrorType"] = error.InnerException.GetType().Name;
             if (error is InvalidOperationException) report["errorRule"] = error.Message;
             report["failedPhase"] = phase;
             report["testCase"] = testCase;

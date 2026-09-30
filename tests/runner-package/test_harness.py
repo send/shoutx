@@ -103,7 +103,8 @@ class HarnessTests(unittest.TestCase):
     def test_runtime_overrides_are_removed_without_recording_values(self):
         original = {"PATH": "/bin", "DOTNET_ROOT": "/sdk", "LANG": "en_US.UTF-8",
                     "DOTNET_STARTUP_HOOKS": "private", "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT": "1",
-                    "COMPlus_ReadyToRun": "0", "CORECLR_ENABLE_PROFILING": "1", "DYLD_INSERT_LIBRARIES": "private"}
+                    "COMPlus_ReadyToRun": "0", "CORECLR_ENABLE_PROFILING": "1", "DYLD_INSERT_LIBRARIES": "private",
+                    "ICU_DATA": "/private/data"}
         env, removed = harness.probe_environment(original)
         self.assertEqual(env, {"PATH": "/bin", "DOTNET_ROOT": "/sdk", "LANG": "en_US.UTF-8"})
         self.assertEqual(set(removed), set(original) - set(env))
@@ -124,6 +125,24 @@ class HarnessTests(unittest.TestCase):
                     harness.verify_coverage(bad, evidence)
             with self.assertRaises(ValueError):
                 harness.verify_coverage({"cultures": []}, evidence)
+
+    def test_managed_identity_is_fail_closed(self):
+        pins = {"runtimeVersion": "8", "runtimeCommit": "runtime", "runnerVersion": "2", "runnerCommit": "runner"}
+        core = {"file": "core.dll", "sha256": "a", "inPackage": True, "informationalVersion": "8+runtime"}
+        parser = {"file": "parser.dll", "sha256": "b", "inPackage": True, "informationalVersion": "2+runner"}
+        report = {"coreLibrary": core, "parserAssembly": parser, "loadedManagedAssemblies": [core, parser]}
+        files = {"core.dll": "a", "parser.dll": "b"}
+        harness.verify_managed(report, files, pins)
+        for field, value in (("file", "foreign.dll"), ("sha256", "wrong"), ("inPackage", False), ("informationalVersion", "9+other")):
+            bad = json.loads(json.dumps(report))
+            bad["coreLibrary"][field] = value
+            with self.assertRaises(ValueError):
+                harness.verify_managed(bad, files, pins)
+        for key in ("loadedManagedAssemblies", "coreLibrary", "parserAssembly"):
+            bad = dict(report)
+            del bad[key]
+            with self.assertRaises(ValueError):
+                harness.verify_managed(bad, files, pins)
 
 
 if __name__ == "__main__":

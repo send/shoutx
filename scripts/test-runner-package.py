@@ -124,7 +124,7 @@ def probe_environment(environment):
     allowed_dotnet = {"DOTNET_ROOT", "DOTNET_ROOT_X64", "DOTNET_ROOT_ARM64",
                       "DOTNET_ROOT(X86)", "DOTNET_CLI_HOME"}
     removed = sorted(key for key in environment if key.upper().startswith(prefixes)
-                     or key.upper() == "CLR_ICU_VERSION_OVERRIDE"
+                     or key.upper() in {"CLR_ICU_VERSION_OVERRIDE", "ICU_DATA"}
                      or (key.upper().startswith("DOTNET_") and key.upper() not in allowed_dotnet))
     return {key: value for key, value in environment.items() if key not in removed}, removed
 
@@ -148,6 +148,22 @@ def verify_coreclr(trace, binary, rid):
     if len(matches) != 1 or Path(matches[0]).resolve() != (binary / name).resolve():
         raise ValueError("host did not select package CoreCLR")
     return name
+
+
+def verify_managed(probe, files, pins):
+    identities = probe.get("loadedManagedAssemblies")
+    core, parser = probe.get("coreLibrary"), probe.get("parserAssembly")
+    if not isinstance(identities, list) or not identities or not core or not parser:
+        raise ValueError("incomplete loaded assembly evidence")
+    for identity in [core, parser, *identities]:
+        if (not isinstance(identity, dict) or identity.get("inPackage") is not True
+                or identity.get("file") not in files
+                or files[identity["file"]] != identity.get("sha256")):
+            raise ValueError("loaded assembly differs from package")
+    if core.get("informationalVersion") != f'{pins["runtimeVersion"]}+{pins["runtimeCommit"]}':
+        raise ValueError("runtime build differs from inspected source")
+    if parser.get("informationalVersion") != f'{pins["runnerVersion"]}+{pins["runnerCommit"]}':
+        raise ValueError("parser build differs from pinned Runner source")
 
 
 def main():
@@ -240,15 +256,10 @@ def main():
             record["selectedCoreClr"] = {"file": coreclr, "sha256": files[coreclr]}
             record["corehostTraceSha256"] = digest(evidence / "corehost.log")
             probe = json.loads((evidence / "probe.json").read_text())
-            for identity in [probe["coreLibrary"], probe["parserAssembly"], *probe["loadedManagedAssemblies"]]:
-                if files.get(identity["file"]) != identity["sha256"]:
-                    raise ValueError("loaded assembly differs from package")
-            build = f'{pins["runtimeVersion"]}+{pins["runtimeCommit"]}'
-            if probe["coreLibrary"]["informationalVersion"] != build:
-                raise ValueError("runtime build differs from inspected source")
-            runner_build = f'{pins["runnerVersion"]}+{pins["runnerCommit"]}'
-            if probe["parserAssembly"]["informationalVersion"] != runner_build:
-                raise ValueError("parser build differs from pinned Runner source")
+            verify_managed(probe, files, pins)
+            record["icuSourcePreconditionsByCulture"] = [
+                {"culture": c["culture"], "observed": c["icuSourcePreconditionsObserved"]}
+                for c in probe.get("cultures", [])]
             if {p.name for p in binary.iterdir()} != set(files) | {"Probe.dll"}:
                 raise ValueError("unexpected package directory additions")
             for name, sha in files.items():

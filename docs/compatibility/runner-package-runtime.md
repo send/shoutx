@@ -30,7 +30,7 @@ metadata. They are not a reproducible-build proof that source produced those
 bytes. The SDK executable and its selected hostfxr still act as the launcher;
 hostfxr observations are retained from the trace, not claimed to be package-pinned.
 This does not individually attest every loaded native dependency (including
-OS ICU data), and this is not the
+hostpolicy, clrjit and OS ICU data), and this is not the
 unaltered `Runner.Worker` entry point or a measurement of an active hosted job
 consumer. No runner is registered and no job credentials are used.
 
@@ -69,6 +69,14 @@ The export and byte packing were manually checked against pinned
 `Interop.ICU.cs` and `pal_icushim.c`; CI verifies those source digests, not that
 manual analysis. A zero/missing result is **unknown**, not
 ICU version 0 and not permission to substitute the sort version.
+`backendFromFlags` reports only reflected mode metadata; the per-culture
+`backendObserved` additionally uses the positive CoreLib ICU observation.
+The source-precondition result requires no positive NLS/Hybrid flag, invariant
+mode false, the ASCII flag true and a nonzero ICU version. In the inspected
+source that ASCII flag is initialized on the ICU path, not the NLS path.
+Overall `passed` means the package-identity and finite parser checks passed;
+it deliberately does not require ICU preconditions. A future unknown/NLS run
+can pass those checks without confirming the ICU source argument.
 
 The local macOS ARM64 run on 2026-09-30 observed .NET 8.0.30 and ICU 78.1.0.0
 through CoreLib's binding, with invariant mode false and the ASCII flag true
@@ -81,6 +89,24 @@ macOS 15 ARM64 and Windows. Consult each run's recorded image and backend
 observations; these labels alone are not evidence of execution.
 Passing this finite matrix does not establish a supported self-hosted matrix,
 all Unicode sequences, or all operating-system collation-data versions.
+
+The [2026-09-30 four-platform run](https://github.com/send/shoutx/actions/runs/36699413944)
+at PR head `3d3a87f0151dc0890e2cbe26eab17833093c619b` (tested merge
+`c98042c8eaffcfe36c5b9a5271f72b90e0a7811a`) passed with the following
+package-probe observations. Both explicit cultures observed the ICU source
+preconditions and passed the same counts as the local run above.
+
+| CI label | Recorded image / version | Observed ICU |
+| --- | --- | --- |
+| Ubuntu 22.04 | ubuntu22 / 20260920.303.1 | 70.1.0.0 |
+| Ubuntu 24.04 | ubuntu24 / 20260920.314.1 | 74.2.0.0 |
+| macOS 15 ARM64 | macos15 / 20260907.0337.1 | 76.1.0.0 |
+| Windows latest | win25-vs2026 / 20260925.250.1 | 72.1.0.4 |
+
+All four selected package CoreCLR/CoreLib 8.0.30 while the external launcher
+hostfxr was 10.0.12; launcher version is not the tested runtime version.
+Windows exposed `UseNls=false`; Unix omitted that metadata. Missing flags
+remain null rather than being filled in from the OS label.
 
 ## Reproduction and retained evidence
 

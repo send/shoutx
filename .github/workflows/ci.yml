@@ -397,7 +397,26 @@ jobs:
             --no-build `
             --no-restore `
             --filter 'FullyQualifiedName~ShoutxDifferentialL0' `
-            --logger 'console;verbosity=detailed'
+            --logger 'console;verbosity=detailed' `
+            --logger 'trx;LogFileName=runner-oracle.trx' `
+            --results-directory '${{ github.workspace }}/target/runner-oracle-results'
+      - name: Test published Runner runtime and parser
+        shell: pwsh
+        run: |
+          python -B tests/runner-package/test_harness.py
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python scripts/test-runner-package.py --output target/runner-package-evidence
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Retain package runtime evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: runner-package-evidence-${{ matrix.os }}-${{ matrix.runtime }}
+          path: |
+            target/runner-package-evidence/
+            target/runner-oracle-results/
+          if-no-files-found: error
+          retention-days: 30
 
   hosted-annotations:
     needs: [changes, test]

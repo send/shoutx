@@ -296,6 +296,28 @@ suite against the newest supported release in addition to the pinned baseline.
 A behavior difference blocks a compatibility claim until it is explained and
 the contract, model, or supported-version declaration is updated.
 
+### Published Runner runtime evidence
+
+In addition to the source-built oracle, run a small probe against the pinned
+published Runner package on the differential CI OS matrix. Verify a reviewed
+archive SHA-256 before extraction or execution. Use the package's unmodified
+worker runtime configuration, dependency manifest, runtime binaries, and
+`Runner.Common` parser assembly; fail if the probe loads its core library or
+parser from outside that package. Do not register a runner or start a job worker.
+
+Save machine-readable evidence as a CI artifact: archive and relevant assembly
+digests, runtime/build identity, OS/architecture, explicit tested cultures,
+globalization flags (including unavailable values), sort version, parser
+checks, and matching pinned .NET source digests. Record separately whether
+an ICU fast-path precondition was observed. Unknown/NLS observations must not
+be presented as confirmation of an ICU source argument. Preserve failure
+evidence as well as successful results; absence of fresh evidence fails CI.
+
+This is a package-backed parser probe, not an unmodified hosted Worker process
+measurement or proof of every Unicode sequence, culture, backend, or runner
+version. Existing source-built integration tests still own command-manager and
+OutputManager behavior. Neither result changes stdout release eligibility.
+
 ## Shell and workflow matrix
 
 The release matrix should capture executable stdout bytes before testing runner

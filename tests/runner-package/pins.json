@@ -1,0 +1,18 @@
+{
+  "runnerVersion": "2.337.0",
+  "runnerCommit": "397b032cbf865e9c3ddfab89d533ec19325e1273",
+  "sdkVersion": "8.0.424",
+  "runtimeVersion": "8.0.30",
+  "runtimeCommit": "a83db3e0eb2defb6220e15dae2f1a0462fdbf99f",
+  "packages": {
+    "linux-x64": {"extension": "tar.gz", "size": 226430031, "sha256": "70920811a4f8ad4328818682bca5c6469c1c942fab52448868071d0063816613"},
+    "osx-arm64": {"extension": "tar.gz", "size": 127732571, "sha256": "5a2cd92908a93d7276a194e1de6008099f3e7946f3f8e14aa7a1a7b4a31fdec2"},
+    "win-x64": {"extension": "zip", "size": 103528051, "sha256": "1150692afa94e71f872017e254ea55b6eece1eece3fe7e3a6d4c93d0a1b85cfc"}
+  },
+  "sources": [
+    {"name": "CompareInfo.Icu.8.0.0.cs", "url": "https://raw.githubusercontent.com/dotnet/runtime/v8.0.0/src/libraries/System.Private.CoreLib/src/System/Globalization/CompareInfo.Icu.cs", "sha256": "0ba5ade719bcf378e88c2d8194041ccc71fdb2a839562167f38a60a788eb226e"},
+    {"name": "CompareInfo.Icu.8.0.30.cs", "url": "https://raw.githubusercontent.com/dotnet/runtime/a83db3e0eb2defb6220e15dae2f1a0462fdbf99f/src/libraries/System.Private.CoreLib/src/System/Globalization/CompareInfo.Icu.cs", "sha256": "55a0a6f300d8488d2ebbb25be25df94f3d93e2f34137265f133099d71aea525f"},
+    {"name": "Interop.ICU.cs", "url": "https://raw.githubusercontent.com/dotnet/runtime/a83db3e0eb2defb6220e15dae2f1a0462fdbf99f/src/libraries/Common/src/Interop/Interop.ICU.cs", "sha256": "c3ff3b90bff9314e91f7818130e945def937fefa38bb14eb4a8a3d1b7e47a1e6"},
+    {"name": "pal_icushim.c", "url": "https://raw.githubusercontent.com/dotnet/runtime/a83db3e0eb2defb6220e15dae2f1a0462fdbf99f/src/native/libs/System.Globalization.Native/pal_icushim.c", "sha256": "8e3099e07bd4a927e0635b2cd6441e96ccbc54ffc2302938a140575b9a3c7d0c"}
+  ]
+}

@@ -326,6 +326,8 @@ fn ascii_boundary_and_whole_header_allowlists_are_exact() {
             "😀",
             "é",
             "\u{200b}",
+            "\u{00ad}",
+            "\u{feff}",
             "\u{200d}",
             "\u{e007f}",
             "\u{10ffff}",
@@ -343,11 +345,19 @@ fn ascii_boundary_and_whole_header_allowlists_are_exact() {
     }
     for field in ["title", "file"] {
         let option = format!("--{field}");
-        for scalar in
-            (1u8..=127)
-                .map(char::from)
-                .chain(['日', '😀', '\u{200d}', '\u{0600}', '\u{10ffff}'])
-        {
+        for scalar in (1u8..=127).map(char::from).chain([
+            '日',
+            '😀',
+            '\u{200d}',
+            '\u{0600}',
+            '\u{10ffff}',
+            '\u{0085}',
+            '\u{00a0}',
+            '\u{3000}',
+            '\u{200b}',
+            '\u{00ad}',
+            '\u{feff}',
+        ]) {
             // Exercise internal bytes as well as a bad last byte. A final ASCII
             // byte must not hide a disallowed scalar earlier in the header.
             let value = format!("a{scalar}z");
@@ -405,11 +415,19 @@ fn text_properties_are_encoded_in_fixed_order() {
     );
     for option in ["--title", "--file"] {
         for value in ["", "=", "=x", "==x", "space ", "tab\t", "nbsp\u{00a0}"] {
-            failure(
+            let output = failure(
                 &["github-actions:notice", option, value, "message"],
                 None,
                 1,
             );
+            let expected = if value.is_empty() {
+                "error: annotation property is empty\n"
+            } else if value.starts_with('=') {
+                "error: annotation property begins with equals\n"
+            } else {
+                "error: annotation property ends with whitespace\n"
+            };
+            assert_eq!(output.stderr, expected.as_bytes());
         }
         for suffix in [
             '\u{0600}',

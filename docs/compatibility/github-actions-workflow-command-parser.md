@@ -103,6 +103,9 @@ culture, internal globalization-mode flags, and `CompareInfo.Version`. Its
 backend label follows observed flags rather than the OS label. The native
 backend library version is not observed; the sort version is not a substitute
 for that version. Earlier runs did not record these fields.
+When private flags are absent the backend label is `Unknown`, as observed
+locally on macOS ARM64 with .NET 8.0.30. Such a run is compatibility regression
+evidence, not confirmation that the inspected ICU path executed.
 
 That expansion also exposed a separate portability assumption in an existing
 test. An assertion expecting U+11F02 to move the V2 separator passed on the

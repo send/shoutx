@@ -102,12 +102,23 @@ jobs:
         with:
           persist-credentials: false
       - name: Install pinned shoutx release
+        id: setup-shoutx
+        uses: send/setup-shoutx@eb61a2361c6c0e0d37ab9cca1c50e998b4a94c24 # v0.1.0
+        with:
+          shoutx-version: '0.3.0-rc.1'
+          checksums-sha256: b280ecb4122b02c0961638c0eb84bae6932af55193c3ea9ae2aa2b02ef8afa99
+          github-token: ${{ github.token }}
+      - name: Verify installed release and subsequent-step PATH
         shell: bash
-        run: .github/scripts/install-shoutx.sh
+        env:
+          INSTALLED_VERSION: ${{ steps.setup-shoutx.outputs.version }}
+        run: |
+          test "$INSTALLED_VERSION" = '0.3.0-rc.1'
+          test "$(shoutx --version)" = "shoutx $INSTALLED_VERSION"
       - id: toolchain
         shell: bash
         run: |
-          shoutx="$RUNNER_TEMP/shoutx-bootstrap/bin/shoutx"
+          shoutx=$(command -v shoutx)
           channel=$(sed -n 's/^channel = "\([^"]*\)"$/\1/p' rust-toolchain.toml)
           if [[ ! "$channel" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "Rust toolchain must be one exact stable version"
@@ -123,7 +134,7 @@ jobs:
           COMMIT_SHA: ${{ github.sha }}
           GH_TOKEN: ${{ github.token }}
         run: |
-          shoutx="$RUNNER_TEMP/shoutx-bootstrap/bin/shoutx"
+          shoutx=$(command -v shoutx)
           version=$(cargo metadata --format-version 1 --no-deps --locked |
             jq -er '.packages[] | select(.name == "shoutx") | .version')
           if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then

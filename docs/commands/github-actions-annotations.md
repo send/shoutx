@@ -57,7 +57,8 @@ means the .NET 8 `Char.IsWhiteSpace` set, equivalent for accepted UTF-8 input to
 the Unicode `White_Space` property.
 
 A message whose first Unicode scalar has General_Category `Mn`, `Mc`, `Me`, or
-`Lm` is rejected. TITLE and FILE reject a final scalar with the Unicode
+`Lm`, or is U+0E33, U+0EB3, or U+1F3FB--U+1F3FF, is rejected.
+TITLE and FILE reject a final scalar with the Unicode
 `Prepended_Concatenation_Mark` property. These checks retain the implemented
 behavior for observed separator-movement cases; they are not a complete
 defense. The pinned runner's culture-sensitive `::` search can fail even for
@@ -209,9 +210,14 @@ NUL, and 1 MiB acquisition cases. Exercise every final-boundary form through
 both message sources, plus multiple terminators and internal mixed boundaries.
 Reject empty and Unicode-whitespace-only semantic messages with status 1 and
 empty stdout. Reject leading `Mn`, `Mc`, `Me`, and `Lm` scalars, including
+supplementary-plane examples, and every explicitly rejected scalar above. Include
 cases with a later `::` followed by property-looking message data. Reject a
 final `Prepended_Concatenation_Mark` scalar in TITLE and FILE and exercise
 property-looking message data after the separator.
+For all three severities and both input sources, include a leading rejected
+scalar followed by a legacy-looking `##[warning]` payload; assert status 1,
+empty stdout, and the exact value-free diagnostic. Run the accepted annotation
+corpus under both Invariant Culture and `en-US` in the pinned runner oracle.
 
 Count the semantic message as UTF-16 code units. Accept 4,096 ASCII or BMP
 units and 2,048 supplementary Unicode scalars. Reject the first unit beyond

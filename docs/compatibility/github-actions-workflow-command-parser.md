@@ -59,6 +59,33 @@ does not override their separate destination-specific compatibility contracts.
 
 ## Evidence and environment variation
 
+The explicit Invariant Culture / `en-US` regression
+`CombiningMaskPrefixCanSelectLegacyWarning` feeds a synthetic `add-mask` value
+beginning with a separator-sensitive scalar and containing
+`##[warning]fallback` through the pinned
+`OutputManager`. It checks that warning execution occurs instead of mask
+registration. Unlike the unregistered-command fallback example, this input
+starts with a registered V2 command. The
+[mask specification](../commands/github-actions-mask.md) defines producer
+rejection for this input; this is a regression of the consumer defect, not an
+accepted output.
+The accepted mask and annotation corpora are also exercised explicitly under
+both cultures. These are source-built oracle checks, not claims of exhaustive
+Unicode coverage or measurements of a published hosted worker's runtime.
+
+The shared category lookup currently uses `unicode-general-category` 1.1.0,
+whose tables declare Unicode 16.0.0. This producer table does not establish a
+match with the worker's ICU/NLS data: newly assigned scalars, Unicode-version
+skew, and differences between category and collation behavior remain limits
+of this bounded mitigation. The category set is conservative, not a claim
+that every rejected scalar reproduces the U+0301 failure.
+Additional local Invariant Culture / `en-US` probes found U+0E33, U+0EB3,
+and all five U+1F3FB--U+1F3FF scalars fail V2 parsing despite being outside
+the category set. The oracle includes these as raw fallback counterexamples;
+the command specifications include them explicitly in prefix rejection.
+This input-dependent issue with Thai/Lao characters is distinct from the
+deferred `th-TH` culture failure for ordinary ASCII input.
+
 PR #42 added a pinned-runner regression proving the ASCII-only `th-TH` V2
 failure and comparing the legacy parser under selected cultures. The current
 fixture also drives the counterexample through `OutputManager`, proving

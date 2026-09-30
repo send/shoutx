@@ -69,6 +69,17 @@ Required fallback. If no framing satisfies the product guarantee, the mask and
 annotation family remains excluded from releases while environment-file
 writers continue independently.
 
+## Interim research mitigation
+
+Input-dependent misparsing under Invariant Culture and `en-US` is the current
+mitigation target. Apply the annotation message-prefix guard to mask values,
+rejecting unrepresentable inputs before output rather than altering the value.
+Keep the exact input rules in the command specifications. Explicit-culture
+runner tests must cover rejection counterexamples and accepted-value fidelity.
+The `th-TH` ASCII failure is deferred, not fixed or shown to be unreachable.
+This prioritization does not accept V2 framing, establish a supported-culture
+allowlist, or remove the research feature / release exclusion.
+
 ## Decision
 
 No wire format is accepted by this proposed record yet. Before acceptance, the
@@ -132,7 +143,7 @@ contracts of environment-file writers.
 
 - Work on additional stdout workflow commands, including `debug`, remains
   paused.
-- Existing Unicode-category guards are only pre-release observations and
+- Existing annotation and mask Unicode-category guards are only pre-release observations and
   cannot justify release eligibility.
 - UTF-8 values are not narrowed to ASCII and are never silently deleted or
   normalized to make framing succeed.

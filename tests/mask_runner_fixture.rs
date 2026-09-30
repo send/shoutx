@@ -16,11 +16,29 @@ fn encode(value: &[u8]) -> String {
 }
 
 fn cases() -> Vec<MaskCase> {
-    [
+    let mut cases: Vec<_> = [
         (
             "plain",
             b"secret".as_slice(),
             vec![b"before secret after".as_slice()],
+            vec![b"public".as_slice()],
+        ),
+        (
+            "interior-combining",
+            "e\u{0301} ##[warning]literal".as_bytes(),
+            vec!["e\u{0301} ##[warning]literal".as_bytes()],
+            vec![b"public".as_slice()],
+        ),
+        (
+            "format-before-combining",
+            "\u{200b}\u{0301}secret ##[warning]literal".as_bytes(),
+            vec!["\u{200b}\u{0301}secret ##[warning]literal".as_bytes()],
+            vec![b"public".as_slice()],
+        ),
+        (
+            "bom-before-combining",
+            "\u{feff}\u{0301}secret".as_bytes(),
+            vec!["\u{feff}\u{0301}secret".as_bytes()],
             vec![b"public".as_slice()],
         ),
         (
@@ -73,7 +91,26 @@ fn cases() -> Vec<MaskCase> {
         masked: masked.into_iter().map(encode).collect(),
         unmasked: unmasked.into_iter().map(encode).collect(),
     })
-    .collect()
+    .collect();
+    for (id, prefix) in [
+        ("zwj", "\u{200d}"),
+        ("zwnj", "\u{200c}"),
+        ("tag-space", "\u{e0020}"),
+        ("cancel-tag", "\u{e007f}"),
+        ("space-before-combining", " \u{0301}"),
+    ] {
+        let value = format!("{prefix}secret ##[warning]literal");
+        cases.push(MaskCase {
+            id,
+            command: encode(
+                &shoutx::github_actions::encode_mask(value.as_bytes().to_vec()).unwrap(),
+            ),
+            value: encode(value.as_bytes()),
+            masked: vec![encode(value.as_bytes())],
+            unmasked: vec![encode(b"public")],
+        });
+    }
+    cases
 }
 
 #[test]

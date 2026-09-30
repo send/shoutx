@@ -210,6 +210,40 @@ fn cases() -> Vec<AnnotationCase> {
         )
         .collect();
 
+    for (id, prefix) in [
+        ("zwj", "\u{200d}"),
+        ("zwnj", "\u{200c}"),
+        ("tag-space", "\u{e0020}"),
+        ("cancel-tag", "\u{e007f}"),
+        ("space-before-combining", " \u{0301}"),
+        ("format-before-combining", "\u{200b}\u{0301}"),
+        ("bom-before-combining", "\u{feff}\u{0301}"),
+    ] {
+        let message = format!("{prefix}message ##[warning]literal");
+        cases.push(AnnotationCase {
+            id: id.to_owned(),
+            command: encode(
+                &shoutx::github_actions::encode_annotation(
+                    request(
+                        AnnotationSeverity::Warning,
+                        None,
+                        None,
+                        None,
+                        None,
+                        None,
+                        None,
+                    ),
+                    message.as_bytes().to_vec(),
+                )
+                .unwrap(),
+            ),
+            severity: "warning",
+            message: encode(message.as_bytes()),
+            properties: properties(&[]),
+            windows_properties: properties(&[]),
+        });
+    }
+
     let severities = [
         (AnnotationSeverity::Notice, "notice"),
         (AnnotationSeverity::Warning, "warning"),

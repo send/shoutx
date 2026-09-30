@@ -38,6 +38,19 @@ report success without registering a mask. The whitespace classification is
 the .NET 8 `Char.IsWhiteSpace` set, equivalent here to the Unicode
 `White_Space` property. U+FEFF and U+200B are not whitespace under that rule.
 
+After producer framing, reject a value whose first Unicode scalar has
+General_Category `Mn`, `Mc`, `Me`, or `Lm`, or is U+0E33, U+0EB3, or
+U+1F3FB--U+1F3FF, with status 1, empty stdout, and a
+fixed diagnostic that does not contain the value. This matches the annotation
+message-prefix guard; the
+[compatibility note](../compatibility/github-actions-workflow-command-parser.md)
+records the observed delimiter failure and fallback. Do not delete, normalize,
+or replace that scalar: registering a changed string would not faithfully mask
+the original value. Interior scalars in these categories remain data.
+This is a bounded research mitigation, not a complete framing guarantee; the
+known `th-TH` ASCII failure remains unresolved and is deferred by the
+[framing decision](../decisions/github-actions-stdout-framing.md).
+
 Successful output is exactly:
 
 ```text
@@ -99,7 +112,9 @@ confidentiality guarantee. In particular:
 Callers should pass sensitive values through stdin or a quoted environment
 variable rather than placing them literally in process arguments. They must
 ensure workflow-command processing is active and register a value before any
-command can log it. If an unmasked value has already reached a workflow log,
+command can log it. A validation failure means no mask was registered; callers
+must not log the rejected value or continue as though masking succeeded.
+If an unmasked value has already reached a workflow log,
 masking it later is not remediation; delete the log and rotate the credential.
 
 ### Implementation constraints
@@ -136,6 +151,8 @@ only of Unicode whitespace before output begins. The last two cases are
 necessary because the runner warns and performs no registration for
 `String.IsNullOrWhiteSpace` data. A successful shoutx status must not imply a
 mask was installed when the runner would deterministically reject it.
+The prefix validation specified above is an additional, bounded research
+mitigation; it is not a complete control for locale-sensitive parsing.
 
 The runner registers the exact decoded value and also every trimmed, nonempty
 item produced by splitting it on CR and LF. This applies even without a line
@@ -182,6 +199,15 @@ values and values consisting only of the .NET 8 `Char.IsWhiteSpace` set fail
 with status 1 and empty stdout. Cover ASCII whitespace, NEL, U+1680, the
 U+2000--U+200A range, LINE SEPARATOR, PARAGRAPH SEPARATOR, U+202F, U+205F, and
 U+3000. Verify that U+FEFF and U+200B are accepted as non-whitespace data.
+
+Through argv and stdin, reject leading `Mn`, `Mc`, `Me`, and `Lm` scalars,
+including U+0301, U+034F, U+0903, U+20DD, U+02B0, U+FF9E, and U+FF9F.
+Cover supplementary-plane category members and every explicitly listed scalar.
+Include both ordinary suffixes and `::` / `##[warning]`-looking suffixes and
+assert the exact fixed diagnostic, status 1, and empty stdout. Preserve interior
+combining characters and accepted format-character prefixes byte-for-byte.
+Run the accepted mask corpus through the pinned runner under both Invariant
+Culture and `en-US`, checking exact decoded data before mask registration.
 
 #### Encoding and command structure
 

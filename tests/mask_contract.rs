@@ -153,6 +153,64 @@ fn empty_and_unicode_whitespace_only_values_are_rejected() {
 }
 
 #[test]
+fn separator_sensitive_prefixes_fail_without_disclosing_or_changing_the_value() {
+    for prefix in [
+        '\u{0301}',
+        '\u{034f}',
+        '\u{0903}',
+        '\u{20dd}',
+        '\u{02b0}',
+        '\u{ff9e}',
+        '\u{ff9f}',
+        '\u{e0100}',
+        '\u{0e33}',
+        '\u{0eb3}',
+        '\u{1f3fb}',
+        '\u{1f3fc}',
+        '\u{1f3fd}',
+        '\u{1f3fe}',
+        '\u{1f3ff}',
+        '\u{1d165}',
+        '\u{16fe0}',
+    ] {
+        for suffix in [
+            "",
+            "private",
+            "private::tail",
+            "private ##[warning]fallback",
+        ] {
+            for ending in ["", "\n", "\r", "\r\n"] {
+                let value = format!("{prefix}{suffix}{ending}");
+                for output in [
+                    failure(&["github-actions:mask", &value], None, 1),
+                    failure(&["github-actions:mask"], Some(value.as_bytes()), 1),
+                ] {
+                    assert_eq!(
+                        output.stderr,
+                        b"error: mask value begins with a separator-sensitive character\n"
+                    );
+                }
+            }
+        }
+    }
+    for value in [
+        "e\u{0301}",
+        "秘密\u{0301}",
+        "\u{200b}\u{0301}secret",
+        "\u{feff}\u{0301}secret",
+        "plain ##[warning]data",
+    ] {
+        let expected = format!("::add-mask::{value}\n");
+        success(&["github-actions:mask", value], None, expected.as_bytes());
+        success(
+            &["github-actions:mask"],
+            Some(value.as_bytes()),
+            expected.as_bytes(),
+        );
+    }
+}
+
+#[test]
 fn invalid_text_is_rejected_without_disclosure() {
     let nul = failure(&["github-actions:mask"], Some(b"private\0value"), 1);
     assert!(!nul.stderr.windows(7).any(|part| part == b"private"));

@@ -222,6 +222,46 @@ fn empty_whitespace_nul_and_invalid_text_fail_before_stdout() {
 }
 
 #[test]
+fn all_severities_reject_legacy_fallback_payloads_without_output() {
+    for command in [
+        "github-actions:notice",
+        "github-actions:warning",
+        "github-actions:error",
+    ] {
+        for prefix in [
+            '\u{0301}',
+            '\u{034f}',
+            '\u{0903}',
+            '\u{20dd}',
+            '\u{02b0}',
+            '\u{ff9e}',
+            '\u{ff9f}',
+            '\u{e0100}',
+            '\u{0e33}',
+            '\u{0eb3}',
+            '\u{1f3fb}',
+            '\u{1f3fc}',
+            '\u{1f3fd}',
+            '\u{1f3fe}',
+            '\u{1f3ff}',
+            '\u{1d165}',
+            '\u{16fe0}',
+        ] {
+            let value = format!("{prefix}private ##[warning]fallback");
+            for output in [
+                failure(&[command, &value], None, 1),
+                failure(&[command], Some(value.as_bytes()), 1),
+            ] {
+                assert_eq!(
+                    output.stderr,
+                    b"error: annotation message begins with a separator-sensitive character\n"
+                );
+            }
+        }
+    }
+}
+
+#[test]
 fn text_properties_are_encoded_in_fixed_order() {
     success(
         &[

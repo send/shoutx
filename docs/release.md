@@ -126,8 +126,8 @@ LICENSE
 ```
 
 For installer validation, these are logical filesystem members. A tar archive
-may additionally represent the top-level directory as a directory entry and
-A ZIP archive may omit that entry. Neither representation permits an additional
+may additionally represent the top-level directory as a directory entry, and
+a ZIP archive may omit that entry. Neither representation permits an additional
 file, link, device, alternate path spelling, duplicate path, or case-colliding
 path. A represented top-level directory has no payload data.
 Revision 1 deliberately excludes all pax records, GNU long-name and long-link
@@ -135,7 +135,8 @@ records, TAR prefix and linkname fields, ZIP extra fields (including ZIP64 and
 Unicode path overrides), local/central ZIP metadata disagreement, encryption,
 data descriptors, archive and per-entry ZIP comments, multi-disk ZIPs, and
 prepended, interstitial, or trailing data. Base-256 TAR size fields are also
-excluded. Raw TAR paths use the same spelling as their logical paths and the
+excluded. A `tar.gz` contains exactly one gzip member, and TAR entry padding is
+zero-filled. Raw TAR paths use the same spelling as their logical paths and the
 header uses a recognized ustar or GNU-ustar magic and version. These encodings
 are unnecessary for the fixed, short ASCII layout and would introduce
 parser-precedence differences without user value. ZIP entries may use only
@@ -265,7 +266,8 @@ as well as raw TAR metadata and ZIP local and central headers before extraction.
 Its test corpus contains accepted independently constructed archives and
 independently constructed malicious entries. The release workflow additionally
 applies the same verifier to every native-runner archive before checksums are
-generated. The verifier limits expanded archive data to 256 MiB.
+generated. The verifier limits both archive input and expanded archive data to
+256 MiB.
 
 Creating a tag and publishing a release remain explicit maintainer actions
 after the workflow change is merged.

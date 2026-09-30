@@ -1,4 +1,4 @@
-use flate2::read::MultiGzDecoder;
+use flate2::bufread::GzDecoder;
 use std::collections::BTreeSet;
 use std::env;
 use std::error::Error;
@@ -6,6 +6,7 @@ use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom};
 use std::path::Path;
 
+const MAX_ARCHIVE_BYTES: u64 = 256 * 1024 * 1024;
 const MAX_EXPANDED_BYTES: u64 = 256 * 1024 * 1024;
 
 type Result<T> = std::result::Result<T, Box<dyn Error>>;
@@ -59,7 +60,11 @@ fn insert_path(paths: &mut BTreeSet<Vec<u8>>, path: &[u8]) -> Result<()> {
 }
 
 fn validate_tar(path: &Path, root: &str) -> Result<()> {
-    let mut decoder = MultiGzDecoder::new(File::open(path)?);
+    if path.metadata()?.len() > MAX_ARCHIVE_BYTES {
+        return Err(invalid("compressed tar exceeds validator limit"));
+    }
+    let compressed = std::fs::read(path)?;
+    let mut decoder = GzDecoder::new(Cursor::new(&compressed));
     let mut bytes = Vec::new();
     decoder
         .by_ref()
@@ -67,6 +72,11 @@ fn validate_tar(path: &Path, root: &str) -> Result<()> {
         .read_to_end(&mut bytes)?;
     if bytes.len() as u64 > MAX_EXPANDED_BYTES {
         return Err(invalid("expanded tar exceeds validator limit"));
+    }
+    if usize::try_from(decoder.into_inner().position())? != compressed.len() {
+        return Err(invalid(
+            "multiple gzip members or trailing data are not permitted",
+        ));
     }
     validate_raw_tar(&bytes, root)?;
 
@@ -184,9 +194,19 @@ fn validate_raw_tar(bytes: &[u8], root: &str) -> Result<()> {
             .ok_or_else(|| invalid("tar entry size overflow"))?
             / 512
             * 512;
-        offset = payload_start
+        let next_offset = payload_start
             .checked_add(padded)
             .ok_or_else(|| invalid("tar offset overflow"))?;
+        if next_offset > bytes.len() {
+            return Err(invalid("truncated tar entry padding"));
+        }
+        if bytes[payload_end..next_offset]
+            .iter()
+            .any(|byte| *byte != 0)
+        {
+            return Err(invalid("non-zero tar entry padding"));
+        }
+        offset = next_offset;
     }
     Err(invalid("tar is missing two end markers"))
 }
@@ -209,6 +229,9 @@ fn u32_at(bytes: &[u8], offset: usize) -> Result<u32> {
 fn validate_zip(path: &Path, root: &str) -> Result<()> {
     let mut file = File::open(path)?;
     let file_len = file.metadata()?.len();
+    if file_len > MAX_ARCHIVE_BYTES {
+        return Err(invalid("ZIP archive exceeds validator limit"));
+    }
     let mut archive = zip::ZipArchive::new(&mut file)?;
     if archive.offset() != 0 {
         return Err(invalid("prepended ZIP data is not permitted"));
@@ -241,6 +264,9 @@ fn validate_zip(path: &Path, root: &str) -> Result<()> {
             return Err(invalid("unsupported ZIP general-purpose flags"));
         }
         let local_method = u16_at(&header, 8)?;
+        let local_version_needed = u16_at(&header, 4)?;
+        let local_modified_time = u16_at(&header, 10)?;
+        let local_modified_date = u16_at(&header, 12)?;
         let local_crc = u32_at(&header, 14)?;
         let local_compressed = u32_at(&header, 18)?;
         let local_size = u32_at(&header, 22)?;
@@ -263,6 +289,9 @@ fn validate_zip(path: &Path, root: &str) -> Result<()> {
             return Err(invalid("ZIP local and central flags disagree"));
         }
         let central_method = u16_at(&central_header, 10)?;
+        let central_version_needed = u16_at(&central_header, 6)?;
+        let central_modified_time = u16_at(&central_header, 12)?;
+        let central_modified_date = u16_at(&central_header, 14)?;
         let central_crc = u32_at(&central_header, 16)?;
         let central_compressed = u32_at(&central_header, 20)?;
         let central_size = u32_at(&central_header, 24)?;
@@ -289,6 +318,9 @@ fn validate_zip(path: &Path, root: &str) -> Result<()> {
         };
         if local_method != central_method
             || local_method != parsed_method
+            || local_version_needed != central_version_needed
+            || local_modified_time != central_modified_time
+            || local_modified_date != central_modified_date
             || local_crc != central_crc
             || local_crc != entry.crc32()
             || local_compressed != central_compressed
@@ -443,8 +475,8 @@ fn run() -> Result<()> {
 }
 
 fn main() {
-    if let Err(error) = run() {
-        eprintln!("archive validation failed: {error}");
+    if run().is_err() {
+        eprintln!("archive validation failed");
         std::process::exit(1);
     }
 }
@@ -641,6 +673,33 @@ mod tests {
     }
 
     #[test]
+    fn rejects_zip_local_central_version_and_timestamp_disagreement() {
+        let path = temporary("zip");
+
+        let mut version = raw_zip(None, false);
+        let eocd = version.len() - 22;
+        let central_start = usize::try_from(super::u32_at(&version[eocd..], 16).unwrap()).unwrap();
+        version[central_start + 6..central_start + 8].copy_from_slice(&21_u16.to_le_bytes());
+        fs::write(&path, version).unwrap();
+        assert_eq!(
+            error_message(validate_zip(&path, ROOT)),
+            "ZIP local and central metadata disagree"
+        );
+
+        let mut timestamp = raw_zip(None, false);
+        let eocd = timestamp.len() - 22;
+        let central_start =
+            usize::try_from(super::u32_at(&timestamp[eocd..], 16).unwrap()).unwrap();
+        timestamp[central_start + 12..central_start + 14].copy_from_slice(&1_u16.to_le_bytes());
+        fs::write(&path, timestamp).unwrap();
+        assert_eq!(
+            error_message(validate_zip(&path, ROOT)),
+            "ZIP local and central metadata disagree"
+        );
+        fs::remove_file(path).unwrap();
+    }
+
+    #[test]
     fn rejects_encryption_and_trailing_data() {
         let encrypted = temporary("zip");
         fs::write(&encrypted, raw_zip(None, true)).unwrap();
@@ -782,9 +841,28 @@ mod tests {
         fs::write(&path, second_member).unwrap();
         assert_eq!(
             error_message(validate_tar(&path, ROOT)),
-            "non-zero trailing tar data"
+            "multiple gzip members or trailing data are not permitted"
+        );
+
+        let mut empty_member = raw_tar(None);
+        empty_member.extend(gzip_tar(b""));
+        fs::write(&path, empty_member).unwrap();
+        assert_eq!(
+            error_message(validate_tar(&path, ROOT)),
+            "multiple gzip members or trailing data are not permitted"
         );
         fs::remove_file(path).unwrap();
+    }
+
+    #[test]
+    fn rejects_nonzero_tar_entry_padding() {
+        let mut tar = tar_entry(&format!("{ROOT}/README.md"), b'0', b"readme");
+        tar[512 + 6] = b'x';
+        tar.resize(tar.len() + 1024, 0);
+        assert_eq!(
+            error_message(validate_raw_tar(&tar, ROOT)),
+            "non-zero tar entry padding"
+        );
     }
 
     #[test]

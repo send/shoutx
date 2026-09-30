@@ -21,7 +21,6 @@ fn invalid_archive_has_stable_process_contract() {
 
     assert_eq!(output.status.code(), Some(1));
     assert!(output.stdout.is_empty());
-    assert!(output.stderr.starts_with(b"archive validation failed: "));
-    assert!(output.stderr.ends_with(b"\n"));
+    assert_eq!(output.stderr, b"archive validation failed\n");
     fs::remove_file(archive).unwrap();
 }

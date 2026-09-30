@@ -38,9 +38,40 @@ jobs:
             'test (macos-latest)'
             'test (windows-latest)'
           )
+
+          # When a matrix job's job-level condition is false, GitHub does not
+          # expand the matrix. The jobs API reports one skipped parent named
+          # "test", not one skipped job for each matrix entry.
+          parent_count=$(awk -F '\t' '$1 == "test" { count += 1 } END { print count + 0 }' "$jobs_json")
+          matrix_count=$(awk -F '\t' '$1 ~ /^test \(/ { count += 1 } END { print count + 0 }' "$jobs_json")
+          if (( parent_count > 0 )); then
+            if (( parent_count != 1 || matrix_count != 0 )); then
+              echo "Hosted test jobs had an ambiguous parent/matrix shape" >&2
+              exit 1
+            fi
+            parent_conclusion=$(awk -F '\t' '$1 == "test" { print $2 }' "$jobs_json")
+            if [[ "$parent_conclusion" != skipped ]]; then
+              echo "Expected unexpanded test matrix to be skipped" >&2
+              exit 1
+            fi
+            echo "Full CI was skipped; no hosted mask logs to verify"
+            echo "## Hosted mask logs: not exercised" >> "$GITHUB_STEP_SUMMARY"
+            echo "The hosted test matrix was skipped; this run is not release-gate evidence." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          if (( matrix_count != ${#expected_jobs[@]} )); then
+            echo "Expected ${#expected_jobs[@]} expanded hosted test jobs, got: $matrix_count" >&2
+            exit 1
+          fi
+
           successful=0
           skipped=0
           for job in "${expected_jobs[@]}"; do
+            count=$(awk -F '\t' -v name="$job" '$1 == name { count += 1 } END { print count + 0 }' "$jobs_json")
+            if (( count != 1 )); then
+              echo "Expected exactly one $job, got: $count" >&2
+              exit 1
+            fi
             conclusion=$(awk -F '\t' -v name="$job" '$1 == name { print $2 }' "$jobs_json")
             case "$conclusion" in
               success) ((successful += 1)) ;;

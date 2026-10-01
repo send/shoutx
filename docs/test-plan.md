@@ -380,13 +380,54 @@ are mask-only. Require the same exact parser checks and a separate completed
 `suffixChecks` count. Retain at most eight numeric failure examples for this
 suite as well. These are finite stress cases, not an arbitrary-suffix proof.
 
-These generated wires bypass shoutx's deliberately narrower ASCII guard. They
-test the published parser, not producer acceptance or live worker effects for
-these new values. The existing worker corpus still covers only the current
-producer policy. No arbitrary-length sequence proof, Unicode metadata policy,
-new culture/backend support, or stdout release permission follows from a pass.
-The separate `th-TH` issue remains deferred, and legacy framing is not part of
-this experiment. Extending producer acceptance requires a subsequent reviewed
+After both cultures' parser research completes successfully, also feed generated
+research wires through the same package-backed Worker fixture used for the
+current-policy corpus. For each culture, combine the ten representative starts
+with six tails (plain text, reordered combining marks, variation/ZWJ/skin tone,
+Thai/Lao spacing marks, command-looking syntax, and multiline escape-looking
+data). Use fresh execution state for each case. Require 120 mask cases
+(echo off/on), 180 annotation cases (all three severities), 40 stop/resume cases
+(all four commands), and ten masked-annotation cases. Check full and split-line
+mask registration (explicit expected lines, including standalone start scalars),
+exact subsequent redaction, mask echo off/on and annotation echo-on suppression,
+absence of extra issues/log records, exact annotation message/severity/ASCII properties and
+provenance, then completed annotation content/location/severity. Both persisted
+and console log sinks must agree. Stopped commands remain ordinary log data
+without effects even after a wrong resume token; matching-token resume must
+restore their intended effects. Check the actual culture at entry and after
+each start group and negative control, and record it. Two negative controls
+(U+0301 and U+0E33 starts) must demonstrate the known failed-mask/legacy-warning
+fallback, including no mask registration and one completed warning.
+These are defect-reproduction controls, not desired consumer behavior. A fixed
+or different backend can fail a control while accepting candidate inputs safely;
+the fixed error rule and `unicode-worker-negative-control` case label distinguish
+that drift from a candidate failure. The U+0E33 control is based on the recorded
+local observation; new platform results remain evidence to collect. Neither
+control directly observes which break iterator is active. Also require the
+unrelated fragment `literal` to remain unmasked in each positive mask case.
+
+Record these counts separately in `unicodeWorkerEffects`, marked research-only;
+missing or partial counts fail evidence verification; source digests identify
+the actual case definitions, not a separately pinned corpus digest. Keep the
+research status incomplete until both cultures' worker checks finish; caught
+Worker errors set it to failed, whereas timeout snapshots stay incomplete.
+Capture only numeric scalar/tail indices, booleans and fixed suite/command labels on failure. These
+statuses describe completion, not cause: caught Worker infrastructure errors
+also yield failed, and parser exceptions can leave research incomplete. Inspect
+`failedPhase`, `errorType`, `errorRule` and `workerCase` together. Offline tests
+check rejection of these statuses, not fault injection into the catch path.
+Current producer-policy checks still run first for both cultures. The Worker fixture
+retains synthetic host services, log storage and server queues: it does not
+start a live hosted worker or upload annotations to GitHub.
+
+These generated research wires bypass shoutx's deliberately narrower ASCII
+guard. They test consumer effects, not producer acceptance or producer-to-worker
+round trips for these new values. The separate producer-generated worker corpus
+still covers only the current producer policy. No arbitrary-length sequence
+proof, Unicode metadata policy, new culture/backend support, or stdout release
+permission follows from a pass. The separate `th-TH` issue remains deferred;
+legacy framing is exercised only as a failure path, not an adoption option.
+Extending producer acceptance requires a subsequent reviewed
 contract and implementation change.
 
 To regenerate after obtaining the pinned source files:

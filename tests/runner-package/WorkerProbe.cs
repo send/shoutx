@@ -165,6 +165,140 @@ static class WorkerProbe
         }
     }
 
+    // Research wires intentionally bypass shoutx's current ASCII guard. Keep this
+    // separate from the producer-generated, current-policy worker corpus below.
+    public static object RunUnicode(string tracePath, string expectedCulture)
+    {
+        unexpectedCalls = 0;
+        void CheckCulture() => Require(System.Globalization.CultureInfo.CurrentCulture.Name == expectedCulture,
+            "Unicode worker culture changed");
+        CheckCulture();
+        using var traceMasker = new SecretMasker();
+        using var listener = new HostTraceListener(tracePath);
+        using var trace = new Tracing("unicode-worker-probe", traceMasker,
+            new SourceSwitch("unicode-worker-probe", "Off"), listener);
+        static string Escape(string data) => data.Replace("%", "%25").Replace("\r", "%0D").Replace("\n", "%0A");
+        string[] tails = { "text", "\u0301\u0327text", "\ufe0f\u200d\U0001f3fbtext",
+            "\u0e33\u0eb3text", "##[warning]literal::error::%0A",
+            "\r\nsecond-line\n##[error]literal%25::tail" };
+        int maskCases = 0, annotationCases = 0, stoppedCases = 0, maskedAnnotationCases = 0;
+        foreach (int first in UnicodeCandidateProbe.RepresentativeStarts)
+        {
+            string prefix = char.ConvertFromUtf32(first);
+            for (int tail = 0; tail < tails.Length; tail++)
+            {
+                string data = prefix + tails[tail];
+                foreach (bool echo in new[] { false, true })
+                {
+                    CurrentCase = new { suite = "unicode-worker-mask", firstScalar = first, tailIndex = tail, echo };
+                    using var fixture = new Fixture(trace);
+                    fixture.Step.EchoOnActionCommand = echo;
+                    fixture.Send("::add-mask::" + Escape(data));
+                    Require(fixture.Record.Issues.Count == 0, "Unicode mask created issue");
+                    Require(fixture.Logs.SequenceEqual(echo ? new[] { "::add-mask::***" } : Array.Empty<string>()),
+                        "Unicode mask command leaked or echo mismatch");
+                    Require(fixture.Masker.MaskSecrets(data) == "***", "Unicode full value not masked");
+                    // Explicit expectations, including the standalone first-scalar
+                    // mask produced by the multiline fixture; no consumer split model.
+                    string[] parts = tail == 5 ? new[] { prefix, "second-line", "##[error]literal%25::tail" } : new[] { data };
+                    foreach (string part in parts)
+                        Require(fixture.Masker.MaskSecrets(part) == "***", "Unicode line mask missing");
+                    Require(fixture.Masker.MaskSecrets("literal") == "literal", "Unicode unrelated fragment over-masked");
+                    fixture.Logs.Clear();
+                    fixture.Step.Write(null, data);
+                    Require(fixture.Logs.SequenceEqual(new[] { "***" }), "Unicode subsequent log not redacted");
+                    fixture.Complete();
+                    maskCases++;
+                }
+                foreach (string severity in new[] { "notice", "warning", "error" })
+                {
+                    CurrentCase = new { suite = "unicode-worker-annotation", firstScalar = first, tailIndex = tail, severity };
+                    using var fixture = new Fixture(trace);
+                    fixture.Step.EchoOnActionCommand = true;
+                    fixture.Send($"::{severity} title=ascii,file=src/a.rs,line=5,col=2::" + Escape(data));
+                    Require(fixture.Record.Issues.Count == 1, "Unicode annotation issue count mismatch");
+                    var issue = fixture.Record.Issues.Single();
+                    Require(string.Equals(issue.Type.ToString(), severity, StringComparison.OrdinalIgnoreCase) &&
+                        issue.Message == data && issue.Category == "Code", "Unicode annotation content mismatch");
+                    var expected = new Dictionary<string, string> { ["title"] = "ascii", ["file"] = "src/a.rs",
+                        ["line"] = "5", ["col"] = "2", ["stepNumber"] = "1", ["logFileLineNumber"] = "1" };
+                    Require(issue.Data.Count == expected.Count && expected.All(pair =>
+                        issue.Data.TryGetValue(pair.Key, out var value) && value == pair.Value), "Unicode annotation properties mismatch");
+                    Require(fixture.Logs.SequenceEqual(new[] { $"##[{severity}]{data}" }), "Unicode annotation log mismatch");
+                    fixture.Complete();
+                    var saved = fixture.Root.Global.StepsResult.Single().Annotations;
+                    Require(saved.Count == 1 && saved[0].Message == data && saved[0].Path == "src/a.rs" &&
+                        saved[0].Title == "ascii" && saved[0].StartLine == 5 && saved[0].EndLine == 5 &&
+                        saved[0].StartColumn == 2 && saved[0].EndColumn == 2 && saved[0].StepNumber == 1 &&
+                        saved[0].Level.ToString() == (severity == "error" ? "FAILURE" : severity.ToUpperInvariant()),
+                        "Unicode completed annotation mismatch");
+                    annotationCases++;
+                }
+            }
+            foreach (string command in new[] { "add-mask", "notice", "warning", "error" })
+            {
+                CurrentCase = new { suite = "unicode-worker-stop-resume", firstScalar = first, command };
+                using var fixture = new Fixture(trace);
+                string data = prefix + "\u0301##[warning]literal::tail";
+                string wire = $"::{command}::" + Escape(data);
+                fixture.Send("::stop-commands::unicode-probe-resume");
+                fixture.Logs.Clear();
+                fixture.Send(wire);
+                Require(fixture.Logs.SequenceEqual(new[] { wire }) && fixture.Record.Issues.Count == 0 &&
+                    fixture.Masker.MaskSecrets(data) == data, "stopped Unicode command had side effect");
+                fixture.Send("::unicode-probe-wrong-token::");
+                fixture.Logs.Clear();
+                fixture.Send(wire);
+                Require(fixture.Logs.SequenceEqual(new[] { wire }) && fixture.Record.Issues.Count == 0 &&
+                    fixture.Masker.MaskSecrets(data) == data, "wrong token resumed Unicode commands");
+                fixture.Send("::unicode-probe-resume::");
+                fixture.Logs.Clear();
+                fixture.Send(wire);
+                if (command == "add-mask")
+                    Require(fixture.Logs.Count == 0 && fixture.Record.Issues.Count == 0 &&
+                        fixture.Masker.MaskSecrets(data) == "***", "resumed Unicode mask mismatch");
+                else
+                    Require(fixture.Record.Issues.Count == 1 && fixture.Record.Issues[0].Message == data &&
+                        fixture.Logs.SequenceEqual(new[] { $"##[{command}]{data}" }), "resumed Unicode annotation mismatch");
+                fixture.Complete();
+                stoppedCases++;
+            }
+            CurrentCase = new { suite = "unicode-worker-masked-annotation", firstScalar = first };
+            using (var fixture = new Fixture(trace))
+            {
+                string secret = prefix + "\u0301secret";
+                fixture.Send("::add-mask::" + Escape(secret));
+                Require(fixture.Logs.Count == 0 && fixture.Record.Issues.Count == 0, "Unicode mask leaked before annotation");
+                fixture.Send("::warning::" + Escape(secret + " after"));
+                Require(fixture.Logs.SequenceEqual(new[] { "##[warning]*** after" }), "Unicode annotation not redacted");
+                fixture.Complete();
+                var saved = fixture.Root.Global.StepsResult.Single().Annotations;
+                Require(saved.Count == 1 && saved[0].Message == "*** after", "Unicode completed annotation not redacted");
+                maskedAnnotationCases++;
+            }
+            CheckCulture();
+        }
+        int negativeControlCases = 0;
+        foreach (int first in new[] { 0x301, 0xe33 })
+        {
+            CurrentCase = new { suite = "unicode-worker-negative-control", firstScalar = first };
+            using var fixture = new Fixture(trace);
+            string data = char.ConvertFromUtf32(first) + "synthetic-value ##[warning]fallback";
+            fixture.Send("::add-mask::" + data);
+            Require(fixture.Record.Issues.Count == 1 && fixture.Record.Issues[0].Type == IssueType.Warning &&
+                fixture.Record.Issues[0].Message == "fallback" && fixture.Masker.MaskSecrets(data) == data &&
+                fixture.Logs.SequenceEqual(new[] { "##[warning]fallback" }), "Unicode negative control did not select fallback");
+            fixture.Complete();
+            Require(fixture.Root.Global.StepsResult.Single().Annotations.Single().Message == "fallback",
+                "Unicode negative control completion mismatch");
+            negativeControlCases++;
+            CheckCulture();
+        }
+        Require(unexpectedCalls == 0, "Unicode worker swallowed an unexpected service call");
+        return new { researchOnly = true, observedCulture = System.Globalization.CultureInfo.CurrentCulture.Name,
+            maskCases, annotationCases, stoppedCases, maskedAnnotationCases, negativeControlCases };
+    }
+
     public static object Run(string maskPath, string annotationPath, string tracePath)
     {
         unexpectedCalls = 0;

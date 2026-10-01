@@ -129,11 +129,29 @@ class HarnessTests(unittest.TestCase):
                 (evidence / f"{kind}-corpus.json").write_text("[{}]")
             report = {"unicodeResearchStatus": "passed", "cultures": [{"culture": name, "scalarChecks": 17793008,
                                     "unicodeCandidate": unicode_evidence(),
+                                    "unicodeWorkerEffects": {"researchOnly": True, "observedCulture": name,
+                                                             "negativeControlCases": 2, "maskCases": 120,
+                                                             "annotationCases": 180, "stoppedCases": 40,
+                                                             "maskedAnnotationCases": 10},
                                     "maskCases": 1, "annotationCases": 1,
                                     "workerEffects": {"maskCases": 1, "annotationCases": 1,
                                                       "stoppedCases": 4, "echoAndMaskedAnnotationCases": 1}}
                                   for name in ("", "en-US")]}
             harness.verify_coverage(report, evidence)
+            for field, value in (("researchOnly", False), ("maskCases", 0), ("annotationCases", 0),
+                                 ("stoppedCases", 0), ("maskedAnnotationCases", 0),
+                                 ("observedCulture", "th-TH"), ("negativeControlCases", 0)):
+                bad = json.loads(json.dumps(report))
+                bad["cultures"][0]["unicodeWorkerEffects"][field] = value
+                with self.assertRaises(ValueError):
+                    harness.verify_coverage(bad, evidence)
+                del bad["cultures"][0]["unicodeWorkerEffects"][field]
+                with self.assertRaises(ValueError):
+                    harness.verify_coverage(bad, evidence)
+            bad = json.loads(json.dumps(report))
+            del bad["cultures"][0]["unicodeWorkerEffects"]
+            with self.assertRaises(ValueError):
+                harness.verify_coverage(bad, evidence)
             for state in (None, "incomplete", "failed"):
                 with self.assertRaises(ValueError):
                     harness.verify_coverage({**report, "unicodeResearchStatus": state}, evidence)

@@ -26,6 +26,50 @@ def unicode_evidence():
 
 
 class HarnessTests(unittest.TestCase):
+    def test_break_rules_extraction_is_bounded_and_unambiguous(self):
+        source = 'static const char* BreakIteratorRuleNew = "one\\n" \\\n "two";\nstatic const char* BreakIteratorRuleOld = "old";\n'
+        self.assertEqual(harness.extract_break_rules(source), {"new": "one\ntwo", "old": "old"})
+        for bad in ("", source + source, source.replace('"old"', '""'),
+                    source.replace('"old"', '"' + 'x' * 16385 + '"')):
+            with self.assertRaises(ValueError):
+                harness.extract_break_rules(bad)
+
+    def test_native_collation_evidence_is_fail_closed(self):
+        source_sha = next(s["sha256"] for s in json.loads(harness.PINS.read_text())["sources"] if s["name"] == "pal_collation.c")
+        def observation(culture):
+            return {"status": "passed", "researchOnly": True, "culture": culture,
+                    "icuVersionRaw": 123, "externalBreakIterator": True, "selectedRules": "new",
+                    "actualRuleSha256": "a" * 64, "compiledRules": {"new": {"sha256": "a" * 64, "error": 0}},
+                    "ruleSourceSha256": source_sha, "tableSha256": harness.digest(harness.ROOT / "tests/runner-package/unicode-candidate.json"),
+                    "scalarChecks": 142081, "colonContextCount": 0, "missingNfdBoundaryCount": 0,
+                    "unexpectedGcbCount": 0, "contextItemCount": 100, "contextChecks": 100,
+                    "emptyEquivalentCount": 0, "emptyEquivalentExamples": [],
+                    "commonLibrary": "common", "internationalLibrary": "international"}
+        report = {"collationResearchStatus": "passed", "cultures": [
+            {"culture": name, "icu": {"versionRaw": 123}, "collationObservation": observation(name)}
+            for name in ("", "en-US")]}
+        harness.verify_collation(report)
+        for status in (None, "incomplete", "failed"):
+            with self.assertRaises(ValueError):
+                harness.verify_collation({**report, "collationResearchStatus": status})
+        with self.assertRaises(ValueError):
+            harness.verify_collation({**report, "cultures": []})
+        for field in observation(""):
+            bad = json.loads(json.dumps(report))
+            del bad["cultures"][0]["collationObservation"][field]
+            with self.assertRaises(ValueError, msg=field):
+                harness.verify_collation(bad)
+        for field, value in (("selectedRules", "old"), ("externalBreakIterator", False),
+                             ("icuVersionRaw", 456), ("colonContextCount", 1),
+                             ("missingNfdBoundaryCount", 1), ("unexpectedGcbCount", 1),
+                             ("actualRuleSha256", "b" * 64), ("contextChecks", 99),
+                             ("emptyEquivalentCount", 1), ("emptyEquivalentExamples", [0x301]),
+                             ("compiledRules", {"new": {"sha256": "a" * 64, "error": 1}})):
+            bad = json.loads(json.dumps(report))
+            bad["cultures"][1]["collationObservation"][field] = value
+            with self.assertRaises(ValueError, msg=field):
+                harness.verify_collation(bad)
+
     def test_digest_and_size_must_both_match(self):
         with tempfile.TemporaryDirectory() as root:
             path = Path(root) / "file"

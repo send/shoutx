@@ -201,11 +201,29 @@ static class Program
             }
             report.Remove("activeResearchCulture");
             report["unicodeResearchStatus"] = "passed";
+            report["collationResearchStatus"] = "incomplete";
+            foreach (var observation in cultures)
+            {
+                CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo((string)observation["culture"]!);
+                phase = "collation-observation";
+                testCase = new { culture = observation["culture"] };
+                var collation = new Dictionary<string, object?> { ["status"] = "incomplete" };
+                observation["collationObservation"] = collation;
+                File.WriteAllText(args[0], JsonSerializer.Serialize(report, new JsonSerializerOptions { WriteIndented = true }));
+                try
+                {
+                    CollationProbe.Run(collation, (observation["icu"] as IcuObservation)?.versionRaw ?? 0,
+                        observation["icuSourcePreconditionsObserved"] is true);
+                }
+                catch { collation["status"] = "failed"; throw; }
+            }
+            report["collationResearchStatus"] = "passed";
             report["status"] = "passed";
         }
         catch (Exception error)
         {
             if (phase == "unicode-worker-effects") report["unicodeResearchStatus"] = "failed";
+            if (phase == "collation-observation") report["collationResearchStatus"] = "failed";
             report["errorType"] = error.GetType().Name;
             if (error.InnerException is not null) report["innerErrorType"] = error.InnerException.GetType().Name;
             if (error is ProbeFailure) report["errorRule"] = error.Message;

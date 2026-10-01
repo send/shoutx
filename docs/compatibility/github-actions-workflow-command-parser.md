@@ -225,8 +225,12 @@ search call. With a non-null external iterator, the inspected
 ICU search uses that iterator and its `allowMidclusterMatch` exception is
 disabled; with null it uses its internal character iterator. Neither a default
 ICU character-boundary probe nor .NET `StringInfo` alone establishes which path
-this search used. Current evidence does not observe the selected custom rule
-set or null fallback. It must not label that choice based only on ICU version.
+this search used. The parser/Worker suites do not observe the selected custom
+rule set or null fallback. The separate
+[native observation](../test-plan.md#native-collation-observation) compares the
+actual iterator's binary rules with freshly compiled source rules; only its
+fresh passing results establish that choice for the observed process. Do not
+label the choice based only on ICU version.
 
 For the newer custom rules, a useful conditional argument is visible directly
 in the rule text: an ASCII colon is neither Hangul, Prepend, regional indicator,

@@ -229,7 +229,8 @@ this search used. The parser/Worker suites do not observe the selected custom
 rule set or null fallback. The separate
 [native observation](../test-plan.md#native-collation-observation) compares the
 actual iterator's binary rules with freshly compiled source rules; only its
-fresh passing results establish that choice for the observed process. Do not
+fresh passing results establish that choice only for the option-zero head
+iterator at observation time, not overflow nodes or earlier Worker calls. Do not
 label the choice based only on ICU version.
 
 For the newer custom rules, a useful conditional argument is visible directly

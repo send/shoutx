@@ -463,7 +463,9 @@ This is an additional research gate, not a producer dependency or a general
 Unicode acceptance proof. Require the inspected .NET 8.0.30 build, 64-bit
 x64/ARM64 layout, and positive ICU source preconditions before reading the
 private `SortHandle` layout pinned by `pal_collation.c`. Observe option zero's
-collator and cached search iterator only, in this single-threaded probe. Do
+collator and head cached search iterator only, during synchronous inspection.
+Overflow nodes and iterators used by earlier Worker calls are not observed;
+this is not an attestation of every iterator in the process. Do
 not close or mutate borrowed runtime objects. This instrumentation is not an
 API supported by .NET and must be reviewed again when its runtime pin changes.
 
@@ -473,10 +475,15 @@ and `libicui18n` module and reopens them with `RTLD_NOLOAD`; Windows borrows
 observed `icu.dll` or `icuuc.dll`/`icuin.dll` handles. Reject missing/ambiguous
 modules, missing exports and disagreement with CoreLib's ICU version. This
 does not attest native library file hashes or prove source-to-binary identity.
+The macOS path is fixed, not discovered; Windows matching uses module basenames,
+not a System32 path attestation. Version agreement does not distinguish two
+same-version ICU copies or prove which image supplied the runtime's bindings.
 
 Extract the new/old custom break-rule strings from the digest-verified native
-source into retained `break-rules.json`; compile each using the same loaded
-ICU. Compare its binary rule digest with the actual cached iterator's digest.
+source (read explicitly as UTF-8) into retained `break-rules.json`; compile each
+using the selected loaded ICU. Hash the embedded resource bytes and require
+that hash to match the build input's retained digest. Compare its binary rule
+digest with the observed head iterator's digest.
 Require an external iterator matching the new rules. Null, old, ambiguous or
 unrecognized results fail this research gate rather than passing as unknown.
 Binary rule hashes are platform observations, not one universal pinned hash.
@@ -489,6 +496,13 @@ class within the candidate's positive GCB set. Record completed counts and any
 violation counts. Also count scalars equal to empty under actual `CompareInfo`
 and retain at most 16 numeric examples; a positive count is informative, not a
 failure or authorization to remove those characters from the candidate table.
+These candidates also participate in the preceding exhaustive candidate-start
+parser checks with finite suffixes; neither suite proves arbitrary suffixes safe.
+The native GCB adapter uses `UCHAR_GRAPHEME_CLUSTER_BREAK = 0x1012` and
+`Other/L/LV/LVT/T/V/Regional_Indicator = 0/4/6/7/8/9/12`, checked against
+[ICU's public enum definitions](https://github.com/unicode-org/icu/blob/release-76-1/icu4c/source/common/unicode/uchar.h).
+This is the same semantic set as `GCB` in `generate-unicode-candidate.py`;
+keep the adapter aligned with that generator when changing the candidate policy.
 
 Record results under each culture's `collationObservation` and require both
 to pass `collationResearchStatus`. Save an explicitly incomplete snapshot

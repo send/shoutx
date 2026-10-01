@@ -26,6 +26,23 @@ def unicode_evidence():
 
 
 class HarnessTests(unittest.TestCase):
+    def test_break_rule_source_is_explicit_utf8(self):
+        # A full-width 'a' in the pinned source's comments contains byte 0x81,
+        # which fails under the Windows CP1252 default.
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as root:
+            path = Path(root) / "pal_collation.c"
+            source = '// \uff41\nstatic const char* BreakIteratorRuleNew = "new";\nstatic const char* BreakIteratorRuleOld = "old";\n'
+            path.write_bytes(source.encode("utf-8"))
+            original = Path.read_text
+            def windows_default(instance, *args, **kwargs):
+                kwargs.setdefault("encoding", "cp1252")
+                return original(instance, *args, **kwargs)
+            with patch.object(Path, "read_text", windows_default):
+                with self.assertRaises(UnicodeDecodeError):
+                    path.read_text()
+                self.assertEqual(harness.read_break_rules(path), {"new": "new", "old": "old"})
+
     def test_break_rules_extraction_is_bounded_and_unambiguous(self):
         source = 'static const char* BreakIteratorRuleNew = "one\\n" \\\n "two";\nstatic const char* BreakIteratorRuleOld = "old";\n'
         self.assertEqual(harness.extract_break_rules(source), {"new": "one\ntwo", "old": "old"})
@@ -41,6 +58,7 @@ class HarnessTests(unittest.TestCase):
                     "icuVersionRaw": 123, "externalBreakIterator": True, "selectedRules": "new",
                     "actualRuleSha256": "a" * 64, "compiledRules": {"new": {"sha256": "a" * 64, "error": 0}},
                     "ruleSourceSha256": source_sha, "tableSha256": harness.digest(harness.ROOT / "tests/runner-package/unicode-candidate.json"),
+                    "ruleResourceSha256": "c" * 64,
                     "scalarChecks": 142081, "colonContextCount": 0, "missingNfdBoundaryCount": 0,
                     "unexpectedGcbCount": 0, "contextItemCount": 100, "contextChecks": 100,
                     "emptyEquivalentCount": 0, "emptyEquivalentExamples": [],
@@ -48,27 +66,45 @@ class HarnessTests(unittest.TestCase):
         report = {"collationResearchStatus": "passed", "cultures": [
             {"culture": name, "icu": {"versionRaw": 123}, "collationObservation": observation(name)}
             for name in ("", "en-US")]}
-        harness.verify_collation(report)
+        def verify(report):
+            harness.verify_collation(report, "c" * 64)
+        verify(report)
+        for rules_sha in (None, "", "d" * 64):
+            with self.assertRaises(ValueError):
+                harness.verify_collation(report, rules_sha)
         for status in (None, "incomplete", "failed"):
             with self.assertRaises(ValueError):
-                harness.verify_collation({**report, "collationResearchStatus": status})
+                verify({**report, "collationResearchStatus": status})
         with self.assertRaises(ValueError):
-            harness.verify_collation({**report, "cultures": []})
+            verify({**report, "cultures": []})
+        for cultures in (None, [{}], [None], list(reversed(report["cultures"]))):
+            with self.assertRaises(ValueError):
+                verify({**report, "cultures": cultures})
         for field in observation(""):
             bad = json.loads(json.dumps(report))
             del bad["cultures"][0]["collationObservation"][field]
             with self.assertRaises(ValueError, msg=field):
-                harness.verify_collation(bad)
+                verify(bad)
         for field, value in (("selectedRules", "old"), ("externalBreakIterator", False),
                              ("icuVersionRaw", 456), ("colonContextCount", 1),
                              ("missingNfdBoundaryCount", 1), ("unexpectedGcbCount", 1),
                              ("actualRuleSha256", "b" * 64), ("contextChecks", 99),
                              ("emptyEquivalentCount", 1), ("emptyEquivalentExamples", [0x301]),
+                             ("ruleSourceSha256", "d" * 64), ("ruleResourceSha256", "d" * 64),
+                             ("tableSha256", "d" * 64), ("culture", "th-TH"),
+                             ("scalarChecks", 142080), ("status", "incomplete"), ("researchOnly", False),
+                             ("contextItemCount", 0), ("contextItemCount", 100001),
                              ("compiledRules", {"new": {"sha256": "a" * 64, "error": 1}})):
             bad = json.loads(json.dumps(report))
             bad["cultures"][1]["collationObservation"][field] = value
             with self.assertRaises(ValueError, msg=field):
-                harness.verify_collation(bad)
+                verify(bad)
+        for examples in ([0xd800], [65, 65], [0x110000]):
+            bad = json.loads(json.dumps(report))
+            value = bad["cultures"][0]["collationObservation"]
+            value.update(emptyEquivalentCount=len(examples), emptyEquivalentExamples=examples)
+            with self.assertRaises(ValueError):
+                verify(bad)
 
     def test_digest_and_size_must_both_match(self):
         with tempfile.TemporaryDirectory() as root:

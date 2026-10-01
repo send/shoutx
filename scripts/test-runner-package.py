@@ -148,10 +148,17 @@ def extract_break_rules(source):
     return result
 
 
-def verify_collation(probe):
+def read_break_rules(path):
+    return extract_break_rules(path.read_text(encoding="utf-8"))
+
+
+def verify_collation(probe, rules_sha):
+    if not isinstance(rules_sha, str) or not re.fullmatch(r"[0-9a-f]{64}", rules_sha):
+        raise ValueError("invalid break rules resource identity")
     if probe.get("collationResearchStatus") != "passed":
         raise ValueError("incomplete native collation observation")
-    if [c["culture"] for c in probe["cultures"]] != ["", "en-US"]:
+    cultures = probe.get("cultures")
+    if not isinstance(cultures, list) or any(not isinstance(c, dict) for c in cultures) or [c.get("culture") for c in cultures] != ["", "en-US"]:
         raise ValueError("incomplete native collation cultures")
     source_sha = next(s["sha256"] for s in json.loads(PINS.read_text())["sources"] if s["name"] == "pal_collation.c")
     for culture in probe["cultures"]:
@@ -173,6 +180,7 @@ def verify_collation(probe):
                 or compiled.get("new", {}).get("sha256") != actual_hash
                 or compiled.get("new", {}).get("error", 1) > 0
                 or value.get("ruleSourceSha256") != source_sha
+                or value.get("ruleResourceSha256") != rules_sha
                 or value.get("tableSha256") != digest(ROOT / "tests/runner-package/unicode-candidate.json")
                 or value.get("scalarChecks") != 142081 or value.get("colonContextCount") != 0
                 or value.get("missingNfdBoundaryCount") != 0 or value.get("unexpectedGcbCount") != 0
@@ -310,7 +318,7 @@ def main():
                 download(source["url"], path, 1024 * 1024)
                 verify(path, source["sha256"])
                 shutil.copyfile(path, evidence / source["name"])
-            break_rules = extract_break_rules((work / "pal_collation.c").read_text())
+            break_rules = read_break_rules(work / "pal_collation.c")
             break_rules["sourceSha256"] = digest(work / "pal_collation.c")
             (evidence / "break-rules.json").write_text(json.dumps(break_rules, indent=2) + "\n")
             record["breakRulesSha256"] = digest(evidence / "break-rules.json")
@@ -371,7 +379,7 @@ def main():
             if exit_code != 0 or probe["status"] != "passed":
                 raise ValueError("probe did not pass")
             verify_coverage(probe, evidence)
-            verify_collation(probe)
+            verify_collation(probe, record["breakRulesSha256"])
             record["phase"] = "cleanup"
         record["status"] = "passed"
         record["phase"] = "complete"

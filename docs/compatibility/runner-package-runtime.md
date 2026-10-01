@@ -231,7 +231,7 @@ Each `runner-package-evidence-OS-RID` CI artifact retains, for 30 days:
 - native collation observations in `probe.json`, including module paths,
   resolved ICU version, actual/compiled rule digests, context/scalar counts and
   numeric empty-equivalent examples; extracted `break-rules.json` and its digest
-  in `evidence.json`;
+  in `evidence.json`, checked against the embedded resource digest in `probe.json`;
 - original extracted bin digests, inspected .NET source snapshots, synthetic
   corpora, build/execution logs and `corehost.log`;
 - source-built oracle TRX results, including its runtime observations.

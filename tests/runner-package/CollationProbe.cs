@@ -47,7 +47,9 @@ static class CollationProbe
         Require(breaker != IntPtr.Zero, "internal break iterator fallback observed");
         string actualHash = api.RuleHash(breaker);
         result["actualRuleSha256"] = actualHash;
-        using var rules = JsonDocument.Parse(Resource("break-rules.json"));
+        byte[] ruleBytes = Resource("break-rules.json");
+        result["ruleResourceSha256"] = Hash(ruleBytes);
+        using var rules = JsonDocument.Parse(ruleBytes);
         result["ruleSourceSha256"] = rules.RootElement.GetProperty("sourceSha256").GetString();
         var compiled = new Dictionary<string, object?>();
         result["compiledRules"] = compiled;

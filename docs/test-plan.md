@@ -333,6 +333,58 @@ remain outside this package suite, with broader policies covered by the
 source-built oracle and live hosted checks. Neither suite changes stdout
 release eligibility or the deferred `th-TH` decision.
 
+### V2 Unicode data-start research
+
+The package probe additionally evaluates a candidate, not a production input
+policy. Generate `tests/runner-package/unicode-candidate.json` from the three
+official Unicode 14.0.0 files identified by URL and SHA-256 in
+`unicode-pins.json`. The generator selects General_Category L/N/P/S with
+Grapheme_Cluster_Break Other/L/V/T/LV/LVT/Regional_Indicator, excluding
+Default_Ignorable_Code_Point. Unassigned and private-use characters are not
+selected. This isolated table is not a superset of the existing ASCII policy
+(for example, it excludes space); any future acceptance policy must explicitly
+compose it with the current rules, not replace them accidentally.
+Regeneration must match the committed bytes before building the
+probe. Do not select candidates from the executing runtime's Unicode tables.
+The derived data's license is `tests/runner-package/UNICODE-LICENSE.txt`.
+It is test-only and not linked into official CLI binaries. Any future crates.io
+publication must review source-package contents and third-party license metadata;
+registry publication remains deferred by the release policy.
+
+For each existing explicit culture, test all 142,081 candidate starts with six
+fixed tails, using mask and warning with an ASCII property header (1,704,972
+cases). Separately test ten representative starts (including Thai/Lao
+prevowels, conjoining jamo, regional indicator and ASCII punctuation) with every non-NUL Unicode
+scalar followed by `x`, using the warning header (11,120,630 cases). Require
+the exact separator, command, decoded data and properties, and record the
+table digest, elapsed time and completed counts. Bound failure examples per
+suite and record only fixed reason labels and numeric scalars/case indices,
+never command-shaped strings. A counterexample fails the candidate check
+after both cultures' current-policy and research checks complete. Save explicitly
+incomplete snapshots before research, so a timeout retains earlier counts
+without passing; snapshots lack final package-identity verification and are not
+passing evidence. The probe execution limit is 15 minutes; the enclosing
+source/package CI job limit is 30 minutes. This is not a guarantee of artifact
+upload after a job-level timeout: inspect total job timing as well as probe timing.
+Retain failures rather than shrinking
+the table to the current platform's passing subset.
+
+These generated wires bypass shoutx's deliberately narrower ASCII guard. They
+test the published parser, not producer acceptance or live worker effects for
+these new values. The existing worker corpus still covers only the current
+producer policy. No arbitrary-length sequence proof, Unicode metadata policy,
+new culture/backend support, or stdout release permission follows from a pass.
+The separate `th-TH` issue remains deferred, and legacy framing is not part of
+this experiment. Extending producer acceptance requires a subsequent reviewed
+contract and implementation change.
+
+To regenerate after obtaining the pinned source files:
+
+```sh
+python3 scripts/generate-unicode-candidate.py --source-dir /path/to/ucd-files
+python3 scripts/generate-unicode-candidate.py --source-dir /path/to/ucd-files --check
+```
+
 ### Live hosted stdout boundary experiment
 
 The ordinary three-OS hosted test matrix additionally runs

@@ -56,12 +56,12 @@ would also change runner state.
 
 ### Use legacy `##[command]data` framing
 
-Current leading candidate. shoutx can place a fixed ASCII prefix at offset
-zero and use the runner's complete legacy escaping for properties and data.
-The syntax is not documented in the current public GitHub workflow-command
-reference, and its prefix search remains locale-sensitive, so it requires
-strong parser evidence, hosted behavior checks, and a forward-compatibility
-plan.
+Not selected by the maintainer as of 2026-10-01. Although shoutx could place a
+fixed ASCII prefix at offset zero and use legacy escaping, the syntax is not
+documented in the current public GitHub workflow-command reference. Its
+uncertain removal horizon is unacceptable for adoption. The ongoing Unicode
+investigation stays on V2; legacy parser regressions remain useful evidence
+about the consumer's fallback behavior, not a proposal to emit that format.
 
 ### Do not release stdout workflow-command writers
 
@@ -87,8 +87,8 @@ allowlist, or remove the research feature / release exclusion.
 
 ## Decision
 
-No wire format is accepted by this proposed record yet. Before acceptance, the
-legacy candidate must pass the real-runner verification described below, and
+No wire format is accepted by this proposed record yet. Before acceptance, a
+candidate must pass the real-runner verification described below, and
 the exact encoding contract and compatibility policy must be reviewed. Failure
 of that evidence selects the no-release fallback rather than a culture-specific
 exception.

@@ -77,9 +77,13 @@ ICU version 0 and not permission to substitute the sort version.
 The source-precondition result requires no positive NLS/Hybrid flag, invariant
 mode false, the ASCII flag true and a nonzero ICU version. In the inspected
 source that ASCII flag is initialized on the ICU path, not the NLS path.
-Overall `passed` means the package-identity, finite parser and command-effects checks passed;
+For the current probe, overall `passed` means the package-identity, finite parser, command-effects and
+[research-only Unicode candidate checks](../test-plan.md#v2-unicode-data-start-research) passed;
 it deliberately does not require ICU preconditions. A future unknown/NLS run
 can pass those checks without confirming the ICU source argument.
+
+The historical runs cited below predate the Unicode candidate extension;
+their passing results do not include that research suite.
 
 The local macOS ARM64 run on 2026-09-30 observed .NET 8.0.30 and ICU 78.1.0.0
 through CoreLib's binding, with invariant mode false and the ASCII flag true

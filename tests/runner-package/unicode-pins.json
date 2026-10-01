@@ -1,0 +1,8 @@
+{
+  "unicodeVersion": "14.0.0",
+  "sources": [
+    {"name": "UnicodeData.txt", "url": "https://www.unicode.org/Public/14.0.0/ucd/UnicodeData.txt", "sha256": "36018e68657fdcb3485f636630ffe8c8532e01c977703d2803f5b89d6c5feafb"},
+    {"name": "GraphemeBreakProperty.txt", "url": "https://www.unicode.org/Public/14.0.0/ucd/auxiliary/GraphemeBreakProperty.txt", "sha256": "97e79f1f8d9cd76d120f2420381a01abc00a7c78a2aa583fa3f9627264a99742"},
+    {"name": "DerivedCoreProperties.txt", "url": "https://www.unicode.org/Public/14.0.0/ucd/DerivedCoreProperties.txt", "sha256": "e3eddd7d469cd1b0feed7528defad1a1cc7c6a9ceb0ae4446a6d10921ed2e7bc"}
+  ]
+}

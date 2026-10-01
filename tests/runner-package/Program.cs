@@ -141,7 +141,7 @@ static class Program
             string backend = invariant is true ? "Invariant" : nls is true ? "NLS" : hybrid is true ? "Hybrid" :
                 invariant is false && nls is false && hybrid is false ? "ICU" : "Unknown";
             report["globalization"] = new { invariant, nls, hybrid, backendFromFlags = backend };
-            var cultures = new List<object>();
+            var cultures = new List<Dictionary<string, object?>>();
             report["cultures"] = cultures;
             foreach (string name in new[] { "", "en-US" })
             {
@@ -170,6 +170,25 @@ static class Program
                 phase = "scalar-checks";
                 observation["scalarChecks"] = ScalarChecks();
             }
+            // Preserve current-policy checks for both cultures before research.
+            // Snapshots remain explicitly failed/incomplete until final identity
+            // verification; a killed probe must never look like a passing run.
+            report["unicodeResearchStatus"] = "incomplete";
+            foreach (var observation in cultures)
+            {
+                CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo((string)observation["culture"]!);
+                phase = "unicode-candidate";
+                testCase = new { culture = observation["culture"] };
+                report["activeResearchCulture"] = observation["culture"];
+                File.WriteAllText(args[0], JsonSerializer.Serialize(report, new JsonSerializerOptions { WriteIndented = true }));
+                var unicode = UnicodeCandidateProbe.Run();
+                observation["unicodeCandidate"] = unicode;
+            }
+            report.Remove("activeResearchCulture");
+            bool unicodePassed = cultures.All(c => (long)((Dictionary<string, object?>)c["unicodeCandidate"]!)["failures"]! == 0);
+            report["unicodeResearchStatus"] = unicodePassed ? "passed" : "failed";
+            testCase = null; // Any failure examples are keyed by culture above.
+            Require(unicodePassed, "Unicode research candidate failed");
             report["status"] = "passed";
         }
         catch (Exception error)

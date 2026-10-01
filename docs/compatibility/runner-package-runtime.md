@@ -49,7 +49,11 @@ The only difference is an added remaining-input check on the no-match path of
 ASCII table are unchanged. The case-sensitive `CompareOptions.None` argument
 therefore also applies to this **specific** 8.0.30 source revision, subject to
 its ICU-mode preconditions. It is not extended to other .NET versions or NLS.
-Both source files and their reviewed digests are retained in each artifact.
+Both CompareInfo source files and their reviewed digests are retained in each artifact.
+The artifact also retains digest-pinned `Interop.ICU.cs`, `pal_icushim.c` and
+`pal_collation.c`. The latter supports the manual
+[native-search investigation](github-actions-workflow-command-parser.md#remaining-source-argument);
+source hashes do not attest the loaded native implementation.
 
 ## Observations and limits
 
@@ -78,12 +82,17 @@ The source-precondition result requires no positive NLS/Hybrid flag, invariant
 mode false, the ASCII flag true and a nonzero ICU version. In the inspected
 source that ASCII flag is initialized on the ICU path, not the NLS path.
 For the current probe, overall `passed` means the package-identity, finite parser, command-effects and
-[research-only Unicode candidate checks](../test-plan.md#v2-unicode-data-start-research) passed;
+[research-only Unicode parser and Worker-effects checks](../test-plan.md#v2-unicode-data-start-research) passed;
 it deliberately does not require ICU preconditions. A future unknown/NLS run
-can pass those checks without confirming the ICU source argument.
+can pass those checks without confirming the ICU source argument, but only if
+it also reproduces the required negative controls. A fixed or different backend
+may fail that control gate without demonstrating unsafe candidate acceptance;
+inspect the research case/error labels described in the linked test plan.
 
 The historical runs cited below predate the Unicode candidate extension;
-their passing results do not include that research suite.
+their passing results do not include that research suite or the later Unicode
+Worker-effects extension. Consult fresh artifact fields for the latter's
+coverage; local macOS results do not attest Linux or Windows behavior.
 
 The local macOS ARM64 run on 2026-09-30 observed .NET 8.0.30 and ICU 78.1.0.0
 through CoreLib's binding, with invariant mode false and the ASCII flag true
@@ -197,8 +206,9 @@ environment variables are removed for probe execution; their names, never
 values, are recorded. Ordinary host discovery and locale variables remain;
 the two tested cultures are explicitly selected inside the probe.
 The three ambient OutputManager/stop-token test-policy overrides are removed
-as well. `worker-trace.log` is a deliberately disabled trace sink, reopened for
-each culture; it is not behavioral evidence or a record of both cultures.
+as well. `worker-trace.log` and `unicode-worker-trace.log` are deliberately
+disabled trace sinks, reopened for each culture; neither is behavioral
+evidence or a record of both cultures.
 
 Each `runner-package-evidence-OS-RID` CI artifact retains, for 30 days:
 
@@ -206,7 +216,8 @@ Each `runner-package-evidence-OS-RID` CI artifact retains, for 30 days:
   selected CoreCLR digest, CI/image identity, harness/probe digests, tool
   versions, removed environment names and host-trace digest;
 - `probe.json`: runtime/parser/worker identities, globalization observations,
-  explicit cultures, parser-test and command-effects counts, and synthetic
+  explicit cultures, parser-test, current-policy and research Worker counts,
+  observed research cultures and negative controls, and synthetic
   service-double assembly names;
 - original extracted bin digests, inspected .NET source snapshots, synthetic
   corpora, build/execution logs and `corehost.log`;

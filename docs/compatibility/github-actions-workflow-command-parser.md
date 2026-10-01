@@ -198,6 +198,65 @@ collation data. Neither the CLI's ASCII boundary policy nor metadata acceptance
 is changed. Legacy framing is excluded from this investigation by maintainer
 direction; the earlier proposed framing record is not an adoption decision.
 
+### Remaining source argument
+
+In [.NET 8.0.30 `pal_collation.c`](https://github.com/dotnet/runtime/blob/a83db3e0eb2defb6220e15dae2f1a0462fdbf99f/src/native/libs/System.Globalization.Native/pal_collation.c),
+`GetCollatorFromSortHandle` uses the locale's base collator for options zero;
+`GlobalizationNative_IndexOf` obtains a search iterator and calls `usearch_first`.
+The package harness pins and verifies this native source's digest, not the
+correctness of this manual analysis or a source-to-native-binary attestation;
+see the [package evidence limits](runner-package-runtime.md).
+The nonzero-options custom-rule path must not be assumed to describe this
+default search. In [ICU 76.1 `usearch.cpp`](https://github.com/unicode-org/icu/blob/release-76-1/icu4c/source/i18n/usearch.cpp),
+the forward search checks collation-element offsets, partial expansions, break
+boundaries and an `allowMidclusterMatch` normalization-boundary exception.
+Only ICU 76.1 was source-inspected here; these conclusions must not be silently
+extended to the other observed ICU versions, including local ICU 78.1.
+This argument concerns native `IndexOf`, not the separate fixed-header
+`StartsWith`/`SimpleAffix` path.
+
+Importantly, .NET's `CreateCustomizedBreakIterator` first compiles its own newer
+rule set, tries an older rule set if that fails, and returns null if neither can
+be created. It passes that result to ICU's search iterator. These rules omit
+the usual CR/LF non-break rule. Search iterators are cached by sort handle and
+options; later iterator creation can reuse the process-cached rule text and
+return null if reopening it fails. The selection is not freshly made on every
+search call. With a non-null external iterator, the inspected
+ICU search uses that iterator and its `allowMidclusterMatch` exception is
+disabled; with null it uses its internal character iterator. Neither a default
+ICU character-boundary probe nor .NET `StringInfo` alone establishes which path
+this search used. Current evidence does not observe the selected custom rule
+set or null fallback. It must not label that choice based only on ICU version.
+
+For the newer custom rules, a useful conditional argument is visible directly
+in the rule text: an ASCII colon is neither Hangul, Prepend, regional indicator,
+linking consonant nor extended pictograph. The rules that can join it directly
+to the following character are therefore the Extend/ZWJ and SpacingMark rules.
+The candidate's positive GCB set excludes those classes. Provided the consumer
+assigns the same relevant properties and this rule set is active, subsequent
+characters do not bridge that particular break. This explains the boundary
+hypothesis, but says nothing by itself about collation-element contractions,
+normalization or the unknown-rule/fallback path.
+
+This inspection identifies proof obligations, not a completed derivation of
+the candidate rule across the package matrix:
+
+- Establish that the fixed ASCII header's delimiter collation elements cannot
+  be changed by a contraction or contextual rule extending into arbitrary data.
+- Establish that the selected first scalar preserves an acceptable end boundary
+  for that delimiter even when normalization, ignorables and later combining
+  sequences affect the following collation elements.
+- Check those properties against the actual consumer collation/break data and
+  search implementation for each claimed backend/version. The producer's
+  pinned UCD table alone does not establish their stability.
+
+The [ICU search documentation](https://unicode-org.github.io/icu/userguide/collation/string-search.html)
+describes language-sensitive matching and normalization; it does not supply
+this protocol-specific guarantee. Finite parser stress tests and the separate
+package Worker-effects cases in the test plan address observed behavior, not
+these universal obligations. The latter use generated research wires, not new
+CLI acceptance or a live hosted Worker measurement.
+
 ## Self-hosted runner version snapshot
 
 Queries completed at 2026-09-29T08:45:53Z. The official releases API listed

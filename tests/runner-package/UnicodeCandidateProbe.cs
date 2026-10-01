@@ -11,6 +11,7 @@ static class UnicodeCandidateProbe
     static readonly string[] Tails = { "x", "\u0301x", "\u0e33x", "\U0001f3fbx",
         "\ufe0f\u200d\u0301x", "\u200d\u0301##[warning]literal::tail" };
     static readonly int[] Starts = { 0x65e5, 0x1f600, 0x627, 0x939, 0xd55c, 0x1f1ef, 0xe40, 0xec0, 0x1100, 0x21 };
+    public static IEnumerable<int> RepresentativeStarts => Starts;
     static readonly string[] SuffixPatterns = { "\u0301\u0327", "\ufe0f\u200d\u0301",
         "\U000e0020\U0001f3fb", "\u0e40\u0e33\u0ec0\u0eb3", "\u1100\u1161\u11a8",
         "\U0001f1ef\U0001f1f5", "##[warning]literal::error::%0A", "\r\n%::##[add-mask]" };

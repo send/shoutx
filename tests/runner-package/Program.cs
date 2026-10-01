@@ -186,19 +186,32 @@ static class Program
             }
             report.Remove("activeResearchCulture");
             bool unicodePassed = cultures.All(c => (long)((Dictionary<string, object?>)c["unicodeCandidate"]!)["failures"]! == 0);
-            report["unicodeResearchStatus"] = unicodePassed ? "passed" : "failed";
+            report["unicodeResearchStatus"] = unicodePassed ? "incomplete" : "failed";
             testCase = null; // Any failure examples are keyed by culture above.
             Require(unicodePassed, "Unicode research candidate failed");
+            foreach (var observation in cultures)
+            {
+                CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo((string)observation["culture"]!);
+                phase = "unicode-worker-effects";
+                WorkerProbe.CurrentCase = new { suite = "unicode-worker-setup" };
+                report["activeResearchCulture"] = observation["culture"];
+                File.WriteAllText(args[0], JsonSerializer.Serialize(report, new JsonSerializerOptions { WriteIndented = true }));
+                observation["unicodeWorkerEffects"] = WorkerProbe.RunUnicode(
+                    Path.Combine(Path.GetDirectoryName(args[0])!, "unicode-worker-trace.log"), (string)observation["culture"]!);
+            }
+            report.Remove("activeResearchCulture");
+            report["unicodeResearchStatus"] = "passed";
             report["status"] = "passed";
         }
         catch (Exception error)
         {
+            if (phase == "unicode-worker-effects") report["unicodeResearchStatus"] = "failed";
             report["errorType"] = error.GetType().Name;
             if (error.InnerException is not null) report["innerErrorType"] = error.InnerException.GetType().Name;
             if (error is ProbeFailure) report["errorRule"] = error.Message;
             report["failedPhase"] = phase;
             report["testCase"] = testCase;
-            if (phase == "worker-effects") report["workerCase"] = WorkerProbe.CurrentCase;
+            if (phase is "worker-effects" or "unicode-worker-effects") report["workerCase"] = WorkerProbe.CurrentCase;
             Console.Error.WriteLine("package probe failed; see evidence (no corpus values logged)");
         }
         finally

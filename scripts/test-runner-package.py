@@ -159,6 +159,12 @@ def verify_coverage(probe, evidence):
         effects = culture.get("workerEffects", {})
         if effects.get("stoppedCases") != 4 or effects.get("echoAndMaskedAnnotationCases") != 1:
             raise ValueError("incomplete worker state coverage")
+        research = culture.get("unicodeWorkerEffects", {})
+        if (research.get("researchOnly") is not True or research.get("observedCulture") != culture["culture"]
+                or research.get("negativeControlCases") != 2 or research.get("maskCases") != 120
+                or research.get("annotationCases") != 180 or research.get("stoppedCases") != 40
+                or research.get("maskedAnnotationCases") != 10):
+            raise ValueError("incomplete Unicode worker evidence")
 
 
 def verify_coreclr(trace, binary, rid):

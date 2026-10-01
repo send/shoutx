@@ -22,7 +22,7 @@ def unicode_evidence():
     return {"unicodeVersion": "14.0.0", "researchOnly": True,
             "tableSha256": harness.digest(harness.ROOT / "tests/runner-package/unicode-candidate.json"),
             "candidateCount": 142081, "candidateChecks": 1704972, "pairChecks": 11120630,
-            "failures": 0, "examples": []}
+            "suffixChecks": 500, "failures": 0, "examples": []}
 
 
 class HarnessTests(unittest.TestCase):
@@ -139,7 +139,7 @@ class HarnessTests(unittest.TestCase):
                     harness.verify_coverage({**report, "unicodeResearchStatus": state}, evidence)
             for field, value in (("unicodeVersion", "15.0.0"), ("researchOnly", False),
                                  ("tableSha256", "wrong"), ("candidateCount", 0), ("candidateChecks", 0),
-                                 ("pairChecks", 0), ("failures", 1), ("examples", [{}])):
+                                 ("pairChecks", 0), ("suffixChecks", 0), ("failures", 1), ("examples", [{}])):
                 bad = json.loads(json.dumps(report))
                 bad["cultures"][0]["unicodeCandidate"][field] = value
                 with self.assertRaises(ValueError):

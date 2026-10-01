@@ -369,6 +369,17 @@ upload after a job-level timeout: inspect total job timing as well as probe timi
 Retain failures rather than shrinking
 the table to the current platform's passing subset.
 
+Additionally run 500 suffix cases per culture: the same ten starts with eight
+repeated motifs at three UTF-16 length budgets (32, 256, 4090), for mask and
+warning, plus two near-1-MiB mask inputs per start. Repeat whole motifs to avoid
+splitting surrogate pairs and append a terminal `x`. Motifs cover combining
+mark ordering, variation/ZWJ sequences, tags/skin tones, Thai/Lao prevowels,
+Hangul jamo, regional indicators, command-looking syntax and escaped CR/LF/%.
+The annotation cases remain below 4096 semantic UTF-16 units; the larger cases
+are mask-only. Require the same exact parser checks and a separate completed
+`suffixChecks` count. Retain at most eight numeric failure examples for this
+suite as well. These are finite stress cases, not an arbitrary-suffix proof.
+
 These generated wires bypass shoutx's deliberately narrower ASCII guard. They
 test the published parser, not producer acceptance or live worker effects for
 these new values. The existing worker corpus still covers only the current
@@ -384,6 +395,24 @@ To regenerate after obtaining the pinned source files:
 python3 scripts/generate-unicode-candidate.py --source-dir /path/to/ucd-files
 python3 scripts/generate-unicode-candidate.py --source-dir /path/to/ucd-files --check
 ```
+
+The research-only Rust test `tests/unicode_candidate_lookup.rs` checks a
+first-scalar binary search against all scalar memberships in the candidate
+table, unioned with the existing ASCII/CR/LF rule. It is not called by the CLI.
+Its ignored release-mode microbenchmark compares the current ASCII predicate
+and the proposed lookup on 16-byte, 4096-byte and 1-MiB inputs, with ASCII,
+Japanese, emoji and rejected combining-mark starts:
+
+```sh
+CARGO_TARGET_DIR=target/unicode-research cargo test --release --test unicode_candidate_lookup benchmark_candidate_lookup -- --ignored --nocapture --test-threads=1
+```
+
+JSON decoding and input construction are outside timing; the proposed eventual
+implementation would embed a generated static range table, not load JSON at
+runtime. Inputs are already valid Rust strings. This measures warmed lookup
+cost only, not UTF-8 validation, process startup, full encoding, I/O or Runner
+processing. There is no timing pass/fail threshold. End-to-end and cross-platform
+measurements remain required before claiming CLI performance is unchanged.
 
 ### Live hosted stdout boundary experiment
 

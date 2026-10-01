@@ -254,7 +254,7 @@ def main():
                 download(source["url"], path, 1024 * 1024)
                 verify(path, source["sha256"])
                 shutil.copyfile(path, evidence / source["name"])
-            record["phase"] = "build-probe-and-corpora"
+            record["phase"] = "verify-unicode-research-sources"
             unicode_pins = json.loads((ROOT / "tests/runner-package/unicode-pins.json").read_text())
             for source in unicode_pins["sources"]:
                 path = work / source["name"]
@@ -265,6 +265,7 @@ def main():
             shutil.copyfile(ROOT / "tests/runner-package/unicode-candidate.json", evidence / "unicode-candidate.json")
             shutil.copyfile(ROOT / "tests/runner-package/unicode-pins.json", evidence / "unicode-pins.json")
             shutil.copyfile(ROOT / "tests/runner-package/UNICODE-LICENSE.txt", evidence / "UNICODE-LICENSE.txt")
+            record["phase"] = "build-probe-and-corpora"
             for kind in ("mask", "annotation"):
                 env = os.environ.copy()
                 env["CARGO_TARGET_DIR"] = str(work / "cargo")
@@ -296,6 +297,7 @@ def main():
             record["selectedCoreClr"] = {"file": coreclr, "sha256": files[coreclr]}
             record["corehostTraceSha256"] = digest(evidence / "corehost.log")
             probe = json.loads((evidence / "probe.json").read_text())
+            record["unicodeResearchStatus"] = probe.get("unicodeResearchStatus")
             verify_managed(probe, files, pins)
             record["icuSourcePreconditionsByCulture"] = [
                 {"culture": c["culture"], "observed": c["icuSourcePreconditionsObserved"]}

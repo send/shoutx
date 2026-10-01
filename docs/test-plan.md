@@ -347,6 +347,9 @@ compose it with the current rules, not replace them accidentally.
 Regeneration must match the committed bytes before building the
 probe. Do not select candidates from the executing runtime's Unicode tables.
 The derived data's license is `tests/runner-package/UNICODE-LICENSE.txt`.
+It is test-only and not linked into official CLI binaries. Any future crates.io
+publication must review source-package contents and third-party license metadata;
+registry publication remains deferred by the release policy.
 
 For each existing explicit culture, test all 142,081 candidate starts with six
 fixed tails, using mask and warning with an ASCII property header (1,704,972
@@ -358,9 +361,12 @@ table digest, elapsed time and completed counts. Bound failure examples per
 suite and record only fixed reason labels and numeric scalars/case indices,
 never command-shaped strings. A counterexample fails the candidate check
 after both cultures' current-policy and research checks complete. Save explicitly
-incomplete snapshots before research, so a timeout retains earlier evidence
-without passing. The probe execution limit is 15 minutes; the enclosing
-source/package CI job limit is 30 minutes. Retain failures rather than shrinking
+incomplete snapshots before research, so a timeout retains earlier counts
+without passing; snapshots lack final package-identity verification and are not
+passing evidence. The probe execution limit is 15 minutes; the enclosing
+source/package CI job limit is 30 minutes. This is not a guarantee of artifact
+upload after a job-level timeout: inspect total job timing as well as probe timing.
+Retain failures rather than shrinking
 the table to the current platform's passing subset.
 
 These generated wires bypass shoutx's deliberately narrower ASCII guard. They

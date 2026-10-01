@@ -187,6 +187,7 @@ static class Program
             report.Remove("activeResearchCulture");
             bool unicodePassed = cultures.All(c => (long)((Dictionary<string, object?>)c["unicodeCandidate"]!)["failures"]! == 0);
             report["unicodeResearchStatus"] = unicodePassed ? "passed" : "failed";
+            testCase = null; // Any failure examples are keyed by culture above.
             Require(unicodePassed, "Unicode research candidate failed");
             report["status"] = "passed";
         }

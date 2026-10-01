@@ -144,7 +144,8 @@ def verify_coverage(probe, evidence):
         if (unicode.get("unicodeVersion") != "14.0.0" or unicode.get("researchOnly") is not True
                 or unicode.get("tableSha256") != digest(ROOT / "tests/runner-package/unicode-candidate.json")
                 or unicode.get("candidateCount") != 142081 or unicode.get("candidateChecks") != 1704972
-                or unicode.get("pairChecks") != 11120630 or unicode.get("failures") != 0
+                or unicode.get("pairChecks") != 11120630 or unicode.get("suffixChecks") != 500
+                or unicode.get("failures") != 0
                 or unicode.get("examples") != []):
             raise ValueError("incomplete Unicode candidate evidence")
         if culture.get("scalarChecks") != 17793008:

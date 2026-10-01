@@ -11,6 +11,16 @@ static class UnicodeCandidateProbe
     static readonly string[] Tails = { "x", "\u0301x", "\u0e33x", "\U0001f3fbx",
         "\ufe0f\u200d\u0301x", "\u200d\u0301##[warning]literal::tail" };
     static readonly int[] Starts = { 0x65e5, 0x1f600, 0x627, 0x939, 0xd55c, 0x1f1ef, 0xe40, 0xec0, 0x1100, 0x21 };
+    static readonly string[] SuffixPatterns = { "\u0301\u0327", "\ufe0f\u200d\u0301",
+        "\U000e0020\U0001f3fb", "\u0e40\u0e33\u0ec0\u0eb3", "\u1100\u1161\u11a8",
+        "\U0001f1ef\U0001f1f5", "##[warning]literal::error::%0A", "\r\n%::##[add-mask]" };
+
+    static string RepeatWithin(string pattern, int maxUnits)
+    {
+        var result = new System.Text.StringBuilder();
+        while (result.Length + pattern.Length <= maxUnits) result.Append(pattern);
+        return result.ToString();
+    }
 
     static string Escape(string value) => value.Replace("%", "%25").Replace("\r", "%0D").Replace("\n", "%0A");
     static string? Check(string data, bool mask)
@@ -53,18 +63,21 @@ static class UnicodeCandidateProbe
         }
         if (points.Count != 142081 || table.GetProperty("count").GetInt32() != points.Count ||
             Starts.Any(cp => !points.Contains(cp))) throw new ProbeFailure("unexpected candidate coverage");
-        long candidateChecks = 0, pairChecks = 0, failures = 0;
+        long candidateChecks = 0, pairChecks = 0, suffixChecks = 0, failures = 0;
         var examples = new List<object>();
-        int candidateExamples = 0, pairExamples = 0;
+        var exampleCounts = new Dictionary<string, int>();
         void Record(string? reason, string suite, int first, int index, bool mask)
         {
             if (reason is null) return;
             failures++;
             // Never include raw Unicode, command-shaped input, or exception text.
-            bool retain = suite == "candidate" ? candidateExamples++ < 8 : pairExamples++ < 8;
+            int count = exampleCounts.GetValueOrDefault(suite);
+            exampleCounts[suite] = count + 1;
+            bool retain = count < 8;
             if (retain) examples.Add(new { suite, reason, firstScalar = first,
                 tailIndex = suite == "candidate" ? (int?)index : null,
-                secondScalar = suite == "pair" ? (int?)index : null, mask });
+                secondScalar = suite == "pair" ? (int?)index : null,
+                suffixCaseIndex = suite == "suffix" ? (int?)index : null, mask });
         }
         foreach (int cp in points)
         for (int tail = 0; tail < Tails.Length; tail++)
@@ -80,11 +93,36 @@ static class UnicodeCandidateProbe
             pairChecks++;
             Record(Check(char.ConvertFromUtf32(first) + char.ConvertFromUtf32(second) + "x", false), "pair", first, second, false);
         }
+        // Whole motifs preserve surrogate pairs; bound annotation semantic length
+        // below 4096 UTF-16 units including the first scalar and terminal sentinel.
+        var suffixes = SuffixPatterns.SelectMany(pattern => new[] { 32, 256, 4090 }
+            .Select(limit => RepeatWithin(pattern, limit) + "x")).ToArray();
+        foreach (int first in Starts)
+        {
+            for (int index = 0; index < suffixes.Length; index++)
+            foreach (bool mask in new[] { false, true })
+            {
+                suffixChecks++;
+                Record(Check(char.ConvertFromUtf32(first) + suffixes[index], mask), "suffix", first, index, mask);
+            }
+            // Near the 1 MiB input limit, including non-ASCII first-scalar bytes.
+            // These two cases are mask-only, not oversized annotation proposals.
+            foreach (char repeated in new[] { 'x', '\u0301' })
+            {
+                string prefix = char.ConvertFromUtf32(first);
+                int count = (1048576 - System.Text.Encoding.UTF8.GetByteCount(prefix) - 1)
+                    / System.Text.Encoding.UTF8.GetByteCount(repeated.ToString());
+                suffixChecks++;
+                Record(Check(prefix + new string(repeated, count) + "x", true), "suffix", first,
+                    suffixes.Length + (repeated == 'x' ? 0 : 1), true);
+            }
+        }
         return new() {
             ["unicodeVersion"] = "14.0.0", ["researchOnly"] = true,
             ["tableSha256"] = Convert.ToHexString(SHA256.HashData(raw)).ToLowerInvariant(),
             ["candidateCount"] = points.Count, ["candidateChecks"] = candidateChecks,
-            ["pairChecks"] = pairChecks, ["failures"] = failures, ["examples"] = examples,
+            ["pairChecks"] = pairChecks, ["suffixChecks"] = suffixChecks,
+            ["failures"] = failures, ["examples"] = examples,
             ["elapsedMilliseconds"] = timer.ElapsedMilliseconds
         };
     }

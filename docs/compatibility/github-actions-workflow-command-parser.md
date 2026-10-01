@@ -172,6 +172,32 @@ with selected hostile Unicode tails, check exact data/properties, and exercise
 the command manager. These finite checks detect regressions; they are not
 exhaustive over Unicode sequences, backends, or runtime versions.
 
+## V2 Unicode data-start investigation
+
+The interim ASCII policy is a sufficient condition only within the inspected
+ICU implementation and culture scope above, not a necessary condition for all
+observed V2 successes. Preliminary local probes used runtime-dependent
+Unicode category and segmentation tables, which cannot be assumed identical
+to the consumer's collation data. Those exploratory probes are not the
+reproducible cross-platform evidence for this candidate.
+
+Testing an explicit candidate does not contradict the earlier rejection of
+category-only mitigations: a positive category/GCB intersection is a hypothesis
+to challenge against the consumer, not an approximation declared equivalent
+to its parser or a general framing repair.
+The reproducible follow-up instead pins Unicode 14.0.0, corresponding to the
+oldest ICU generation in the previously measured package matrix
+([ICU 70 uses Unicode 14](https://icu.unicode.org/download/70)), and selects
+the same candidate on every OS. Its exact predicate and coverage belong to
+the [test plan](../test-plan.md#v2-unicode-data-start-research).
+
+This is a V2-only research direction. ICU search includes collation-element
+and normalization checks as well as character boundaries; a local passing
+table or fixed-length corpus does not prove arbitrary sequences or future
+collation data. Neither the CLI's ASCII boundary policy nor metadata acceptance
+is changed. Legacy framing is excluded from this investigation by maintainer
+direction; the earlier proposed framing record is not an adoption decision.
+
 ## Self-hosted runner version snapshot
 
 Queries completed at 2026-09-29T08:45:53Z. The official releases API listed

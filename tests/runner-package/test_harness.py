@@ -13,6 +13,16 @@ SCRIPT = Path(__file__).resolve().parents[2] / "scripts/test-runner-package.py"
 spec = importlib.util.spec_from_file_location("runner_package", SCRIPT)
 harness = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(harness)
+generator_spec = importlib.util.spec_from_file_location("unicode_candidate", SCRIPT.with_name("generate-unicode-candidate.py"))
+generator = importlib.util.module_from_spec(generator_spec)
+generator_spec.loader.exec_module(generator)
+
+
+def unicode_evidence():
+    return {"unicodeVersion": "14.0.0", "researchOnly": True,
+            "tableSha256": harness.digest(harness.ROOT / "tests/runner-package/unicode-candidate.json"),
+            "candidateCount": 142081, "candidateChecks": 1704972, "pairChecks": 11120630,
+            "failures": 0, "examples": []}
 
 
 class HarnessTests(unittest.TestCase):
@@ -117,12 +127,27 @@ class HarnessTests(unittest.TestCase):
             evidence = Path(root)
             for kind in ("mask", "annotation"):
                 (evidence / f"{kind}-corpus.json").write_text("[{}]")
-            report = {"cultures": [{"culture": name, "scalarChecks": 17793008,
+            report = {"unicodeResearchStatus": "passed", "cultures": [{"culture": name, "scalarChecks": 17793008,
+                                    "unicodeCandidate": unicode_evidence(),
                                     "maskCases": 1, "annotationCases": 1,
                                     "workerEffects": {"maskCases": 1, "annotationCases": 1,
                                                       "stoppedCases": 4, "echoAndMaskedAnnotationCases": 1}}
                                   for name in ("", "en-US")]}
             harness.verify_coverage(report, evidence)
+            for state in (None, "incomplete", "failed"):
+                with self.assertRaises(ValueError):
+                    harness.verify_coverage({**report, "unicodeResearchStatus": state}, evidence)
+            for field, value in (("unicodeVersion", "15.0.0"), ("researchOnly", False),
+                                 ("tableSha256", "wrong"), ("candidateCount", 0), ("candidateChecks", 0),
+                                 ("pairChecks", 0), ("failures", 1), ("examples", [{}])):
+                bad = json.loads(json.dumps(report))
+                bad["cultures"][0]["unicodeCandidate"][field] = value
+                with self.assertRaises(ValueError):
+                    harness.verify_coverage(bad, evidence)
+            bad = json.loads(json.dumps(report))
+            del bad["cultures"][0]["unicodeCandidate"]
+            with self.assertRaises(ValueError):
+                harness.verify_coverage(bad, evidence)
             for field, value in (("scalarChecks", 0), ("maskCases", 0), ("culture", "th-TH")):
                 bad = json.loads(json.dumps(report))
                 bad["cultures"][0][field] = value
@@ -178,6 +203,41 @@ class HarnessTests(unittest.TestCase):
             bad = {**report, key: value}
             with self.assertRaises(ValueError):
                 harness.verify_managed(bad, files, pins)
+
+
+class UnicodeCandidateTests(unittest.TestCase):
+    def test_positive_categories_ranges_and_exclusions(self):
+        data = "0041;A;Lu\n0042;B;Lu\n0043;C;Lu\n0301;MARK;Mn\nE000;PRIVATE;Co\n4E00;<CJK, First>;Lo\n4E02;<CJK, Last>;Lo\n1F3FB;MODIFIER;Sk\n"
+        selected = generator.candidates(data, "# @missing: 0000..10FFFF; Other\n0042..0043 ; Prepend # fixture\n1F3FB ; Extend", "0043 ; Default_Ignorable_Code_Point")
+        self.assertEqual(selected, [0x41, 0x4e00, 0x4e01, 0x4e02])
+        self.assertEqual(generator.ranges(selected), [[0x41, 0x41], [0x4e00, 0x4e02]])
+
+    def test_bad_ranges_and_hashes_fail_closed(self):
+        for data in ("4E00;<CJK, First>;Lo", "4E00;<CJK, Last>;Lo", "0041;A;Co"):
+            with self.assertRaises(ValueError):
+                generator.candidates(data, "", "")
+        with tempfile.TemporaryDirectory() as directory:
+            (Path(directory) / "UnicodeData.txt").write_text("wrong")
+            with self.assertRaises(ValueError):
+                generator.generate(Path(directory))
+
+    def test_committed_table_has_expected_membership(self):
+        table = json.loads(generator.TABLE.read_text())
+        self.assertTrue(table["researchOnly"])
+        self.assertEqual(table["unicodeVersion"], "14.0.0")
+        points = set()
+        previous = 0
+        for start, end in table["ranges"]:
+            self.assertGreater(start, previous)
+            self.assertGreaterEqual(end, start)
+            points.update(range(start, end + 1))
+            previous = end
+        self.assertEqual(len(points), 142081)
+        self.assertEqual(table["count"], len(points))
+        for cp in (0x65e5, 0x3042, 0x30ab, 0x1f600, 0x1f469, 0x1f44d, 0x627, 0x939, 0xd55c, 0x1f1ef):
+            self.assertIn(cp, points)
+        for cp in (0, 0x301, 0xe33, 0xeb3, 0x1f3fb, 0x200d, 0x600, 0x115f, 0xe000, 0xf870, 0x897, 0x11f02, 0xd800):
+            self.assertNotIn(cp, points)
 
 
 if __name__ == "__main__":

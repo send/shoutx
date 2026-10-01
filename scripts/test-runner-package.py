@@ -13,6 +13,7 @@ import platform
 import re
 import shutil
 import stat
+import sys
 import subprocess
 import tarfile
 import tempfile
@@ -111,10 +112,10 @@ def extract_bin(archive, destination):
                     save(name, member.size, member.mode, stream)
 
 
-def run(command, evidence, label, env=None, cwd=ROOT, check=True):
+def run(command, evidence, label, env=None, cwd=ROOT, check=True, timeout=600):
     with (evidence / (label + ".log")).open("wb") as log:
         return subprocess.run(command, cwd=cwd, env=env, stdout=log, stderr=subprocess.STDOUT,
-                              check=check, timeout=600).returncode
+                              check=check, timeout=timeout).returncode
 
 
 def probe_environment(environment):
@@ -133,10 +134,19 @@ def probe_environment(environment):
 
 
 def verify_coverage(probe, evidence):
+    if probe.get("unicodeResearchStatus") != "passed":
+        raise ValueError("incomplete Unicode research")
     cultures = probe["cultures"]
     if [culture["culture"] for culture in cultures] != ["", "en-US"]:
         raise ValueError("unexpected culture coverage")
     for culture in cultures:
+        unicode = culture.get("unicodeCandidate", {})
+        if (unicode.get("unicodeVersion") != "14.0.0" or unicode.get("researchOnly") is not True
+                or unicode.get("tableSha256") != digest(ROOT / "tests/runner-package/unicode-candidate.json")
+                or unicode.get("candidateCount") != 142081 or unicode.get("candidateChecks") != 1704972
+                or unicode.get("pairChecks") != 11120630 or unicode.get("failures") != 0
+                or unicode.get("examples") != []):
+            raise ValueError("incomplete Unicode candidate evidence")
         if culture.get("scalarChecks") != 17793008:
             raise ValueError("incomplete scalar coverage")
         for kind in ("mask", "annotation"):
@@ -203,7 +213,10 @@ def main():
             raise ValueError("unsupported package probe platform")
         record["pythonVersion"] = platform.python_version()
         record["sourceDigests"] = {name: digest(ROOT / name) for name in (
-            "scripts/test-runner-package.py", "tests/runner-package/Program.cs", "tests/runner-package/WorkerProbe.cs", "tests/runner-package/Probe.csproj")}
+            "scripts/test-runner-package.py", "tests/runner-package/Program.cs", "tests/runner-package/WorkerProbe.cs", "tests/runner-package/Probe.csproj",
+            "tests/runner-package/UnicodeCandidateProbe.cs", "tests/runner-package/unicode-candidate.json",
+            "tests/runner-package/unicode-pins.json", "tests/runner-package/UNICODE-LICENSE.txt",
+            "scripts/generate-unicode-candidate.py")}
         record["rustcVersion"] = subprocess.check_output(["rustc", "--version"], cwd=ROOT, text=True).strip()
         with tempfile.TemporaryDirectory(prefix="shoutx-runner-package-") as temporary:
             work = Path(temporary).resolve()
@@ -242,6 +255,16 @@ def main():
                 verify(path, source["sha256"])
                 shutil.copyfile(path, evidence / source["name"])
             record["phase"] = "build-probe-and-corpora"
+            unicode_pins = json.loads((ROOT / "tests/runner-package/unicode-pins.json").read_text())
+            for source in unicode_pins["sources"]:
+                path = work / source["name"]
+                download(source["url"], path, 4 * 1024 * 1024)
+                verify(path, source["sha256"])
+            run([sys.executable, str(ROOT / "scripts/generate-unicode-candidate.py"),
+                 "--source-dir", str(work), "--check"], evidence, "unicode-generation")
+            shutil.copyfile(ROOT / "tests/runner-package/unicode-candidate.json", evidence / "unicode-candidate.json")
+            shutil.copyfile(ROOT / "tests/runner-package/unicode-pins.json", evidence / "unicode-pins.json")
+            shutil.copyfile(ROOT / "tests/runner-package/UNICODE-LICENSE.txt", evidence / "UNICODE-LICENSE.txt")
             for kind in ("mask", "annotation"):
                 env = os.environ.copy()
                 env["CARGO_TARGET_DIR"] = str(work / "cargo")
@@ -263,7 +286,7 @@ def main():
             exit_code = run(["dotnet", "exec", "--runtimeconfig", str(binary / "Runner.Worker.runtimeconfig.json"),
                  "--depsfile", str(binary / "Runner.Worker.deps.json"), str(binary / "Probe.dll"),
                  str(evidence / "probe.json"), str(evidence / "mask-corpus.json"),
-                 str(evidence / "annotation-corpus.json")], evidence, "execute-probe", probe_env, cwd=work, check=False)
+                 str(evidence / "annotation-corpus.json")], evidence, "execute-probe", probe_env, cwd=work, check=False, timeout=900)
             record["probeExitCode"] = exit_code
             record["phase"] = "verify-loaded-identities"
             trace = (evidence / "corehost.log").read_text(encoding="utf-8")

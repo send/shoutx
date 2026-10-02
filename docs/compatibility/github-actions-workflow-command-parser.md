@@ -207,11 +207,10 @@ The package harness pins and verifies this native source's digest, not the
 correctness of this manual analysis or a source-to-native-binary attestation;
 see the [package evidence limits](runner-package-runtime.md).
 The nonzero-options custom-rule path must not be assumed to describe this
-default search. In [ICU 76.1 `usearch.cpp`](https://github.com/unicode-org/icu/blob/release-76-1/icu4c/source/i18n/usearch.cpp),
+default search. In the upstream ICU versions inspected below,
 the forward search checks collation-element offsets, partial expansions, break
 boundaries and an `allowMidclusterMatch` normalization-boundary exception.
-Only ICU 76.1 was source-inspected here; these conclusions must not be silently
-extended to the other observed ICU versions, including local ICU 78.1.
+The upstream comparison is not an attestation of vendor-patched OS binaries.
 This argument concerns native `IndexOf`, not the separate fixed-header
 `StartsWith`/`SimpleAffix` path.
 
@@ -229,7 +228,7 @@ this search used. The parser/Worker suites do not observe the selected custom
 rule set or null fallback. The separate
 [native observation](../test-plan.md#native-collation-observation) compares the
 actual iterator's binary rules with freshly compiled source rules; only its
-fresh passing results establish that choice only for the option-zero head
+fresh passing results establish that choice for the option-zero head
 iterator at observation time, not overflow nodes or earlier Worker calls. Do not
 label the choice based only on ICU version.
 
@@ -261,6 +260,129 @@ this protocol-specific guarantee. Finite parser stress tests and the separate
 package Worker-effects cases in the test plan address observed behavior, not
 these universal obligations. The latter use generated research wires, not new
 CLI acceptance or a live hosted Worker measurement.
+
+### Upstream comparison and conditional end-boundary argument
+
+Source inspection on 2026-10-02 compared these upstream releases with the
+versions reported by [PR #62's four-OS run](https://github.com/send/shoutx/actions/runs/36895636468)
+and the local package probe:
+
+| Observed environment | Reported ICU | Inspected upstream `usearch.cpp` |
+| --- | --- | --- |
+| Ubuntu 22.04 | 70.1.0.0 | [70.1](https://github.com/unicode-org/icu/blob/release-70-1/icu4c/source/i18n/usearch.cpp) |
+| Windows Server 2025 | 72.1.0.4 | [72.1](https://github.com/unicode-org/icu/blob/release-72-1/icu4c/source/i18n/usearch.cpp) |
+| Ubuntu 24.04 | 74.2.0.0 | [74.2](https://github.com/unicode-org/icu/blob/release-74-2/icu4c/source/i18n/usearch.cpp) |
+| macOS 15 | 76.1.0.0 | [76.1](https://github.com/unicode-org/icu/blob/release-76-1/icu4c/source/i18n/usearch.cpp) |
+| Local macOS ARM64 | 78.1.0.0 | [78.1](https://github.com/unicode-org/icu/blob/release-78.1/icu4c/source/i18n/usearch.cpp) |
+
+These are upstream comparison points, not claims that a version string proves
+binary equivalence. In particular, the Windows fourth version component and
+Apple's system library are not authenticated by those upstream tags. The CI
+run predates the later Python old-rule-evidence hardening; its native probe
+implementation already includes the embedded-resource digest check.
+
+The inspected `getBreakIterator`, `usearch_getBreakIterator`,
+`nextBoundaryAfter`, `isBreakBoundary` and forward `usearch_search` paths agree
+on the relevant behavior: the getter returns the externally supplied iterator,
+the internal character iterator is used only when that field is null, and a
+non-null external iterator disables `allowMidclusterMatch`. The discriminating
+forward-search branch conditions below agree across these versions. This is
+not a claim that the entire source files are identical (78.1 changes
+pattern-buffer allocation, for example).
+
+The corresponding `UCollationPCE::nextProcessed` implementations skip processed
+zero-weight elements and return the offsets associated with the next retained
+element. The corresponding `ContractionsAndExpansions::forData` implementations
+enumerate tailoring data, then base data for code points not overridden by the
+tailoring. See the representative
+[processed-element loop](https://github.com/unicode-org/icu/blob/release-74-2/icu4c/source/i18n/ucoleitr.cpp#L329-L365)
+and [base-data traversal](https://github.com/unicode-org/icu/blob/release-74-2/icu4c/source/i18n/collationsets.cpp#L392-L411).
+`ucol_getContractionsAndExpansions` reaches that traversal through
+`RuleBasedCollator::internalGetContractionsAndExpansions`; with prefixes enabled,
+the set contains prefix and contraction strings, not merely locale-specific
+differences. Thus the measured absence of colon from reported contexts does not
+omit all root contexts. It still is not a complete proof about CE offsets,
+normalization or discontiguous matching. Nor does a zero colon-context count
+constrain contexts formed entirely within the data, or enumerate every other
+context-sensitive collation mechanism. The traversal is upstream-source
+evidence; the counts are observations of the separate OS binaries.
+
+The key conditional argument can now be stated without assuming the first data
+scalar has a nonzero collation weight. Let `d` be the UTF-16 index immediately
+after the intended two-colon delimiter. Assume the fixed validated header has
+no earlier matching delimiter, processing completes without status or resource
+errors, the search uses default element comparison and a non-null external
+iterator with the newer custom rules, and the delimiter matches in processed
+collation-element space with:
+
+- the first matched element starting at the intended delimiter and passing
+  the start-boundary/partial-expansion checks;
+- the last matched element ending at `d`, with its low offset below `d` (or
+  equal to `d` for the handled expansion case);
+- the next retained element's low offset at least `d`, and no rejected partial
+  expansion after the match;
+- an accepted external break at `d`, with no break strictly after the last
+  matched element's low offset and before `d`, and no rejecting identical-strength
+  comparison.
+
+Default element comparison is source-supported: ICU initializes the attribute
+to zero, and the pinned `pal_collation.c` does not call `usearch_setAttribute`.
+It is not yet a recorded observation of the binary's search object.
+
+On this external-new-rule path, the inspected forward search chooses
+`mLimit = d`: it keeps the initial `mLimit = maxLimit` (equal to `d` when
+`minLimit = maxLimit`),
+accepts the already-ended expansion boundary, or obtains `d` from
+`nextBoundaryAfter`. This derivation does not cover null/internal or old-rule
+iterator paths.
+Since `d <= maxLimit`, skipping following zero-weight elements does not itself
+invalidate the delimiter. This is a derivation from the branch conditions,
+not a proof that all of its premises hold for every candidate/suffix. Runner
+uses the returned start index plus the literal delimiter length to slice data,
+not ICU's matched length; the match must nevertheless survive these end checks.
+
+All four CI environments and the local probe report the same five candidate
+scalars equal to empty under invariant and en-US `CompareInfo`: U+0640 ARABIC
+TATWEEL, U+07FA NKO LAJANYALAN, U+180A MONGOLIAN NIRUGU, U+1CD3 VEDIC SIGN
+NIHSHVASA and U+FE73 ARABIC TAIL FRAGMENT. Interpretation of the count remains
+in the [native-observation test plan](../test-plan.md#native-collation-observation).
+Equal-to-empty comparison of an isolated scalar neither demonstrates a failure
+nor proves context-independent zero weight. Their finite parser checks pass,
+but the third premise above becomes suffix-dependent if the first scalar's
+processed elements are all skipped: the next retained element can come from
+arbitrary later data. Under default element comparison, a nonterminal next
+element with equal low/high offsets rejects the delimiter. A later mapping
+whose leading elements are skipped but whose subsequent element is retained
+is therefore a case to rule out, not a demonstrated counterexample in the
+observed collation data. If the delimiter is rejected, search can continue to
+a later delimiter inside the data. Even for a non-ignorable candidate, its
+first retained element and contextual offset behavior require justification.
+
+The measured NFD `hasBoundaryBefore` property is stronger than a finite suffix
+test: the [API contract](https://github.com/unicode-org/icu/blob/release-74-2/icu4c/source/common/unicode/normalizer2.h#L463-L476)
+describes a context-independent normalization boundary before that scalar.
+This is a separate normalization fact, not an end-check executed on the
+external-iterator path: the search's direct NFD boundary query is inside
+`allowMidclusterMatch`, disabled on that path. To use this fact in the CE-offset
+premises requires connecting it to the effective collator's normalization
+behavior (and any identical-strength comparison). Those settings are not yet
+recorded. It does not by itself establish processed-element offsets or identify
+every iterator used by a live Worker.
+
+**Adoption checkpoint:** the evidence supports a conditional candidate, not an
+unconditional CLI allow-list expansion. The next discriminating check is to
+record actual collator/search settings and investigate the CE-offset premises.
+For starts whose elements can all be skipped, finite offset samples cannot
+close the suffix-dependent premise: it needs an invariant over all possible
+following mappings and contexts at the active settings, or a justified narrower
+acceptance rule. Excluding these five alone would not prove the other candidates
+safe. For the remaining candidates, establish that their leading retained
+elements and contextual offsets satisfy the premises. Before implementation,
+an explicit compatibility decision must also define the supported consumer
+scope and treatment of unobserved/old/null-iterator paths; a separate producer
+cannot enforce the worker's runtime, culture or iterator choice. This does not
+reopen legacy framing, the deferred `th-TH` decision, metadata acceptance or
+release eligibility.
 
 ## Self-hosted runner version snapshot
 

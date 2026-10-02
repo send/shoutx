@@ -191,6 +191,85 @@ def verify_context_offsets(value):
         raise ValueError("invalid context counters")
 
 
+def verify_insertion_offsets(value):
+    verify_context_offsets(value)
+    observed = value.get("insertionOffsets")
+    if (not isinstance(observed, dict) or observed.get("status") != "passed"
+            or observed.get("researchOnly") is not True or observed.get("examples") != []
+            or any(key in observed for key in ("activeScalar", "activeControl", "activeCase", "failedElements"))):
+        raise ValueError("incomplete insertion-offset observation")
+    context = value["contextOffsets"]
+    if observed.get("corpusSha256") != context["corpusSha256"] or [0x438, 0x306] not in context["contextScalars"]:
+        raise ValueError("insertion context identity mismatch")
+    properties = [[0x327, 202], [0x306, 230], [0x300, 230], [0x438, 0], [88, 0], [0x34f, 0], [0x200d, 0], [120, 0]]
+    if (observed.get("propertyControls") != properties
+            or any(type(v) is not int for pair in observed["propertyControls"] for v in pair)
+            or observed.get("extraScalars") != [0x34f, 0x200d, 120]
+            or any(type(v) is not int for v in observed["extraScalars"])):
+        raise ValueError("insertion property controls changed")
+    marks = observed.get("nonstarters")
+    if (not isinstance(marks, list) or not 0 < len(marks) <= 4096
+            or any(not isinstance(p, list) or len(p) != 2 or any(type(v) is not int for v in p)
+                   or not 0 < p[0] <= 0x10ffff or 0xd800 <= p[0] <= 0xdfff or not 0 < p[1] <= 255 for p in marks)):
+        raise ValueError("invalid insertion nonstarter corpus")
+    scalars = [p[0] for p in marks]
+    if (scalars != sorted(set(scalars))
+            or any((dict(marks).get(cp) != lead if lead else cp in scalars) for cp, lead in properties)
+            or observed.get("nonstarterSha256") != hashlib.sha256(json.dumps(marks, separators=(",", ":")).encode("ascii")).hexdigest()):
+        raise ValueError("insertion nonstarter identity mismatch")
+    table = json.loads((ROOT / "tests/runner-package/unicode-candidate.json").read_text(encoding="utf-8"))
+    candidates = {cp for start, end in table["ranges"] for cp in range(start, end + 1)}
+    positions = sum(len(s) - 1 for s in context["contextScalars"])
+    candidate_positions = sum(len(s) - 1 for s in context["contextScalars"] if s[0] in candidates)
+    if 0x438 not in candidates:
+        raise ValueError("insertion control outside candidate table")
+    count = len(marks) + 3
+    if positions <= 0 or 6 * positions * count > 20000000:
+        raise ValueError("insertion case bound exceeded")
+    for key, expected in {"scalarChecks": 1112063, "controlLoopChecks": 1, "insertionPositions": positions, "candidatePositions": candidate_positions,
+                          "eligibleChecks": (5 * positions + candidate_positions) * count,
+                          "outsideChecks": (positions - candidate_positions) * count,
+                          "headerFailures": 0, "zeroWidthNextCount": 0, "separatorFailures": 0}.items():
+        if type(observed.get(key)) is not int or observed[key] != expected:
+            raise ValueError("incomplete or failed insertion coverage")
+    if (type(observed.get("outsideMoved")) is not int or not 0 <= observed["outsideMoved"] <= observed["outsideChecks"]
+            or type(observed.get("elapsedMilliseconds")) is not int or observed["elapsedMilliseconds"] < 0
+            or type(observed.get("laterZeroWidthCases")) is not int or not 0 < observed["laterZeroWidthCases"] <= observed["eligibleChecks"]):
+        raise ValueError("invalid insertion counters")
+    controls = observed.get("controls")
+    texts = ["\u0438\u0327\u0306", "\u0438\u0306\u0327", "\u0438\u0300\u0306", "\u0438X\u0306"]
+    if (not isinstance(controls, list) or len(controls) != 4 or any(not isinstance(c, dict) for c in controls)
+            or [c.get("text") for c in controls] != texts):
+        raise ValueError("missing insertion offset controls")
+    expected_offsets = [[(0, 3), (3, 3)], [(0, 2), (2, 3)], [(0, 1), (1, 2), (2, 3)], [(0, 1), (1, 2), (2, 3)]]
+    for control, offsets in zip(controls, expected_offsets):
+        elements = control.get("elements")
+        if (not isinstance(elements, list) or len(elements) != len(offsets)
+                or any(not isinstance(e, dict) or set(e) != {"value", "low", "high"}
+                       or any(type(v) is not int for v in e.values())
+                       or not -(2 ** 31) <= e["value"] < 2 ** 31 or e["value"] in (-1, 0) for e in elements)
+                or [(e["low"], e["high"]) for e in elements] != offsets):
+            raise ValueError("invalid insertion control elements")
+    if [e["value"] for e in controls[0]["elements"]] != [e["value"] for e in controls[1]["elements"]]:
+        raise ValueError("insertion reordered control mismatch")
+    header = observed.get("headerControl")
+    if (not isinstance(header, dict) or header.get("data") != texts[0]
+            or type(header.get("separator")) is not int or header["separator"] != 9):
+        raise ValueError("missing in-header insertion control")
+    elements = header.get("elements")
+    if (not isinstance(elements, list) or not 11 <= len(elements) < 128
+            or any(not isinstance(e, dict) or set(e) != {"value", "low", "high"}
+                   or any(type(v) is not int for v in e.values()) or not -(2 ** 31) <= e["value"] < 2 ** 31
+                   or e["value"] == -1 or not 0 <= e["low"] <= e["high"] <= 19 for e in elements)
+            or [(e["low"], e["high"]) for e in elements[:9]] != [(i, i + 1) for i in range(9)]
+            or any(e["value"] == 0 for e in elements[:9]) or elements[7]["value"] != elements[8]["value"]
+            or elements[-1]["high"] != 19
+            or any(a["high"] != b["low"] for a, b in zip(elements, elements[1:]))
+            or elements[9:11] != [{"value": e["value"], "low": e["low"] + 9, "high": e["high"] + 9}
+                                  for e in controls[0]["elements"]]):
+        raise ValueError("invalid in-header insertion control elements")
+
+
 def verify_ce_offsets(value):
     attributes = value.get("collatorAttributes")
     expected = {"french": 16, "alternate": 21, "caseFirst": 16, "caseLevel": 16,
@@ -273,7 +352,7 @@ def verify_collation(probe, rules_sha):
     for culture in probe["cultures"]:
         value = culture.get("collationObservation", {})
         verify_ce_offsets(value)
-        verify_context_offsets(value)
+        verify_insertion_offsets(value)
         actual_hash = value.get("actualRuleSha256", "")
         compiled = value.get("compiledRules", {})
         old = compiled.get("old")

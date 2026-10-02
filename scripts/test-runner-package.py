@@ -165,6 +165,15 @@ def verify_collation(probe, rules_sha):
         value = culture.get("collationObservation", {})
         actual_hash = value.get("actualRuleSha256", "")
         compiled = value.get("compiledRules", {})
+        old = compiled.get("old")
+        if not isinstance(old, dict) or type(old.get("error")) is not int or "sha256" not in old:
+            raise ValueError("missing old break rule observation")
+        old_hash = old["sha256"]
+        if old["error"] <= 0:
+            if not isinstance(old_hash, str) or not re.fullmatch(r"[0-9a-f]{64}", old_hash) or old_hash == actual_hash:
+                raise ValueError("invalid or ambiguous old break rule observation")
+        elif old_hash is not None:
+            raise ValueError("failed old break rule compilation has a digest")
         empty_count = value.get("emptyEquivalentCount")
         empty_examples = value.get("emptyEquivalentExamples")
         if (type(empty_count) is not int or not 0 <= empty_count <= 142081

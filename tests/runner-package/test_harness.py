@@ -56,7 +56,8 @@ class HarnessTests(unittest.TestCase):
         def observation(culture):
             return {"status": "passed", "researchOnly": True, "culture": culture,
                     "icuVersionRaw": 123, "externalBreakIterator": True, "selectedRules": "new",
-                    "actualRuleSha256": "a" * 64, "compiledRules": {"new": {"sha256": "a" * 64, "error": 0}},
+                    "actualRuleSha256": "a" * 64, "compiledRules": {"new": {"sha256": "a" * 64, "error": 0},
+                        "old": {"sha256": "b" * 64, "error": 0}},
                     "ruleSourceSha256": source_sha, "tableSha256": harness.digest(harness.ROOT / "tests/runner-package/unicode-candidate.json"),
                     "ruleResourceSha256": "c" * 64,
                     "scalarChecks": 142081, "colonContextCount": 0, "missingNfdBoundaryCount": 0,
@@ -69,6 +70,23 @@ class HarnessTests(unittest.TestCase):
         def verify(report):
             harness.verify_collation(report, "c" * 64)
         verify(report)
+        for old in ({"error": 1, "sha256": None}, {"error": -1, "sha256": "b" * 64}):
+            valid = json.loads(json.dumps(report))
+            valid["cultures"][0]["collationObservation"]["compiledRules"]["old"] = old
+            verify(valid)
+        for old in (None, {}, {"error": 0}, {"sha256": "b" * 64},
+                    {"error": None, "sha256": None}, {"error": True, "sha256": None},
+                    {"error": 0, "sha256": None}, {"error": 0, "sha256": "invalid"},
+                    {"error": 0, "sha256": "a" * 64}, {"error": -1, "sha256": "a" * 64},
+                    {"error": 1, "sha256": "b" * 64}):
+            bad = json.loads(json.dumps(report))
+            compiled = bad["cultures"][0]["collationObservation"]["compiledRules"]
+            if old is None:
+                del compiled["old"]
+            else:
+                compiled["old"] = old
+            with self.assertRaises(ValueError):
+                verify(bad)
         for rules_sha in (None, "", "d" * 64):
             with self.assertRaises(ValueError):
                 harness.verify_collation(report, rules_sha)
@@ -94,7 +112,8 @@ class HarnessTests(unittest.TestCase):
                              ("tableSha256", "d" * 64), ("culture", "th-TH"),
                              ("scalarChecks", 142080), ("status", "incomplete"), ("researchOnly", False),
                              ("contextItemCount", 0), ("contextItemCount", 100001),
-                             ("compiledRules", {"new": {"sha256": "a" * 64, "error": 1}})):
+                             ("compiledRules", {"new": {"sha256": "a" * 64, "error": 1},
+                                                "old": {"sha256": "b" * 64, "error": 0}})):
             bad = json.loads(json.dumps(report))
             bad["cultures"][1]["collationObservation"][field] = value
             with self.assertRaises(ValueError, msg=field):

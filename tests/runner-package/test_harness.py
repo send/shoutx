@@ -25,7 +25,86 @@ def unicode_evidence():
             "suffixChecks": 500, "failures": 0, "examples": []}
 
 
+def ce_evidence():
+    prefixes = [0x640, 0x7fa, 0x180a, 0x1cd3, 0xfe73]
+    samples = []
+    for data in ["日", "😀", "\u0640x", "\u07fax", "\u180ax", "\u1cd3x", "\ufe73x", "\u0640\u0301", "\u0301"]:
+        elements = [{"value": 123, "low": 0, "high": 1}, {"value": 123, "low": 1, "high": 2}]
+        low = 2
+        if ord(data[0]) in prefixes:
+            elements.append({"value": 0, "low": 2, "high": 3})
+            low = 3
+        elements.append({"value": 456, "low": low, "high": 2 + len(data.encode("utf-16-le")) // 2})
+        samples.append({"data": data, "separator": 12 if data == "\u0301" else 9, "elements": elements})
+    return {"searchCollatorMatches": True, "searchElementComparison": 2,
+            "emptyEquivalentCount": 5, "emptyEquivalentExamples": prefixes,
+            "collatorAttributes": {"french": 16, "alternate": 21, "caseFirst": 16, "caseLevel": 16,
+                                   "normalization": 16, "strength": 2, "hiragana": 16, "numeric": 16},
+            "ceOffsets": {"status": "passed", "researchOnly": True,
+                          "prefixes": [0x640, 0x7fa, 0x180a, 0x1cd3, 0xfe73],
+                          "candidateChecks": 142081, "pairChecks": 5560315,
+                          "delimiterFailures": 0, "zeroWidthNextCount": 0, "separatorFailures": 0,
+                          "skippedZeroCases": 5, "elapsedMilliseconds": 100,
+                          "examples": [], "samples": samples,
+                          "expansionControl": {"text": "\u00e5a", "pattern": "a", "index": 1,
+                                               "elements": [{"value": 123, "low": 0, "high": 1},
+                                                            {"value": 456, "low": 1, "high": 1},
+                                                            {"value": 123, "low": 1, "high": 2}]}}}
+
+
 class HarnessTests(unittest.TestCase):
+    def test_ce_observation_is_fail_closed(self):
+        good = ce_evidence()
+        harness.verify_ce_offsets(good)
+        # Delete every setting and evidence field, including sample internals.
+        paths = [[key] for key in good]
+        paths += [["collatorAttributes", key] for key in good["collatorAttributes"]]
+        paths += [["ceOffsets", key] for key in good["ceOffsets"]]
+        paths += [["ceOffsets", "samples", 0, key] for key in ("data", "separator", "elements")]
+        paths += [["ceOffsets", "samples", 0, "elements", 0, key] for key in ("value", "low", "high")]
+        paths += [["ceOffsets", "expansionControl", key] for key in ("text", "pattern", "index", "elements")]
+        for path in paths:
+            bad = json.loads(json.dumps(good))
+            parent = bad
+            for part in path[:-1]:
+                parent = parent[part]
+            del parent[path[-1]]
+            with self.assertRaises(ValueError, msg=str(path)):
+                harness.verify_ce_offsets(bad)
+        changes = [(["searchCollatorMatches"], False), (["searchElementComparison"], 0),
+                   (["collatorAttributes", "normalization"], 17), (["collatorAttributes", "strength"], 15),
+                   (["collatorAttributes", "alternate"], 20), (["ceOffsets"], None),
+                   (["emptyEquivalentCount"], 6), (["emptyEquivalentExamples"], [0x640])]
+        changes += [(["ceOffsets", key], value) for key, value in (
+            ("status", "incomplete"), ("researchOnly", False), ("prefixes", []),
+            ("candidateChecks", 142080), ("pairChecks", 5560314), ("delimiterFailures", 1),
+            ("zeroWidthNextCount", 1), ("separatorFailures", 1), ("separatorFailures", False),
+            ("examples", [{}]), ("samples", []), ("skippedZeroCases", 0),
+            ("skippedZeroCases", 5702397), ("elapsedMilliseconds", -1))]
+        changes += [(["ceOffsets", "samples", 8, "separator"], 9),
+                    (["ceOffsets", "samples", 0, "elements", 0, "high"], 100),
+                    (["ceOffsets", "samples", 0, "elements", 0, "value"], -1),
+                    (["ceOffsets", "samples", 0, "elements", 0, "low"], False),
+                    (["ceOffsets", "samples", 0, "elements", 2, "high"], 2),
+                    (["ceOffsets", "samples", 0, "elements", 2, "low"], 4),
+                    (["ceOffsets", "samples", 0, "elements", 2, "low"], 1),
+                    (["ceOffsets", "samples", 0, "elements", 2, "value"], 0),
+                    (["ceOffsets", "samples", 2, "elements", 2, "value"], 789),
+                    (["ceOffsets", "expansionControl", "text"], "aa"),
+                    (["ceOffsets", "expansionControl", "pattern"], "b"),
+                    (["ceOffsets", "expansionControl", "index"], 0),
+                    (["ceOffsets", "expansionControl", "elements", 2, "value"], 789),
+                    (["ceOffsets", "expansionControl", "elements", 1, "high"], 2),
+                    (["ceOffsets", "expansionControl", "elements", 1, "value"], 0)]
+        for path, value in changes:
+            bad = json.loads(json.dumps(good))
+            parent = bad
+            for part in path[:-1]:
+                parent = parent[part]
+            parent[path[-1]] = value
+            with self.assertRaises(ValueError, msg=str(path)):
+                harness.verify_ce_offsets(bad)
+
     def test_break_rule_source_is_explicit_utf8(self):
         # A full-width 'a' in the pinned source's comments contains byte 0x81,
         # which fails under the Windows CP1252 default.
@@ -54,7 +133,7 @@ class HarnessTests(unittest.TestCase):
     def test_native_collation_evidence_is_fail_closed(self):
         source_sha = next(s["sha256"] for s in json.loads(harness.PINS.read_text())["sources"] if s["name"] == "pal_collation.c")
         def observation(culture):
-            return {"status": "passed", "researchOnly": True, "culture": culture,
+            return {**ce_evidence(), "status": "passed", "researchOnly": True, "culture": culture,
                     "icuVersionRaw": 123, "externalBreakIterator": True, "selectedRules": "new",
                     "actualRuleSha256": "a" * 64, "compiledRules": {"new": {"sha256": "a" * 64, "error": 0},
                         "old": {"sha256": "b" * 64, "error": 0}},
@@ -62,7 +141,6 @@ class HarnessTests(unittest.TestCase):
                     "ruleResourceSha256": "c" * 64,
                     "scalarChecks": 142081, "colonContextCount": 0, "missingNfdBoundaryCount": 0,
                     "unexpectedGcbCount": 0, "contextItemCount": 100, "contextChecks": 100,
-                    "emptyEquivalentCount": 0, "emptyEquivalentExamples": [],
                     "commonLibrary": "common", "internationalLibrary": "international"}
         report = {"collationResearchStatus": "passed", "cultures": [
             {"culture": name, "icu": {"versionRaw": 123}, "collationObservation": observation(name)}

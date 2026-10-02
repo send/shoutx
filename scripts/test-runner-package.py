@@ -152,6 +152,76 @@ def read_break_rules(path):
     return extract_break_rules(path.read_text(encoding="utf-8"))
 
 
+def verify_ce_offsets(value):
+    attributes = value.get("collatorAttributes")
+    expected = {"french": 16, "alternate": 21, "caseFirst": 16, "caseLevel": 16,
+                "normalization": 16, "strength": 2, "hiragana": 16, "numeric": 16}
+    if (not isinstance(attributes, dict) or attributes != expected
+            or any(type(v) is not int for v in attributes.values())
+            or value.get("searchCollatorMatches") is not True
+            or type(value.get("searchElementComparison")) is not int
+            or value["searchElementComparison"] != 2):
+        raise ValueError("unobserved or unexpected collator/search settings")
+    offsets = value.get("ceOffsets")
+    if not isinstance(offsets, dict):
+        raise ValueError("missing CE-offset observation")
+    prefixes = offsets.get("prefixes")
+    if (offsets.get("status") != "passed" or offsets.get("researchOnly") is not True
+            or prefixes != [0x640, 0x7fa, 0x180a, 0x1cd3, 0xfe73]
+            or any(type(cp) is not int for cp in prefixes)
+            or type(value.get("emptyEquivalentCount")) is not int or value["emptyEquivalentCount"] != len(prefixes)
+            or value.get("emptyEquivalentExamples") != prefixes
+            or offsets.get("examples") != []):
+        raise ValueError("incomplete CE-offset observation")
+    for key, expected in {"candidateChecks": 142081, "pairChecks": 5560315,
+                          "delimiterFailures": 0, "zeroWidthNextCount": 0, "separatorFailures": 0}.items():
+        if type(offsets.get(key)) is not int or offsets[key] != expected:
+            raise ValueError("incomplete or failed finite CE-offset coverage")
+    if (type(offsets.get("skippedZeroCases")) is not int or not 0 < offsets["skippedZeroCases"] <= 5702396
+            or type(offsets.get("elapsedMilliseconds")) is not int or offsets["elapsedMilliseconds"] < 0):
+        raise ValueError("missing CE skip/timing evidence")
+    samples = offsets.get("samples")
+    data = ["日", "😀", "\u0640x", "\u07fax", "\u180ax", "\u1cd3x", "\ufe73x", "\u0640\u0301", "\u0301"]
+    if (not isinstance(samples, list) or any(not isinstance(s, dict) for s in samples)
+            or [s.get("data") for s in samples] != data):
+        raise ValueError("missing CE-offset samples/control")
+    for sample in samples:
+        separator = sample.get("separator")
+        if type(separator) is not int or separator != (12 if sample["data"] == "\u0301" else 9):
+            raise ValueError("CE-offset sample/control mismatch")
+        elements = sample.get("elements")
+        length = 2 + len(sample["data"].encode("utf-16-le")) // 2
+        if (not isinstance(elements, list) or not 3 <= len(elements) < 128
+                or any(not isinstance(e, dict) or set(e) != {"value", "low", "high"}
+                       or any(type(v) is not int for v in e.values())
+                       or not -(2 ** 31) <= e["value"] < 2 ** 31 or e["value"] == -1
+                       or not 0 <= e["low"] <= e["high"] <= length
+                       for e in elements)):
+            raise ValueError("invalid CE-offset sample elements")
+        if any(element["low"] != previous["high"] for previous, element in zip(elements, elements[1:])):
+            raise ValueError("discontinuous sample CE offsets")
+        if (elements[0]["low"] != 0 or elements[0]["high"] != 1 or elements[0]["value"] == 0
+                or elements[1] != {"value": elements[0]["value"], "low": 1, "high": 2}):
+            raise ValueError("invalid sample delimiter elements")
+        retained = next((e for e in elements[2:] if e["value"] != 0), None)
+        if retained is None or not 2 <= retained["low"] < retained["high"]:
+            raise ValueError("invalid sample retained element")
+        if ord(sample["data"][0]) in prefixes and elements[2] != {"value": 0, "low": 2, "high": 3}:
+            raise ValueError("sample raw-zero prefix not observed")
+    control = offsets.get("expansionControl")
+    if (not isinstance(control, dict) or control.get("text") != "\u00e5a" or control.get("pattern") != "a"
+            or type(control.get("index")) is not int or control["index"] != 1):
+        raise ValueError("missing partial-expansion control")
+    elements = control.get("elements")
+    if (not isinstance(elements, list) or len(elements) != 3
+            or any(not isinstance(e, dict) or set(e) != {"value", "low", "high"}
+                   or any(type(v) is not int for v in e.values())
+                   or not -(2 ** 31) <= e["value"] < 2 ** 31 or e["value"] in (-1, 0) for e in elements)
+            or [(e["low"], e["high"]) for e in elements] != [(0, 1), (1, 1), (1, 2)]
+            or elements[0]["value"] != elements[2]["value"]):
+        raise ValueError("partial-expansion CE control mismatch")
+
+
 def verify_collation(probe, rules_sha):
     if not isinstance(rules_sha, str) or not re.fullmatch(r"[0-9a-f]{64}", rules_sha):
         raise ValueError("invalid break rules resource identity")
@@ -163,6 +233,7 @@ def verify_collation(probe, rules_sha):
     source_sha = next(s["sha256"] for s in json.loads(PINS.read_text())["sources"] if s["name"] == "pal_collation.c")
     for culture in probe["cultures"]:
         value = culture.get("collationObservation", {})
+        verify_ce_offsets(value)
         actual_hash = value.get("actualRuleSha256", "")
         compiled = value.get("compiledRules", {})
         old = compiled.get("old")
@@ -286,7 +357,7 @@ def main():
             raise ValueError("unsupported package probe platform")
         record["pythonVersion"] = platform.python_version()
         record["sourceDigests"] = {name: digest(ROOT / name) for name in (
-            "scripts/test-runner-package.py", "tests/runner-package/Program.cs", "tests/runner-package/WorkerProbe.cs", "tests/runner-package/Probe.csproj",
+            "scripts/test-runner-package.py", "tests/runner-package/test_harness.py", "tests/runner-package/Program.cs", "tests/runner-package/WorkerProbe.cs", "tests/runner-package/Probe.csproj",
             "tests/runner-package/UnicodeCandidateProbe.cs", "tests/runner-package/CollationProbe.cs", "tests/runner-package/unicode-candidate.json",
             "tests/runner-package/unicode-pins.json", "tests/runner-package/UNICODE-LICENSE.txt",
             "scripts/generate-unicode-candidate.py")}

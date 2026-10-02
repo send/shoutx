@@ -494,8 +494,12 @@ colon; require a nonempty enumeration and zero colon contexts. For all 142,081
 candidate scalars, require an NFD boundary before the scalar and a consumer GCB
 class within the candidate's positive GCB set. Record completed counts and any
 violation counts. Also count scalars equal to empty under actual `CompareInfo`
-and retain at most 16 numeric examples; a positive count is informative, not a
-failure or authorization to remove those characters from the candidate table.
+and retain at most 16 numeric examples. A positive count does not demonstrate
+unsafe parsing or authorize removing those characters from the candidate table;
+the CE-offset suite below additionally requires the observed set to match its
+five tested prefixes, failing on set drift to avoid silently omitting new cases.
+Investigate drift against that environment's data and review any changed test
+set explicitly; do not silently widen it or infer producer acceptance.
 These candidates also participate in the preceding exhaustive candidate-start
 parser checks with finite suffixes; neither suite proves arbitrary suffixes safe.
 The native GCB adapter uses `UCHAR_GRAPHEME_CLUSTER_BREAK = 0x1012` and
@@ -503,6 +507,60 @@ The native GCB adapter uses `UCHAR_GRAPHEME_CLUSTER_BREAK = 0x1012` and
 [ICU's public enum definitions](https://github.com/unicode-org/icu/blob/release-76-1/icu4c/source/common/unicode/uchar.h).
 This is the same semantic set as `GCB` in `generate-unicode-candidate.py`;
 keep the adapter aligned with that generator when changing the candidate policy.
+
+Also require the cached search's collator pointer to equal the observed option
+zero collator. Record all eight public collator attributes: French collation,
+case-first, case-level, normalization, hiragana-quaternary and numeric collation
+must be `UCOL_OFF` (16), strength `UCOL_TERTIARY` (2), and alternate handling
+`UCOL_NON_IGNORABLE` (21). Require the public search attribute
+`USEARCH_ELEMENT_COMPARISON` (2) to report `USEARCH_STANDARD_ELEMENT_COMPARISON`
+(2). This public enum value is distinct from the internal zero-valued search
+mode in the source argument. These are drift-detection expectations, not a
+direct read of the internal mode: interpreting the getter relies on the
+inspected upstream mapping, which returns the standard value for non-wildcard
+modes. They are also not a claim that every other setting is unsafe. Definitions are in the public
+[collator](https://github.com/unicode-org/icu/blob/release-78.1/icu4c/source/i18n/unicode/ucol.h)
+and [search](https://github.com/unicode-org/icu/blob/release-78.1/icu4c/source/i18n/unicode/usearch.h)
+headers.
+
+Under those guarded settings, inspect raw forward CE values and UTF-16
+low/high offsets through `ucol_openElements`, `ucol_next` and `ucol_getOffset`.
+Create and close only owned element iterators, keeping their text pinned until
+close; cap each sample at 128 iterations and reject errors or out-of-range
+offsets. In the inspected upstream `UCollationPCE::processCE/nextProcessed`
+implementations, tertiary plus non-ignorable preserves all three raw weight
+components: skipping raw zero therefore selects the same retained elements
+and offsets. This is a source-based interpretation, not direct instrumentation
+of the cached search's internal processed-element buffer.
+
+Per culture, `ceOffsets` checks 142,081 candidate starts followed by literal
+`x`, and 5,560,315 pairs: each of U+0640/U+07FA/U+180A/U+1CD3/U+FE73, required
+to be the complete observed empty-equivalent set, followed by every non-NUL
+Unicode scalar and literal `x`. In each case, require `::`'s first two raw
+elements to match the baseline weights and offsets `[0,1]`, `[1,2]`, and the next retained element to start at
+or after 2 without equal low/high offsets. Separately require actual
+`CompareInfo.IndexOf` on `::warning::` + data + `::later` to return 9. Retain
+the distinction that ASCII candidate starts can take the managed fast path;
+the raw iterator still observes ICU elements for those cases. Record
+completed counts, failure counts, a positive count of cases skipping raw zero,
+elapsed milliseconds and up to 16 numeric counterexamples. Nine
+small samples retain full raw CE sequences, including Japanese/emoji and the
+negative control U+0301: its search must return the later delimiter at 12, not
+9. Require the five prefix samples to contain a raw-zero element spanning
+`[2,3]` and every sample's first retained element after the delimiter to have
+positive width. A separate canonical-expansion control observes `åa`: its
+second nonzero CE must span `[1,1]` and trigger the same zero-width detector;
+`IndexOf("a")` must return the literal `a` at index 1. Attribution of the first
+position's rejection to the partial-expansion rule is a source-based
+interpretation, not an instrumented branch trace. This supplements the U+0301
+break boundary control. Offline validation requires the settings, complete finite
+coverage, sample properties and both control results. These tests do not
+instrument every command header, reuse a live Worker's search buffer or cover
+arbitrary-length suffixes; the preceding parser/Worker suites remain separate evidence. The raw iterator
+and full-header search are separate observations over different surrounding
+text; their agreement does not prove contextual equivalence. Multi-scalar
+contractions/prefix contexts beyond the fixed pair shapes remain untested by
+this suite, even when the earlier context enumeration reports them.
 
 Record results under each culture's `collationObservation` and require both
 to pass `collationResearchStatus`. Save an explicitly incomplete snapshot

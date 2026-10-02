@@ -42,6 +42,24 @@ static class CollationProbe
         var collator = Marshal.ReadIntPtr(handle);
         var search = Marshal.ReadIntPtr(handle, 32 * IntPtr.Size);
         Require(collator != IntPtr.Zero && search != IntPtr.Zero && search != new IntPtr(-1), "native cache slot unavailable");
+        result["searchCollatorMatches"] = api.GetCollator(search) == collator;
+        Require(result["searchCollatorMatches"] is true, "search uses a different collator");
+        var attributes = new Dictionary<string, int>();
+        result["collatorAttributes"] = attributes;
+        string[] attributeNames = { "french", "alternate", "caseFirst", "caseLevel", "normalization", "strength", "hiragana", "numeric" };
+        for (int index = 0; index < attributeNames.Length; index++)
+        {
+            int error = 0;
+            attributes[attributeNames[index]] = api.CollatorAttribute(collator, index, ref error);
+            Check(error);
+        }
+        int comparison = api.SearchAttribute(search, 2); // USEARCH_ELEMENT_COMPARISON
+        result["searchElementComparison"] = comparison;
+        // Public USEARCH_STANDARD_ELEMENT_COMPARISON is 2; the internal
+        // elementComparisonType field described by usearch.cpp uses zero.
+        Require(comparison == 2 && attributes["strength"] == 2 && attributes["alternate"] == 21 &&
+            attributes.Where(p => p.Key is not ("strength" or "alternate")).All(p => p.Value == 16),
+            "unreviewed collator/search settings");
         var breaker = api.GetBreaker(search);
         result["externalBreakIterator"] = breaker != IntPtr.Zero;
         Require(breaker != IntPtr.Zero, "internal break iterator fallback observed");
@@ -121,8 +139,98 @@ static class CollationProbe
         result["emptyEquivalentExamples"] = emptyExamples;
         Require(checkedScalars == 142081 && colonContexts == 0 && missingNfd == 0 && unexpectedGcb == 0,
             "collation boundary hypothesis failed");
+        ObserveOffsets(api, collator, compare, table.RootElement, emptyEquivalent, emptyExamples, result);
         GC.KeepAlive(compare); // Do not close or mutate borrowed native handles.
         result["status"] = "passed";
+    }
+
+    readonly record struct Element(int value, int low, int high);
+    static bool ZeroWidth(Element element) => element.low == element.high;
+
+    static void ObserveOffsets(Api api, IntPtr collator, CompareInfo compare, JsonElement table,
+        int emptyCount, List<int> emptyExamples, Dictionary<string, object?> result)
+    {
+        var timer = Stopwatch.StartNew();
+        var observation = new Dictionary<string, object?> { ["status"] = "incomplete", ["researchOnly"] = true };
+        result["ceOffsets"] = observation;
+        int[] prefixes = { 0x0640, 0x07fa, 0x180a, 0x1cd3, 0xfe73 };
+        observation["prefixes"] = prefixes;
+        Require(emptyCount == prefixes.Length && emptyExamples.SequenceEqual(prefixes),
+            "offset suite empty-equivalent set changed");
+        var baseline = api.Elements(collator, "::x");
+        Require(baseline.Count >= 3 && baseline[0].low == 0 && baseline[0].high == 1 &&
+            baseline[1].low == 1 && baseline[1].high == 2 && baseline[0].value != 0 &&
+            baseline[0].value == baseline[1].value, "unexpected colon elements");
+        int candidateChecks = 0, pairChecks = 0, delimiterFailures = 0, zeroWidthNext = 0, separatorFailures = 0, skippedZeroCases = 0;
+        var examples = new List<object>();
+        void Inspect(string data, int first, int? second)
+        {
+            // Finite test shape only: data always ends in literal x. An owned
+            // iterator observes :: + data, while CompareInfo searches a full
+            // warning header with a later delimiter to expose skipped matches.
+            var elements = api.Elements(collator, "::" + data);
+            bool delimiter = elements.Count >= 3 && elements[0] == baseline[0] && elements[1] == baseline[1];
+            int nextIndex = elements.Count >= 3 ? elements.FindIndex(2, e => e.value != 0) : -1;
+            if (nextIndex < 0)
+                observation["failedCase"] = new { first, second, elements, candidateChecks, pairChecks };
+            Require(nextIndex >= 0, "offset suite missing terminal x element");
+            var next = elements[nextIndex];
+            bool zeroWidth = ZeroWidth(next);
+            if (nextIndex > 2) skippedZeroCases++;
+            int separator = compare.IndexOf("::warning::" + data + "::later", "::", 2, CompareOptions.None);
+            if (!delimiter || next.low < 2) delimiterFailures++;
+            if (zeroWidth) zeroWidthNext++;
+            if (separator != 9) separatorFailures++;
+            if ((!delimiter || next.low < 2 || zeroWidth || separator != 9) && examples.Count < 16)
+                examples.Add(new { first, second, next, separator });
+        }
+        foreach (var range in table.GetProperty("ranges").EnumerateArray())
+        for (int cp = range[0].GetInt32(); cp <= range[1].GetInt32(); cp++)
+        {
+            Inspect(char.ConvertFromUtf32(cp) + "x", cp, null);
+            candidateChecks++;
+        }
+        foreach (int prefix in prefixes)
+        for (int cp = 1; cp <= 0x10ffff; cp++)
+        {
+            if (cp is >= 0xd800 and <= 0xdfff) continue;
+            Inspect(char.ConvertFromUtf32(prefix) + char.ConvertFromUtf32(cp) + "x", prefix, cp);
+            pairChecks++;
+        }
+        var samples = new List<object>();
+        observation["samples"] = samples; // Keep the failing sample if a Require below throws.
+        foreach (string data in new[] { "日", "😀", "\u0640x", "\u07fax", "\u180ax", "\u1cd3x", "\ufe73x", "\u0640\u0301", "\u0301" })
+        {
+            int separator = compare.IndexOf("::warning::" + data + "::later", "::", 2, CompareOptions.None);
+            var elements = api.Elements(collator, "::" + data);
+            samples.Add(new { data, elements, separator });
+            Require(elements.Count >= 3 && elements[0] == baseline[0] && elements[1] == baseline[1], "sample delimiter elements");
+            int nextIndex = elements.FindIndex(2, e => e.value != 0);
+            Require(nextIndex >= 0 && elements[nextIndex].low >= 2 && !ZeroWidth(elements[nextIndex]), "sample retained element");
+            if (prefixes.Contains(data[0])) Require(elements[2] == new Element(0, 2, 3), "sample raw-zero prefix");
+            Require(separator == (data == "\u0301" ? 12 : 9), "offset sample/control mismatch");
+        }
+        // A real canonical expansion supplies a zero-width nonzero second CE.
+        // Reuse the same detector, then independently observe rejection of the
+        // partial 'a' match in å, followed by acceptance of the literal a.
+        var expansion = api.Elements(collator, "\u00e5a");
+        int expansionIndex = compare.IndexOf("\u00e5a", "a", CompareOptions.None);
+        observation["expansionControl"] = new { text = "\u00e5a", pattern = "a", elements = expansion, index = expansionIndex };
+        Require(expansion.Count == 3 && expansion[0].low == 0 && expansion[0].high == 1 && expansion[0].value != 0 &&
+            expansion[1].low == 1 && ZeroWidth(expansion[1]) && expansion[1].value != 0 &&
+            expansion[2].low == 1 && expansion[2].high == 2 && expansion[2].value == expansion[0].value && expansionIndex == 1,
+            "partial-expansion control mismatch");
+        observation["candidateChecks"] = candidateChecks;
+        observation["pairChecks"] = pairChecks;
+        observation["delimiterFailures"] = delimiterFailures;
+        observation["zeroWidthNextCount"] = zeroWidthNext;
+        observation["separatorFailures"] = separatorFailures;
+        observation["skippedZeroCases"] = skippedZeroCases;
+        observation["elapsedMilliseconds"] = timer.ElapsedMilliseconds;
+        observation["examples"] = examples;
+        Require(candidateChecks == 142081 && pairChecks == 5560315 && delimiterFailures == 0 &&
+            zeroWidthNext == 0 && separatorFailures == 0 && skippedZeroCases > 0, "finite CE-offset hypothesis failed");
+        observation["status"] = "passed";
     }
 
     sealed class Api : IDisposable
@@ -141,6 +249,13 @@ static class CollationProbe
         public readonly GetNfd Nfd;
         public readonly Before BoundaryBefore;
         public readonly GetProperty Property;
+        public readonly PointerArg GetCollator;
+        public readonly GetAttribute CollatorAttribute;
+        public readonly SearchGetAttribute SearchAttribute;
+        readonly OpenElements OpenElementIterator;
+        readonly ClosePointer CloseElements;
+        readonly CountItems ElementOffset;
+        readonly NextElement Next;
 
         public Api(uint expectedVersion, Dictionary<string, object?> result)
         {
@@ -196,6 +311,13 @@ static class CollationProbe
                 Require(raw == expectedVersion, "loaded ICU version differs from CoreLib");
                 result["icuVersionRaw"] = raw;
                 GetBreaker = Bind<PointerArg>(international, "usearch_getBreakIterator");
+                GetCollator = Bind<PointerArg>(international, "usearch_getCollator");
+                CollatorAttribute = Bind<GetAttribute>(international, "ucol_getAttribute");
+                SearchAttribute = Bind<SearchGetAttribute>(international, "usearch_getAttribute");
+                OpenElementIterator = Bind<OpenElements>(international, "ucol_openElements");
+                CloseElements = Bind<ClosePointer>(international, "ucol_closeElements");
+                ElementOffset = Bind<CountItems>(international, "ucol_getOffset");
+                Next = Bind<NextElement>(international, "ucol_next");
                 Binary = Bind<BinaryRules>(common, "ubrk_getBinaryRules");
                 OpenRules = Bind<OpenBreakRules>(common, "ubrk_openRules");
                 CloseBreaker = Bind<ClosePointer>(common, "ubrk_close");
@@ -224,6 +346,38 @@ static class CollationProbe
             Require(count > 0 && count <= bytes.Length, "invalid ICU binary rule length");
             return Hash(bytes[..count]);
         }
+        public List<Element> Elements(IntPtr collator, string text)
+        {
+            // Keep the UTF-16 buffer valid even if ICU retains its pointer.
+            // Pin explicitly across all calls; do not rely on call-only string
+            // marshalling. Borrowed runtime collator/search objects stay intact.
+            var pinned = GCHandle.Alloc(text, GCHandleType.Pinned);
+            IntPtr iterator = IntPtr.Zero;
+            try
+            {
+                int error = 0;
+                iterator = OpenElementIterator(collator, pinned.AddrOfPinnedObject(), text.Length, ref error);
+                Check(error);
+                Require(iterator != IntPtr.Zero, "CE iterator unavailable");
+                var elements = new List<Element>();
+                for (int count = 0; count < 128; count++)
+                {
+                    int low = ElementOffset(iterator);
+                    int value = Next(iterator, ref error);
+                    Check(error);
+                    int high = ElementOffset(iterator);
+                    Require(low >= 0 && low <= high && high <= text.Length, "invalid CE offset");
+                    if (value == -1) return elements; // UCOL_NULLORDER
+                    elements.Add(new Element(value, low, high));
+                }
+                throw new ProbeFailure("CE observation bound exceeded");
+            }
+            finally
+            {
+                if (iterator != IntPtr.Zero) CloseElements(iterator);
+                pinned.Free();
+            }
+        }
         public void Dispose()
         {
             foreach (var module in ownedModules) NativeLibrary.Free(module);
@@ -244,5 +398,9 @@ static class CollationProbe
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)] public delegate IntPtr GetNfd(ref int error);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)] public delegate sbyte Before(IntPtr nfd, int cp);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)] public delegate int GetProperty(int cp, int property);
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)] public delegate int GetAttribute(IntPtr collator, int attribute, ref int error);
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)] public delegate int SearchGetAttribute(IntPtr search, int attribute);
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)] delegate IntPtr OpenElements(IntPtr collator, IntPtr text, int length, ref int error);
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)] delegate int NextElement(IntPtr iterator, ref int error);
     }
 }

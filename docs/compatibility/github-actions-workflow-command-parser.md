@@ -327,7 +327,9 @@ collation-element space with:
 
 Default element comparison is source-supported: ICU initializes the attribute
 to zero, and the pinned `pal_collation.c` does not call `usearch_setAttribute`.
-It is not yet a recorded observation of the binary's search object.
+The [native-observation suite](../test-plan.md#native-collation-observation)
+now also records the search object's public attribute, using the public enum
+mapping documented in the test plan rather than the internal mode's value.
 
 On this external-new-rule path, the inspected forward search chooses
 `mLimit = d`: it keeps the initial `mLimit = maxLimit` (equal to `d` when
@@ -365,13 +367,16 @@ This is a separate normalization fact, not an end-check executed on the
 external-iterator path: the search's direct NFD boundary query is inside
 `allowMidclusterMatch`, disabled on that path. To use this fact in the CE-offset
 premises requires connecting it to the effective collator's normalization
-behavior (and any identical-strength comparison). Those settings are not yet
-recorded. It does not by itself establish processed-element offsets or identify
+behavior (and any identical-strength comparison). The native-observation suite
+now records those settings and finite raw CE-offset samples under guarded
+tertiary/non-ignorable settings. It does not by itself establish arbitrary-context
+processed-element offsets or identify
 every iterator used by a live Worker.
 
 **Adoption checkpoint:** the evidence supports a conditional candidate, not an
-unconditional CLI allow-list expansion. The next discriminating check is to
-record actual collator/search settings and investigate the CE-offset premises.
+unconditional CLI allow-list expansion. Actual collator/search settings and
+finite CE-offset checks are now part of the package research gate; fresh results
+are required for each supported test environment, not inferred from local success.
 For starts whose elements can all be skipped, finite offset samples cannot
 close the suffix-dependent premise: it needs an invariant over all possible
 following mappings and contexts at the active settings, or a justified narrower

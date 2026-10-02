@@ -455,6 +455,71 @@ cost only, not UTF-8 validation, process startup, full encoding, I/O or Runner
 processing. There is no timing pass/fail threshold. End-to-end and cross-platform
 measurements remain required before claiming CLI performance is unchanged.
 
+### Native collation observation
+
+After both cultures' current-policy, Unicode parser and Worker checks finish,
+inspect the native ICU objects used by the package's actual `CompareInfo`.
+This is an additional research gate, not a producer dependency or a general
+Unicode acceptance proof. Require the inspected .NET 8.0.30 build, 64-bit
+x64/ARM64 layout, and positive ICU source preconditions before reading the
+private `SortHandle` layout pinned by `pal_collation.c`. Observe option zero's
+collator and head cached search iterator only, during synchronous inspection.
+Overflow nodes and iterators used by earlier Worker calls are not observed;
+this is not an attestation of every iterator in the process. Do
+not close or mutate borrowed runtime objects. This instrumentation is not an
+API supported by .NET and must be reviewed again when its runtime pin changes.
+
+Resolve exports only from ICU already loaded by the process: macOS uses its
+fixed system path with `RTLD_NOLOAD`; Linux requires one observed `libicuuc`
+and `libicui18n` module and reopens them with `RTLD_NOLOAD`; Windows borrows
+observed `icu.dll` or `icuuc.dll`/`icuin.dll` handles. Reject missing/ambiguous
+modules, missing exports and disagreement with CoreLib's ICU version. This
+does not attest native library file hashes or prove source-to-binary identity.
+The macOS path is fixed, not discovered; Windows matching uses module basenames,
+not a System32 path attestation. Version agreement does not distinguish two
+same-version ICU copies or prove which image supplied the runtime's bindings.
+
+Extract the new/old custom break-rule strings from the digest-verified native
+source (read explicitly as UTF-8) into retained `break-rules.json`; compile each
+using the selected loaded ICU. Hash the embedded resource bytes and require
+that hash to match the build input's retained digest. Compare its binary rule
+digest with the observed head iterator's digest.
+Require an external iterator matching the new rules. Null, old, ambiguous or
+unrecognized results fail this research gate rather than passing as unknown.
+Binary rule hashes are platform observations, not one universal pinned hash.
+
+Enumerate all reported contractions including prefix contexts from the actual
+collator, recording item/completed counts and the number containing ASCII
+colon; require a nonempty enumeration and zero colon contexts. For all 142,081
+candidate scalars, require an NFD boundary before the scalar and a consumer GCB
+class within the candidate's positive GCB set. Record completed counts and any
+violation counts. Also count scalars equal to empty under actual `CompareInfo`
+and retain at most 16 numeric examples; a positive count is informative, not a
+failure or authorization to remove those characters from the candidate table.
+These candidates also participate in the preceding exhaustive candidate-start
+parser checks with finite suffixes; neither suite proves arbitrary suffixes safe.
+The native GCB adapter uses `UCHAR_GRAPHEME_CLUSTER_BREAK = 0x1012` and
+`Other/L/LV/LVT/T/V/Regional_Indicator = 0/4/6/7/8/9/12`, checked against
+[ICU's public enum definitions](https://github.com/unicode-org/icu/blob/release-76-1/icu4c/source/common/unicode/uchar.h).
+This is the same semantic set as `GCB` in `generate-unicode-candidate.py`;
+keep the adapter aligned with that generator when changing the candidate policy.
+
+Record results under each culture's `collationObservation` and require both
+to pass `collationResearchStatus`. Save an explicitly incomplete snapshot
+before native inspection of each culture. Caught errors fail the gate; a
+native fault may terminate the process before catch/finally and leave only the
+snapshot, which must never pass. Earlier completed suites remain visible but
+do not substitute for this gate. Offline tests reject missing/mismatched
+coverage, identities, rules and incomplete status; they do not simulate invalid
+native pointers. CI must supply fresh results for every package-matrix OS.
+
+These observations test prerequisites of the source argument, not all possible
+suffixes, every ICU implementation, future collation data or live hosted
+workers. The probe intentionally fails on drift/unsupported observation even
+when producer-compatible behavior might still be safe. CLI acceptance,
+metadata restrictions, the deferred `th-TH` issue and release eligibility are
+unchanged.
+
 ### Live hosted stdout boundary experiment
 
 The ordinary three-OS hosted test matrix additionally runs

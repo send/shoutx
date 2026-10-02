@@ -81,13 +81,22 @@ ICU version 0 and not permission to substitute the sort version.
 The source-precondition result requires no positive NLS/Hybrid flag, invariant
 mode false, the ASCII flag true and a nonzero ICU version. In the inspected
 source that ASCII flag is initialized on the ICU path, not the NLS path.
-For the current probe, overall `passed` means the package-identity, finite parser, command-effects and
-[research-only Unicode parser and Worker-effects checks](../test-plan.md#v2-unicode-data-start-research) passed;
-it deliberately does not require ICU preconditions. A future unknown/NLS run
-can pass those checks without confirming the ICU source argument, but only if
+The finite parser, command-effects and
+[research-only Unicode parser and Worker-effects checks](../test-plan.md#v2-unicode-data-start-research)
+do not themselves require ICU preconditions. A future unknown/NLS run
+can pass those finite checks without confirming the ICU source argument, but only if
 it also reproduces the required negative controls. A fixed or different backend
 may fail that control gate without demonstrating unsafe candidate acceptance;
 inspect the research case/error labels described in the linked test plan.
+
+The subsequent [native collation observation](../test-plan.md#native-collation-observation)
+adds a stricter gate: overall `passed` requires package identity, all preceding
+checks, positive ICU preconditions and complete native observations for both
+cultures. Unknown/NLS behavior can still
+pass the preceding finite suites but no longer passes the complete harness.
+Native inspection uses the pinned runtime's private layout after prior suites
+finish; it does not run inside an unmodified hosted Worker. Missing exports or
+native faults are observation failures, not evidence that an input is unsafe.
 
 The historical runs cited below predate the Unicode candidate extension;
 their passing results do not include that research suite or the later Unicode
@@ -219,6 +228,10 @@ Each `runner-package-evidence-OS-RID` CI artifact retains, for 30 days:
   explicit cultures, parser-test, current-policy and research Worker counts,
   observed research cultures and negative controls, and synthetic
   service-double assembly names;
+- native collation observations in `probe.json`, including module paths,
+  resolved ICU version, actual/compiled rule digests, context/scalar counts and
+  numeric empty-equivalent examples; extracted `break-rules.json` and its digest
+  in `evidence.json`, checked against the embedded resource digest in `probe.json`;
 - original extracted bin digests, inspected .NET source snapshots, synthetic
   corpora, build/execution logs and `corehost.log`;
 - source-built oracle TRX results, including its runtime observations.

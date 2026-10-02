@@ -133,6 +133,72 @@ def probe_environment(environment):
     return {key: value for key, value in environment.items() if key not in removed}, removed
 
 
+def extract_break_rules(source):
+    """Extract literal strings only from the already digest-verified native source."""
+    result = {}
+    for name, declaration in (("new", "BreakIteratorRuleNew"), ("old", "BreakIteratorRuleOld")):
+        matches = re.findall(r"static const char\* " + declaration + r"\s*=.*?;\n", source, re.S)
+        if len(matches) != 1:
+            raise ValueError("ambiguous native break rule declaration")
+        literals = re.findall(r'"(?:[^"\\]|\\.)*"', matches[0])
+        value = "".join(json.loads(token) for token in literals)
+        if not value or len(value) > 16384:
+            raise ValueError("invalid native break rule text")
+        result[name] = value
+    return result
+
+
+def read_break_rules(path):
+    return extract_break_rules(path.read_text(encoding="utf-8"))
+
+
+def verify_collation(probe, rules_sha):
+    if not isinstance(rules_sha, str) or not re.fullmatch(r"[0-9a-f]{64}", rules_sha):
+        raise ValueError("invalid break rules resource identity")
+    if probe.get("collationResearchStatus") != "passed":
+        raise ValueError("incomplete native collation observation")
+    cultures = probe.get("cultures")
+    if not isinstance(cultures, list) or any(not isinstance(c, dict) for c in cultures) or [c.get("culture") for c in cultures] != ["", "en-US"]:
+        raise ValueError("incomplete native collation cultures")
+    source_sha = next(s["sha256"] for s in json.loads(PINS.read_text())["sources"] if s["name"] == "pal_collation.c")
+    for culture in probe["cultures"]:
+        value = culture.get("collationObservation", {})
+        actual_hash = value.get("actualRuleSha256", "")
+        compiled = value.get("compiledRules", {})
+        old = compiled.get("old")
+        if not isinstance(old, dict) or type(old.get("error")) is not int or "sha256" not in old:
+            raise ValueError("missing old break rule observation")
+        old_hash = old["sha256"]
+        if old["error"] <= 0:
+            if not isinstance(old_hash, str) or not re.fullmatch(r"[0-9a-f]{64}", old_hash) or old_hash == actual_hash:
+                raise ValueError("invalid or ambiguous old break rule observation")
+        elif old_hash is not None:
+            raise ValueError("failed old break rule compilation has a digest")
+        empty_count = value.get("emptyEquivalentCount")
+        empty_examples = value.get("emptyEquivalentExamples")
+        if (type(empty_count) is not int or not 0 <= empty_count <= 142081
+                or not isinstance(empty_examples, list) or len(empty_examples) != min(16, empty_count)
+                or any(type(cp) is not int or not 0 <= cp <= 0x10ffff or 0xd800 <= cp <= 0xdfff for cp in empty_examples)
+                or len(set(empty_examples)) != len(empty_examples)):
+            raise ValueError("incomplete empty-equivalent observation")
+        if (value.get("status") != "passed" or value.get("researchOnly") is not True
+                or value.get("culture") != culture["culture"]
+                or value.get("icuVersionRaw", 0) != (culture.get("icu") or {}).get("versionRaw")
+                or not value.get("icuVersionRaw") or value.get("externalBreakIterator") is not True
+                or value.get("selectedRules") != "new" or not re.fullmatch(r"[0-9a-f]{64}", actual_hash)
+                or compiled.get("new", {}).get("sha256") != actual_hash
+                or compiled.get("new", {}).get("error", 1) > 0
+                or value.get("ruleSourceSha256") != source_sha
+                or value.get("ruleResourceSha256") != rules_sha
+                or value.get("tableSha256") != digest(ROOT / "tests/runner-package/unicode-candidate.json")
+                or value.get("scalarChecks") != 142081 or value.get("colonContextCount") != 0
+                or value.get("missingNfdBoundaryCount") != 0 or value.get("unexpectedGcbCount") != 0
+                or not 0 < value.get("contextItemCount", 0) <= 100000
+                or value.get("contextChecks") != value.get("contextItemCount")
+                or not value.get("commonLibrary") or not value.get("internationalLibrary")):
+            raise ValueError("incomplete native collation coverage")
+
+
 def verify_coverage(probe, evidence):
     if probe.get("unicodeResearchStatus") != "passed":
         raise ValueError("incomplete Unicode research")
@@ -221,7 +287,7 @@ def main():
         record["pythonVersion"] = platform.python_version()
         record["sourceDigests"] = {name: digest(ROOT / name) for name in (
             "scripts/test-runner-package.py", "tests/runner-package/Program.cs", "tests/runner-package/WorkerProbe.cs", "tests/runner-package/Probe.csproj",
-            "tests/runner-package/UnicodeCandidateProbe.cs", "tests/runner-package/unicode-candidate.json",
+            "tests/runner-package/UnicodeCandidateProbe.cs", "tests/runner-package/CollationProbe.cs", "tests/runner-package/unicode-candidate.json",
             "tests/runner-package/unicode-pins.json", "tests/runner-package/UNICODE-LICENSE.txt",
             "scripts/generate-unicode-candidate.py")}
         record["rustcVersion"] = subprocess.check_output(["rustc", "--version"], cwd=ROOT, text=True).strip()
@@ -261,6 +327,10 @@ def main():
                 download(source["url"], path, 1024 * 1024)
                 verify(path, source["sha256"])
                 shutil.copyfile(path, evidence / source["name"])
+            break_rules = read_break_rules(work / "pal_collation.c")
+            break_rules["sourceSha256"] = digest(work / "pal_collation.c")
+            (evidence / "break-rules.json").write_text(json.dumps(break_rules, indent=2) + "\n")
+            record["breakRulesSha256"] = digest(evidence / "break-rules.json")
             record["phase"] = "verify-unicode-research-sources"
             unicode_pins = json.loads((ROOT / "tests/runner-package/unicode-pins.json").read_text())
             for source in unicode_pins["sources"]:
@@ -282,7 +352,7 @@ def main():
                     evidence, f"generate-{kind}", env)
             run(["dotnet", "build", str(ROOT / "tests/runner-package/Probe.csproj"), "-c", "Release",
                  "-nodeReuse:false", "-p:UseSharedCompilation=false",
-                 f"-p:RunnerBin={binary}", f"-p:BaseIntermediateOutputPath={work / 'obj'}/",
+                 f"-p:RunnerBin={binary}", f"-p:BreakRulesPath={evidence / 'break-rules.json'}", f"-p:BaseIntermediateOutputPath={work / 'obj'}/",
                  "-o", str(work / "probe")], evidence, "build-probe", cwd=work)
             shutil.copyfile(work / "probe/Probe.dll", binary / "Probe.dll")
             record["probeSha256"] = digest(binary / "Probe.dll")
@@ -305,6 +375,7 @@ def main():
             record["corehostTraceSha256"] = digest(evidence / "corehost.log")
             probe = json.loads((evidence / "probe.json").read_text())
             record["unicodeResearchStatus"] = probe.get("unicodeResearchStatus")
+            record["collationResearchStatus"] = probe.get("collationResearchStatus")
             verify_managed(probe, files, pins)
             record["icuSourcePreconditionsByCulture"] = [
                 {"culture": c["culture"], "observed": c["icuSourcePreconditionsObserved"]}
@@ -317,6 +388,7 @@ def main():
             if exit_code != 0 or probe["status"] != "passed":
                 raise ValueError("probe did not pass")
             verify_coverage(probe, evidence)
+            verify_collation(probe, record["breakRulesSha256"])
             record["phase"] = "cleanup"
         record["status"] = "passed"
         record["phase"] = "complete"

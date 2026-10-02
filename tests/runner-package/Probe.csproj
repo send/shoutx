@@ -12,6 +12,8 @@
     <Compile Include="Program.cs" />
     <Compile Include="WorkerProbe.cs" />
     <Compile Include="UnicodeCandidateProbe.cs" />
+    <Compile Include="CollationProbe.cs" />
+    <EmbeddedResource Include="$(BreakRulesPath)" LogicalName="break-rules.json" />
     <EmbeddedResource Include="unicode-candidate.json" LogicalName="unicode-candidate.json" />
     <Reference Include="Runner.Common">
       <HintPath>$(RunnerBin)/Runner.Common.dll</HintPath>

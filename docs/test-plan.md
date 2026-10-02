@@ -558,9 +558,60 @@ coverage, sample properties and both control results. These tests do not
 instrument every command header, reuse a live Worker's search buffer or cover
 arbitrary-length suffixes; the preceding parser/Worker suites remain separate evidence. The raw iterator
 and full-header search are separate observations over different surrounding
-text; their agreement does not prove contextual equivalence. Multi-scalar
-contractions/prefix contexts beyond the fixed pair shapes remain untested by
-this suite, even when the earlier context enumeration reports them.
+text; their agreement does not prove contextual equivalence. The next suite
+adds finite coverage of the reported context strings, not arbitrary contexts.
+
+#### Reported context-string offsets
+
+Retain every item from the same contractions/prefix-context enumeration as
+numeric Unicode scalars in `contextOffsets.contextScalars`. Reject unexpected
+ranges, malformed UTF-16, NUL, duplicate strings or strings exceeding 64 UTF-16
+units; retain the existing 100,000-item and bounded CE-iteration limits. Record
+the SHA-256 of the compact JSON integer arrays (ASCII, no whitespace). Offline
+validation checks the digest, uniqueness, scalar validity, absence of colon and
+agreement with the enumeration's item/completed counts. Corpus counts/digests
+are observations, not one pinned cross-platform corpus or independent
+attestation of the ICU data. No minimum of two scalars is inferred from the
+API. Retain the current item index and bounded raw UTF-16 units on enumeration
+failure. Enumeration runs before both offset suites, so its drift can prevent
+either suite from running; only already-completed phases remain evidence.
+
+For every string, prepend either nothing or each of the five observed
+empty-equivalent scalars, and append one of empty, `x`, U+0301, or
+U+200D U+0301. Classify each case by whether its first scalar belongs to the
+embedded candidate table. Observe CEs over `warning::` + data + `::later`, the
+text span used when the native search is called after managed `startIndex = 2`
+([pinned overload's span slicing](https://github.com/dotnet/runtime/blob/a83db3e0eb2defb6220e15dae2f1a0462fdbf99f/src/libraries/System.Private.CoreLib/src/System/Globalization/CompareInfo.cs#L906-L937)).
+An ASCII first scalar can instead take the managed fast path: its `IndexOf`
+result is still actual runtime behavior, but only the separate raw-CE iterator
+observes ICU for that case. Require the eligible cases' first nine elements to
+match the fixed header baseline, the delimiter offsets to be `[7,8]`, `[8,9]`, and the next
+retained element to start at or after 9 with positive width. Separately require
+actual `CompareInfo.IndexOf` on the full `::warning::` record to return 9.
+This uses the same surrounding text but is still an owned iterator, not a trace
+of the cached search's internal CE buffer.
+
+Record the number of corpus strings whose own first scalar is a candidate,
+and separately the eligible/outside completed cases after adding prefixes;
+the five nonempty prefixes make even an otherwise outside-start string eligible.
+Also record eligible header/next-element/search failure counts, elapsed
+milliseconds and up to 16 indexed failure examples including bounded raw CE
+sequences. Attach the active case before processing so
+caught failures identify the input; native faults still have only the prior
+snapshot. With `N` reported strings and `C` candidate-start strings, require
+`(5*N+C)*4` eligible and `(N-C)*4` outside checks. Recompute these numbers from
+the retained corpus and candidate table in the offline validator, including
+membership of the five prefixes. Only outside-start search mismatches are
+informative, not failures or a fixed negative-control count; native API errors,
+invalid offsets, missing elements and resource bounds still fail for all cases.
+Outside cases' header-baseline agreement, next-element boundary and zero-width
+conditions are not counted or asserted; only eligible cases use those checks.
+The preceding combining-mark and expansion controls remain required.
+
+This checks only the exact reported strings in the specified finite shapes.
+It does not enumerate intervening marks for discontiguous contractions, all
+context combinations, arbitrary tails, other headers, or every contextual ICU
+mechanism. No CLI acceptance follows from these observations.
 
 Record results under each culture's `collationObservation` and require both
 to pass `collationResearchStatus`. Save an explicitly incomplete snapshot

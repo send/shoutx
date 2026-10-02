@@ -1,5 +1,6 @@
 """Offline safety/regression checks for the package evidence harness."""
 import importlib.util
+import hashlib
 import io
 import json
 from pathlib import Path
@@ -52,7 +53,81 @@ def ce_evidence():
                                                             {"value": 123, "low": 1, "high": 2}]}}}
 
 
+def context_evidence():
+    corpus = [[65, 769], [769, 65]]
+    return {"contextItemCount": 2, "contextChecks": 2,
+            "contextOffsets": {"status": "passed", "researchOnly": True, "examples": [],
+                               "contextScalars": corpus,
+                               "corpusSha256": hashlib.sha256(json.dumps(corpus, separators=(",", ":")).encode("ascii")).hexdigest(),
+                               "prefixScalars": [[], [0x640], [0x7fa], [0x180a], [0x1cd3], [0xfe73]],
+                               "tailScalars": [[], [120], [0x301], [0x200d, 0x301]],
+                               "candidateStartContexts": 1, "eligibleChecks": 44, "outsideChecks": 4, "outsideMoved": 4,
+                               "headerFailures": 0, "zeroWidthNextCount": 0, "separatorFailures": 0, "elapsedMilliseconds": 1}}
+
+
 class HarnessTests(unittest.TestCase):
+    def test_context_observation_is_fail_closed(self):
+        good = context_evidence()
+        harness.verify_context_offsets(good)
+        for field in good["contextOffsets"]:
+            bad = json.loads(json.dumps(good))
+            del bad["contextOffsets"][field]
+            with self.assertRaises(ValueError, msg=field):
+                harness.verify_context_offsets(bad)
+        for field, value in (("status", "incomplete"), ("researchOnly", False), ("examples", [{}]),
+                             ("activeCase", {}), ("failedElements", []), ("contextScalars", []), ("corpusSha256", "wrong"),
+                             ("prefixScalars", []), ("tailScalars", []), ("candidateStartContexts", 2),
+                             ("eligibleChecks", 43), ("outsideChecks", 3), ("outsideMoved", 5),
+                             ("headerFailures", 1), ("zeroWidthNextCount", 1), ("separatorFailures", 1),
+                             ("elapsedMilliseconds", -1), ("elapsedMilliseconds", True),
+                             ("outsideMoved", -1), ("outsideMoved", False), ("eligibleChecks", True),
+                             ("prefixScalars", [[], [1600.0], [0x7fa], [0x180a], [0x1cd3], [0xfe73]]),
+                             ("tailScalars", [[], [120.0], [0x301], [0x200d, 0x301]])):
+            bad = json.loads(json.dumps(good))
+            bad["contextOffsets"][field] = value
+            with self.assertRaises(ValueError, msg=field):
+                harness.verify_context_offsets(bad)
+        for corpus in ([[65, 769], [65, 769]], [[0], [769, 65]], [[0xd800], [769, 65]],
+                       [[0x110000], [769, 65]], [[True], [769, 65]], [[58], [769, 65]],
+                       [[0x10000] * 33, [769, 65]], [[65] * 65, [769, 65]], [[], [769, 65]], [None, [769, 65]]):
+            bad = json.loads(json.dumps(good))
+            bad["contextOffsets"]["contextScalars"] = corpus
+            bad["contextOffsets"]["corpusSha256"] = hashlib.sha256(json.dumps(corpus, separators=(",", ":")).encode("ascii")).hexdigest()
+            with self.assertRaises(ValueError):
+                harness.verify_context_offsets(bad)
+        for field in ("contextItemCount", "contextChecks"):
+            for wrong in (3, True, 2.0):
+                bad = json.loads(json.dumps(good))
+                bad[field] = wrong
+                with self.assertRaises(ValueError):
+                    harness.verify_context_offsets(bad)
+        for wrong in (None, [], "passed"):
+            bad = {**good, "contextOffsets": wrong}
+            with self.assertRaises(ValueError):
+                harness.verify_context_offsets(bad)
+        with self.assertRaises(ValueError):
+            harness.verify_context_offsets({**good, "activeContextItem": {"index": 0}})
+        # A scalar string is supported as an observation too; no two-scalar
+        # guarantee is inferred from the native enumeration API.
+        scalar = context_evidence()
+        corpus = [[65], [769]]
+        scalar["contextOffsets"]["contextScalars"] = corpus
+        scalar["contextOffsets"]["corpusSha256"] = hashlib.sha256(json.dumps(corpus, separators=(",", ":")).encode("ascii")).hexdigest()
+        harness.verify_context_offsets(scalar)
+        oversized = context_evidence()
+        count = 100001
+        corpus = [[65, 0x10000 + i] for i in range(count)]
+        oversized.update(contextItemCount=count, contextChecks=count)
+        oversized["contextOffsets"].update(contextScalars=corpus, candidateStartContexts=count,
+            eligibleChecks=count * 24, outsideChecks=0, outsideMoved=0,
+            corpusSha256=hashlib.sha256(json.dumps(corpus, separators=(",", ":")).encode("ascii")).hexdigest())
+        with self.assertRaises(ValueError):
+            harness.verify_context_offsets(oversized)
+        from unittest.mock import patch
+        with patch.object(Path, "read_text", return_value='{"ranges":[[65,65]]}'):
+            with self.assertRaisesRegex(ValueError, "prefixes outside"):
+                harness.verify_context_offsets(good)
+
     def test_ce_observation_is_fail_closed(self):
         good = ce_evidence()
         harness.verify_ce_offsets(good)
@@ -133,14 +208,14 @@ class HarnessTests(unittest.TestCase):
     def test_native_collation_evidence_is_fail_closed(self):
         source_sha = next(s["sha256"] for s in json.loads(harness.PINS.read_text())["sources"] if s["name"] == "pal_collation.c")
         def observation(culture):
-            return {**ce_evidence(), "status": "passed", "researchOnly": True, "culture": culture,
+            return {**ce_evidence(), **context_evidence(), "status": "passed", "researchOnly": True, "culture": culture,
                     "icuVersionRaw": 123, "externalBreakIterator": True, "selectedRules": "new",
                     "actualRuleSha256": "a" * 64, "compiledRules": {"new": {"sha256": "a" * 64, "error": 0},
                         "old": {"sha256": "b" * 64, "error": 0}},
                     "ruleSourceSha256": source_sha, "tableSha256": harness.digest(harness.ROOT / "tests/runner-package/unicode-candidate.json"),
                     "ruleResourceSha256": "c" * 64,
                     "scalarChecks": 142081, "colonContextCount": 0, "missingNfdBoundaryCount": 0,
-                    "unexpectedGcbCount": 0, "contextItemCount": 100, "contextChecks": 100,
+                    "unexpectedGcbCount": 0,
                     "commonLibrary": "common", "internationalLibrary": "international"}
         report = {"collationResearchStatus": "passed", "cultures": [
             {"culture": name, "icu": {"versionRaw": 123}, "collationObservation": observation(name)}
@@ -182,6 +257,7 @@ class HarnessTests(unittest.TestCase):
             with self.assertRaises(ValueError, msg=field):
                 verify(bad)
         for field, value in (("selectedRules", "old"), ("externalBreakIterator", False),
+                             ("contextOffsets", None), ("contextOffsets", {}),
                              ("icuVersionRaw", 456), ("colonContextCount", 1),
                              ("missingNfdBoundaryCount", 1), ("unexpectedGcbCount", 1),
                              ("actualRuleSha256", "b" * 64), ("contextChecks", 99),

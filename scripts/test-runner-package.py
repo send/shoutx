@@ -152,6 +152,45 @@ def read_break_rules(path):
     return extract_break_rules(path.read_text(encoding="utf-8"))
 
 
+def verify_context_offsets(value):
+    observed = value.get("contextOffsets")
+    if (not isinstance(observed, dict) or observed.get("status") != "passed"
+            or observed.get("researchOnly") is not True or observed.get("examples") != []
+            or "activeCase" in observed or "failedElements" in observed or "activeContextItem" in value):
+        raise ValueError("incomplete context-offset observation")
+    corpus = observed.get("contextScalars")
+    if (not isinstance(corpus, list) or not 0 < len(corpus) <= 100000
+            or type(value.get("contextItemCount")) is not int or type(value.get("contextChecks")) is not int
+            or len(corpus) != value.get("contextItemCount") or len(corpus) != value.get("contextChecks")
+            or any(not isinstance(s, list) or not 0 < len(s) <= 64
+                   or any(type(cp) is not int or not 0 < cp <= 0x10ffff or 0xd800 <= cp <= 0xdfff for cp in s)
+                   or sum(2 if cp > 0xffff else 1 for cp in s) > 64 for s in corpus)):
+        raise ValueError("invalid or incomplete context corpus")
+    if (len({tuple(s) for s in corpus}) != len(corpus)
+            or any(58 in s for s in corpus)
+            or observed.get("corpusSha256") != hashlib.sha256(json.dumps(corpus, separators=(",", ":")).encode("ascii")).hexdigest()):
+        raise ValueError("context corpus identity mismatch")
+    prefixes = [[], [0x640], [0x7fa], [0x180a], [0x1cd3], [0xfe73]]
+    tails = [[], [120], [0x301], [0x200d, 0x301]]
+    for key, expected in (("prefixScalars", prefixes), ("tailScalars", tails)):
+        actual = observed.get(key)
+        if actual != expected or any(type(cp) is not int for s in actual for cp in s):
+            raise ValueError("context case shapes changed")
+    table = json.loads((ROOT / "tests/runner-package/unicode-candidate.json").read_text(encoding="utf-8"))
+    candidates = {cp for start, end in table["ranges"] for cp in range(start, end + 1)}
+    if not all(prefix[0] in candidates for prefix in prefixes[1:]):
+        raise ValueError("context prefixes outside candidate table")
+    starts = sum(s[0] in candidates for s in corpus)
+    for key, expected in {"candidateStartContexts": starts, "eligibleChecks": (len(corpus) * 5 + starts) * 4,
+                          "outsideChecks": (len(corpus) - starts) * 4, "headerFailures": 0,
+                          "zeroWidthNextCount": 0, "separatorFailures": 0}.items():
+        if type(observed.get(key)) is not int or observed[key] != expected:
+            raise ValueError("incomplete or failed context coverage")
+    if (type(observed.get("outsideMoved")) is not int or not 0 <= observed["outsideMoved"] <= observed["outsideChecks"]
+            or type(observed.get("elapsedMilliseconds")) is not int or observed["elapsedMilliseconds"] < 0):
+        raise ValueError("invalid context counters")
+
+
 def verify_ce_offsets(value):
     attributes = value.get("collatorAttributes")
     expected = {"french": 16, "alternate": 21, "caseFirst": 16, "caseLevel": 16,
@@ -234,6 +273,7 @@ def verify_collation(probe, rules_sha):
     for culture in probe["cultures"]:
         value = culture.get("collationObservation", {})
         verify_ce_offsets(value)
+        verify_context_offsets(value)
         actual_hash = value.get("actualRuleSha256", "")
         compiled = value.get("compiledRules", {})
         old = compiled.get("old")

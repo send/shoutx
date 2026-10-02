@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 
 // Research-only private-layout observation, never linked into shoutx. Do not
@@ -89,6 +90,7 @@ static class CollationProbe
         var set = api.OpenSet();
         Require(set != IntPtr.Zero, "ICU context set unavailable");
         int colonContexts = 0;
+        var contexts = new List<string>();
         try
         {
             int error = 0;
@@ -101,12 +103,22 @@ static class CollationProbe
             {
                 ushort[] buffer = new ushort[4096];
                 error = 0;
+                result["activeContextItem"] = new { index };
                 int size = api.Item(set, index, out int start, out int end, buffer, buffer.Length, ref error);
+                result["activeContextItem"] = new { index, size, start, end,
+                    utf16 = buffer.Take(Math.Clamp(size, 0, buffer.Length)).ToArray() };
                 Check(error);
                 Require(size >= 0 && size <= buffer.Length, "invalid ICU context length");
                 if (size == 0 ? start <= 58 && end >= 58 : buffer.Take(size).Contains((ushort)58)) colonContexts++;
+                Require(size is > 0 and <= 64, "unreviewed context range or length");
+                string context = new(buffer.Take(size).Select(cp => (char)cp).ToArray());
+                try { _ = new UTF8Encoding(false, true).GetBytes(context); } // Never replace malformed UTF-16.
+                catch (EncoderFallbackException) { throw new ProbeFailure("malformed UTF-16 context"); }
+                Require(!context.Contains('\0'), "NUL context outside research scope");
+                contexts.Add(context);
             }
             result["contextChecks"] = count;
+            result.Remove("activeContextItem");
         }
         finally { api.CloseSet(set); }
         result["colonContextCount"] = colonContexts;
@@ -140,12 +152,87 @@ static class CollationProbe
         Require(checkedScalars == 142081 && colonContexts == 0 && missingNfd == 0 && unexpectedGcb == 0,
             "collation boundary hypothesis failed");
         ObserveOffsets(api, collator, compare, table.RootElement, emptyEquivalent, emptyExamples, result);
+        ObserveContexts(api, collator, compare, table.RootElement, contexts, emptyExamples, result);
         GC.KeepAlive(compare); // Do not close or mutate borrowed native handles.
         result["status"] = "passed";
     }
 
     readonly record struct Element(int value, int low, int high);
     static bool ZeroWidth(Element element) => element.low == element.high;
+
+    static void ObserveContexts(Api api, IntPtr collator, CompareInfo compare, JsonElement table,
+        List<string> contexts, List<int> emptyPrefixes, Dictionary<string, object?> result)
+    {
+        var timer = Stopwatch.StartNew();
+        var observation = new Dictionary<string, object?> { ["status"] = "incomplete", ["researchOnly"] = true };
+        result["contextOffsets"] = observation;
+        var candidates = new HashSet<int>();
+        foreach (var range in table.GetProperty("ranges").EnumerateArray())
+        for (int cp = range[0].GetInt32(); cp <= range[1].GetInt32(); cp++) candidates.Add(cp);
+        var corpus = contexts.Select(s => s.EnumerateRunes().Select(r => r.Value).ToArray()).ToArray();
+        observation["contextScalars"] = corpus;
+        observation["corpusSha256"] = Hash(JsonSerializer.SerializeToUtf8Bytes(corpus));
+        Require(candidates.Count == 142081 && contexts.Distinct(StringComparer.Ordinal).Count() == contexts.Count,
+            "invalid context/candidate set");
+        string[] prefixes = new[] { "" }.Concat(emptyPrefixes.Select(char.ConvertFromUtf32)).ToArray();
+        string[] tails = { "", "x", "\u0301", "\u200d\u0301" };
+        observation["prefixScalars"] = prefixes.Select(s => s.EnumerateRunes().Select(r => r.Value).ToArray()).ToArray();
+        observation["tailScalars"] = tails.Select(s => s.EnumerateRunes().Select(r => r.Value).ToArray()).ToArray();
+        int candidateStarts = corpus.Count(s => candidates.Contains(s[0]));
+        observation["candidateStartContexts"] = candidateStarts;
+        var baseline = api.Elements(collator, "warning::x").Take(9).ToArray();
+        Require(baseline.Length == 9 && baseline[7].low == 7 && baseline[7].high == 8 &&
+            baseline[8].low == 8 && baseline[8].high == 9 && baseline[7].value != 0 &&
+            baseline[7].value == baseline[8].value, "context header baseline mismatch");
+        int eligibleChecks = 0, outsideChecks = 0, outsideMoved = 0, headerFailures = 0, zeroWidthNext = 0, separatorFailures = 0;
+        var examples = new List<object>();
+        observation["examples"] = examples;
+        for (int contextIndex = 0; contextIndex < contexts.Count; contextIndex++)
+        for (int prefixIndex = 0; prefixIndex < prefixes.Length; prefixIndex++)
+        for (int tailIndex = 0; tailIndex < tails.Length; tailIndex++)
+        {
+            observation["activeCase"] = new { contextIndex, prefixIndex, tailIndex };
+            string data = prefixes[prefixIndex] + contexts[contextIndex] + tails[tailIndex];
+            bool eligible = candidates.Contains(data.EnumerateRunes().First().Value);
+            // Text span used if IndexOf takes the native path after startIndex=2.
+            // ASCII-start cases may instead return from the managed fast path.
+            // No claim that reading a separate iterator traces the search buffer.
+            string text = "warning::" + data + "::later";
+            var elements = api.Elements(collator, text);
+            bool header = elements.Count >= 10 && elements.Take(9).SequenceEqual(baseline);
+            int nextIndex = elements.Count >= 10 ? elements.FindIndex(9, e => e.value != 0) : -1;
+            if (nextIndex < 0) observation["failedElements"] = elements;
+            Require(nextIndex >= 0, "context missing retained element");
+            var next = elements[nextIndex];
+            int separator = compare.IndexOf("::" + text, "::", 2, CompareOptions.None);
+            if (eligible)
+            {
+                eligibleChecks++;
+                if (!header || next.low < 9) headerFailures++;
+                if (ZeroWidth(next)) zeroWidthNext++;
+                if (separator != 9) separatorFailures++;
+                if ((!header || next.low < 9 || ZeroWidth(next) || separator != 9) && examples.Count < 16)
+                    examples.Add(new { contextIndex, prefixIndex, tailIndex, next, separator, header, elements });
+            }
+            else
+            {
+                outsideChecks++;
+                if (separator != 9) outsideMoved++;
+            }
+        }
+        observation.Remove("activeCase");
+        observation["eligibleChecks"] = eligibleChecks;
+        observation["outsideChecks"] = outsideChecks;
+        observation["outsideMoved"] = outsideMoved; // Informative, not a requirement for these excluded starts.
+        observation["headerFailures"] = headerFailures;
+        observation["zeroWidthNextCount"] = zeroWidthNext;
+        observation["separatorFailures"] = separatorFailures;
+        observation["elapsedMilliseconds"] = timer.ElapsedMilliseconds;
+        Require(eligibleChecks == (contexts.Count * emptyPrefixes.Count + candidateStarts) * tails.Length &&
+            outsideChecks == (contexts.Count - candidateStarts) * tails.Length &&
+            headerFailures == 0 && zeroWidthNext == 0 && separatorFailures == 0, "finite context-offset hypothesis failed");
+        observation["status"] = "passed";
+    }
 
     static void ObserveOffsets(Api api, IntPtr collator, CompareInfo compare, JsonElement table,
         int emptyCount, List<int> emptyExamples, Dictionary<string, object?> result)

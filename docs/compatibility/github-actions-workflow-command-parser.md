@@ -438,7 +438,9 @@ pin and justify its traversal for each supported release and native data set:
 - [`UCollationPCE::nextProcessed`](https://github.com/unicode-org/icu/blob/release-74-2/icu4c/source/i18n/ucoleitr.cpp)
   records offsets around each raw-element call and repeats when the processed
   element is ignorable. Whole-string inequality to empty does not establish
-  that the *first* raw element is retained.
+  that the *first* raw element is retained. The
+  [normal UTF-16 offset argument below](#normal-utf-16-source-offset-argument-research-draft)
+  separately checks this composition against the 78.1 loop.
 - [`CollationElementIterator::next`](https://github.com/unicode-org/icu/blob/release-78.1/icu4c/source/i18n/coleitr.cpp)
   splits an internal 64-bit element into 32-bit parts; a pending second part
   does not advance the underlying iterator. Checking only a nonzero internal
@@ -507,6 +509,155 @@ not this compatibility proposal. Neither the table's final size nor
 inclusion/exclusion of particular scalars has been established.
 This proposal introduces no trimming, Unicode
 normalization, language-specific subset, or CLI acceptance change.
+
+### Normal UTF-16 source-offset argument (research draft)
+
+The following separates source-cursor movement from mapping weights. It is an
+argument about the upstream **78.1 non-FCD forward iterator**, not a claim that
+the loaded Runner uses this exact implementation. It does not change the CLI
+or turn the offline mapping report into an acceptance table.
+
+Let `d` be the source offset immediately after the intended delimiter and `p`
+the offset immediately after reading the first complete data scalar. For a
+well-formed, explicitly length-bounded UTF-16 string, `p = d + 1` or `d + 2`.
+Assume the underlying `pos - start` equals `d` at a scalar boundary and
+`CollationElementIterator` is in forward mode (`dir_ > 1`), so its `getOffset()`
+uses the underlying iterator rather than backward-offset bookkeeping.
+Assume successful forward iteration, numeric collation off, no unreturned
+64-bit CE, no pending 32-bit continuation, an empty skipped-mark buffer, and
+`numCpFwd < 0` at entry. The last condition excludes the limited forward replay
+used by backward iteration. The initial scalar exists; an empty value needs
+its own delimiter argument. Allocation failures, invalid data, integer overflow
+and resource exhaustion are not successful executions covered here.
+
+These entry conditions matter independently of a numeric offset of `d`:
+[`nextCE`](https://github.com/unicode-org/icu/blob/release-78.1/icu4c/source/i18n/collationiterator.h)
+returns an available buffered CE without reading text, and
+[`CollationElementIterator::next`](https://github.com/unicode-org/icu/blob/release-78.1/icu4c/source/i18n/coleitr.cpp)
+does the same for `otherHalf_`. Establishing the conditions after the actual
+encoded header remains a separate consumer obligation.
+
+In
+[`UTF16CollationIterator`](https://github.com/unicode-org/icu/blob/release-78.1/icu4c/source/i18n/utf16collationiterator.cpp),
+`getOffset()` is `pos - start`. `handleNextCE32()` consumes one code unit; the
+valid supplementary path consumes its trail through `handleGetTrailSurrogate()`.
+This requires the first-read lead-unit trie entry itself to carry the
+lead-surrogate tag; well-formed input alone does not validate that data entry.
+Plain `FALLBACK_CE32` at that first-read entry is unverified here: `nextCE()`
+resolves it via the base data's
+[`getCE32(c)`](https://github.com/unicode-org/icu/blob/release-78.1/icu4c/source/i18n/collationdata.h),
+a code-point lookup for the lead unit, not a base lead-unit lookup. This
+argument does not infer that such fallback consumes the trail or reaches `p`.
+At scalar boundaries, forward and backward code-point operations undo each
+other when applied to the number of code points actually traversed. End-of-text
+returns a sentinel without advancing. The explicit length bound also excludes
+the NUL-terminated mode in which `foundNULTerminator()` decrements `pos` and
+forward restoration can stop at NUL. Upstream 78.1 `setText(const UnicodeString&)`
+passes `s + string_.length()` as the limit; connecting this construction to the
+loaded search iterator remains a consumer-identity obligation. The proposed
+wire-value universe independently excludes NUL.
+
+These facts give the following local
+case analysis of
+[`appendCEsFromCE32` and its context helpers](https://github.com/unicode-org/icu/blob/release-78.1/icu4c/source/i18n/collationiterator.cpp):
+
+| Path | Source-cursor effect on successful completion |
+| --- | --- |
+| Simple, long-primary/secondary, Latin expansion, expansion32, CE64 expansion, offset or implicit mapping | No further text movement after the initial scalar. Multiple emitted CEs do not imply multiple source reads. |
+| Non-numeric digit indirection or resolved base fallback | Mapping selection itself does not move the cursor; the selected mapping still needs this case analysis. Plain fallback at the first-read lead-unit entry is excluded as described above. |
+| Prefix lookup | At a physical scalar boundary strictly after `start`, the outer backward-one/forward-one pair encloses a lookup that counts actual successful backward reads and restores exactly that count. Lookup restores its entry position, even if it reaches the start of the string. The subsequently selected mapping must be checked separately. |
+| Contiguous contraction | Lookahead starts after the original scalar. `sinceMatch` counts successfully read suffix scalars since the last selected match, initially the default. Failed partial matching rewinds that count, not the original scalar. End-of-text adds no count. A final match retains its consumed suffix. Before deciding whether to try discontiguous matching, the helper may rewind `sinceMatch`, refetch one scalar, reduce `lookAhead` by `sinceMatch - 1`, and set `sinceMatch = 1`; this also preserves the lower bound. |
+| Hangul | The fast Jamo path does not move text. The recursive path requires the cursor property for **every** emitted L/V/T mapping, not only the first L mapping whose weight determines the first raw half. |
+| Lead-surrogate tag | With the tag present at the first-read lead-unit entry and paired input, consumes the trail to reach `p`; the resolved supplementary mapping then needs this case analysis. |
+| U0000 tag | The explicitly bounded mode does not take the decrementing NUL-terminator path; its indirect mapping still needs checking. Literal NUL is outside the proposed input universe. |
+
+Numeric digit processing is excluded by the numeric-off assumption, not by a
+claim that its lookahead is cursor-neutral. Builder data is outside this runtime
+data model: the inspected base `getCE32FromBuilderData()` reports an internal
+error. Unresolved fallback and reserved-tag dispatch in `appendCEsFromCE32`
+also report errors. Unknown or malformed tags are unverified, not additional
+successful cases inferred from this table.
+
+For the contiguous-contraction row, this covers executions that do not enter
+`nextCE32FromDiscontiguousContraction`. A prefix may temporarily read before
+`d`, so the property is a **return-position lower bound**, not a claim that the
+cursor never crosses `d` internally. With valid, terminating mapping dispatch
+and cursor-preserving/nondecreasing selected children, the listed paths return
+at or after `p`, regardless of the contents or length of their lookahead. The
+length bound is the existing input/resource bound, not a chosen test suffix
+length. Prefix branch weights may still depend on the header. For virtual
+skipped marks or recursively dispatched Jamo, prefix lookup examines the
+physical text preceding the current cursor, not necessarily the mapping's own
+scalar. Restoring the cursor does not remove these weight dependencies. The
+outer backward-one step succeeds under the physical-position lower bound;
+that premise must also be maintained for recursive dispatches.
+
+#### Discontiguous matching: the additional induction obligation
+
+`SkippedState` in the same 78.1 source distinguishes virtual reads from its
+`oldBuffer` and physical reads beyond that buffer. While the buffer is non-empty,
+`nextSkippedCodePoint()` increments the beyond-buffer counter only after a
+successful physical read. In that same non-empty case, `backwardNumSkipped(n)`
+asks `SkippedState::backwardNumCodePoints(n)` how many
+of those reads must be undone in physical text; rewinding only virtual marks
+does not move the source cursor. With no buffer or an empty buffer, there is no
+such accounting: the helper rewinds `n` physical scalars directly.
+This is the mechanism needed for a
+lower-bound argument, rather than an assumption that all skipped marks occupy
+the current physical source position.
+
+At the initial top-level discontiguous attempt, the early exits undo only the
+one or two suffix scalars just read. Its optional trie replay rewinds
+`lookAhead` suffix scalars and then advances the same count: the
+`lookAhead - 2` matched scalars followed by the two lookahead scalars. It does
+not rewind the original scalar. The matching loop records a new match with
+`sinceMatch = 0`; later failure undoes only reads since that match. Thus the
+top-level matching phase retains at least the original scalar.
+
+That phase is **not the end of the raw-element call**. After `replaceMatch()`,
+the top-level path appends the selected contraction's CEs, then resolves and
+appends mappings for the skipped marks. Only after that work does
+`nextCEFromCE32()` return the first buffered CE. Nested contractions can read
+beyond the virtual buffer, replace it and restart virtual iteration. Therefore
+the high offset observed by search is the position after this entire process,
+not necessarily the position when the first CE was appended.
+
+The remaining induction must bound physical rewinds using the shared buffer
+state, not assume that the beyond-buffer counter is local to each nested call.
+In the non-empty-buffer path, the number of physical scalars returned for undo
+is at most the positive beyond-buffer count. A proof must connect that count
+to actual physical reads since the relevant buffer reset and show that reset
+positions remain at or after the outer match. It must also show that every
+mapping dispatched while draining skipped marks preserves this physical lower
+bound. Prefix lookbehind must restore its physical position even
+when the mapping's scalar came from the virtual buffer; recursive Jamo and
+other selected mappings must also satisfy the property. It must cover the
+buffer replacement/restart and termination conditions, not only one nested
+call. The accounting above identifies the state on which to base that proof;
+it is not yet a completed proof for arbitrary nesting.
+
+This exposes a distinct coverage requirement for an executable verifier:
+classifying the possible **first emitted weight** of the leading scalar does
+not classify all cursor-affecting mappings executed before that weight is
+returned. The offline root reader below follows leading mapping alternatives
+and Jamo children, but does not enumerate arbitrary suffix marks dispatched
+while draining `SkippedState`, or prove their cursor behavior. Its existing
+`offsetsProven: false` result must remain false. Either a general source-level
+induction covers those dispatches for the supported data model, or an
+exhaustive data check must cover them too; candidate membership alone cannot
+stand in for that check.
+
+Once the full return-position property is established, it can be composed
+with the positive-first-raw-half criterion: if the first raw half is retained,
+the 78.1
+[`UCollationPCE::nextProcessed`](https://github.com/unicode-org/icu/blob/release-78.1/icu4c/source/i18n/ucoleitr.cpp)
+loop need not skip another element. It records `low` before `next()` and `high`
+after it, repeating only for an ignorable processed result, so its offsets are
+`low = d` and `high >= p > d`. This proves only the next-element premise.
+Loaded-code/data identity, the entry state after the delimiter, processed-CE
+settings, external break boundaries and other search premises remain separate.
+No FCD normalization path, NLS backend, different ICU release, or uninspected
+platform fork inherits this argument merely by reporting similar samples.
 
 ### Mapping-data acquisition feasibility (local research)
 

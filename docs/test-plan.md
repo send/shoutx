@@ -613,6 +613,98 @@ It does not enumerate intervening marks for discontiguous contractions, all
 context combinations, arbitrary tails, other headers, or every contextual ICU
 mechanism. No CLI acceptance follows from these observations.
 
+#### Single-scalar context insertions
+
+The following `insertionOffsets` suite adds one selected scalar at every
+internal scalar boundary of each reported context string. It does not select
+languages or scripts. Scan every non-NUL Unicode scalar (1,112,063 checks)
+with the same loaded ICU's `u_getIntPropertyValue` and select all nonzero
+`UCHAR_LEAD_CANONICAL_COMBINING_CLASS` values (`0x1010`). This is the CCC of
+the first scalar of the NFD decomposition, not necessarily the undecomposed
+scalar's CCC; see the [public property definition](https://github.com/unicode-org/icu/blob/release-78.1/icu4c/source/common/unicode/uchar.h#L620-L626).
+Retain the ascending `[scalar, leadCCC]` pairs and their compact-JSON SHA-256.
+Require nonempty selection, values in `1..255`, at most 4,096 selected scalars,
+and all scan calls completed. Retain the active scalar on caught failure.
+Counts are observations and may differ between ICU versions. Add three
+explicit zero-leading-CCC controls to the insertion set: U+034F, U+200D and
+literal `x`. Check known property controls for these and U+0327 (202), U+0306
+(230), U+0300 (230), U+0438 (0) and `X` (0).
+
+Require a discriminating raw-offset control: U+0438 U+0327 U+0306 and
+U+0438 U+0306 U+0327 must have equal two-element nonzero weight sequences,
+but respective offsets `[0,3],[3,3]` and `[0,2],[2,3]`. Inserting U+0300 or
+`X` instead must yield three nonzero elements at `[0,1],[1,2],[2,3]`.
+These exercise a real zero-width element after the first retained element;
+zero width anywhere in the data is not the failure predicate.
+The interpretation as discontiguous contraction and CCC blocking follows
+the upstream [ICU iterator implementation](https://github.com/unicode-org/icu/blob/release-78.1/icu4c/source/i18n/collationiterator.cpp)
+(`nextCE32FromDiscontiguousContraction`): its caller requires a contraction's
+trailing-CCC flag and an existing match, plus nonzero leading CCC for the
+first skipped scalar; the function also requires a following nonstarter.
+Among those conditions, matching across nonstarters requires the preceding
+trailing CCC to be less than the next leading CCC. It then emits the
+contraction's elements followed by skipped marks. The owned iterator's
+public offsets follow [the forward CE adapter](https://github.com/unicode-org/icu/blob/release-78.1/icu4c/source/i18n/coleitr.cpp#L83-L137).
+The relevant caller/function conditions and forward CE adapter were also
+compared with upstream releases 70.1, 72.1, 74.2 and 76.1; the checked branches
+agree (boolean/null/cast spelling differs). This does not attest vendor binary
+identity or guarantee the controls' exact element counts on each OS: the
+32-bit adapter can split a 64-bit CE, and fresh matrix observations must pass
+the controls. This is not a trace of native branch execution.
+
+Require U+0438 U+0306 in the retained context corpus, tying the positive
+control to an actual loop case with inserted U+0327 and no prefix. Also record
+the full `warning::` + control + `::later` CE sequence and actual separator
+index: the header must match the preceding baseline, control elements must
+shift to `[9,12],[12,12]`, and `IndexOf` must return 9. Count eligible loop
+cases containing a later zero-width nonzero element after the first retained
+element, requiring a positive count. This counter alone does not identify the
+cause (expansions and continuation halves of split 64-bit CEs can also produce
+zero-width elements). The loop must observe the designated control case
+exactly once, assert its eligibility, and compare its full elements and search
+result against the recorded header control (`controlLoopChecks = 1`). The
+validator also checks the control's membership in the candidate table. These later
+elements are deliberately not failures. Controls fail closed on data drift.
+
+For every context, internal scalar position and insertion, use the same six
+prefixes as the preceding context suite. Append no further data tail before
+the fixed `::later` sentinel. Observe raw CEs over `warning::` plus data plus
+sentinel, and actual `CompareInfo.IndexOf` over the full `::warning::` record
+with start index 2. Reuse the preceding suite's header baseline, candidate
+classification, first-retained-element, separate-iterator/managed-fast-path
+caveats and outside-start treatment. Every eligible case must preserve the
+header, a positive-width next retained element starting at or after offset 9,
+and separator index 9. Only outside-start separator shifts are informative;
+native validity/resource errors fail all cases. Require at most 20 million
+total cases before starting this loop; keep the 128-iteration per-text cap.
+This is a work cap, not a time guarantee; retain the existing 900-second whole
+probe timeout and record elapsed milliseconds per culture. Fresh matrix
+timings determine hosted viability; the cap is not a runtime estimate.
+Retain active context index, scalar position, inserted scalar and prefix index
+on caught failure, plus up to 16 complete bounded CE failure examples.
+
+Reference the preceding retained context corpus by its digest rather than
+duplicating it. Let `P` be the sum of `(scalar length - 1)` over that corpus,
+`C` the same sum for candidate-start contexts, and `M` the selected nonstarter
+count plus three. The required control ensures `P > 0`; require
+`(5*P+C)*M` eligible and `(P-C)*M` outside
+checks. A one-scalar context contributes zero positions. Offline validation
+recomputes these counts from the retained corpus and candidate table, checks
+the sorted unique insertion corpus, properties' bounds/control agreement,
+digests, case limits, offsets, statuses and zero eligible failure counters.
+It does not independently reproduce the entire native property scan or detect
+every self-consistently truncated set: completeness relies on the inspected
+all-scalar native loop and its source identity in the complete evidence bundle,
+not the self-reported counter alone or this validator in isolation.
+Recorded pairs and digest are observational evidence, not external
+attestation or a cross-version pinned Unicode property table.
+
+This finite suite does not cover other zero-leading-CCC insertions beyond the
+three explicit controls, multiple inserted scalars, insertions before
+or after a reported string, arbitrary tails or nested context combinations.
+No result expands CLI acceptance or proves all Unicode strings safe. Fresh
+four-OS package results remain necessary.
+
 Record results under each culture's `collationObservation` and require both
 to pass `collationResearchStatus`. Save an explicitly incomplete snapshot
 before native inspection of each culture. Caught errors fail the gate; a

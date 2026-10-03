@@ -232,6 +232,139 @@ static class CollationProbe
             outsideChecks == (contexts.Count - candidateStarts) * tails.Length &&
             headerFailures == 0 && zeroWidthNext == 0 && separatorFailures == 0, "finite context-offset hypothesis failed");
         observation["status"] = "passed";
+        ObserveInsertions(api, collator, compare, contexts, corpus, candidates, prefixes, baseline, result);
+    }
+
+    static void ObserveInsertions(Api api, IntPtr collator, CompareInfo compare, List<string> contexts,
+        int[][] corpus, HashSet<int> candidates, string[] prefixes, Element[] baseline, Dictionary<string, object?> result)
+    {
+        var timer = Stopwatch.StartNew();
+        var observation = new Dictionary<string, object?> { ["status"] = "incomplete", ["researchOnly"] = true };
+        result["insertionOffsets"] = observation;
+        observation["corpusSha256"] = Hash(JsonSerializer.SerializeToUtf8Bytes(corpus));
+        // Lead_Canonical_Combining_Class, not the scalar's undecomposed CCC.
+        int controlContextIndex = contexts.IndexOf("\u0438\u0306");
+        Require(controlContextIndex >= 0 && candidates.Contains(0x438), "insertion control context missing or ineligible");
+        int[][] expectedProperties = { new[] { 0x327, 202 }, new[] { 0x306, 230 }, new[] { 0x300, 230 },
+            new[] { 0x438, 0 }, new[] { 88, 0 }, new[] { 0x34f, 0 }, new[] { 0x200d, 0 }, new[] { 120, 0 } };
+        var properties = expectedProperties.Select(p => new[] { p[0], api.Property(p[0], 0x1010) }).ToArray();
+        observation["propertyControls"] = properties;
+        Require(properties.Zip(expectedProperties).All(p => p.First.SequenceEqual(p.Second)), "insertion property controls failed");
+        var marks = new List<int[]>();
+        observation["nonstarters"] = marks;
+        int scalarChecks = 0;
+        for (int cp = 1; cp <= 0x10ffff; cp++)
+        {
+            if (cp is >= 0xd800 and <= 0xdfff) continue;
+            observation["activeScalar"] = cp;
+            int lead = api.Property(cp, 0x1010);
+            Require(lead is >= 0 and <= 255, "invalid insertion leading CCC");
+            if (lead != 0) marks.Add(new[] { cp, lead });
+            scalarChecks++;
+            Require(marks.Count <= 4096, "insertion corpus bound exceeded");
+        }
+        observation.Remove("activeScalar");
+        observation["scalarChecks"] = scalarChecks;
+        observation["nonstarterSha256"] = Hash(JsonSerializer.SerializeToUtf8Bytes(marks));
+        Require(scalarChecks == 1112063 && marks.Count > 0, "incomplete insertion property scan");
+        int[] extra = { 0x34f, 0x200d, 120 };
+        observation["extraScalars"] = extra;
+        int[] insertions = marks.Select(p => p[0]).Concat(extra).ToArray();
+        Require(insertions.Distinct().Count() == insertions.Length, "duplicate insertion scalars");
+        var controls = new List<object>();
+        observation["controls"] = controls;
+        var sequences = new List<List<Element>>();
+        foreach (string text in new[] { "\u0438\u0327\u0306", "\u0438\u0306\u0327", "\u0438\u0300\u0306", "\u0438X\u0306" })
+        {
+            observation["activeControl"] = controls.Count;
+            var elements = api.Elements(collator, text);
+            controls.Add(new { text, elements });
+            sequences.Add(elements);
+        }
+        var positive = sequences[0];
+        var reordered = sequences[1];
+        Require(positive.Count == 2 && reordered.Count == 2 && positive.All(e => e.value != 0) &&
+            positive.Select(e => e.value).SequenceEqual(reordered.Select(e => e.value)) &&
+            positive[0].low == 0 && positive[0].high == 3 && positive[1].low == 3 && ZeroWidth(positive[1]) &&
+            reordered[0].low == 0 && reordered[0].high == 2 && reordered[1].low == 2 && reordered[1].high == 3 &&
+            sequences.Skip(2).All(s => s.Count == 3 && s.All(e => e.value != 0) &&
+                s.Select(e => (e.low, e.high)).SequenceEqual(new[] { (0, 1), (1, 2), (2, 3) })),
+            "discontiguous/blocked offset controls failed");
+        observation.Remove("activeControl");
+        string controlData = "\u0438\u0327\u0306";
+        var headerControl = api.Elements(collator, "warning::" + controlData + "::later");
+        int controlSeparator = compare.IndexOf("::warning::" + controlData + "::later", "::", 2, CompareOptions.None);
+        observation["headerControl"] = new { data = controlData, elements = headerControl, separator = controlSeparator };
+        Require(headerControl.Count >= 11 && headerControl.Take(9).SequenceEqual(baseline) &&
+            headerControl.Skip(9).Take(2).SequenceEqual(positive.Select(e => new Element(e.value, e.low + 9, e.high + 9))) &&
+            controlSeparator == 9, "in-header insertion control failed");
+        int positions = corpus.Sum(s => s.Length - 1);
+        int candidatePositions = corpus.Where(s => candidates.Contains(s[0])).Sum(s => s.Length - 1);
+        observation["insertionPositions"] = positions;
+        observation["candidatePositions"] = candidatePositions;
+        Require(positions > 0 && (long)prefixes.Length * positions * insertions.Length <= 20000000, "insertion case bound exceeded");
+        long eligibleChecks = 0, outsideChecks = 0, outsideMoved = 0, headerFailures = 0, zeroWidth = 0, separatorFailures = 0, laterZeroWidthCases = 0;
+        int controlLoopChecks = 0;
+        var examples = new List<object>();
+        observation["examples"] = examples;
+        for (int contextIndex = 0; contextIndex < contexts.Count; contextIndex++)
+        {
+            int offset = 0;
+            for (int position = 1; position < corpus[contextIndex].Length; position++)
+            {
+                offset += char.ConvertFromUtf32(corpus[contextIndex][position - 1]).Length;
+                foreach (int scalar in insertions)
+                {
+                    string variant = contexts[contextIndex].Insert(offset, char.ConvertFromUtf32(scalar));
+                    for (int prefixIndex = 0; prefixIndex < prefixes.Length; prefixIndex++)
+                    {
+                        observation["activeCase"] = new { contextIndex, position, scalar, prefixIndex };
+                        string data = prefixes[prefixIndex] + variant;
+                        bool eligible = candidates.Contains(data.EnumerateRunes().First().Value);
+                        string text = "warning::" + data + "::later";
+                        var elements = api.Elements(collator, text);
+                        bool header = elements.Count >= 10 && elements.Take(9).SequenceEqual(baseline);
+                        int nextIndex = elements.Count >= 10 ? elements.FindIndex(9, e => e.value != 0) : -1;
+                        if (nextIndex < 0) observation["failedElements"] = elements;
+                        Require(nextIndex >= 0, "insertion missing retained element");
+                        var next = elements[nextIndex];
+                        int separator = compare.IndexOf("::" + text, "::", 2, CompareOptions.None);
+                        if (contextIndex == controlContextIndex && position == 1 && scalar == 0x327 && prefixIndex == 0)
+                        {
+                            Require(eligible && elements.SequenceEqual(headerControl) && separator == controlSeparator,
+                                "insertion loop control differs from header control");
+                            controlLoopChecks++;
+                        }
+                        if (eligible)
+                        {
+                            eligibleChecks++;
+                            if (elements.Skip(nextIndex + 1).Any(e => e.value != 0 && ZeroWidth(e))) laterZeroWidthCases++;
+                            if (!header || next.low < 9) headerFailures++;
+                            if (ZeroWidth(next)) zeroWidth++;
+                            if (separator != 9) separatorFailures++;
+                            if ((!header || next.low < 9 || ZeroWidth(next) || separator != 9) && examples.Count < 16)
+                                examples.Add(new { contextIndex, position, scalar, prefixIndex, header, separator, next, elements });
+                        }
+                        else { outsideChecks++; if (separator != 9) outsideMoved++; }
+                    }
+                }
+            }
+        }
+        observation.Remove("activeCase");
+        observation["eligibleChecks"] = eligibleChecks;
+        observation["outsideChecks"] = outsideChecks;
+        observation["outsideMoved"] = outsideMoved;
+        observation["headerFailures"] = headerFailures;
+        observation["zeroWidthNextCount"] = zeroWidth;
+        observation["separatorFailures"] = separatorFailures;
+        observation["laterZeroWidthCases"] = laterZeroWidthCases;
+        observation["controlLoopChecks"] = controlLoopChecks;
+        observation["elapsedMilliseconds"] = timer.ElapsedMilliseconds;
+        Require(eligibleChecks == ((prefixes.Length - 1L) * positions + candidatePositions) * insertions.Length &&
+            outsideChecks == (long)(positions - candidatePositions) * insertions.Length &&
+            headerFailures == 0 && zeroWidth == 0 && separatorFailures == 0 && laterZeroWidthCases > 0 && controlLoopChecks == 1,
+            "finite insertion-offset hypothesis failed");
+        observation["status"] = "passed";
     }
 
     static void ObserveOffsets(Api api, IntPtr collator, CompareInfo compare, JsonElement table,

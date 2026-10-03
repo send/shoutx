@@ -65,7 +65,131 @@ def context_evidence():
                                "headerFailures": 0, "zeroWidthNextCount": 0, "separatorFailures": 0, "elapsedMilliseconds": 1}}
 
 
+def insertion_evidence():
+    marks = [[0x300, 230], [0x306, 230], [0x327, 202]]
+    texts = ["\u0438\u0327\u0306", "\u0438\u0306\u0327", "\u0438\u0300\u0306", "\u0438X\u0306"]
+    offsets = [[(0, 3), (3, 3)], [(0, 2), (2, 3)], [(0, 1), (1, 2), (2, 3)], [(0, 1), (1, 2), (2, 3)]]
+    base = context_evidence()
+    corpus = [[0x438, 0x306], [769, 65]]
+    base["contextOffsets"].update(contextScalars=corpus,
+        corpusSha256=hashlib.sha256(json.dumps(corpus, separators=(",", ":")).encode("ascii")).hexdigest())
+    return {**base, "insertionOffsets": {"status": "passed", "researchOnly": True, "examples": [],
+        "corpusSha256": base["contextOffsets"]["corpusSha256"], "nonstarters": marks,
+        "nonstarterSha256": hashlib.sha256(json.dumps(marks, separators=(",", ":")).encode("ascii")).hexdigest(),
+        "propertyControls": [[0x327, 202], [0x306, 230], [0x300, 230], [0x438, 0], [88, 0], [0x34f, 0], [0x200d, 0], [120, 0]],
+        "extraScalars": [0x34f, 0x200d, 120], "scalarChecks": 1112063, "controlLoopChecks": 1,
+        "insertionPositions": 2, "candidatePositions": 1, "eligibleChecks": 66, "outsideChecks": 6, "outsideMoved": 6,
+        "headerFailures": 0, "zeroWidthNextCount": 0, "separatorFailures": 0, "elapsedMilliseconds": 1, "laterZeroWidthCases": 1,
+        "headerControl": {"data": texts[0], "separator": 9,
+            "elements": ([{"value": 11, "low": i, "high": i + 1} for i in range(9)]
+                         + [{"value": 123, "low": 9, "high": 12}, {"value": 124, "low": 12, "high": 12}]
+                         + [{"value": 11, "low": i, "high": i + 1} for i in range(12, 19)])},
+        "controls": [{"text": text, "elements": [{"value": 123 + i, "low": low, "high": high}
+                                                   for i, (low, high) in enumerate(shape)]}
+                     for text, shape in zip(texts, offsets)]}}
+
+
 class HarnessTests(unittest.TestCase):
+    def test_insertion_observation_is_fail_closed(self):
+        good = insertion_evidence()
+        harness.verify_insertion_offsets(good)
+        paths = [[key] for key in good["insertionOffsets"]]
+        paths += [["controls", i, key] for i in range(4) for key in ("text", "elements")]
+        paths += [["controls", 0, "elements", 0, key] for key in ("value", "low", "high")]
+        paths += [["headerControl", key] for key in ("data", "separator", "elements")]
+        for path in paths:
+            bad = json.loads(json.dumps(good))
+            parent = bad["insertionOffsets"]
+            for part in path[:-1]:
+                parent = parent[part]
+            del parent[path[-1]]
+            with self.assertRaises(ValueError, msg=path):
+                harness.verify_insertion_offsets(bad)
+        for field, wrong in (("status", "incomplete"), ("researchOnly", False), ("examples", [{}]),
+                             ("activeScalar", 1), ("activeControl", 0), ("activeCase", {}), ("failedElements", []),
+                             ("corpusSha256", "wrong"), ("nonstarterSha256", "wrong"), ("scalarChecks", 1112062),
+                             ("scalarChecks", True), ("insertionPositions", 1), ("candidatePositions", 2),
+                             ("eligibleChecks", 65), ("outsideChecks", 5), ("outsideMoved", 7), ("outsideMoved", -1),
+                             ("outsideMoved", True), ("headerFailures", 1), ("zeroWidthNextCount", 1),
+                             ("separatorFailures", 1), ("elapsedMilliseconds", -1), ("elapsedMilliseconds", False),
+                             ("extraScalars", [847.0, 0x200d, 120]), ("propertyControls", []), ("controls", []),
+                             ("controls", [None] * 4), ("laterZeroWidthCases", 0), ("laterZeroWidthCases", 67),
+                             ("laterZeroWidthCases", True), ("headerControl", None), ("controlLoopChecks", 0),
+                             ("controlLoopChecks", 2), ("controlLoopChecks", True)):
+            bad = json.loads(json.dumps(good))
+            bad["insertionOffsets"][field] = wrong
+            with self.assertRaises(ValueError, msg=field):
+                harness.verify_insertion_offsets(bad)
+        for marks in ([], None, [[0x300, 230]] * 3, [[0x306, 230], [0x300, 230], [0x327, 202]],
+                      [[True, 230]], [[0, 230]], [[0xd800, 230]], [[0x110000, 230]], [[768.0, 230]],
+                      [[768, False]], [[768, 0]], [[768, 256]], [[768]], [None],
+                      [[0x300, 230], [0x306, 230], [0x327, 202], [0x34f, 1]],
+                      [[cp, 230] for cp in range(1, 4098)]):
+            bad = json.loads(json.dumps(good))
+            bad["insertionOffsets"]["nonstarters"] = marks
+            bad["insertionOffsets"]["nonstarterSha256"] = hashlib.sha256(json.dumps(marks, separators=(",", ":")).encode("ascii")).hexdigest()
+            with self.assertRaises(ValueError):
+                harness.verify_insertion_offsets(bad)
+        for path, wrong in ((["controls", 0, "elements", 0, "value"], 0),
+                            (["controls", 0, "elements", 0, "value"], -1),
+                            (["controls", 0, "elements", 0, "value"], 2 ** 31),
+                            (["controls", 0, "elements", 0, "value"], True),
+                            (["controls", 0, "elements", 1, "low"], 2),
+                            (["controls", 1, "elements", 0, "value"], 456),
+                            (["controls", 2, "elements", 0, "high"], 3),
+                            (["controls", 3, "elements", 0, "low"], 0.0),
+                            (["controls", 0, "elements"], [None, None]),
+                            (["propertyControls", 0, 1], 202.0), (["headerControl", "separator"], True),
+                            (["headerControl", "separator"], 14), (["headerControl", "elements", 10, "low"], 11),
+                            (["headerControl", "elements", 7, "value"], 123),
+                            (["controls", 0, "elements", 0], {"value": 123, "low": 0, "high": 3, "extra": 1}),
+                            (["controls", 0, "elements"], good["insertionOffsets"]["controls"][0]["elements"] * 2)):
+            bad = json.loads(json.dumps(good))
+            parent = bad["insertionOffsets"]
+            for part in path[:-1]:
+                parent = parent[part]
+            parent[path[-1]] = wrong
+            with self.assertRaises(ValueError, msg=path):
+                harness.verify_insertion_offsets(bad)
+        for wrong in (None, [], "passed"):
+            with self.assertRaises(ValueError):
+                harness.verify_insertion_offsets({**good, "insertionOffsets": wrong})
+
+    def test_insertion_counts_use_scalar_positions_and_bounds(self):
+        def corpus_update(value, corpus):
+            digest = hashlib.sha256(json.dumps(corpus, separators=(",", ":")).encode("ascii")).hexdigest()
+            value["contextOffsets"].update(contextScalars=corpus, corpusSha256=digest)
+            value["insertionOffsets"]["corpusSha256"] = digest
+        supplementary = insertion_evidence()
+        corpus_update(supplementary, [[0x438, 0x306], [0x1f600, 65, 769], [769, 65]])
+        supplementary.update(contextItemCount=3, contextChecks=3)
+        supplementary["contextOffsets"].update(candidateStartContexts=2, eligibleChecks=68)
+        supplementary["insertionOffsets"].update(insertionPositions=4, candidatePositions=3, eligibleChecks=138)
+        harness.verify_insertion_offsets(supplementary)
+        empty = insertion_evidence()
+        corpus_update(empty, [[65], [769]])
+        with self.assertRaisesRegex(ValueError, "context identity"):
+            harness.verify_insertion_offsets(empty)
+        large = insertion_evidence()
+        corpus = [[65, cp, 65, 65, 65, 65] for cp in range(0x10000, 0x10000 + 164)]
+        corpus[0] = [0x438, 0x306]
+        corpus_update(large, corpus)
+        large.update(contextItemCount=164, contextChecks=164)
+        large["contextOffsets"].update(candidateStartContexts=164, eligibleChecks=3936, outsideChecks=0, outsideMoved=0)
+        marks = large["insertionOffsets"]["nonstarters"] + [[cp, 230] for cp in range(0x10000, 0x10000 + 4093)]
+        large["insertionOffsets"].update(nonstarters=marks,
+            nonstarterSha256=hashlib.sha256(json.dumps(marks, separators=(",", ":")).encode("ascii")).hexdigest())
+        with self.assertRaisesRegex(ValueError, "case bound"):
+            harness.verify_insertion_offsets(large)
+        # Adjacent fixture is just below 20M; reverting to the old 100M cap
+        # would incorrectly accept the preceding 20,068,704-case fixture.
+        corpus_update(large, corpus[:-1])
+        large.update(contextItemCount=163, contextChecks=163)
+        large["contextOffsets"].update(candidateStartContexts=163, eligibleChecks=3912)
+        large["insertionOffsets"].update(insertionPositions=811, candidatePositions=811,
+            eligibleChecks=19945734, outsideChecks=0, outsideMoved=0)
+        harness.verify_insertion_offsets(large)
+
     def test_context_observation_is_fail_closed(self):
         good = context_evidence()
         harness.verify_context_offsets(good)
@@ -208,7 +332,7 @@ class HarnessTests(unittest.TestCase):
     def test_native_collation_evidence_is_fail_closed(self):
         source_sha = next(s["sha256"] for s in json.loads(harness.PINS.read_text())["sources"] if s["name"] == "pal_collation.c")
         def observation(culture):
-            return {**ce_evidence(), **context_evidence(), "status": "passed", "researchOnly": True, "culture": culture,
+            return {**ce_evidence(), **insertion_evidence(), "status": "passed", "researchOnly": True, "culture": culture,
                     "icuVersionRaw": 123, "externalBreakIterator": True, "selectedRules": "new",
                     "actualRuleSha256": "a" * 64, "compiledRules": {"new": {"sha256": "a" * 64, "error": 0},
                         "old": {"sha256": "b" * 64, "error": 0}},
@@ -257,7 +381,7 @@ class HarnessTests(unittest.TestCase):
             with self.assertRaises(ValueError, msg=field):
                 verify(bad)
         for field, value in (("selectedRules", "old"), ("externalBreakIterator", False),
-                             ("contextOffsets", None), ("contextOffsets", {}),
+                             ("contextOffsets", None), ("contextOffsets", {}), ("insertionOffsets", None), ("insertionOffsets", {}),
                              ("icuVersionRaw", 456), ("colonContextCount", 1),
                              ("missingNfdBoundaryCount", 1), ("unexpectedGcbCount", 1),
                              ("actualRuleSha256", "b" * 64), ("contextChecks", 99),

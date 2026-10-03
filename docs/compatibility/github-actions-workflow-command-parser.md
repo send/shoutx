@@ -592,7 +592,7 @@ scalar. Restoring the cursor does not remove these weight dependencies. The
 outer backward-one step succeeds under the physical-position lower bound;
 that premise must also be maintained for recursive dispatches.
 
-#### Discontiguous matching: the additional induction obligation
+#### Discontiguous matching: shared-buffer accounting
 
 `SkippedState` in the same 78.1 source distinguishes virtual reads from its
 `oldBuffer` and physical reads beyond that buffer. While the buffer is non-empty,
@@ -622,19 +622,145 @@ beyond the virtual buffer, replace it and restart virtual iteration. Therefore
 the high offset observed by search is the position after this entire process,
 not necessarily the position when the first CE was appended.
 
-The remaining induction must bound physical rewinds using the shared buffer
-state, not assume that the beyond-buffer counter is local to each nested call.
-In the non-empty-buffer path, the number of physical scalars returned for undo
-is at most the positive beyond-buffer count. A proof must connect that count
-to actual physical reads since the relevant buffer reset and show that reset
-positions remain at or after the outer match. It must also show that every
-mapping dispatched while draining skipped marks preserves this physical lower
-bound. Prefix lookbehind must restore its physical position even
-when the mapping's scalar came from the virtual buffer; recursive Jamo and
-other selected mappings must also satisfy the property. It must cover the
-buffer replacement/restart and termination conditions, not only one nested
-call. The accounting above identifies the state on which to base that proof;
-it is not yet a completed proof for arbitrary nesting.
+The induction below uses shared buffer state rather than a per-call count.
+It is a **conditional partial-correctness argument**: it bounds the return
+position of a finite, successful execution. It does not establish termination
+or successful completion for every permitted suffix, and therefore does not
+complete the positive leading-mapping criterion.
+
+#### Buffer epochs and the physical lower bound (research draft)
+
+Keep **all entry and execution premises above**, including well-formed UTF-16,
+an initially empty skipped buffer, `numCpFwd < 0`, and the non-FCD, forward,
+bounded-text and error-free conditions. In addition, all mapping dispatches
+reached while processing the suffix must stay
+within the described runtime tag model. In particular, the lead-surrogate tag
+may occur only at the initial lead-unit dispatch, before `p` is established;
+scalar/Jamo/context-result lookups must not introduce a later lead-unit tag.
+Numeric processing, builder mappings, malformed data and uninspected overrides
+are outside this argument. These are data/code premises to verify, not facts
+implied by candidate membership or the current root-reader report.
+
+Dispatch validity includes the scalar argument, not just the tag number.
+Recursive Jamo children and the selected top-level discontiguous result are
+dispatched with `c = U_SENTINEL`. For these dispatches, including their
+indirectly selected mappings while `c` remains sentinel, this argument excludes
+`HANGUL_TAG`, `OFFSET_TAG`, `IMPLICIT_TAG`, `U0000_TAG` and
+`LEAD_SURROGATE_TAG`. They require a syllable, a code point, NUL, or a lead unit
+respectively; an assertion is not a release-mode validity check. Other context
+results retain the caller's scalar argument and must satisfy the corresponding
+tag's preconditions. A verifier must track this dispatch context through
+indirection, not assume that every context result has an ordinary scalar.
+
+Define a *buffer epoch* to begin immediately after `replaceMatch()` leaves a
+non-empty `oldBuffer` with its virtual position reset to zero. Let:
+
+- `A` be the physical source cursor at that reset, a scalar boundary;
+- `L` be the UTF-16 length of `oldBuffer`, which is fixed until replacement;
+- `q` be `SkippedState::pos`, distinct from the physical source pointer; and
+- `b = max(q - L, 0)` be the number of physical scalars currently accounted
+  for beyond the virtual buffer.
+
+At accounting points outside balanced prefix lookbehind, the proposed epoch
+invariant is: the physical cursor equals the position reached by advancing
+`b` complete source scalars from `A`. In particular it is at or after `A`.
+Inside the buffer `q` is a UTF-16 index, but beyond `L` its excess is a
+**scalar count**. Treating `q` uniformly as a physical UTF-16 offset would make
+this invariant false for supplementary characters.
+
+The 78.1 `SkippedState`, `nextSkippedCodePoint()` and
+`backwardNumSkipped()` source cited above gives these transitions:
+
+| Transition within a non-empty epoch | Effect on the invariant |
+| --- | --- |
+| Read a virtual mark | `next()` advances `q` by that scalar's UTF-16 width, at most to `L`; physical position and `b = 0` do not change. |
+| Read physical text after virtual exhaustion | A successful `nextCodePoint()` advances one source scalar and `incBeyond()` increments `q` by one. Both the physical scalar distance from `A` and `b` increase by one. End-of-text changes neither. |
+| Undo `n` scalars with `b >= n` | The helper subtracts `n` from `q` and requests `n` physical backward steps. Both distances decrease by `n`. |
+| Undo with `0 < b < n` | It requests only `b` physical backward steps and moves `q` back inside the virtual buffer using code-point-aware indexing. The physical cursor returns to `A`, not before it. |
+| Undo while `q <= L` | Only the virtual position changes; no physical backward step is requested. |
+
+The UnicodeString operations used here have separate same-release evidence:
+[`char32At`, `moveIndex32` and `doReplace`](https://github.com/unicode-org/icu/blob/release-78.1/icu4c/source/common/unistr.cpp),
+with the inline `replace` overload and `pinIndices` in
+[`unistr.h`](https://github.com/unicode-org/icu/blob/release-78.1/icu4c/source/common/unicode/unistr.h).
+`char32At` reads a code point; `moveIndex32` uses bounded UTF-16 code-point
+movement. The replacement overload delegates to `doReplace`. For the non-empty
+old buffer, the destination range is clamped with `pinIndices`; the empty
+old-buffer case instead takes the `start == oldLength` append path.
+In `replace(0, q, ...)`, `q` is the **length of the range being replaced**,
+not the starting index or inserted length. If `q > L` for a non-empty old
+buffer, the removed range is clamped to the entire buffer; the inserted length
+is `skipLengthAtMatch`. The same sources implement `remove()` by emptying the
+string, `setTo(UChar32)` by replacing its contents, and `append(UChar32)` by
+encoding and appending that scalar. These observations assume successful string
+operations, consistent with the allocation/error exclusions above.
+
+Prefix lookup is a balanced excursion in physical text: it restores its entry
+position and does not modify `q` or `L`. The simultaneous induction hypothesis
+is that the physical cursor is at or after `p > d >= 0` at every prefix step,
+after `p` has been established, so its outer backward-one step has a preceding
+scalar. The initial supplementary lead-unit dispatch can enter at `p - 1`,
+but its required lead-surrogate tag consumes the trail before a prefix step.
+In a non-empty epoch the bound follows from the anchor invariant; with an empty
+buffer it follows from initial consumption, the matching-phase return bound
+below, or a prior epoch whose replacement emptied the buffer without changing
+the physical lower bound. The invariant is required after
+restoration, not during lookbehind. This applies equally when the
+mapping's scalar was virtual or a Jamo child; it says nothing about the chosen
+prefix weight. The other permitted non-context tags do not move text after
+the initial scalar. Recursive Jamo dispatch composes these same transitions.
+The ASCII contraction fast path requires both `skipped == nullptr` and
+`numCpFwd < 0`, so it cannot bypass this accounting during a non-empty epoch.
+
+`replaceMatch()` changes the virtual buffer and resets `q` to zero without
+moving physical text. If the old epoch satisfied its invariant and replacement
+leaves a non-empty buffer, the next epoch's anchor is the current physical
+position `A' >= A`. This holds whether the replacement retains unread virtual
+marks or adds newly skipped physical marks. If replacement leaves the buffer
+empty, no new epoch starts, but the physical lower bound is unchanged.
+The new buffer need not represent a
+contiguous physical substring; its reads are virtual. `clear()` likewise
+does not move physical text, but ends buffer accounting.
+
+The empty-buffer case needs a separate argument: there is no beyond counter
+to cap a direct rewind. Define matching-phase entry before the first suffix
+lookahead read in `appendCEsFromCE32`, not at the later helper call that already
+receives a consumed lookahead scalar. From that entry until the matching
+phase's final rewind (if any), the buffer's emptiness cannot change.
+Those phases do not dispatch another mapping or call `replaceMatch()` or
+`clear()`. A newly allocated `SkippedState` is empty; `setFirstSkipped()`,
+`skip()` and `recordMatch()` modify new-buffer bookkeeping, not `oldBuffer`.
+Thus each direct rewind undoes physical reads counted by that matching phase.
+The early exits, contiguous rewind/refetch and optional trie replay described
+above cannot back past its entry position. In non-empty mode the same read
+counts refer to the virtual-then-physical stream and preserve that mode until
+the final rewind. No successful end-of-text probe increments a read count.
+
+Crucially, `replaceMatch()` occurs **after** that final rewind. Mapping
+dispatch and recursive draining occur afterward, when the caller has no
+outstanding lookahead count to undo. A nested replacement may empty a buffer
+mid-drain; subsequent matching then uses the empty-buffer argument at its
+new physical entry position, not stale virtual counts. A nested helper can
+also create a new top-level drain after that transition. The outer drain's
+eventual `clear()` has no physical effect and no delayed rewind follows it.
+Having no outstanding per-phase rewind does not imply `b = 0`: physical reads
+retained by an earlier match can leave a positive shared beyond-buffer count
+across dispatches. The epoch invariant explicitly permits this state.
+
+Starting at `p`, these facts support induction over the accounting transitions
+of any finite successful execution, without choosing a maximum nesting depth:
+non-empty epochs preserve their anchors, replacement does not decrease them,
+and empty-buffer matching returns at or after its entry position. Balanced
+lookbehind is the only permitted temporary excursion below an anchor. On
+return from the complete raw-element call, the physical cursor is therefore
+at or after `p`, **under the stated dispatch and entry premises**.
+
+This does not prove that every suffix yields such a finite successful
+execution. A termination argument must cover restarting virtual iteration,
+newly skipped physical marks, and recursive mapping dispatch; finite input
+alone is not a decreasing measure for the whole algorithm. Nor has this draft
+verified the dispatch premises for all mappings in every loaded consumer.
+Those are remaining obligations, not consequences of the cursor invariant.
 
 This exposes a distinct coverage requirement for an executable verifier:
 classifying the possible **first emitted weight** of the leading scalar does
@@ -642,10 +768,10 @@ not classify all cursor-affecting mappings executed before that weight is
 returned. The offline root reader below follows leading mapping alternatives
 and Jamo children, but does not enumerate arbitrary suffix marks dispatched
 while draining `SkippedState`, or prove their cursor behavior. Its existing
-`offsetsProven: false` result must remain false. Either a general source-level
-induction covers those dispatches for the supported data model, or an
-exhaustive data check must cover them too; candidate membership alone cannot
-stand in for that check.
+`offsetsProven: false` result must remain false. The conditional source argument
+above still needs its dispatch premises checked against the complete reachable
+data, as well as the remaining termination and consumer-identity obligations;
+candidate membership alone cannot stand in for that check.
 
 Once the full return-position property is established, it can be composed
 with the positive-first-raw-half criterion: if the first raw half is retained,

@@ -721,6 +721,64 @@ when producer-compatible behavior might still be safe. CLI acceptance,
 metadata restrictions, the deferred `th-TH` issue and release eligibility are
 unchanged.
 
+### Offline root mapping graph research
+
+`scripts/inspect-icu-mappings.py` is a separate research reader for an acquired
+little-endian ICU 78.1 root UCol-v5 payload (without its data header), not a CLI
+allow-list generator or a replacement for the native package gate. It requires
+an explicit payload hash and a candidate JSON file:
+
+```sh
+python -B scripts/inspect-icu-mappings.py \
+  --root-data PATH_TO_ROOT_PAYLOAD --sha256 EXPECTED_PAYLOAD_SHA256 \
+  --candidates tests/runner-package/unicode-candidate.json
+python -B tests/runner-package/test_mapping_inventory.py
+```
+
+The reader walks per-code-point and lead-surrogate summary entries, direct and
+expanded elements, non-numeric digit indirections, Hangul/Jamo mappings, and all
+default/prefix/contraction values. Prefix alternatives are included even when a
+particular header could not select them: this is an overapproximation, not a
+reachability proof. It validates complete expansion spans and trailing Jamo
+mappings, but classifies the first raw 32-bit half only. Algorithmic offset and
+implicit mappings use their common secondary/tertiary bits for this nonzero
+classification; their exact primary weights are not reconstructed.
+Contraction alternatives are conservatively evaluated with an unavailable
+scalar, since the discontiguous path can supply `U_SENTINEL`; a scalar-dependent
+alternative is unverified even if a contiguous/default path could evaluate it.
+
+This initial reader models root data only. Missing base data, unsupported
+mapping kinds, cycles, out-of-range references or exhausted bounds are
+unverified, never accepted. Bounds include 16 MiB input, 64-unit context keys,
+100,000 visits per context trie, 4,096 context roots, 100,000 total context
+entries, 500,000 uncached mapping visits and depth limits. Numeric collation is
+outside this model: only the payload's default option bit is checked, not the
+effective consumer attribute. The report records this assumption and the
+caller-declared input profile; without the stripped data header it cannot
+authenticate the root/format/release identity. The visit cap is intentional and
+can be reached on larger candidate sets; this reader does not promise a
+full-Unicode run within that cap. Input errors exit 1 without a report; unresolved candidate
+mappings produce a diagnostic report and exit 2. Exit 0 means only that this
+data-graph calculation completed, including any zero-first-half results.
+Every report explicitly denies being an acceptance table, an offset proof or
+consumer-identity evidence.
+Trie padding, payload slack and reserved section contents are not interpreted;
+this is not a complete validator of the serialized data format. Command-line
+usage errors also exit 1 without a report (explicit `--help` is informational).
+
+The synthetic unit suite runs alongside the offline package-harness tests in
+CI. It exercises compact context values and deltas, intermediate values,
+linear and split branches, duplicate/truncated contexts, cycles, expansion
+bounds, first-half-versus-whole-element differences, Hangul trailing validation,
+lead-unit summaries, resource limits and CLI error exits. Distinct synthetic index blocks also exercise
+BMP and supplementary lookups, the `highStart` boundary and the lead-code-unit
+path (not just mocked summary values). It requires neither
+native ICU nor an OS data dump. It does not attest to traversal completeness on
+vendor data; local/native comparisons and their limitations belong in the
+[compatibility observation](compatibility/github-actions-workflow-command-parser.md#mapping-data-acquisition-feasibility-local-research).
+Actual consumer data identity, normalization-related inputs, arbitrary-suffix
+iterator offsets, and other supported OS releases remain separate obligations.
+
 ### Live hosted stdout boundary experiment
 
 The ordinary three-OS hosted test matrix additionally runs

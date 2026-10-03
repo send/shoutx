@@ -389,6 +389,251 @@ cannot enforce the worker's runtime, culture or iterator choice. This does not
 reopen legacy framing, the deferred `th-TH` decision, metadata acceptance or
 release eligibility.
 
+### Positive leading-mapping criterion (research proposal)
+
+The next proof target is a positive sufficient condition, not the existing
+candidate set minus the five observed empty-equivalent scalars. It is not yet
+an acceptance rule or a generated allow-list. It must hold for each supported
+consumer configuration; passing one configuration cannot authorize another.
+
+Keep the header, delimiter and external-break premises above as separate
+obligations. For the remaining next-element premise, consider the iterator
+state immediately after the intended delimiter at `d`. A deliberately strong
+sufficient condition is that, for every permitted suffix following an accepted
+initial scalar:
+
+- no pending delimiter expansion or continuation remains to be returned;
+- the first raw 32-bit element returned after that state is retained by the
+  search's processed-element conversion; and
+- that call starts at `d` and ends strictly after `d`, without an error.
+
+Here the suffix universe is the wire-encoded image of arbitrary non-NUL
+Unicode-scalar sequences following that scalar, subject to the destination's
+other validation and size rules, but not its current ASCII-first restriction.
+Percent, CR and LF undergo the existing data escaping; literal later `::`
+sequences remain in scope. Strict UTF-8 input excludes unpaired surrogates on
+the supported UTF-8 consumer-decoding path; see the
+[annotation consumer prerequisites](../commands/github-actions-annotations.md).
+Non-UTF-8 native-output encodings are outside that scope.
+Finite hostile-tail samples do not define or narrow this universe.
+
+This would make the next retained element's low offset `d` and its high offset
+greater than `d`, satisfying that particular search check without inspecting
+additional elements in that check. Establishing the condition still requires
+reasoning about arbitrary later text. It does not prove the other delimiter or break
+premises. Nor is it a necessary condition: a scalar failing this stronger rule
+could still be safe under a different, separately justified argument.
+
+The requirement is stable **boundary behavior**, not identical weights or
+identical consumed lengths for every suffix. A contraction may consume more
+than the initial scalar and emit different weights while still satisfying the
+condition. Thus contextual mappings, languages and scripts are not rejected
+merely for having contractions.
+
+This formulation follows the inspected upstream implementation. The links below
+identify the individual releases inspected, not a version-independent API
+guarantee. The mapping inventory is based on the 78.1 source; any verifier must
+pin and justify its traversal for each supported release and native data set:
+
+- [`UCollationPCE::nextProcessed`](https://github.com/unicode-org/icu/blob/release-74-2/icu4c/source/i18n/ucoleitr.cpp)
+  records offsets around each raw-element call and repeats when the processed
+  element is ignorable. Whole-string inequality to empty does not establish
+  that the *first* raw element is retained.
+- [`CollationElementIterator::next`](https://github.com/unicode-org/icu/blob/release-78.1/icu4c/source/i18n/coleitr.cpp)
+  splits an internal 64-bit element into 32-bit parts; a pending second part
+  does not advance the underlying iterator. Checking only a nonzero internal
+  64-bit element would therefore be insufficient.
+- [`appendCEsFromCE32` and `nextCE32FromDiscontiguousContraction`](https://github.com/unicode-org/icu/blob/release-78.1/icu4c/source/i18n/collationiterator.cpp)
+  select contextual mappings and append their elements. In the top-level
+  discontiguous-match path, the selected contraction mapping is appended
+  before the skipped marks. This suggests a mapping-based proof obligation,
+  but does not alone prove final iterator offsets for every path.
+
+The proposed verification unit is consequently each reachable leading mapping,
+not a list of failing code points or a growing collection of suffix examples.
+An exhaustive verifier would need to cover the default and applicable
+prefix/contraction branches, base-data fallback, expansions, non-numeric digit
+indirection, Hangul/Jamo processing, supplementary scalars and algorithmic
+offset/implicit mappings. Unknown mapping types, incomplete traversal, or
+settings outside the justified scope must yield **unverified**, not accepted.
+It must justify both the first emitted 32-bit element and the source-offset
+invariant, including lookahead restoration, skipped-mark handling and the
+actual normalization iterator. Enumeration of finite mapping choices does not
+by itself prove the behavior of arbitrarily long lookahead.
+
+Prefix mappings also require lookbehind and restoration across `d`: the
+applicable branch depends on the preceding encoded header, not just the data
+suffix. The header is fixed for a given emitted record, but varies across
+supported commands and metadata. A shared table needs an argument covering all
+permitted headers, not just the observed zero-colon-context result. This does
+not require enumerating header values: the inspected prefix trie stops on a
+failed transition, and the first lookbehind scalar is the delimiter's final
+colon. Proving that no applicable loaded prefix ends in colon can discharge
+the header-dependence part for that configuration. Iterator restoration still
+requires its own argument.
+
+In the inspected 78.1 `coleitr.cpp`, `setText(const UnicodeString&)` selects
+`UTF16CollationIterator` when `dontCheckFCD()` is true, otherwise
+`FCDUTF16CollationIterator`. The former's forward offset is the source-pointer
+distance; the latter can report normalization-segment boundaries (see
+[`utf16collationiterator.cpp`](https://github.com/unicode-org/icu/blob/release-78.1/icu4c/source/i18n/utf16collationiterator.cpp)).
+The selector tests the `CHECK_FCD` bit in
+[`collationsettings.h`](https://github.com/unicode-org/icu/blob/release-78.1/icu4c/source/i18n/collationsettings.h);
+the inspected 74.2
+[`RuleBasedCollator::getAttribute`](https://github.com/unicode-org/icu/blob/release-74-2/icu4c/source/i18n/rulebasedcollator.cpp)
+uses that same named bit for `UCOL_NORMALIZATION_MODE`; its setter writes it
+as well. This comparison pairs the 78.1 selector/settings source with the 74.2
+getter/setter, rather than establishing all parts in one release. These are not
+independent settings in that source model. Connecting the observed attribute to the actual
+search iterator construction, and proving offsets through all reachable paths
+for each supported release, remain obligations; inspecting these methods is not
+that proof.
+
+The existing public context-string enumeration is not yet that verifier.
+For example, testing a complete prefix-context string can observe the prefix's
+first element rather than the target mapping's first element. Default branches
+and indirect mappings also need explicit coverage. A standalone upstream build
+would be useful for developing the traversal, but would not attest to the
+loaded OS collation data. Connecting the proof and exhaustive data checks to
+each supported native consumer remains an implementation prerequisite.
+
+The research target is a generated, configuration-scoped positive table whose
+entries have this justification. A producer unable to identify its consumer
+would need the intersection over all explicitly supported configurations and
+headers, not the union or a table selected from the producer's own locale.
+That does not establish safety outside the supported scope. Whether and how to
+ship such a lookup belongs in a subsequent design decision and command contract,
+not this compatibility proposal. Neither the table's final size nor
+inclusion/exclusion of particular scalars has been established.
+This proposal introduces no trimming, Unicode
+normalization, language-specific subset, or CLI acceptance change.
+
+### Mapping-data acquisition feasibility (local research)
+
+A 2026-10-03 local macOS 26.6.2 (25G83) ARM64 experiment used the Runner-package CoreLib
+8.0.30 and the loaded system ICU 78.1. It obtained the cached option-zero
+invariant/en-US collators after priming `CompareInfo.IndexOf`, checked their
+identity against the cached search collators, and checked the eight observed
+collator attributes. This was a separate feasibility probe, not a new package
+matrix gate or a live Worker observation.
+The macOS product version/build were manually recorded from `sw_vers`; the
+emitted evidence records the Darwin kernel description, not those two fields.
+The probe and result files are retained only in temporary local storage, not
+archived with this repository. The numbers below are therefore unarchived local
+observations, not durable CI evidence or prerequisites satisfied for adoption.
+Module path/version and successful cached-object identity checks are not a
+native code identity attestation; opening the library with `RTLD_NOLOAD` alone
+does not establish which image the runtime globalization shim uses.
+
+[`ucol_cloneBinary`](https://unicode-org.github.io/icu-docs/apidoc/dev/icu4c/ucol_8h.html)
+returned the same 32-byte image for both cached collators and a separately
+opened root collator: a 24-byte header and two indexes containing only options,
+with SHA-256 `4aa0f2a38d629773c2befa2b9bf6415303e2c46f441641309906325e1c14072b`.
+This is not a complete mapping export. In the inspected 78.1
+[`CollationDataWriter`](https://github.com/unicode-org/icu/blob/release-78.1/icu4c/source/i18n/collationdatawriter.cpp),
+`cloneBinary` uses `writeTailoring`, and its `data.base == nullptr` branch omits
+mappings.
+A small or identical clone image therefore cannot establish complete or
+identical consumer mappings.
+
+The experiment separately called `udata_open` with package `icudt78l-coll`,
+type `icu` and name `ucadata`, following the resource naming in
+[`CollationRoot::load`](https://github.com/unicode-org/icu/blob/release-78.1/icu4c/source/i18n/collationroot.cpp).
+It checked the data-info header (little-endian `UCol`, format 5, 16-bit UChar)
+and used the version-specific **internal** `udata_getLength` export to bound
+the copy from `udata_getMemory`. In the inspected upstream
+[`udatamem.cpp`](https://github.com/unicode-org/icu/blob/release-78.1/icu4c/source/common/udatamem.cpp),
+the internal function reports payload length excluding the header, or a
+negative value if unavailable; the probe rejects
+unknown lengths and lengths outside its 16 MiB cap before copying. This is
+not a claim that the internal export is portable or supported on every OS.
+Applying these length semantics and the writer branch above to Apple's binary
+is an upstream-source inference, not vendor-source attestation. The size cap
+alone does not prove that a native pointer spans that many readable bytes.
+The copied payload was 597,136 bytes, including trailing storage beyond the
+597,124-byte indexed total, with SHA-256
+`22e8a8ae4b3291ead304290ca73c5facc4e8c330e21ebf5b2437dbe8b2fd93e0`.
+That hash excludes the data header and includes 12 trailing storage bytes;
+it is not a hash of a standalone `ucadata.icu` file or just the indexed data.
+The indexed 597,124 bytes alone hash to
+`a7666987ef372e7574ba4d22b7e7d40c4fea133937d206051a9904f836b42eb0`.
+The revised probe also rejects trailing storage of 16 bytes or more, following
+the upstream length comment's bound; it does not interpret the trailing bytes.
+
+An offline reader of the copied root UTrie2 was checked against the loaded
+ICU's `utrie2_openFromSerialized`/`utrie2_get32` on the same copied bytes for
+all 1,112,063 non-NUL Unicode scalars, with no lookup mismatches. The reader
+used the release-78.1
+[`utrie2.h`](https://github.com/unicode-org/icu/blob/release-78.1/icu4c/source/common/utrie2.h)
+and [`serialized layout`](https://github.com/unicode-org/icu/blob/release-78.1/icu4c/source/common/utrie2_impl.h).
+For the 142,081 candidates, per-code-point CE32 mapping types were:
+
+| Mapping type | Candidate scalars |
+| --- | ---: |
+| Simple | 6,977 |
+| Long primary / long secondary | 66,380 / 18 |
+| Latin expansion / expansion32 / expansion | 384 / 1,772 / 737 |
+| Digit indirection | 660 |
+| Hangul | 11,172 |
+| Algorithmic offset | 53,947 |
+| Prefix / contraction | 2 / 32 |
+
+These counts classify code-point lookups, not necessarily the first entries
+read by a UTF-16 iterator, transitive mapping branches or safe characters.
+In the inspected iterator, a lead-surrogate code-unit entry precedes and may
+override the supplementary code-point lookup; those summaries were not checked by this
+inventory and must be covered separately. Expansions, digit and Hangul
+indirections still need processing, and a mapping's first 32-bit element must
+be distinguished from a later retained element. The five previously observed
+empty-equivalent candidates had simple zero CE32 entries in this payload;
+that observation is not the definition of an exclusion list.
+
+This establishes a feasible local input path for a verifier, not completeness
+of a consumer proof. Native agreement checks the copied trie's decoding; it
+does not prove that the separately opened resource is the cached collator's
+actual fallback data object. The next verifier work is therefore divided into:
+
+1. **Input identity and completeness:** retain native module/data/settings
+   identities and hashes, obtain both effective tailoring and root data, and
+   justify their connection to the actual consumer. Missing or unsupported
+   data acquisition yields unverified, never an empty successful traversal.
+   Include normalization/FCD property data, load-time or compiled-in
+   unsafe-backward sets, and library code for algorithmic mappings; the
+   serialized collation payload alone is not the complete input set.
+2. **Finite mapping closure:** traverse each candidate's reachable mapping
+   graph, including lead-surrogate code-unit summaries, defaults, context tries
+   and indirections; check the first
+   emitted 32-bit element at every reachable branch. Bounds, unknown tags,
+   unresolved references and incomplete enumeration yield unverified. Do not
+   infer closure from the small number of code-point context entries.
+3. **Iterator argument:** separately justify source-offset advancement and
+   restoration for arbitrary suffixes in the supported iterator/settings
+   paths, then combine with the header and break premises above. Finite graph
+   coverage or native sample agreement alone does not discharge this step.
+
+The producer would not perform this data traversal for each invocation. Any
+eventual shipped lookup remains subject to the separate adoption decision
+above. No table entries are authorized by this feasibility experiment.
+
+The subsequent [offline root-graph reader](../test-plan.md#offline-root-mapping-graph-research)
+completed on this payload for all 142,081 candidates, visiting 33 distinct
+context tries with 888 entries. It reported 142,076 candidates with nonzero
+first raw halves for all enumerated alternatives, five with a zero first half
+possible, and no unresolved mappings within its root-only model. These are
+data-graph classifications, not accepted-character counts. The five emerge
+from the positive predicate; their identities are not hard-coded exclusions.
+
+A separate local cross-check reconstructed all root prefix/contraction strings
+from the decoded context tries across non-NUL scalars and compared them with a
+separately opened root collator's `ucol_getContractionsAndExpansions` output:
+both sets contained 1,153 strings, with no differences. For every candidate,
+the first raw element of its isolated scalar from `ucol_next` was consistent
+with the reader's zero/nonzero alternatives. The 142,081 isolated-scalar checks
+do not exercise every context branch. String-set equality tests context-key
+enumeration, not every stored branch value or the default mappings. These
+cross-check artifacts are also temporary local observations; they do not close
+the consumer-identity or arbitrary-suffix offset obligations above.
+
 ## Self-hosted runner version snapshot
 
 Queries completed at 2026-09-29T08:45:53Z. The official releases API listed

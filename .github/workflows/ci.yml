@@ -399,6 +399,8 @@ jobs:
         run: |
           python -B tests/runner-package/test_harness.py
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python -B tests/runner-package/test_mapping_inventory.py
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python scripts/test-runner-package.py --output target/runner-package-evidence
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Retain package runtime evidence

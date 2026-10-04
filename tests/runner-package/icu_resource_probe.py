@@ -112,6 +112,12 @@ class Resource:
         result = {"attributes": self.indexes[5], "rootType": self.root >> 28,
                   "rootOffsetZero": (self.root & 0xfffffff) == 0,
                   "collationsPresent": collations is not None}
+        # Stored-key presence only, including RES_BOGUS-valued entries.
+        # Never follow redirects or decode their values.
+        for field, key in (("aliasPresent", b"%%ALIAS"),
+                           ("parentPresent", b"%%Parent"),
+                           ("parentIsRootPresent", b"%%ParentIsRoot")):
+            result[field] = self.lookup(self.root, key) is not None
         if collations is None:
             return result
         default = self.lookup(collations, b"default")

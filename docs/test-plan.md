@@ -1338,6 +1338,13 @@ must yield their closed unavailable category rather than absence.
 Package integration tests must cover `en_US` selection, storage identity
 preservation on resource failure, and resource-cap refusal. Retain only the
 fixed field projection; do not export resource strings, trees or binaries.
+For bundle-root-table redirect-key presence, cover missing keys, zero-valued handles and
+opaque nonzero handles in both table widths. Presence must neither resolve
+the redirect nor leak its value, and must be reported even without
+`collations`. Exercise each field-to-key mapping independently and the stored
+`RES_BOGUS` case; stored-key presence is not native loader-visible presence.
+Native observations of the additional fields must not be
+backfilled into artifacts produced by earlier collector versions.
 This does not exercise native fallback or prove the effective collation choice.
 
 #### Hosted Worker module-metadata feasibility observation

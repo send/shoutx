@@ -25,6 +25,7 @@ class ResourceTests(unittest.TestCase):
     def test_selected_projection(self):
         self.assertEqual(Resource(fixture()).projection(), {
             "attributes": 0, "rootType": 2, "rootOffsetZero": False,
+            "aliasPresent": False, "parentPresent": False, "parentIsRootPresent": False,
             "collationsPresent": True, "defaultPresent": True,
             "standardPresent": True, "defaultIsStandard": True, "standardType": 2})
 
@@ -32,7 +33,8 @@ class ResourceTests(unittest.TestCase):
         data = fixture()
         struct.pack_into("<I", data, 32, 2 << 28)
         self.assertEqual(Resource(data).projection(), {
-            "attributes": 0, "rootType": 2, "rootOffsetZero": True, "collationsPresent": False})
+            "attributes": 0, "rootType": 2, "rootOffsetZero": True, "collationsPresent": False,
+            "aliasPresent": False, "parentPresent": False, "parentIsRootPresent": False})
 
     def test_bounds_and_unsupported_inputs(self):
         for offset, fmt, value in [(2,"B",0),(4,"H",19),(4,"H",29),(8,"B",1),(16,"B",3),
@@ -94,6 +96,7 @@ class ResourceTests(unittest.TestCase):
     def test_closed_projection_and_member_cap(self):
         result = probe.project_resource(fixture())
         self.assertEqual(set(result), {"status", "attributes", "rootType", "rootOffsetZero",
+                                      "aliasPresent", "parentPresent", "parentIsRootPresent",
                                       "collationsPresent", "defaultPresent", "standardPresent",
                                       "defaultIsStandard", "standardType"})
         with patch.object(probe, "MEMBER_CAP", len(fixture())):
@@ -157,5 +160,33 @@ class ResourceTests(unittest.TestCase):
             struct.pack_into("<I", data, offset, value)
             with self.subTest(offset=offset,value=value), self.assertRaises(ValueError):
                 Resource(data).projection()
+
+    def test_redirect_key_presence_without_value_resolution(self):
+        # A distinct bundle with three sorted root keys and opaque values.
+        # Includes word zero: presence must not depend on handle truthiness.
+        fields = ("aliasPresent", "parentPresent", "parentIsRootPresent")
+        for kind in (2, 4):
+            for mask in range(8):
+                with self.subTest(kind=kind, mask=mask):
+                    data = bytearray(176)
+                    data[:32] = fixture()[:32]
+                    keys = b"%%ALIAS\0%%Parent\0%%ParentIsRoot\0"
+                    data[64:64+len(keys)] = keys
+                    struct.pack_into("<I7I", data, 32, (kind << 28) | 24,
+                                     7, 16, 36, 36, 3, 0, 16)
+                    pairs = [(key, value) for i, (key, value) in enumerate(
+                        [(32, 0), (40, 0x3fffffff), (49, 0xffffffff)]) if mask & (1 << i)]
+                    count = len(pairs)
+                    width, code = (2, "H") if kind == 2 else (4, "I")
+                    struct.pack_into("<" + code * (count + 1), data, 128,
+                                     count, *(key for key, _ in pairs))
+                    values = (128 + width * (count + 1) + 3) & ~3
+                    struct.pack_into("<" + "I" * count, data, values,
+                                     *(value for _, value in pairs))
+                    self.assertEqual(probe.project_resource(data), {
+                        "status": "observed-selected-fields", "attributes": 0,
+                        "rootType": kind, "rootOffsetZero": False,
+                        "collationsPresent": False,
+                        **{field: bool(mask & (1 << i)) for i, field in enumerate(fields)}})
 if __name__ == "__main__":
     unittest.main()

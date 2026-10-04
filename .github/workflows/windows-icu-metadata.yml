@@ -1,0 +1,36 @@
+name: Windows ICU acquisition metadata
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/windows-icu-metadata.yml'
+      - 'tests/runner-package/windows_icu_metadata.py'
+      - 'tests/runner-package/test_windows_icu_metadata.py'
+      - 'docs/compatibility/evidence/hosted-worker-modules-37184265280.json'
+
+permissions:
+  contents: read
+
+env:
+  SHOUTX_SOURCE_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+
+jobs:
+  acquisition-locator:
+    runs-on: windows-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Test bounded metadata inspection
+        run: python -B tests/runner-package/test_windows_icu_metadata.py
+      - name: Inspect candidate without loading vendor code
+        run: python -B tests/runner-package/windows_icu_metadata.py --output target/windows-icu-locator.json
+      - name: Retain metadata only
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: windows-icu-acquisition-locator
+          path: target/windows-icu-locator.json
+          if-no-files-found: error
+          retention-days: 7

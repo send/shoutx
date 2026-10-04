@@ -1,0 +1,1044 @@
+{
+  "schemaVersion": 1,
+  "kind": "package-environment-transport",
+  "observedOn": "2026-10-04",
+  "sourceRun": {
+    "conclusion": "success",
+    "created_at": "2026-10-04T09:51:06Z",
+    "head_sha": "fa2773104ddca446b565b894a35ce4a2c199c699",
+    "id": 37193467498,
+    "run_attempt": 1,
+    "status": "completed",
+    "updated_at": "2026-10-04T10:00:58Z"
+  },
+  "producer": {
+    "pullRequest": 82,
+    "testedMergeSha": "3c9d55c1b97fc9a91efbb54a2726684547acc372",
+    "mergedSourceCommit": "c3d33e3d236bf6b5bf5f6cfb494bd0a552febec5",
+    "pinsPath": "tests/runner-package/pins.json",
+    "pinsSha256": "cc602b2ea5abfab4f9386b558524d027359fc3031bf9fb4ebd2512d6139432ff",
+    "sourceDigestForms": {
+      "lf": {
+        "scripts/test-runner-package.py": "56c749255b4d678fdcb4bc1efbb105c4500bbb2db88ac432b6b091e47bd5258b",
+        "tests/runner-package/test_harness.py": "d8e55d668b06cabb6ed0d757243bb78b290b2e27fb0f0e77660092e230fe30a3",
+        "tests/runner-package/Program.cs": "fb4acc0cd342038599469c47d37f019ba499f14827b56fe49cb8d4f033a8a646",
+        "tests/runner-package/WorkerProbe.cs": "5e2ea897a033e988b731caff2c4358ac957752c8bb692b4bce68949308c5dae6",
+        "tests/runner-package/Probe.csproj": "3bb66a304bb12424f558a0b8337365e9f00edee807c490570a936dda71a110aa",
+        "tests/runner-package/EnvironmentTransportProbe.cs": "eb9fa9f229c0477f22b671d4b5877a59fe378fb44e0eeb2a6ca04715f9ef5374",
+        "tests/runner-package/environment_transport_child.py": "8cab944b40717bfd788ddaccaa8f911da24d607a0608e5320ea3deff495c8485",
+        "tests/runner-package/hosted_worker.py": "9b8b234e4701a65ebb039e8d059cf8f2d0207b6f3a9b3586d70ea5584686233a",
+        "tests/runner-package/test_environment_transport.py": "bccc7caf81054a24f43e33e88375952c2a7ed772b3d16074af766dbc866abdaa",
+        "tests/runner-package/UnicodeCandidateProbe.cs": "6eebd7f7af7a20a8cf6f5edd6f71ae1267b5544eac46f0fcc0dede5cd73f50ec",
+        "tests/runner-package/CollationProbe.cs": "39a0cc9b5ccf59e2e0302aa1d0953ef59eac0b3a16bdb4b2f279e831ee8ad521",
+        "tests/runner-package/unicode-candidate.json": "165691c4ca41c5934229b9f9bc9c3d49d2c638e7126f7b30275738e093063ee1",
+        "tests/runner-package/unicode-pins.json": "e5d57af5059bea1262f8e4015c7d854ab9badb000d7597b119fe2f6fc78718f6",
+        "tests/runner-package/UNICODE-LICENSE.txt": "e7a93b009565cfce55919a381437ac4db883e9da2126fa28b91d12732bc53d96",
+        "scripts/generate-unicode-candidate.py": "3668aa128899f565329321c38e9ac38cdeddafe73d7b8a5ede118fabff094675"
+      },
+      "windows": {
+        "scripts/test-runner-package.py": "0392735ee7f5b5ee09a8c052534126ec207d7a6ea3515c7240a894ea44de640d",
+        "tests/runner-package/test_harness.py": "ec68e2da8735313e36495133e68513ee85a74f072d1848282086f89276b6b5f7",
+        "tests/runner-package/Program.cs": "75ef190a4817e4f70566f5d64a5645dfba067d1c27d57184b41d464e018c9549",
+        "tests/runner-package/WorkerProbe.cs": "9655f599139ae6696fc00a35f9cf423a7ecb73e31de6981893be989e8a28c3de",
+        "tests/runner-package/Probe.csproj": "ea638b8a11d53e2cdf9fc7e92052b18c275602ab9c828babd83e10fde999452e",
+        "tests/runner-package/EnvironmentTransportProbe.cs": "e3b699648b65cc7edd3ce7c9053ca8737e1b1dc9a44f83a2f898bd0b17e74c72",
+        "tests/runner-package/environment_transport_child.py": "e5a3a5acb69b7d7b3d32560997afb863ea02a8bfb1f2594f09ae73a1b4f62536",
+        "tests/runner-package/hosted_worker.py": "c93b3086f35a2b88fb72f166315658176a300becab3d9cfeab52daa1364fa25c",
+        "tests/runner-package/test_environment_transport.py": "7fb245556de55c4f0ee9334dd60078e3da186b29f9ddfd287f097558ff3baddf",
+        "tests/runner-package/UnicodeCandidateProbe.cs": "4a74c8bbfe93c371bc770134f27a147b8b848a7f5ecbe0d5454d7e80c22661a3",
+        "tests/runner-package/CollationProbe.cs": "1e79af060f67241569f6f5f6470c16094ebbd0b216e3a805201facfba743ba96",
+        "tests/runner-package/unicode-candidate.json": "165691c4ca41c5934229b9f9bc9c3d49d2c638e7126f7b30275738e093063ee1",
+        "tests/runner-package/unicode-pins.json": "bf761ad9273c571424d7199b9a2a28ed923edaea14922557d5411fec90177172",
+        "tests/runner-package/UNICODE-LICENSE.txt": "8437ba5f4e4c8ae0268c3df5cf106006f2d045ff3452eedd1f27e8eb26c5f327",
+        "scripts/generate-unicode-candidate.py": "68257238a98b129331c2643a5b5405de2d6c7993fff97a13d67e6a8791958a37"
+      }
+    },
+    "windowsSourceByteDerivation": "LF-to-CRLF for all listed files except unicode-candidate.json, which remains LF; exact digests checked against merged source bytes",
+    "pinsSha256Provenance": "Author-computed raw digest of merged LF repository pins.json, not a run-emitted pins-file digest",
+    "sourceDigestFormsProvenance": "Copied from package evidence.json sourceDigests, then independently compared with merged-source bytes and stated CRLF conversion"
+  },
+  "method": "Author-checked minimal projection of five source files per row, selected job-log shell lines and Actions run/jobs APIs; not signed or a complete report archive",
+  "scope": "Package SDK-invoker-to-isolated-Python transport and separate same-job child presence. No Worker startup/native environment, active ICU binding, effective mappings or completed per-culture consumer linkage.",
+  "rows": [
+    {
+      "selector": "ubuntu-22.04",
+      "rid": "linux-x64",
+      "job": {
+        "id": 111410356771,
+        "name": "runner-differential (ubuntu-22.04, linux-x64)",
+        "run_attempt": 1,
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-04T09:51:15Z",
+        "completed_at": "2026-10-04T09:58:31Z",
+        "steps": [
+          {
+            "conclusion": "success",
+            "name": "Test published Runner runtime and parser",
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Test environment transport controls independently",
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Observe hosted Worker startup input availability",
+            "status": "completed"
+          }
+        ]
+      },
+      "package": {
+        "status": "passed",
+        "githubRunId": "37193467498",
+        "githubSha": "3c9d55c1b97fc9a91efbb54a2726684547acc372",
+        "imageOS": "ubuntu22",
+        "imageVersion": "20260927.309.1",
+        "pythonVersion": "3.10.12",
+        "buildSdk": "8.0.424",
+        "package": {
+          "url": "https://github.com/actions/runner/releases/download/v2.337.0/actions-runner-linux-x64-2.337.0.tar.gz",
+          "sha256": "70920811a4f8ad4328818682bca5c6469c1c942fab52448868071d0063816613",
+          "size": 226430031
+        },
+        "selectedCoreClr": {
+          "file": "libcoreclr.so",
+          "sha256": "fedf4074258e14b425cd3b4209bedc3e102765623445cc1bcfe8361f6193231c"
+        },
+        "probeSha256": "757e6eab90a837b9bc196f83412b3252c54f159fa155b5ad5194d0c2726b961e",
+        "preTransportEvidenceVerified": true,
+        "sourceDigestForm": "lf",
+        "corehostTraceSha256": "e4c11b4144f867b1eaab135164089def55d90c5aa4e460f86ff911e812c4ca47"
+      },
+      "probe": {
+        "status": "passed",
+        "runtime": ".NET 8.0.30",
+        "os": "Ubuntu 22.04.5 LTS",
+        "architecture": "X64",
+        "environmentTransport": {
+          "status": "passed",
+          "route": "package-sdk-invoker-to-isolated-python",
+          "cases": [
+            {
+              "case": "absent",
+              "presence": {
+                "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT": "absent",
+                "DOTNET_SYSTEM_GLOBALIZATION_USENLS": "absent",
+                "DOTNET_SYSTEM_GLOBALIZATION_APPLOCALICU": "absent",
+                "DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY": "absent",
+                "CLR_ICU_VERSION_OVERRIDE": "absent",
+                "ICU_DATA": "absent"
+              },
+              "valuesMatch": true,
+              "inheritedControlMatches": true
+            },
+            {
+              "case": "empty",
+              "presence": {
+                "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT": "defined",
+                "DOTNET_SYSTEM_GLOBALIZATION_USENLS": "defined",
+                "DOTNET_SYSTEM_GLOBALIZATION_APPLOCALICU": "defined",
+                "DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY": "defined",
+                "CLR_ICU_VERSION_OVERRIDE": "defined",
+                "ICU_DATA": "defined"
+              },
+              "valuesMatch": true,
+              "inheritedControlMatches": true
+            },
+            {
+              "case": "null",
+              "presence": {
+                "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT": "defined",
+                "DOTNET_SYSTEM_GLOBALIZATION_USENLS": "defined",
+                "DOTNET_SYSTEM_GLOBALIZATION_APPLOCALICU": "defined",
+                "DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY": "defined",
+                "CLR_ICU_VERSION_OVERRIDE": "defined",
+                "ICU_DATA": "defined"
+              },
+              "valuesMatch": true,
+              "inheritedControlMatches": true
+            },
+            {
+              "case": "text",
+              "presence": {
+                "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT": "defined",
+                "DOTNET_SYSTEM_GLOBALIZATION_USENLS": "defined",
+                "DOTNET_SYSTEM_GLOBALIZATION_APPLOCALICU": "defined",
+                "DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY": "defined",
+                "CLR_ICU_VERSION_OVERRIDE": "defined",
+                "ICU_DATA": "defined"
+              },
+              "valuesMatch": true,
+              "inheritedControlMatches": true
+            }
+          ]
+        },
+        "transportIdentities": [
+          {
+            "inPackage": true,
+            "file": "System.Private.CoreLib.dll",
+            "sha256": "003ac935a51189b420a7d84de724ccb94eca31e2d07b4faf1e2d943052018028",
+            "informationalVersion": "8.0.30+a83db3e0eb2defb6220e15dae2f1a0462fdbf99f",
+            "moduleVersionId": "15d8ca4d-cc8e-483f-84a8-29a3752a0e78"
+          },
+          {
+            "inPackage": true,
+            "file": "Runner.Sdk.dll",
+            "sha256": "0103c1fdcc73136592d2696c6ddf0966df98322f6aad589d14fe69a7687673fa",
+            "informationalVersion": "2.337.0+397b032cbf865e9c3ddfab89d533ec19325e1273",
+            "moduleVersionId": "97efa01c-b263-405f-a95a-1abf2b5240c1"
+          },
+          {
+            "inPackage": true,
+            "file": "System.Diagnostics.Process.dll",
+            "sha256": "5254d9a8612ed8d746b6458cce3e21f798b6c4369a6b750d87d2c25149e5a6c7",
+            "informationalVersion": "8.0.30+a83db3e0eb2defb6220e15dae2f1a0462fdbf99f",
+            "moduleVersionId": "c56bd1bd-df45-4e63-8dfe-a7f16bd07c14"
+          }
+        ]
+      },
+      "worker": {
+        "schemaVersion": 3,
+        "status": "observed-job-message-without-culture",
+        "identity": {
+          "GITHUB_RUN_ID": "37193467498",
+          "GITHUB_RUN_ATTEMPT": "1",
+          "GITHUB_SHA": "3c9d55c1b97fc9a91efbb54a2726684547acc372",
+          "GITHUB_REPOSITORY": "send/shoutx",
+          "GITHUB_JOB": "runner-differential",
+          "RUNNER_OS": "Linux",
+          "RUNNER_ARCH": "X64",
+          "ImageOS": "ubuntu22",
+          "ImageVersion": "20260927.309.1",
+          "SHOUTX_SOURCE_HEAD": "fa2773104ddca446b565b894a35ce4a2c199c699",
+          "SHOUTX_MATRIX_OS": "ubuntu-22.04",
+          "SHOUTX_MATRIX_RID": "linux-x64"
+        },
+        "recordCorrelation": "unique-context-match-in-ancestor-installation",
+        "ancestorWorkerPid": 1929,
+        "timelineJobId": "42666e67-4935-54f0-bf28-6c6d0ed75528",
+        "onDiskIdentityStatus": "observed",
+        "onDiskSha256": {
+          "Runner.Worker": "04db3805782ddc32208f1a1cae4b1cb99ef9232ed2ef95a10218e4f5665dbccb",
+          "Runner.Worker.dll": "f460f611aa5597a4d5331a8b9e848d5a535ece0e6dab396699328502b8b49c41",
+          "Runner.Common.dll": "b10853d9c1a8498779ba5236933281018627a8dc7ce54b977b6d9e2343035393",
+          "Runner.Sdk.dll": "0103c1fdcc73136592d2696c6ddf0966df98322f6aad589d14fe69a7687673fa",
+          "Sdk.dll": "cf9ba086a45675bd81f33b3001b69f9fcc90ff64c26ee201c4ca044fbe36581a",
+          "System.Private.CoreLib.dll": "003ac935a51189b420a7d84de724ccb94eca31e2d07b4faf1e2d943052018028",
+          "Runner.Worker.runtimeconfig.json": "2349aceaec47e742386005940d1f394c8433717bc321facc1162a05fb9b586d2",
+          "Runner.Worker.deps.json": "bd4cb38b3b5efe7f8081d56dcc155fc6b0b19a8c0aa5ee632816839e58d7be1e",
+          "libcoreclr.so": "fedf4074258e14b425cd3b4209bedc3e102765623445cc1bcfe8361f6193231c"
+        },
+        "childConfigurationPresenceStatus": "observed-child-environment",
+        "childConfigurationPresence": {
+          "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT": "absent",
+          "DOTNET_SYSTEM_GLOBALIZATION_USENLS": "absent",
+          "DOTNET_SYSTEM_GLOBALIZATION_APPLOCALICU": "absent",
+          "DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY": "absent",
+          "CLR_ICU_VERSION_OVERRIDE": "absent",
+          "ICU_DATA": "absent"
+        },
+        "startupCultureStatus": "observed",
+        "startupCulture": "",
+        "cultureInputStatus": "absent",
+        "cultureInput": null
+      },
+      "manifestWorkerFiles": {
+        "Runner.Common.dll": "b10853d9c1a8498779ba5236933281018627a8dc7ce54b977b6d9e2343035393",
+        "Runner.Sdk.dll": "0103c1fdcc73136592d2696c6ddf0966df98322f6aad589d14fe69a7687673fa",
+        "Runner.Worker": "04db3805782ddc32208f1a1cae4b1cb99ef9232ed2ef95a10218e4f5665dbccb",
+        "Runner.Worker.deps.json": "bd4cb38b3b5efe7f8081d56dcc155fc6b0b19a8c0aa5ee632816839e58d7be1e",
+        "Runner.Worker.dll": "f460f611aa5597a4d5331a8b9e848d5a535ece0e6dab396699328502b8b49c41",
+        "Runner.Worker.runtimeconfig.json": "2349aceaec47e742386005940d1f394c8433717bc321facc1162a05fb9b586d2",
+        "Sdk.dll": "cf9ba086a45675bd81f33b3001b69f9fcc90ff64c26ee201c4ca044fbe36581a",
+        "System.Private.CoreLib.dll": "003ac935a51189b420a7d84de724ccb94eca31e2d07b4faf1e2d943052018028",
+        "libcoreclr.so": "fedf4074258e14b425cd3b4209bedc3e102765623445cc1bcfe8361f6193231c"
+      },
+      "manifestTransportFiles": {
+        "Runner.Sdk.dll": "0103c1fdcc73136592d2696c6ddf0966df98322f6aad589d14fe69a7687673fa",
+        "System.Diagnostics.Process.dll": "5254d9a8612ed8d746b6458cce3e21f798b6c4369a6b750d87d2c25149e5a6c7",
+        "System.Private.CoreLib.dll": "003ac935a51189b420a7d84de724ccb94eca31e2d07b4faf1e2d943052018028"
+      },
+      "sourceReports": [
+        {
+          "artifact": "runner-package-evidence-ubuntu-22.04-linux-x64",
+          "path": "runner-package-evidence/evidence.json",
+          "sha256": "d19b2de97dfdf49d93bb75ec5380fd2e09f518f860b25e8c87085547b8e753db"
+        },
+        {
+          "artifact": "runner-package-evidence-ubuntu-22.04-linux-x64",
+          "path": "runner-package-evidence/probe.json",
+          "sha256": "09a98c5ba2a717e68fd552aa539ab33c95ac9c5c72d915aa8cc1178f5d63ae61"
+        },
+        {
+          "artifact": "runner-package-evidence-ubuntu-22.04-linux-x64",
+          "path": "runner-package-evidence/package-bin-sha256.json",
+          "sha256": "f0f751b82ed658691738d7aeb8ae1d7fd8b10535cd563340edd86d3e128350df"
+        },
+        {
+          "artifact": "hosted-worker-input-ubuntu-22.04-linux-x64",
+          "path": "hosted-worker-evidence.json",
+          "sha256": "910753378fdc09f4b59b8f9a5f205d3e6be9497860fb793652b98b83ad22f887"
+        },
+        {
+          "artifact": "runner-package-evidence-ubuntu-22.04-linux-x64",
+          "path": "runner-package-evidence/corehost.log",
+          "sha256": "e4c11b4144f867b1eaab135164089def55d90c5aa4e460f86ff911e812c4ca47"
+        }
+      ],
+      "authorDerivedChecks": {
+        "workerFilesMatchPackageManifest": true,
+        "transportFilesMatchPackageManifest": true,
+        "runShaImageIdentityMatches": true
+      },
+      "consumerVerdicts": {
+        "Invariant": "unverified",
+        "en-US": "unverified"
+      },
+      "launcherTranscriptions": {
+        "packagePythonPath": "/usr/bin/python",
+        "packagePathSource": "corehost.log: fourth application argument (supplied from harness sys.executable)",
+        "observerShellCommand": "/usr/bin/python -I -S {0}",
+        "observerCommandSource": "author transcription of this job's display-side isolated-Python shell log line; equality with launch-side re-resolution uses unchanged shell/prepend-path/PATH/files; full job log not retained or independently hashed here",
+        "namedPathRelation": "exact-named-path",
+        "binaryContentAttested": false
+      }
+    },
+    {
+      "selector": "ubuntu-24.04",
+      "rid": "linux-x64",
+      "job": {
+        "id": 111410356782,
+        "name": "runner-differential (ubuntu-24.04, linux-x64)",
+        "run_attempt": 1,
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-04T09:51:14Z",
+        "completed_at": "2026-10-04T09:58:13Z",
+        "steps": [
+          {
+            "conclusion": "success",
+            "name": "Test published Runner runtime and parser",
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Test environment transport controls independently",
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Observe hosted Worker startup input availability",
+            "status": "completed"
+          }
+        ]
+      },
+      "package": {
+        "status": "passed",
+        "githubRunId": "37193467498",
+        "githubSha": "3c9d55c1b97fc9a91efbb54a2726684547acc372",
+        "imageOS": "ubuntu24",
+        "imageVersion": "20260927.320.1",
+        "pythonVersion": "3.12.3",
+        "buildSdk": "8.0.424",
+        "package": {
+          "url": "https://github.com/actions/runner/releases/download/v2.337.0/actions-runner-linux-x64-2.337.0.tar.gz",
+          "sha256": "70920811a4f8ad4328818682bca5c6469c1c942fab52448868071d0063816613",
+          "size": 226430031
+        },
+        "selectedCoreClr": {
+          "file": "libcoreclr.so",
+          "sha256": "fedf4074258e14b425cd3b4209bedc3e102765623445cc1bcfe8361f6193231c"
+        },
+        "probeSha256": "8b19b1c39a0e6fcd7d315dcce0c82d58a8d571f49f88a809d9e5e2381ddc26fc",
+        "preTransportEvidenceVerified": true,
+        "sourceDigestForm": "lf",
+        "corehostTraceSha256": "6f64af7ba79aaf7c9890672c807c90b3fd6b3f65356b3aa27bc487352e93db98"
+      },
+      "probe": {
+        "status": "passed",
+        "runtime": ".NET 8.0.30",
+        "os": "Ubuntu 24.04.5 LTS",
+        "architecture": "X64",
+        "environmentTransport": {
+          "status": "passed",
+          "route": "package-sdk-invoker-to-isolated-python",
+          "cases": [
+            {
+              "case": "absent",
+              "presence": {
+                "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT": "absent",
+                "DOTNET_SYSTEM_GLOBALIZATION_USENLS": "absent",
+                "DOTNET_SYSTEM_GLOBALIZATION_APPLOCALICU": "absent",
+                "DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY": "absent",
+                "CLR_ICU_VERSION_OVERRIDE": "absent",
+                "ICU_DATA": "absent"
+              },
+              "valuesMatch": true,
+              "inheritedControlMatches": true
+            },
+            {
+              "case": "empty",
+              "presence": {
+                "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT": "defined",
+                "DOTNET_SYSTEM_GLOBALIZATION_USENLS": "defined",
+                "DOTNET_SYSTEM_GLOBALIZATION_APPLOCALICU": "defined",
+                "DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY": "defined",
+                "CLR_ICU_VERSION_OVERRIDE": "defined",
+                "ICU_DATA": "defined"
+              },
+              "valuesMatch": true,
+              "inheritedControlMatches": true
+            },
+            {
+              "case": "null",
+              "presence": {
+                "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT": "defined",
+                "DOTNET_SYSTEM_GLOBALIZATION_USENLS": "defined",
+                "DOTNET_SYSTEM_GLOBALIZATION_APPLOCALICU": "defined",
+                "DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY": "defined",
+                "CLR_ICU_VERSION_OVERRIDE": "defined",
+                "ICU_DATA": "defined"
+              },
+              "valuesMatch": true,
+              "inheritedControlMatches": true
+            },
+            {
+              "case": "text",
+              "presence": {
+                "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT": "defined",
+                "DOTNET_SYSTEM_GLOBALIZATION_USENLS": "defined",
+                "DOTNET_SYSTEM_GLOBALIZATION_APPLOCALICU": "defined",
+                "DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY": "defined",
+                "CLR_ICU_VERSION_OVERRIDE": "defined",
+                "ICU_DATA": "defined"
+              },
+              "valuesMatch": true,
+              "inheritedControlMatches": true
+            }
+          ]
+        },
+        "transportIdentities": [
+          {
+            "inPackage": true,
+            "file": "System.Private.CoreLib.dll",
+            "sha256": "003ac935a51189b420a7d84de724ccb94eca31e2d07b4faf1e2d943052018028",
+            "informationalVersion": "8.0.30+a83db3e0eb2defb6220e15dae2f1a0462fdbf99f",
+            "moduleVersionId": "15d8ca4d-cc8e-483f-84a8-29a3752a0e78"
+          },
+          {
+            "inPackage": true,
+            "file": "Runner.Sdk.dll",
+            "sha256": "0103c1fdcc73136592d2696c6ddf0966df98322f6aad589d14fe69a7687673fa",
+            "informationalVersion": "2.337.0+397b032cbf865e9c3ddfab89d533ec19325e1273",
+            "moduleVersionId": "97efa01c-b263-405f-a95a-1abf2b5240c1"
+          },
+          {
+            "inPackage": true,
+            "file": "System.Diagnostics.Process.dll",
+            "sha256": "5254d9a8612ed8d746b6458cce3e21f798b6c4369a6b750d87d2c25149e5a6c7",
+            "informationalVersion": "8.0.30+a83db3e0eb2defb6220e15dae2f1a0462fdbf99f",
+            "moduleVersionId": "c56bd1bd-df45-4e63-8dfe-a7f16bd07c14"
+          }
+        ]
+      },
+      "worker": {
+        "schemaVersion": 3,
+        "status": "observed-job-message-without-culture",
+        "identity": {
+          "GITHUB_RUN_ID": "37193467498",
+          "GITHUB_RUN_ATTEMPT": "1",
+          "GITHUB_SHA": "3c9d55c1b97fc9a91efbb54a2726684547acc372",
+          "GITHUB_REPOSITORY": "send/shoutx",
+          "GITHUB_JOB": "runner-differential",
+          "RUNNER_OS": "Linux",
+          "RUNNER_ARCH": "X64",
+          "ImageOS": "ubuntu24",
+          "ImageVersion": "20260927.320.1",
+          "SHOUTX_SOURCE_HEAD": "fa2773104ddca446b565b894a35ce4a2c199c699",
+          "SHOUTX_MATRIX_OS": "ubuntu-24.04",
+          "SHOUTX_MATRIX_RID": "linux-x64"
+        },
+        "recordCorrelation": "unique-context-match-in-ancestor-installation",
+        "ancestorWorkerPid": 2171,
+        "timelineJobId": "1d01bce5-3765-5a72-b4b1-5739bff53651",
+        "onDiskIdentityStatus": "observed",
+        "onDiskSha256": {
+          "Runner.Worker": "04db3805782ddc32208f1a1cae4b1cb99ef9232ed2ef95a10218e4f5665dbccb",
+          "Runner.Worker.dll": "f460f611aa5597a4d5331a8b9e848d5a535ece0e6dab396699328502b8b49c41",
+          "Runner.Common.dll": "b10853d9c1a8498779ba5236933281018627a8dc7ce54b977b6d9e2343035393",
+          "Runner.Sdk.dll": "0103c1fdcc73136592d2696c6ddf0966df98322f6aad589d14fe69a7687673fa",
+          "Sdk.dll": "cf9ba086a45675bd81f33b3001b69f9fcc90ff64c26ee201c4ca044fbe36581a",
+          "System.Private.CoreLib.dll": "003ac935a51189b420a7d84de724ccb94eca31e2d07b4faf1e2d943052018028",
+          "Runner.Worker.runtimeconfig.json": "2349aceaec47e742386005940d1f394c8433717bc321facc1162a05fb9b586d2",
+          "Runner.Worker.deps.json": "bd4cb38b3b5efe7f8081d56dcc155fc6b0b19a8c0aa5ee632816839e58d7be1e",
+          "libcoreclr.so": "fedf4074258e14b425cd3b4209bedc3e102765623445cc1bcfe8361f6193231c"
+        },
+        "childConfigurationPresenceStatus": "observed-child-environment",
+        "childConfigurationPresence": {
+          "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT": "absent",
+          "DOTNET_SYSTEM_GLOBALIZATION_USENLS": "absent",
+          "DOTNET_SYSTEM_GLOBALIZATION_APPLOCALICU": "absent",
+          "DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY": "absent",
+          "CLR_ICU_VERSION_OVERRIDE": "absent",
+          "ICU_DATA": "absent"
+        },
+        "startupCultureStatus": "observed",
+        "startupCulture": "",
+        "cultureInputStatus": "absent",
+        "cultureInput": null
+      },
+      "manifestWorkerFiles": {
+        "Runner.Common.dll": "b10853d9c1a8498779ba5236933281018627a8dc7ce54b977b6d9e2343035393",
+        "Runner.Sdk.dll": "0103c1fdcc73136592d2696c6ddf0966df98322f6aad589d14fe69a7687673fa",
+        "Runner.Worker": "04db3805782ddc32208f1a1cae4b1cb99ef9232ed2ef95a10218e4f5665dbccb",
+        "Runner.Worker.deps.json": "bd4cb38b3b5efe7f8081d56dcc155fc6b0b19a8c0aa5ee632816839e58d7be1e",
+        "Runner.Worker.dll": "f460f611aa5597a4d5331a8b9e848d5a535ece0e6dab396699328502b8b49c41",
+        "Runner.Worker.runtimeconfig.json": "2349aceaec47e742386005940d1f394c8433717bc321facc1162a05fb9b586d2",
+        "Sdk.dll": "cf9ba086a45675bd81f33b3001b69f9fcc90ff64c26ee201c4ca044fbe36581a",
+        "System.Private.CoreLib.dll": "003ac935a51189b420a7d84de724ccb94eca31e2d07b4faf1e2d943052018028",
+        "libcoreclr.so": "fedf4074258e14b425cd3b4209bedc3e102765623445cc1bcfe8361f6193231c"
+      },
+      "manifestTransportFiles": {
+        "Runner.Sdk.dll": "0103c1fdcc73136592d2696c6ddf0966df98322f6aad589d14fe69a7687673fa",
+        "System.Diagnostics.Process.dll": "5254d9a8612ed8d746b6458cce3e21f798b6c4369a6b750d87d2c25149e5a6c7",
+        "System.Private.CoreLib.dll": "003ac935a51189b420a7d84de724ccb94eca31e2d07b4faf1e2d943052018028"
+      },
+      "sourceReports": [
+        {
+          "artifact": "runner-package-evidence-ubuntu-24.04-linux-x64",
+          "path": "runner-package-evidence/evidence.json",
+          "sha256": "6d2222c9c08c3f7f419ac24dcb9bb80eca3ce11ce1885183985a8234657fd76b"
+        },
+        {
+          "artifact": "runner-package-evidence-ubuntu-24.04-linux-x64",
+          "path": "runner-package-evidence/probe.json",
+          "sha256": "f12c444a70ea4b88cdaafb858e138634e52aab4cd33bb78edc6846de1be913c9"
+        },
+        {
+          "artifact": "runner-package-evidence-ubuntu-24.04-linux-x64",
+          "path": "runner-package-evidence/package-bin-sha256.json",
+          "sha256": "f0f751b82ed658691738d7aeb8ae1d7fd8b10535cd563340edd86d3e128350df"
+        },
+        {
+          "artifact": "hosted-worker-input-ubuntu-24.04-linux-x64",
+          "path": "hosted-worker-evidence.json",
+          "sha256": "0396a767eee7c5aefb86cf089b628678e5dd49999c1f3186364477b96709dda6"
+        },
+        {
+          "artifact": "runner-package-evidence-ubuntu-24.04-linux-x64",
+          "path": "runner-package-evidence/corehost.log",
+          "sha256": "6f64af7ba79aaf7c9890672c807c90b3fd6b3f65356b3aa27bc487352e93db98"
+        }
+      ],
+      "authorDerivedChecks": {
+        "workerFilesMatchPackageManifest": true,
+        "transportFilesMatchPackageManifest": true,
+        "runShaImageIdentityMatches": true
+      },
+      "consumerVerdicts": {
+        "Invariant": "unverified",
+        "en-US": "unverified"
+      },
+      "launcherTranscriptions": {
+        "packagePythonPath": "/usr/bin/python",
+        "packagePathSource": "corehost.log: fourth application argument (supplied from harness sys.executable)",
+        "observerShellCommand": "/usr/bin/python -I -S {0}",
+        "observerCommandSource": "author transcription of this job's display-side isolated-Python shell log line; equality with launch-side re-resolution uses unchanged shell/prepend-path/PATH/files; full job log not retained or independently hashed here",
+        "namedPathRelation": "exact-named-path",
+        "binaryContentAttested": false
+      }
+    },
+    {
+      "selector": "macos-15",
+      "rid": "osx-arm64",
+      "job": {
+        "id": 111410356770,
+        "name": "runner-differential (macos-15, osx-arm64)",
+        "run_attempt": 1,
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-04T09:51:21Z",
+        "completed_at": "2026-10-04T09:57:25Z",
+        "steps": [
+          {
+            "conclusion": "success",
+            "name": "Test published Runner runtime and parser",
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Test environment transport controls independently",
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Observe hosted Worker startup input availability",
+            "status": "completed"
+          }
+        ]
+      },
+      "package": {
+        "status": "passed",
+        "githubRunId": "37193467498",
+        "githubSha": "3c9d55c1b97fc9a91efbb54a2726684547acc372",
+        "imageOS": "macos15",
+        "imageVersion": "20260907.0337.1",
+        "pythonVersion": "3.14.7",
+        "buildSdk": "8.0.424",
+        "package": {
+          "url": "https://github.com/actions/runner/releases/download/v2.337.0/actions-runner-osx-arm64-2.337.0.tar.gz",
+          "sha256": "5a2cd92908a93d7276a194e1de6008099f3e7946f3f8e14aa7a1a7b4a31fdec2",
+          "size": 127732571
+        },
+        "selectedCoreClr": {
+          "file": "libcoreclr.dylib",
+          "sha256": "943ba6f94d6af4ed818306418dc774cf3940bbf9062be93a39a3a2f3a4da285a"
+        },
+        "probeSha256": "c5b1cb93e6f5e1748dab6e14ea387a3d9337ad3a754f9e9321188a1e3d65a309",
+        "preTransportEvidenceVerified": true,
+        "sourceDigestForm": "lf",
+        "corehostTraceSha256": "4db429c6925589275961918aeca7265acf578e85e97b04821e5e928bfa147bfd"
+      },
+      "probe": {
+        "status": "passed",
+        "runtime": ".NET 8.0.30",
+        "os": "Darwin 24.6.0 Darwin Kernel Version 24.6.0: Tue Jul 21 20:51:34 PDT 2026; root:xnu-11417.140.69.711.44~1/RELEASE_ARM64_VMAPPLE",
+        "architecture": "Arm64",
+        "environmentTransport": {
+          "status": "passed",
+          "route": "package-sdk-invoker-to-isolated-python",
+          "cases": [
+            {
+              "case": "absent",
+              "presence": {
+                "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT": "absent",
+                "DOTNET_SYSTEM_GLOBALIZATION_USENLS": "absent",
+                "DOTNET_SYSTEM_GLOBALIZATION_APPLOCALICU": "absent",
+                "DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY": "absent",
+                "CLR_ICU_VERSION_OVERRIDE": "absent",
+                "ICU_DATA": "absent"
+              },
+              "valuesMatch": true,
+              "inheritedControlMatches": true
+            },
+            {
+              "case": "empty",
+              "presence": {
+                "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT": "defined",
+                "DOTNET_SYSTEM_GLOBALIZATION_USENLS": "defined",
+                "DOTNET_SYSTEM_GLOBALIZATION_APPLOCALICU": "defined",
+                "DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY": "defined",
+                "CLR_ICU_VERSION_OVERRIDE": "defined",
+                "ICU_DATA": "defined"
+              },
+              "valuesMatch": true,
+              "inheritedControlMatches": true
+            },
+            {
+              "case": "null",
+              "presence": {
+                "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT": "defined",
+                "DOTNET_SYSTEM_GLOBALIZATION_USENLS": "defined",
+                "DOTNET_SYSTEM_GLOBALIZATION_APPLOCALICU": "defined",
+                "DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY": "defined",
+                "CLR_ICU_VERSION_OVERRIDE": "defined",
+                "ICU_DATA": "defined"
+              },
+              "valuesMatch": true,
+              "inheritedControlMatches": true
+            },
+            {
+              "case": "text",
+              "presence": {
+                "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT": "defined",
+                "DOTNET_SYSTEM_GLOBALIZATION_USENLS": "defined",
+                "DOTNET_SYSTEM_GLOBALIZATION_APPLOCALICU": "defined",
+                "DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY": "defined",
+                "CLR_ICU_VERSION_OVERRIDE": "defined",
+                "ICU_DATA": "defined"
+              },
+              "valuesMatch": true,
+              "inheritedControlMatches": true
+            }
+          ]
+        },
+        "transportIdentities": [
+          {
+            "inPackage": true,
+            "file": "System.Private.CoreLib.dll",
+            "sha256": "f43af84e79760beaab8e6b27e4f10d4a276c5c9e4b9b259cd65eb9d06fde2f78",
+            "informationalVersion": "8.0.30+a83db3e0eb2defb6220e15dae2f1a0462fdbf99f",
+            "moduleVersionId": "74a52948-a555-4f37-aa2d-dc7976567b96"
+          },
+          {
+            "inPackage": true,
+            "file": "Runner.Sdk.dll",
+            "sha256": "3da92ed73346e1429af93f468620c6cba4974cc8cd9b913d71f719da710c987f",
+            "informationalVersion": "2.337.0+397b032cbf865e9c3ddfab89d533ec19325e1273",
+            "moduleVersionId": "e2a180e5-1cd2-4c49-bc7d-6852137f3ddf"
+          },
+          {
+            "inPackage": true,
+            "file": "System.Diagnostics.Process.dll",
+            "sha256": "eac22dfefa670894bb9b02960b82bb176889f7d485f2388c818dd8417c68073a",
+            "informationalVersion": "8.0.30+a83db3e0eb2defb6220e15dae2f1a0462fdbf99f",
+            "moduleVersionId": "726fddb0-18da-4b2f-87e8-4ad3731b5498"
+          }
+        ]
+      },
+      "worker": {
+        "schemaVersion": 3,
+        "status": "observed-job-message-without-culture",
+        "identity": {
+          "GITHUB_RUN_ID": "37193467498",
+          "GITHUB_RUN_ATTEMPT": "1",
+          "GITHUB_SHA": "3c9d55c1b97fc9a91efbb54a2726684547acc372",
+          "GITHUB_REPOSITORY": "send/shoutx",
+          "GITHUB_JOB": "runner-differential",
+          "RUNNER_OS": "macOS",
+          "RUNNER_ARCH": "ARM64",
+          "ImageOS": "macos15",
+          "ImageVersion": "20260907.0337.1",
+          "SHOUTX_SOURCE_HEAD": "fa2773104ddca446b565b894a35ce4a2c199c699",
+          "SHOUTX_MATRIX_OS": "macos-15",
+          "SHOUTX_MATRIX_RID": "osx-arm64"
+        },
+        "recordCorrelation": "unique-context-match-in-ancestor-installation",
+        "ancestorWorkerPid": 21183,
+        "timelineJobId": "af4f3795-1a79-534f-86ea-b08ca26e7235",
+        "onDiskIdentityStatus": "observed",
+        "onDiskSha256": {
+          "Runner.Worker": "7f81f8d6fc28b0766557ccc34665cfcce08beb2400ecd0f9445fe7c514ca31f7",
+          "Runner.Worker.dll": "d7d26ffdec4bf30b931fd35c98d792c32e20a5220ec3aaca039233398229ce70",
+          "Runner.Common.dll": "994120c86b7997b370a2ff59111f379ab8065ec03762be4e10dfb7fdf3d042c0",
+          "Runner.Sdk.dll": "3da92ed73346e1429af93f468620c6cba4974cc8cd9b913d71f719da710c987f",
+          "Sdk.dll": "7e2cd1052ebbc08ebf079c96da0e491155f745a948bc3c3cb1d134ab45c07ff7",
+          "System.Private.CoreLib.dll": "f43af84e79760beaab8e6b27e4f10d4a276c5c9e4b9b259cd65eb9d06fde2f78",
+          "Runner.Worker.runtimeconfig.json": "2349aceaec47e742386005940d1f394c8433717bc321facc1162a05fb9b586d2",
+          "Runner.Worker.deps.json": "df0d149dd441e07e29cb41b8816659518e024b6a5ed7e3e6eb14c8274a71b62a",
+          "libcoreclr.dylib": "943ba6f94d6af4ed818306418dc774cf3940bbf9062be93a39a3a2f3a4da285a"
+        },
+        "childConfigurationPresenceStatus": "observed-child-environment",
+        "childConfigurationPresence": {
+          "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT": "absent",
+          "DOTNET_SYSTEM_GLOBALIZATION_USENLS": "absent",
+          "DOTNET_SYSTEM_GLOBALIZATION_APPLOCALICU": "absent",
+          "DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY": "absent",
+          "CLR_ICU_VERSION_OVERRIDE": "absent",
+          "ICU_DATA": "absent"
+        },
+        "startupCultureStatus": "observed",
+        "startupCulture": "en-US",
+        "cultureInputStatus": "absent",
+        "cultureInput": null
+      },
+      "manifestWorkerFiles": {
+        "Runner.Common.dll": "994120c86b7997b370a2ff59111f379ab8065ec03762be4e10dfb7fdf3d042c0",
+        "Runner.Sdk.dll": "3da92ed73346e1429af93f468620c6cba4974cc8cd9b913d71f719da710c987f",
+        "Runner.Worker": "7f81f8d6fc28b0766557ccc34665cfcce08beb2400ecd0f9445fe7c514ca31f7",
+        "Runner.Worker.deps.json": "df0d149dd441e07e29cb41b8816659518e024b6a5ed7e3e6eb14c8274a71b62a",
+        "Runner.Worker.dll": "d7d26ffdec4bf30b931fd35c98d792c32e20a5220ec3aaca039233398229ce70",
+        "Runner.Worker.runtimeconfig.json": "2349aceaec47e742386005940d1f394c8433717bc321facc1162a05fb9b586d2",
+        "Sdk.dll": "7e2cd1052ebbc08ebf079c96da0e491155f745a948bc3c3cb1d134ab45c07ff7",
+        "System.Private.CoreLib.dll": "f43af84e79760beaab8e6b27e4f10d4a276c5c9e4b9b259cd65eb9d06fde2f78",
+        "libcoreclr.dylib": "943ba6f94d6af4ed818306418dc774cf3940bbf9062be93a39a3a2f3a4da285a"
+      },
+      "manifestTransportFiles": {
+        "Runner.Sdk.dll": "3da92ed73346e1429af93f468620c6cba4974cc8cd9b913d71f719da710c987f",
+        "System.Diagnostics.Process.dll": "eac22dfefa670894bb9b02960b82bb176889f7d485f2388c818dd8417c68073a",
+        "System.Private.CoreLib.dll": "f43af84e79760beaab8e6b27e4f10d4a276c5c9e4b9b259cd65eb9d06fde2f78"
+      },
+      "sourceReports": [
+        {
+          "artifact": "runner-package-evidence-macos-15-osx-arm64",
+          "path": "runner-package-evidence/evidence.json",
+          "sha256": "03895834086a3642c7704caadeaa611e0897f2f5316085bc44d5fa3e8778aa83"
+        },
+        {
+          "artifact": "runner-package-evidence-macos-15-osx-arm64",
+          "path": "runner-package-evidence/probe.json",
+          "sha256": "d96f18eeabefd02a2347db1cd00b54df7f09ef3cf303bd43fbf16a39cc0081c5"
+        },
+        {
+          "artifact": "runner-package-evidence-macos-15-osx-arm64",
+          "path": "runner-package-evidence/package-bin-sha256.json",
+          "sha256": "0744c3affd5fd767bd6530cac616e0b4f9e40e3a791ebf0fe99e98921c8bd0df"
+        },
+        {
+          "artifact": "hosted-worker-input-macos-15-osx-arm64",
+          "path": "hosted-worker-evidence.json",
+          "sha256": "43246e217e00c0b644f1809730b7e0c343ddee276513ae1d40c2692931bf0ed7"
+        },
+        {
+          "artifact": "runner-package-evidence-macos-15-osx-arm64",
+          "path": "runner-package-evidence/corehost.log",
+          "sha256": "4db429c6925589275961918aeca7265acf578e85e97b04821e5e928bfa147bfd"
+        }
+      ],
+      "authorDerivedChecks": {
+        "workerFilesMatchPackageManifest": true,
+        "transportFilesMatchPackageManifest": true,
+        "runShaImageIdentityMatches": true
+      },
+      "consumerVerdicts": {
+        "Invariant": "unverified",
+        "en-US": "unverified"
+      },
+      "launcherTranscriptions": {
+        "packagePythonPath": "/Library/Frameworks/Python.framework/Versions/3.14/bin/python",
+        "packagePathSource": "corehost.log: fourth application argument (supplied from harness sys.executable)",
+        "observerShellCommand": "/Library/Frameworks/Python.framework/Versions/Current/bin/python -I -S {0}",
+        "observerCommandSource": "author transcription of this job's display-side isolated-Python shell log line; equality with launch-side re-resolution uses unchanged shell/prepend-path/PATH/files; full job log not retained or independently hashed here",
+        "namedPathRelation": "different-named-paths-not-resolved",
+        "binaryContentAttested": false
+      }
+    },
+    {
+      "selector": "windows-latest",
+      "rid": "win-x64",
+      "job": {
+        "id": 111410356743,
+        "name": "runner-differential (windows-latest, win-x64)",
+        "run_attempt": 1,
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-04T09:51:16Z",
+        "completed_at": "2026-10-04T10:00:32Z",
+        "steps": [
+          {
+            "conclusion": "success",
+            "name": "Test published Runner runtime and parser",
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Test environment transport controls independently",
+            "status": "completed"
+          },
+          {
+            "conclusion": "success",
+            "name": "Observe hosted Worker startup input availability",
+            "status": "completed"
+          }
+        ]
+      },
+      "package": {
+        "status": "passed",
+        "githubRunId": "37193467498",
+        "githubSha": "3c9d55c1b97fc9a91efbb54a2726684547acc372",
+        "imageOS": "win25-vs2026",
+        "imageVersion": "20260925.250.1",
+        "pythonVersion": "3.12.10",
+        "buildSdk": "8.0.424",
+        "package": {
+          "url": "https://github.com/actions/runner/releases/download/v2.337.0/actions-runner-win-x64-2.337.0.zip",
+          "sha256": "1150692afa94e71f872017e254ea55b6eece1eece3fe7e3a6d4c93d0a1b85cfc",
+          "size": 103528051
+        },
+        "selectedCoreClr": {
+          "file": "coreclr.dll",
+          "sha256": "fc2909e16b3f70edfeac96d69d3f1d444705b1e4ad922dc760bb396338a7b1de"
+        },
+        "probeSha256": "358d31199a9e08ee573aede43ffd00981ab9d47e5f66fdbe9bad79f85bd37a05",
+        "preTransportEvidenceVerified": true,
+        "sourceDigestForm": "windows",
+        "corehostTraceSha256": "4c12c3b14d8e0d5c85e9a907fb9a3fd29f618fa81aa6beb014d6001ee51fc8b9"
+      },
+      "probe": {
+        "status": "passed",
+        "runtime": ".NET 8.0.30",
+        "os": "Microsoft Windows 10.0.26100",
+        "architecture": "X64",
+        "environmentTransport": {
+          "status": "passed",
+          "route": "package-sdk-invoker-to-isolated-python",
+          "cases": [
+            {
+              "case": "absent",
+              "presence": {
+                "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT": "absent",
+                "DOTNET_SYSTEM_GLOBALIZATION_USENLS": "absent",
+                "DOTNET_SYSTEM_GLOBALIZATION_APPLOCALICU": "absent",
+                "DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY": "absent",
+                "CLR_ICU_VERSION_OVERRIDE": "absent",
+                "ICU_DATA": "absent"
+              },
+              "valuesMatch": true,
+              "inheritedControlMatches": true
+            },
+            {
+              "case": "empty",
+              "presence": {
+                "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT": "defined",
+                "DOTNET_SYSTEM_GLOBALIZATION_USENLS": "defined",
+                "DOTNET_SYSTEM_GLOBALIZATION_APPLOCALICU": "defined",
+                "DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY": "defined",
+                "CLR_ICU_VERSION_OVERRIDE": "defined",
+                "ICU_DATA": "defined"
+              },
+              "valuesMatch": true,
+              "inheritedControlMatches": true
+            },
+            {
+              "case": "null",
+              "presence": {
+                "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT": "defined",
+                "DOTNET_SYSTEM_GLOBALIZATION_USENLS": "defined",
+                "DOTNET_SYSTEM_GLOBALIZATION_APPLOCALICU": "defined",
+                "DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY": "defined",
+                "CLR_ICU_VERSION_OVERRIDE": "defined",
+                "ICU_DATA": "defined"
+              },
+              "valuesMatch": true,
+              "inheritedControlMatches": true
+            },
+            {
+              "case": "text",
+              "presence": {
+                "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT": "defined",
+                "DOTNET_SYSTEM_GLOBALIZATION_USENLS": "defined",
+                "DOTNET_SYSTEM_GLOBALIZATION_APPLOCALICU": "defined",
+                "DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY": "defined",
+                "CLR_ICU_VERSION_OVERRIDE": "defined",
+                "ICU_DATA": "defined"
+              },
+              "valuesMatch": true,
+              "inheritedControlMatches": true
+            }
+          ]
+        },
+        "transportIdentities": [
+          {
+            "inPackage": true,
+            "file": "System.Private.CoreLib.dll",
+            "sha256": "cc2cc43d28e3770d7cdeb80dc74eab265a1f5dd2f5547ccb236983b48d47d914",
+            "informationalVersion": "8.0.30+a83db3e0eb2defb6220e15dae2f1a0462fdbf99f",
+            "moduleVersionId": "15b41a79-0fb0-4554-a2bd-b64b84096fff"
+          },
+          {
+            "inPackage": true,
+            "file": "Runner.Sdk.dll",
+            "sha256": "1d8f53df02cfc79972e603c80723e29d5455e5a9b101641b525a243279cb3a5a",
+            "informationalVersion": "2.337.0+397b032cbf865e9c3ddfab89d533ec19325e1273",
+            "moduleVersionId": "83e82f70-ea70-4fd8-9599-22fd408c2f8b"
+          },
+          {
+            "inPackage": true,
+            "file": "System.Diagnostics.Process.dll",
+            "sha256": "c626f1d3d3930ce42b9df43980307ccdbf7ddd5ac5fa6daa2b8993ca0f818257",
+            "informationalVersion": "8.0.30+a83db3e0eb2defb6220e15dae2f1a0462fdbf99f",
+            "moduleVersionId": "ba5f3a60-c273-438e-835a-32c3da1b0b81"
+          }
+        ]
+      },
+      "worker": {
+        "schemaVersion": 3,
+        "status": "observed-job-message-without-culture",
+        "identity": {
+          "GITHUB_RUN_ID": "37193467498",
+          "GITHUB_RUN_ATTEMPT": "1",
+          "GITHUB_SHA": "3c9d55c1b97fc9a91efbb54a2726684547acc372",
+          "GITHUB_REPOSITORY": "send/shoutx",
+          "GITHUB_JOB": "runner-differential",
+          "RUNNER_OS": "Windows",
+          "RUNNER_ARCH": "X64",
+          "ImageOS": "win25-vs2026",
+          "ImageVersion": "20260925.250.1",
+          "SHOUTX_SOURCE_HEAD": "fa2773104ddca446b565b894a35ce4a2c199c699",
+          "SHOUTX_MATRIX_OS": "windows-latest",
+          "SHOUTX_MATRIX_RID": "win-x64"
+        },
+        "recordCorrelation": "unique-context-match-in-ancestor-installation",
+        "ancestorWorkerPid": 9108,
+        "timelineJobId": "1b298622-c3cf-5b10-b515-c4ed6b0d16fb",
+        "onDiskIdentityStatus": "observed",
+        "onDiskSha256": {
+          "Runner.Worker.exe": "7f8b0ea83d2ce023a42dd3b1b11eab0efeed3d0b33860344e3f2e30f59514f30",
+          "Runner.Worker.dll": "513d54f9a2df265c72eb79cbe1e953d4195ea409b138dc50f47b4d2045ee154f",
+          "Runner.Common.dll": "276d5dde79696aecd105686f4b9ff7787ee9b458183ba3779e2044e0219e6fd5",
+          "Runner.Sdk.dll": "1d8f53df02cfc79972e603c80723e29d5455e5a9b101641b525a243279cb3a5a",
+          "Sdk.dll": "5200ef0056d28d29e7f806739a9dc661469788951147da9d62254607526ebf81",
+          "System.Private.CoreLib.dll": "cc2cc43d28e3770d7cdeb80dc74eab265a1f5dd2f5547ccb236983b48d47d914",
+          "Runner.Worker.runtimeconfig.json": "adb89a4d3814780dd921a3e13d60e70d1568306516a40a0c8e883a90a453c606",
+          "Runner.Worker.deps.json": "4f079c1e5d408c9cd551d97e35b96969c5c1d15548afc3b49756739e69340124",
+          "coreclr.dll": "fc2909e16b3f70edfeac96d69d3f1d444705b1e4ad922dc760bb396338a7b1de"
+        },
+        "childConfigurationPresenceStatus": "observed-child-environment",
+        "childConfigurationPresence": {
+          "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT": "absent",
+          "DOTNET_SYSTEM_GLOBALIZATION_USENLS": "absent",
+          "DOTNET_SYSTEM_GLOBALIZATION_APPLOCALICU": "absent",
+          "DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY": "absent",
+          "CLR_ICU_VERSION_OVERRIDE": "absent",
+          "ICU_DATA": "absent"
+        },
+        "startupCultureStatus": "observed",
+        "startupCulture": "en-US",
+        "cultureInputStatus": "absent",
+        "cultureInput": null
+      },
+      "manifestWorkerFiles": {
+        "coreclr.dll": "fc2909e16b3f70edfeac96d69d3f1d444705b1e4ad922dc760bb396338a7b1de",
+        "Runner.Common.dll": "276d5dde79696aecd105686f4b9ff7787ee9b458183ba3779e2044e0219e6fd5",
+        "Runner.Sdk.dll": "1d8f53df02cfc79972e603c80723e29d5455e5a9b101641b525a243279cb3a5a",
+        "Runner.Worker.deps.json": "4f079c1e5d408c9cd551d97e35b96969c5c1d15548afc3b49756739e69340124",
+        "Runner.Worker.dll": "513d54f9a2df265c72eb79cbe1e953d4195ea409b138dc50f47b4d2045ee154f",
+        "Runner.Worker.exe": "7f8b0ea83d2ce023a42dd3b1b11eab0efeed3d0b33860344e3f2e30f59514f30",
+        "Runner.Worker.runtimeconfig.json": "adb89a4d3814780dd921a3e13d60e70d1568306516a40a0c8e883a90a453c606",
+        "Sdk.dll": "5200ef0056d28d29e7f806739a9dc661469788951147da9d62254607526ebf81",
+        "System.Private.CoreLib.dll": "cc2cc43d28e3770d7cdeb80dc74eab265a1f5dd2f5547ccb236983b48d47d914"
+      },
+      "manifestTransportFiles": {
+        "Runner.Sdk.dll": "1d8f53df02cfc79972e603c80723e29d5455e5a9b101641b525a243279cb3a5a",
+        "System.Diagnostics.Process.dll": "c626f1d3d3930ce42b9df43980307ccdbf7ddd5ac5fa6daa2b8993ca0f818257",
+        "System.Private.CoreLib.dll": "cc2cc43d28e3770d7cdeb80dc74eab265a1f5dd2f5547ccb236983b48d47d914"
+      },
+      "sourceReports": [
+        {
+          "artifact": "runner-package-evidence-windows-latest-win-x64",
+          "path": "runner-package-evidence/evidence.json",
+          "sha256": "2f127fc87e177f76eb825f54de04e1460631acecdd545b8afcbfdc4ceb11ffa2"
+        },
+        {
+          "artifact": "runner-package-evidence-windows-latest-win-x64",
+          "path": "runner-package-evidence/probe.json",
+          "sha256": "dda8253e229a08367a886850da6983ae013105c44d5b60c144ffecbc155fb0d8"
+        },
+        {
+          "artifact": "runner-package-evidence-windows-latest-win-x64",
+          "path": "runner-package-evidence/package-bin-sha256.json",
+          "sha256": "0e35974dc9404895944dfa67f7acc4ef9c8b3a5c2e490f0575e8ec59fec123fb"
+        },
+        {
+          "artifact": "hosted-worker-input-windows-latest-win-x64",
+          "path": "hosted-worker-evidence.json",
+          "sha256": "3507677c352a8fad69fb32695d9e5771bca80c68e2dd8b8641f67654f653dfc0"
+        },
+        {
+          "artifact": "runner-package-evidence-windows-latest-win-x64",
+          "path": "runner-package-evidence/corehost.log",
+          "sha256": "4c12c3b14d8e0d5c85e9a907fb9a3fd29f618fa81aa6beb014d6001ee51fc8b9"
+        }
+      ],
+      "authorDerivedChecks": {
+        "workerFilesMatchPackageManifest": true,
+        "transportFilesMatchPackageManifest": true,
+        "runShaImageIdentityMatches": true
+      },
+      "consumerVerdicts": {
+        "Invariant": "unverified",
+        "en-US": "unverified"
+      },
+      "launcherTranscriptions": {
+        "packagePythonPath": "C:\\hostedtoolcache\\windows\\Python\\3.12.10\\x64\\python.exe",
+        "packagePathSource": "corehost.log: fourth application argument (supplied from harness sys.executable)",
+        "observerShellCommand": "C:\\hostedtoolcache\\windows\\Python\\3.12.10\\x64\\python.EXE -I -S {0}",
+        "observerCommandSource": "author transcription of this job's display-side isolated-Python shell log line; equality with launch-side re-resolution uses unchanged shell/prepend-path/PATH/files; full job log not retained or independently hashed here",
+        "namedPathRelation": "named-path-match-ignoring-ASCII-case",
+        "binaryContentAttested": false
+      }
+    }
+  ]
+}

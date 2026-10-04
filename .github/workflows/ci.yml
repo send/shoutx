@@ -409,6 +409,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python -B tests/runner-package/test_mapping_inventory.py
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python -B tests/runner-package/test_icu_source_comparison.py
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python -B tests/runner-package/test_structural_graph.py
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python -B tests/runner-package/test_windows_icu_metadata.py

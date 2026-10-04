@@ -26,6 +26,29 @@ def fixture():
 
 
 class MetadataTests(unittest.TestCase):
+    def setUp(self):
+        guard = patch.object(probe, "collect_data_candidate",
+                             side_effect=AssertionError("unexpected host data access"))
+        guard.start()
+        self.addCleanup(guard.stop)
+
+    def test_data_candidate_requires_reference_dll(self):
+        observed = {"status": "observed-candidate", "size": 7, "sha256": "a" * 64}
+        for status in ("candidate-mismatch", "unavailable", "reference-hash-match-pe-unavailable",
+                       "reference-hash-match"):
+            with patch.object(probe, "system_icu_path", return_value=Path("unused")), \
+                    patch.object(probe, "inspect_file", return_value={"status": status}), \
+                    patch.object(probe, "collect_data_candidate", return_value=observed) as inspect_data:
+                report = probe.collect()
+            if status == "reference-hash-match":
+                inspect_data.assert_called_once_with()
+                self.assertEqual(report["dataCandidate"], {"name": "icudtl.dat",
+                                 "locator": "system-windows-globalization-icu", **observed})
+                self.assertFalse(report["effectiveDataEstablished"])
+            else:
+                inspect_data.assert_not_called()
+                self.assertNotIn("dataCandidate", report)
+
     def test_prefix_comparison_is_hash_gated_and_failure_preserves_locator(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "fixture.dll"
@@ -104,6 +127,7 @@ class MetadataTests(unittest.TestCase):
         self.assertNotIn("PRIVATE_PATH", json.dumps(report))
         self.assertFalse(report["loadedBytesAttested"])
         self.assertFalse(report["effectiveDataEstablished"])
+        self.assertNotIn("dataCandidate", report)
         for error, reason in [(ValueError("system-directory"), "system-directory"),
                               (ValueError("PRIVATE"), "inspection-error"),
                               (probe.ctypes.ArgumentError("PRIVATE"), "system-api-binding-error")]:
@@ -128,14 +152,27 @@ class MetadataTests(unittest.TestCase):
                 path.write_bytes(data)
                 digest = hashlib.sha256(data).hexdigest()
                 with patch.object(probe, "system_icu_path", return_value=path), \
-                        patch.object(probe, "reference_digest", return_value=digest):
+                        patch.object(probe, "reference_digest", return_value=digest), \
+                        patch.object(probe, "collect_data_candidate", return_value={"status": "unavailable"}) as data_probe:
                     result = probe.collect()
                 self.assertEqual(result["candidate"]["status"], status)
                 self.assertEqual(result["candidate"]["sha256"], digest)
                 self.assertNotIn("PRIVATE", json.dumps(result))
                 if status.endswith("unavailable"):
+                    data_probe.assert_not_called()
+                    self.assertNotIn("dataCandidate", result)
                     self.assertEqual(result["candidate"]["reason"], "dos-header")
                     self.assertNotIn("symbolKey", result["candidate"])
+                else:
+                    data_probe.assert_called_once_with()
+                    self.assertIn("dataCandidate", result)
+            path.write_bytes(fixture())
+            with patch.object(probe, "system_icu_path", return_value=path), \
+                    patch.object(probe, "reference_digest", return_value="0" * 64):
+                # The setUp guard fails loudly if real mismatch reaches data I/O.
+                result = probe.collect()
+            self.assertEqual(result["candidate"]["status"], "candidate-mismatch")
+            self.assertNotIn("dataCandidate", result)
         self.assertEqual(probe.fixed_reason(ValueError("PRIVATE")), "inspection-error")
 
     def test_read_failure_reasons(self):

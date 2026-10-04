@@ -196,7 +196,7 @@ whose file hash is included in the report.
 
 The collector uses the native
 [GetSystemDirectoryW](https://learn.microsoft.com/en-us/windows/win32/api/sysinfoapi/nf-sysinfoapi-getsystemdirectoryw)
-directory and reads `icu.dll` as its only vendor input, with an 8-MiB cap,
+directory and first reads `icu.dll`, with an 8-MiB cap,
 without loading it. The dated KB5122871 observation above places the reference
 file below this cap. The 64-MiB
 image-size ceiling is a defensive parser bound, not an established reference
@@ -308,8 +308,10 @@ prefix length 2,732,032, checksum offset
 352, security-directory offset 432 and comparison SHA-256
 `a74972bace80cc4880755defce4b7cce6752f90ce0ac091a5eb130ed1be3bd04`.
 Its eight raw sections end no later than that prefix boundary; the final one
-ends exactly there. The reference-side comparison is pending. No equivalence,
-effective data binding or Windows acquisition closure is claimed.
+ends exactly there. The initial candidate-only inspection preceded the
+[reference-side result below](#reference-prefix-result-and-next-data-candidate).
+No loading equivalence, effective data binding or Windows acquisition closure
+is claimed.
 
 To reproduce this candidate-only result, first verify the downloaded file's
 whole-file hash against the candidate digest above, then use the reviewed
@@ -322,6 +324,79 @@ PYTHONPATH=tests/runner-package python3 -c 'import json,sys; from pe_prefix_dige
 This explicit local inspection of a nonmatching download does not run through
 or bypass the collector's reference gate. Do not publish the input file or
 treat this candidate result as a reference-side observation.
+
+#### Reference prefix result and next data candidate
+
+The [PR #89 run 37224210551](https://github.com/send/shoutx/actions/runs/37224210551),
+attempt 1, job 111500395100, observed the same fixed image identifier and exact
+whole-file DLL hash. Source head was `fbc5b410e09ef4aca966b805733e09473c44c260`;
+tested merge `314aad5b5ce690fabcd2bad9752a1ddbcc04ab5a` had parents
+`baef30644794b453eac9032fa6c74efb29090152` and that source head. The run's
+repository and head repository were `send/shoutx`, event `pull_request`, with
+the dedicated metadata workflow. Raw report SHA-256 was
+`7a819e5effffe0c8c665f2bca2a79eb29425bb68750e9793486aed15016ba144`;
+its reference-projection digest was the same CRLF digest recorded above.
+
+The reference-side algorithm, prefix size, checksum offset,
+security-directory offset and digest all equal the local candidate values
+above. The reference certificate size is 33,792, count 1; the candidate's is
+33,808, count 1. Subject to hash collision resistance, this confines differences
+to the explicitly excluded fields and certificate bytes. It is not recovery of
+the original signed file, nor proof of equal loader decisions, absence of
+self-inspection, effective data or reference-path behavior.
+
+Local static inspection of that candidate supplies a concrete **acquisition
+locator**, not a completed ICU load-path argument. Using Xcode's
+`llvm-objdump --private-headers` and bounded disassembly, the imported
+`GetSystemWindowsDirectoryW` IAT entry is at RVA `0x1ec608`; a call at
+`0x5e32a` is in the routine beginning at `0x5e2f8`. That routine appends a path
+separator if needed and the string at RVA `0x1f8a60`, `globalization\icu`.
+A caller at `0xa1c05` feeds the result to a cached-directory setter.
+Separately, code at `0x62305` and `0x62311` supplies `.dat` and `icudtl` string
+addresses to the call at `0x62329`, along with the cached directory pointer.
+These addresses are relative to the inspected candidate, not function names
+inferred from the nearest exported symbol. Full call reachability, fallback
+selection, configuration, loading and effective collation resources remain
+unproved. No vendor code was loaded to obtain these observations.
+
+This is a default-directory acquisition hypothesis, not a statement that all
+ICU builds ignore configuration. In Microsoft's older
+[72.1.0.3 putil.cpp](https://github.com/microsoft/icu/blob/807b1beec0dabf8a71f0bfde22da9705267f6a93/icu/icu4c/source/common/putil.cpp),
+`dataDirectoryInitFn` returns if a directory was previously set. Its `ICU_DATA`
+environment branch is compile-condition dependent; importantly, the later
+`ICU_DATA_DIR_WINDOWS` branch replaces that candidate path when its native
+directory helper succeeds. It is therefore inaccurate to assume an unconditional
+environment-first precedence for the Windows build. That fork's
+[udata.cpp](https://github.com/microsoft/icu/blob/807b1beec0dabf8a71f0bfde22da9705267f6a93/icu/icu4c/source/common/udata.cpp)
+also conditionally changes linked-in common-data handling and file-access
+selection for the Windows-directory build. This older source is not asserted
+to be the in-box 72.1.0.4 source. The reference's build conditions, prior
+directory/common-data setters, cache state and effective fallback selection
+still need their own argument. The collector's lack of environment access
+below describes only the collector, not the ICU loader.
+
+The collector's `icu_data_candidate.py` therefore inspects only
+`globalization/icu/icudtl.dat` below the native
+[GetSystemWindowsDirectoryW](https://learn.microsoft.com/en-us/windows/win32/api/sysinfoapi/nf-sysinfoapi-getsystemwindowsdirectoryw)
+directory, and only after the DLL has an exact reference match and valid PE
+locator. It does not use environment variables, enumerate directories or try
+alternate paths. It hashes the file in bounded chunks with a 64-MiB input cap.
+The report adds `dataCandidate` with fixed name/locator tokens, observed size
+and SHA-256, or a closed failure reason. `observed-candidate` is deliberately
+not `reference-hash-match`; the prior record had no data-file hash. A read
+failure discards any partial digest. The observation describes bytes reachable
+through that path at read time; path resolution may follow reparse points.
+This is an on-disk candidate observation,
+not an atomic file snapshot or attestation of loaded bytes. No data bytes or
+resource/mapping tables are uploaded, and `effectiveDataEstablished` remains
+false. Older reports omit this additive field.
+
+The dated KB5122871 CSV above lists a 31,158,064-byte `icudtl.dat` with SHA-256
+`8b1eb674fd6493f2009a8305b0ab0ed083754e9d0590d12d1cae4cf95f6268e9`
+in both the x64 and arm64 Windows Server 2025 LCU sections. This supports a
+concrete official-update comparison and the selected size cap, not an assertion
+that the file is already bound to the reference's effective data. The next
+hosted data-candidate observation is pending.
 
 ### macOS
 

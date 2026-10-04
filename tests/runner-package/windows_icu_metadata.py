@@ -10,6 +10,7 @@ import struct
 import sys
 
 from pe_prefix_digest import prefix_digest
+from icu_data_candidate import collect_data_candidate
 
 ROOT = Path(__file__).resolve().parents[2]
 EVIDENCE = ROOT / "docs/compatibility/evidence/hosted-worker-modules-37184265280.json"
@@ -136,6 +137,12 @@ def collect():
         report["candidate"] = {"status": "unavailable", "reason": fixed_reason(error)}
     else:
         report["candidate"] = inspect_file(path, expected)
+        # The data file is only a newly observed candidate, not a previously
+        # recorded reference identity. Never attempt this on a different DLL.
+        if report["candidate"]["status"] == "reference-hash-match":
+            report["dataCandidate"] = {"name": "icudtl.dat",
+                                       "locator": "system-windows-globalization-icu",
+                                       **collect_data_candidate()}
     return report
 
 

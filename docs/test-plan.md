@@ -1302,6 +1302,20 @@ Native observations and candidate comparison results belong in the linked
 reference inventory; test success alone establishes neither file equivalence
 nor signature or consumer behavior.
 
+For the fixed-path data-candidate extension, run
+`python -B tests/runner-package/test_icu_data_candidate.py` locally and in both
+CI locations. Verify native directory return bounds and absolute-path handling,
+chunked hash equality, exact-cap acceptance and cap+1 rejection, fixed API/read
+failure reasons and omission of partial hashes after midstream failure.
+Collector tests must prove no data-path access occurs on a mismatching,
+unavailable DLL or a DLL whose PE locator is unavailable, and that an observed candidate never changes
+the effective-data flag. Synthetic tests must mock data collection rather than
+reading the host's real vendor file. Helper/test changes must trigger the
+dedicated workflow, and each PowerShell native command must have its own exit
+check. Retain bounded metadata only; compare official-update identities
+separately from proving the reference's effective data binding.
+Prefix-comparison availability is not part of the data-candidate gate.
+
 #### Hosted Worker module-metadata feasibility observation
 
 `tests/runner-package/hosted_modules.py` separately follows its own ancestor

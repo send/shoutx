@@ -9,6 +9,8 @@ on:
       - 'tests/runner-package/test_windows_icu_metadata.py'
       - 'tests/runner-package/pe_prefix_digest.py'
       - 'tests/runner-package/test_pe_prefix_digest.py'
+      - 'tests/runner-package/icu_data_candidate.py'
+      - 'tests/runner-package/test_icu_data_candidate.py'
       - 'docs/compatibility/evidence/hosted-worker-modules-37184265280.json'
 
 permissions:
@@ -31,6 +33,8 @@ jobs:
           python -B tests/runner-package/test_pe_prefix_digest.py
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python -B tests/runner-package/test_windows_icu_metadata.py
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python -B tests/runner-package/test_icu_data_candidate.py
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Inspect candidate without loading vendor code
         run: python -B tests/runner-package/windows_icu_metadata.py --output target/windows-icu-locator.json

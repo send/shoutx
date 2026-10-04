@@ -415,6 +415,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python -B tests/runner-package/test_pe_prefix_digest.py
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python -B tests/runner-package/test_icu_data_candidate.py
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python scripts/test-runner-package.py --output target/runner-package-evidence
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Test environment transport controls independently

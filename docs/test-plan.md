@@ -1129,7 +1129,7 @@ tested SHA. The job-key source follows the
 not assumed equivalence with `JobName`. Duplicate JSON
 keys, multiple matches, unsupported structure and bounded-read failures remain
 unavailable. It does not enable debug logging, inspect process arguments or
-environments, inject code, modify the Worker, or copy diagnostics elsewhere.
+other processes' environments, inject code, modify the Worker, or copy diagnostics elsewhere.
 
 Only the selected culture inputs Invariant/`en-US` may be recorded; secret,
 redacted, missing or other culture inputs remain null with a fixed status.
@@ -1142,7 +1142,7 @@ duplicates remain null with a separate `startupCultureStatus`. UI culture,
 other trace sources and lines after the job marker are not substitutes.
 The existing top-level status still describes job-input availability, not
 this independent startup observation. This uses the same diagnostic bounds
-and trust limitations, not process memory or environment inspection.
+and trust limitations, not process memory or parent-environment inspection.
 The strict source-emitted line format is intentional: near-miss trace levels,
 indentation or spacing are ignored, not counted as matching duplicates.
 No authentication against a same-user log writer is claimed. Interpret an empty
@@ -1175,6 +1175,31 @@ to hash files does not discard a separately observed input. Even
 processing-thread culture, loaded native identities, effective mappings or
 transfer to the other culture. A
 null culture is not Invariant (which is the explicitly recorded empty string).
+
+Schema v3 additionally records a separate `childConfigurationPresence`
+observation in the Python observer's own environment. Its fixed key list is
+the four `DOTNET_SYSTEM_GLOBALIZATION_*` selectors for invariant, NLS,
+app-local ICU and predefined-only mode, `CLR_ICU_VERSION_OVERRIDE`, and
+`ICU_DATA`. Each entry is only `defined` or `absent`; even empty values count
+as defined. Values must not be compared, retained in reports or emitted; the
+helper makes membership queries only. Python's environment representation may
+already contain values and its membership implementation may fetch them
+internally; this is not a no-memory-access guarantee. Do not publish arbitrary environment keys,
+parent environments, loader paths or process arguments. A failed projection
+is independently `unavailable`, never a successful all-absent result.
+The workflow requests this observer through isolated Python without a shell
+profile or site initialization; it does not sanitize these keys. Key matching
+follows `os.environ`: uppercasing on Windows, exact on Unix; this is not a claim
+of equivalence to the .NET comparer for arbitrary Unicode key names. Offline
+tests exercise every key, empty/secret-like values, membership-only helper queries and failure
+separation. Historical schemas have no such observation.
+
+This is child-process evidence at observation time, **not** Worker startup
+configuration, AppContext state, ICU binding or culture. Interpretation needs
+the [fixed-source inheritance route and remaining conditions](compatibility/worker-configuration-route.md).
+In particular, neither an all-absent child projection nor Python isolation
+alone excludes job/step overrides or earlier changes in the parent. The
+top-level diagnostic status does not describe this additional observation.
 The log record does not contain a PID: `ancestorWorkerPid` locates an
 installation, not a cryptographic or direct process-to-log binding. Correlation
 depends on a trusted ephemeral hosted job and a unique matching matrix context.

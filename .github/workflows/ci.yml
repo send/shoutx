@@ -431,11 +431,15 @@ jobs:
           python -B tests/runner-package/test_hosted_modules.py
       - name: Observe hosted Worker startup input availability
         id: worker_observation
-        shell: bash
+        shell: python -I -S {0}
         env:
           SHOUTX_MATRIX_OS: ${{ matrix.os }}
           SHOUTX_MATRIX_RID: ${{ matrix.runtime }}
-        run: python -B tests/runner-package/hosted_worker.py --output target/hosted-worker-evidence.json
+        run: |
+          import runpy
+          import sys
+          sys.argv = ["hosted_worker.py", "--output", "target/hosted-worker-evidence.json"]
+          runpy.run_path("tests/runner-package/hosted_worker.py", run_name="__main__")
       - name: Retain limited hosted Worker observation
         if: ${{ always() && steps.worker_observation.outcome != 'skipped' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a

@@ -22,6 +22,15 @@ loader state; inability to attest those deployment details alone is no longer
 a reason to stop this research. Their observations and unknowns remain evidence,
 not newly verified facts.
 
+Later on 2026-10-05, the maintainer approved replacing this research goal's
+Fable review requirement with a separate-context, read-only `gpt-6-sol`
+review to conserve Fable capacity. Findings still require evidence-based
+disposition and material corrections require re-review. Latest-head CI and
+GitHub Codex convergence, zero unresolved review threads and the merge gate
+remain unchanged. An unavailable independent reviewer does not permit merging
+unreviewed work. This exception applies to this goal, not the repository's
+general review guidance or the research correctness criteria.
+
 ## Decision drivers
 
 - Establish explicit completion criteria instead of indefinitely accumulating

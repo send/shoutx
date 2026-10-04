@@ -217,15 +217,184 @@ not a new completion gate in this note.
 This input-focused assessment does not discharge check 2's separate
 culture/execution-context obligations.
 
-The subsequent [package transport control](../test-plan.md#package-environment-transport-control)
-targets one remaining gap: execution of the published SDK invoker through
-the pinned runtime's environment serializer to the isolated Python observer.
-It introduces absent/empty/null/text controls without modifying parent
-globalization selectors. This is not yet a retained four-row result and does
-not extend what run 37190267207 measured. Earlier Runner launch stages, native
-environment and startup/cache timing remain separate source obligations.
+## Transport result, run 37193467498
 
-## Reproduction and retention
+The [retained transport projection](evidence/environment-transport-37193467498.json)
+records [run 37193467498](https://github.com/send/shoutx/actions/runs/37193467498),
+attempt 1, PR #82 head `fa2773104ddca446b565b894a35ce4a2c199c699`, tested merge
+`3c9d55c1b97fc9a91efbb54a2726684547acc372`. All four package jobs and their
+independent Python control steps succeeded. The
+[test plan](../test-plan.md#package-environment-transport-control) owns the
+experiment's cases, isolation, failure handling and limits.
+
+| Selector | Job ID | Image version | Python | Transport cases |
+| --- | --- | --- | --- | --- |
+| ubuntu-22.04 | 111410356771 | ubuntu22 / 20260927.309.1 | 3.10.12 | all four passed |
+| ubuntu-24.04 | 111410356782 | ubuntu24 / 20260927.320.1 | 3.12.3 | all four passed |
+| macos-15 | 111410356770 | macos15 / 20260907.0337.1 | 3.14.7 | all four passed |
+| windows-latest | 111410356743 | win25-vs2026 / 20260925.250.1 | 3.12.10 | all four passed |
+
+For every row, all six keys were `absent` in the absent control and `defined`
+in the empty, null and text controls. Synthetic-value comparisons and the
+separate parent **managed-environment** marker matched in every case. Thus the
+tested empty/null entries survive this package SDK-to-Python path, including
+Windows CPython; this is no longer merely a serializer-source prediction.
+It is not an experiment in a registered Worker, nor is transport separately
+repeated under both comparison cultures. No culture linkage is inferred from it.
+
+All package probes report .NET 8.0.30, SDK 8.0.424 and the pinned archives.
+The retained CoreLib, Runner.Sdk and System.Diagnostics.Process identities
+match their package manifest entries, and CoreCLR selection is separately
+retained from the harness. Each report has `preTransportEvidenceVerified=true`;
+that records earlier suite verification, not a stronger transport/consumer
+claim. The original reports were also rechecked with the repository's managed
+identity and completion validators, not accepted merely from a green job.
+
+Separately, each same-job Worker child observer again reports all six keys
+absent. Its run, attempt, SHA, matrix RID and resolved image correlate with
+the package job (including matrix OS, which separates the two linux-x64 rows).
+The job-number association is by artifact name and matrix fields, not a numeric
+job ID inside the Worker report. All nine observed on-disk Worker files match the package
+manifest. Both sides of the digest comparisons are retained. These are
+author-derived correlations, not a new observer measurement. In particular,
+System.Diagnostics.Process.dll is hash-identified in the **package** probe,
+not added to the nine-file live Worker observation by this record.
+The startup names and absent job culture input are preserved independently,
+without upgrading them to processing-thread or native-setting observations.
+
+The record also distinguishes the two Python launchers. The package harness
+supplies `sys.executable` as the fourth application argument; this is visible
+in the hash-checked CoreHost trace. The observer's logged shell line comes from
+this run's job logs, transcribed independently of the earlier run. It is
+ScriptHandler's display-side resolution; RunAsync resolves the command again.
+Equality with that launch-side resolution is a source inference using the same
+shell/prepend-path inputs and unchanged PATH/files within the step:
+
+| Row | Package Python argument | Observer logged shell command |
+| --- | --- | --- |
+| Both Ubuntu rows | `/usr/bin/python` | `/usr/bin/python -I -S {0}` |
+| macos-15 | `/Library/Frameworks/Python.framework/Versions/3.14/bin/python` | `/Library/Frameworks/Python.framework/Versions/Current/bin/python -I -S {0}` |
+| windows-latest | `C:\hostedtoolcache\windows\Python\3.12.10\x64\python.exe` | `C:\hostedtoolcache\windows\Python\3.12.10\x64\python.EXE -I -S {0}` |
+
+Linux paths match exactly; Windows differs only in ASCII filename case. Treating
+the Windows paths as the same executable uses the trusted hosted tool-cache's
+normal case-insensitive path resolution. These are named-path observations,
+not binary-content attestation; unchanged interpreter/stdlib files during the
+job remain a file-continuity assumption. The macOS `Current` link was not
+resolved here and is not declared identical. Package-side Python versions in
+the table are not a separately measured observer version.
+
+### Direct-launch preservation inference
+
+The fixed-source argument can now distinguish two boundaries. At SDK child
+construction, ProcessStartInfo copies the current managed environment and
+the SDK invoker only assigns overlay entries. Assignment can change a value,
+including to null/empty, but at this runtime pin does not remove one of the
+six literal ASCII keys from the serialized child environment. The successful
+controls above check the observer's presence function under the package step's
+interpreter, not independently every live interpreter. This is a
+key-preservation argument, not value equality.
+
+Copying an **inherited empty-valued** entry is a fixed-source premise, not a
+measured case: the experiment inherits a non-empty marker and assigns empty/null
+values only to child overlays. At the pinned .NET commit,
+[Unix GetEnvironmentVariables](https://github.com/dotnet/runtime/blob/a83db3e0eb2defb6220e15dae2f1a0462fdbf99f/src/libraries/System.Private.CoreLib/src/System/Environment.Variables.Unix.cs)
+and [Windows GetEnvironmentVariables](https://github.com/dotnet/runtime/blob/a83db3e0eb2defb6220e15dae2f1a0462fdbf99f/src/libraries/System.Private.CoreLib/src/System/Environment.Variables.Windows.cs)
+retain a valid `KEY=` entry with an empty value, and ProcessStartInfo copies it
+without value filtering. This yields the same dictionary state tested by an
+empty overlay. The process-level
+[Environment.SetEnvironmentVariable](https://github.com/dotnet/runtime/blob/a83db3e0eb2defb6220e15dae2f1a0462fdbf99f/src/libraries/System.Private.CoreLib/src/System/Environment.cs)
+API instead normalizes an empty input to null at this pin; it must not be
+confused with assignment to the child's dictionary.
+
+For the preceding non-container route, fixed
+[DefaultStepHost](https://github.com/actions/runner/blob/397b032cbf865e9c3ddfab89d533ec19325e1273/src/Runner.Worker/Handlers/StepHost.cs)
+passes the environment dictionary to the
+[Common invoker](https://github.com/actions/runner/blob/397b032cbf865e9c3ddfab89d533ec19325e1273/src/Runner.Common/ProcessInvoker.cs),
+which forwards it to the SDK invoker without filtering. Crucially, that
+dictionary is an **overlay**, separate from inherited StartInfo.Environment.
+Even removing a key from the overlay cannot delete an inherited entry; deletion
+would require a parent-side unset or removal from StartInfo.Environment.
+The inspected SDK uses only assignments there. The distinct
+[NodeScriptActionHandler](https://github.com/actions/runner/blob/397b032cbf865e9c3ddfab89d533ec19325e1273/src/Runner.Worker/Handlers/NodeScriptActionHandler.cs)
+removes `NODE_ICU_DATA` from its overlay, not one of these six inherited keys;
+that is not a counterexample. ScriptHandler's
+[Handler](https://github.com/actions/runner/blob/397b032cbf865e9c3ddfab89d533ec19325e1273/src/Runner.Worker/Handlers/Handler.cs)
+PATH helper changes PATH; the fixed
+[RunnerContext](https://github.com/actions/runner/blob/397b032cbf865e9c3ddfab89d533ec19325e1273/src/Runner.Worker/RunnerContext.cs)
+and [GitHubContext](https://github.com/actions/runner/blob/397b032cbf865e9c3ddfab89d533ec19325e1273/src/Runner.Worker/GitHubContext.cs)
+exports use RUNNER_/GITHUB_ prefixes. Normal job/step overlays need not equal
+the parent's values for this one-way presence argument to hold.
+
+Consequently, **conditional on the identified direct-launch implementation,
+trusted interpreter/OS, the named-interpreter correspondence above,
+package/source correspondence and file continuity**, an
+absent key in the observer supports absence in the parent's managed snapshot
+used for that launch. This applies to the non-container direct Python route
+selected by the workflow's Linux and Windows observer steps. It is an inference
+from source and observations, not a read of the Worker's environment. It does
+not recover an earlier snapshot, initial native `environ`, an AppContext value,
+or an ICU loader result. A present child key would not prove parent presence,
+since an overlay can introduce it. This supplies a conditional launch-time
+managed-view input for acquisition-target check 3 on these platforms, not a
+startup-selection outcome; check 4's native/locale route remains untouched.
+Neither culture verdict is closed.
+
+Here the trusted-installation correspondence also covers unobserved live
+runtime files, notably System.Diagnostics.Process.dll and the Unix native
+process-spawn library; their live bytes are not measured by this record.
+On Unix, the launch-time managed snapshot comes from its managed cache. On
+Windows, enumeration re-reads the Win32 process environment block without such
+a cache; that does not establish a Windows CRT getenv consumer's view.
+The live observer's `main` passes `os.environ` directly to the same presence
+function before its diagnostic collection, without filtering those keys.
+
+The macOS optional wrapper must not be silently treated as a direct launch.
+The pinned [macos-run-invoker.js](https://github.com/actions/runner/blob/397b032cbf865e9c3ddfab89d533ec19325e1273/src/Misc/layoutbin/macos-run-invoker.js)
+calls Node `spawn` without an environment override. The internal selection in
+[NodeUtil](https://github.com/actions/runner/blob/397b032cbf865e9c3ddfab89d533ec19325e1273/src/Runner.Common/Util/NodeUtil.cs)
+permits only node20; [externals.sh](https://github.com/actions/runner/blob/397b032cbf865e9c3ddfab89d533ec19325e1273/src/Misc/externals.sh)
+pins 20.20.2. In that official Node source
+[child_process.js](https://github.com/nodejs/node/blob/3626fea570e44896ad99aaf3bf6e59def5adede5/lib/child_process.js),
+the default is process.env and defined values, including empty strings, are
+included in envPairs. This narrows the wrapper assessment but does not establish
+its activation, complete native enumeration/startup behaviour or executed Node
+identity in this run. The package transport experiment does not execute it.
+The macOS wrapper question therefore remains separate; no matrix row is dropped.
+
+### Reproducing the transport projection
+
+Download each named package artifact and Worker input artifact from run
+37193467498. The projection records raw SHA-256 for evidence.json, probe.json, corehost.log,
+package-bin-sha256.json and hosted-worker-evidence.json. Verify these before
+repeating the identity, file and exact transport-case checks above. The run/job
+metadata and three step outcomes (package test, Python control, Worker observer)
+are retained from the Actions APIs; run `updated_at` is not a job completion
+timestamp. The shell commands are author transcriptions of selected job-log
+lines, not independently hashed full-job-log evidence. `probeSha256` hashes
+Probe.dll, not probe.json.
+
+PR #82's durable merged source is `c3d33e3d236bf6b5bf5f6cfb494bd0a552febec5`.
+The retained source digests match those source bytes on Linux/macOS. On Windows,
+14 files match after LF-to-CRLF conversion; unicode-candidate.json remains
+byte-identical LF, consistent with its explicit `.gitattributes` rule. Both
+raw digest forms are retained: this is a checked conversion relation, not an
+assertion that the platform files have identical bytes. The runner-side Git
+setting responsible for CRLF was not observed, and a fresh checkout may use a
+different form. The pins digest is author-computed from the merged LF repository
+file, not emitted by the run as a digest of its checked-out pins file. No source
+hash is a loaded-memory attestation.
+
+This minimal author-checked record retains transport results and selected
+identities, not all earlier collation results or a full report archive. The
+original artifacts have 30-day retention. Their digests cannot recover expired
+bytes or recreate the historical hosted image; fresh reproduction has new
+run/image identities. The named pinned packages and source commit support
+rerunning the experiment. No vendor payload or mapping table is published.
+Native/startup settings and effective per-culture inputs remain subject to the
+existing acquisition-target checks and stop rule.
+
+## Reproducing run 37190267207
 
 Each row records raw-byte SHA-256, artifact name and relative file path for six
 inputs: Worker observation, package evidence, package probe, package manifest,

@@ -463,6 +463,12 @@ their respective fixed-source/data arguments. The known package environment
 sanitization does not establish the Worker's values. No new live environment
 read, raw memory access or behavioural corpus change is part of this report.
 
+A subsequent [child-configuration observation and source assessment](worker-configuration-route.md#same-job-result-run-37190267207)
+retains run 37190267207. All six selected keys are absent in each observer's
+environment, with same-job identity matches. Its managed/native and timing
+limits are explicit; it does not relabel the startup inputs above as observed
+absent or close a culture verdict.
+
 ## Reproduction of this inventory
 
 For the latest module observation (run 37184265280), use the six-report

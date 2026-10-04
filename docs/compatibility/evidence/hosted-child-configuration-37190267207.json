@@ -1,0 +1,1067 @@
+{
+  "schemaVersion": 1,
+  "kind": "hosted-child-configuration-presence",
+  "observedOn": "2026-10-04",
+  "sourceRun": {
+    "id": 37190267207,
+    "attempt": 1,
+    "headSha": "290e1820544cbaa69192c6ce20b30e9b14a4c76d",
+    "testedSha": "06923b5ed9cdf9cd7e1413dc46f8a0593aeb0188",
+    "conclusion": "success",
+    "createdAt": "2026-10-04T08:51:21Z",
+    "updatedAt": "2026-10-04T09:01:21Z",
+    "pullRequest": 80,
+    "mergedCommit": "1edf17c483890d4ebb7fbee2b284422061784c79",
+    "verifierJob": {
+      "id": 111402286419,
+      "runAttempt": 1,
+      "status": "completed",
+      "conclusion": "success",
+      "startedAt": "2026-10-04T09:00:56Z",
+      "completedAt": "2026-10-04T09:01:15Z"
+    }
+  },
+  "method": "Author-checked projection of six same-run reports per row; not a signed attestation. Source digests do not reconstruct expired artifacts.",
+  "scope": "Child configuration presence and same-job package/live identity correlation. Not Worker startup configuration, native getenv, effective ICU data, or completed per-culture consumer linkage.",
+  "rows": [
+    {
+      "selector": "ubuntu-22.04",
+      "rid": "linux-x64",
+      "job": {
+        "id": 111400797815,
+        "startedAt": "2026-10-04T08:51:32Z",
+        "completedAt": "2026-10-04T08:58:48Z",
+        "conclusion": "success",
+        "runAttempt": 1
+      },
+      "sourceReports": {
+        "worker": {
+          "sha256": "709d24a3f7940ec6954b5a05eed0c614af3ff8371a28e6022a2f80b185177c3f",
+          "artifact": "hosted-worker-input-ubuntu-22.04-linux-x64",
+          "file": "hosted-worker-evidence.json"
+        },
+        "evidence": {
+          "sha256": "0285e1453b35f6f969dbb7c4ce41bde4fcd7115c065a30520bac18872f42ed12",
+          "artifact": "runner-package-evidence-ubuntu-22.04-linux-x64",
+          "file": "runner-package-evidence/evidence.json"
+        },
+        "probe": {
+          "sha256": "fc0c84ea25b48d0176a6b6d5bb4c73f10deacfb6ff4aade9aede17a1fa806ffd",
+          "artifact": "runner-package-evidence-ubuntu-22.04-linux-x64",
+          "file": "runner-package-evidence/probe.json"
+        },
+        "manifest": {
+          "sha256": "f0f751b82ed658691738d7aeb8ae1d7fd8b10535cd563340edd86d3e128350df",
+          "artifact": "runner-package-evidence-ubuntu-22.04-linux-x64",
+          "file": "runner-package-evidence/package-bin-sha256.json"
+        },
+        "modules": {
+          "sha256": "312c3c05161f85f880e0ff9bb6955dfcd9b063399ced0fb093670657e025aad5",
+          "artifact": "hosted-worker-modules-ubuntu-22.04-linux-x64",
+          "file": "hosted-worker-modules.json"
+        },
+        "boundary": {
+          "sha256": "6e5bedd6c2291411b359d3e6197092db095b2dbb0120d1beebff5873b3f18ac1",
+          "artifact": "hosted-boundary-evidence",
+          "file": "package-matched/ubuntu-22.04.json"
+        }
+      },
+      "identity": {
+        "GITHUB_RUN_ID": "37190267207",
+        "GITHUB_RUN_ATTEMPT": "1",
+        "GITHUB_SHA": "06923b5ed9cdf9cd7e1413dc46f8a0593aeb0188",
+        "GITHUB_REPOSITORY": "send/shoutx",
+        "GITHUB_JOB": "runner-differential",
+        "RUNNER_OS": "Linux",
+        "RUNNER_ARCH": "X64",
+        "ImageOS": "ubuntu22",
+        "ImageVersion": "20260927.309.1",
+        "SHOUTX_SOURCE_HEAD": "290e1820544cbaa69192c6ce20b30e9b14a4c76d",
+        "SHOUTX_MATRIX_OS": "ubuntu-22.04",
+        "SHOUTX_MATRIX_RID": "linux-x64"
+      },
+      "worker": {
+        "schemaVersion": 3,
+        "status": "observed-job-message-without-culture",
+        "ancestorWorkerPid": 1867,
+        "recordCorrelation": "unique-context-match-in-ancestor-installation",
+        "timelineJobId": "d1e86df6-b7ff-5215-8b64-fdfc7284d8bd",
+        "startupCulture": "",
+        "startupCultureStatus": "observed",
+        "cultureInput": null,
+        "cultureInputStatus": "absent",
+        "childConfigurationPresenceStatus": "observed-child-environment",
+        "childConfigurationPresence": {
+          "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT": "absent",
+          "DOTNET_SYSTEM_GLOBALIZATION_USENLS": "absent",
+          "DOTNET_SYSTEM_GLOBALIZATION_APPLOCALICU": "absent",
+          "DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY": "absent",
+          "CLR_ICU_VERSION_OVERRIDE": "absent",
+          "ICU_DATA": "absent"
+        },
+        "onDiskIdentityStatus": "observed",
+        "onDiskSha256": {
+          "Runner.Worker": "04db3805782ddc32208f1a1cae4b1cb99ef9232ed2ef95a10218e4f5665dbccb",
+          "Runner.Worker.dll": "f460f611aa5597a4d5331a8b9e848d5a535ece0e6dab396699328502b8b49c41",
+          "Runner.Common.dll": "b10853d9c1a8498779ba5236933281018627a8dc7ce54b977b6d9e2343035393",
+          "Runner.Sdk.dll": "0103c1fdcc73136592d2696c6ddf0966df98322f6aad589d14fe69a7687673fa",
+          "Sdk.dll": "cf9ba086a45675bd81f33b3001b69f9fcc90ff64c26ee201c4ca044fbe36581a",
+          "System.Private.CoreLib.dll": "003ac935a51189b420a7d84de724ccb94eca31e2d07b4faf1e2d943052018028",
+          "Runner.Worker.runtimeconfig.json": "2349aceaec47e742386005940d1f394c8433717bc321facc1162a05fb9b586d2",
+          "Runner.Worker.deps.json": "bd4cb38b3b5efe7f8081d56dcc155fc6b0b19a8c0aa5ee632816839e58d7be1e",
+          "libcoreclr.so": "fedf4074258e14b425cd3b4209bedc3e102765623445cc1bcfe8361f6193231c"
+        },
+        "allNineObservedFilesMatchPackageManifest": true
+      },
+      "package": {
+        "status": "passed",
+        "archive": {
+          "url": "https://github.com/actions/runner/releases/download/v2.337.0/actions-runner-linux-x64-2.337.0.tar.gz",
+          "sha256": "70920811a4f8ad4328818682bca5c6469c1c942fab52448868071d0063816613",
+          "size": 226430031
+        },
+        "runtimeConfig": {
+          "runtimeOptions": {
+            "tfm": "net8.0",
+            "includedFrameworks": [
+              {
+                "name": "Microsoft.NETCore.App",
+                "version": "8.0.30"
+              }
+            ],
+            "configProperties": {
+              "System.Globalization.PredefinedCulturesOnly": false,
+              "System.Reflection.Metadata.MetadataUpdater.IsSupported": false,
+              "System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization": false
+            }
+          }
+        },
+        "runtime": ".NET 8.0.30",
+        "architecture": "X64",
+        "os": "Ubuntu 22.04.5 LTS",
+        "globalization": {
+          "invariant": false,
+          "nls": null,
+          "hybrid": null,
+          "backendFromFlags": "Unknown"
+        },
+        "explicitCultures": [
+          {
+            "culture": "",
+            "backendObserved": "ICU",
+            "icu": {
+              "binding": "CoreLib:Interop.Globalization.GetICUVersion",
+              "versionRaw": 1174470656,
+              "version": "70.1.0.0"
+            }
+          },
+          {
+            "culture": "en-US",
+            "backendObserved": "ICU",
+            "icu": {
+              "binding": "CoreLib:Interop.Globalization.GetICUVersion",
+              "versionRaw": 1174470656,
+              "version": "70.1.0.0"
+            }
+          }
+        ],
+        "manifestObservedSha256": {
+          "Runner.Worker": "04db3805782ddc32208f1a1cae4b1cb99ef9232ed2ef95a10218e4f5665dbccb",
+          "Runner.Worker.dll": "f460f611aa5597a4d5331a8b9e848d5a535ece0e6dab396699328502b8b49c41",
+          "Runner.Common.dll": "b10853d9c1a8498779ba5236933281018627a8dc7ce54b977b6d9e2343035393",
+          "Runner.Sdk.dll": "0103c1fdcc73136592d2696c6ddf0966df98322f6aad589d14fe69a7687673fa",
+          "Sdk.dll": "cf9ba086a45675bd81f33b3001b69f9fcc90ff64c26ee201c4ca044fbe36581a",
+          "System.Private.CoreLib.dll": "003ac935a51189b420a7d84de724ccb94eca31e2d07b4faf1e2d943052018028",
+          "Runner.Worker.runtimeconfig.json": "2349aceaec47e742386005940d1f394c8433717bc321facc1162a05fb9b586d2",
+          "Runner.Worker.deps.json": "bd4cb38b3b5efe7f8081d56dcc155fc6b0b19a8c0aa5ee632816839e58d7be1e",
+          "libcoreclr.so": "fedf4074258e14b425cd3b4209bedc3e102765623445cc1bcfe8361f6193231c"
+        }
+      },
+      "modules": {
+        "status": "observed-module-metadata",
+        "ancestorWorkerPid": 1867,
+        "method": "proc-maps",
+        "modules": [
+          {
+            "name": "libcoreclr.so",
+            "mappedPathDeleted": false,
+            "onDiskStatus": "observed",
+            "onDiskSha256": "fedf4074258e14b425cd3b4209bedc3e102765623445cc1bcfe8361f6193231c",
+            "mappedFileIdentityStatus": "matched"
+          },
+          {
+            "name": "libicudata.so.70.1",
+            "mappedPathDeleted": false,
+            "onDiskStatus": "observed",
+            "onDiskSha256": "c1404396288e178c8db2f30203cb8150e4d2c14cacee9a2883e0092f45399cc8",
+            "mappedFileIdentityStatus": "matched"
+          },
+          {
+            "name": "libicui18n.so.70.1",
+            "mappedPathDeleted": false,
+            "onDiskStatus": "observed",
+            "onDiskSha256": "24fa78caa9b66c10c90711c51089f45273b643f132031172d54a3e98d711d48e",
+            "mappedFileIdentityStatus": "matched"
+          },
+          {
+            "name": "libicuuc.so.70.1",
+            "mappedPathDeleted": false,
+            "onDiskStatus": "observed",
+            "onDiskSha256": "4683f3623dc47a92e862dc3c8770caff81c9f4c7e116bb672fc439737b06d88a",
+            "mappedFileIdentityStatus": "matched"
+          }
+        ],
+        "selectedClasses": {
+          "coreclr": "observed",
+          "globalizationShim": "not-observed",
+          "icuCommon": "observed",
+          "icuInternational": "observed",
+          "icuData": "observed"
+        },
+        "activeBackend": null,
+        "effectiveData": null,
+        "loadedBytesAttested": false
+      },
+      "liveBoundary": {
+        "status": "passed",
+        "runnerVersion": "2.337.0",
+        "pinnedRunnerVersion": "2.337.0",
+        "runnerMatchesPin": true,
+        "jobId": 111400797815,
+        "maskCases": 8,
+        "annotationCases": 30,
+        "workerCulture": null,
+        "workerGlobalizationBackend": null,
+        "harnessSha256": "ce566ed214a26827b6c10b97a8621eb391e3887c6585bdcce4c5926ee0a759e4",
+        "logSha256": "48c518f655fc48f0a1f83719eeeedde27c4d70911bbf445ab80f2c9c0e25f5bd",
+        "annotationsSha256": "8d4e418a18882372a0cccd0fa13ff5d1f7c8fe1112a06c2440747d9c1d59ad77",
+        "verifierAttempt": "1"
+      },
+      "verdicts": {
+        "Invariant": "unverified",
+        "en-US": "unverified"
+      },
+      "identitySource": "worker observation",
+      "sourceIdentities": {
+        "moduleObservation": {
+          "GITHUB_RUN_ID": "37190267207",
+          "GITHUB_RUN_ATTEMPT": "1",
+          "GITHUB_SHA": "06923b5ed9cdf9cd7e1413dc46f8a0593aeb0188",
+          "GITHUB_REPOSITORY": "send/shoutx",
+          "GITHUB_JOB": "runner-differential",
+          "RUNNER_OS": "Linux",
+          "RUNNER_ARCH": "X64",
+          "ImageOS": "ubuntu22",
+          "ImageVersion": "20260927.309.1",
+          "SHOUTX_SOURCE_HEAD": "290e1820544cbaa69192c6ce20b30e9b14a4c76d",
+          "SHOUTX_MATRIX_OS": "ubuntu-22.04",
+          "SHOUTX_MATRIX_RID": "linux-x64"
+        },
+        "liveBoundary": {
+          "GITHUB_RUN_ATTEMPT": "1",
+          "GITHUB_RUN_ID": "37190267207",
+          "GITHUB_SHA": "06923b5ed9cdf9cd7e1413dc46f8a0593aeb0188",
+          "ImageOS": "ubuntu22",
+          "ImageVersion": "20260927.309.1",
+          "RUNNER_ARCH": "X64",
+          "RUNNER_OS": "Linux",
+          "SHOUTX_SOURCE_HEAD": "290e1820544cbaa69192c6ce20b30e9b14a4c76d"
+        },
+        "packageEvidence": {
+          "githubRunId": "37190267207",
+          "githubSha": "06923b5ed9cdf9cd7e1413dc46f8a0593aeb0188",
+          "rid": "linux-x64",
+          "imageOS": "ubuntu22",
+          "imageVersion": "20260927.309.1"
+        },
+        "packageProbeArchitecture": "X64"
+      },
+      "authorDerivedChecks": {
+        "workerAndModulesIdentityFieldsAgree": true,
+        "workerAndBoundaryAvailableIdentityFieldsAgree": true,
+        "workerAndPackageRunImageRidAgree": true,
+        "packageProbeArchitectureMatchesWorkerAfterUppercasing": true,
+        "workerAndModuleAncestorPidAgree": true
+      },
+      "observerLaunch": {
+        "source": "author transcription of job-log shell line",
+        "command": "/usr/bin/python -I -S {0}",
+        "binaryContentAttested": false
+      }
+    },
+    {
+      "selector": "ubuntu-24.04",
+      "rid": "linux-x64",
+      "job": {
+        "id": 111400797829,
+        "startedAt": "2026-10-04T08:51:31Z",
+        "completedAt": "2026-10-04T08:58:36Z",
+        "conclusion": "success",
+        "runAttempt": 1
+      },
+      "sourceReports": {
+        "worker": {
+          "sha256": "9c85bfc59fe34a74788e7472bf7fdceced2f91fb3bf8de22d57da303082ac8ed",
+          "artifact": "hosted-worker-input-ubuntu-24.04-linux-x64",
+          "file": "hosted-worker-evidence.json"
+        },
+        "evidence": {
+          "sha256": "13197ab535433e186c233ec7362ae7ef440b2c6977f9c47848538c6b29029613",
+          "artifact": "runner-package-evidence-ubuntu-24.04-linux-x64",
+          "file": "runner-package-evidence/evidence.json"
+        },
+        "probe": {
+          "sha256": "20e799c75e2140313c5680f1e18353bb154fb047c5c6ddb46be931fad6c55adc",
+          "artifact": "runner-package-evidence-ubuntu-24.04-linux-x64",
+          "file": "runner-package-evidence/probe.json"
+        },
+        "manifest": {
+          "sha256": "f0f751b82ed658691738d7aeb8ae1d7fd8b10535cd563340edd86d3e128350df",
+          "artifact": "runner-package-evidence-ubuntu-24.04-linux-x64",
+          "file": "runner-package-evidence/package-bin-sha256.json"
+        },
+        "modules": {
+          "sha256": "129831faf14abe73e5f024989a3d73b8be0d91661f3fb4959e8563861ab6853e",
+          "artifact": "hosted-worker-modules-ubuntu-24.04-linux-x64",
+          "file": "hosted-worker-modules.json"
+        },
+        "boundary": {
+          "sha256": "a6e622ee29dc6dfa6cc38e648b0b74076c2ee41eb41fd2a9d7eb88c018b2e45f",
+          "artifact": "hosted-boundary-evidence",
+          "file": "package-matched/ubuntu-24.04.json"
+        }
+      },
+      "identity": {
+        "GITHUB_RUN_ID": "37190267207",
+        "GITHUB_RUN_ATTEMPT": "1",
+        "GITHUB_SHA": "06923b5ed9cdf9cd7e1413dc46f8a0593aeb0188",
+        "GITHUB_REPOSITORY": "send/shoutx",
+        "GITHUB_JOB": "runner-differential",
+        "RUNNER_OS": "Linux",
+        "RUNNER_ARCH": "X64",
+        "ImageOS": "ubuntu24",
+        "ImageVersion": "20260927.320.1",
+        "SHOUTX_SOURCE_HEAD": "290e1820544cbaa69192c6ce20b30e9b14a4c76d",
+        "SHOUTX_MATRIX_OS": "ubuntu-24.04",
+        "SHOUTX_MATRIX_RID": "linux-x64"
+      },
+      "worker": {
+        "schemaVersion": 3,
+        "status": "observed-job-message-without-culture",
+        "ancestorWorkerPid": 2136,
+        "recordCorrelation": "unique-context-match-in-ancestor-installation",
+        "timelineJobId": "6cedb5dc-6bd6-5684-93b8-70a703223157",
+        "startupCulture": "",
+        "startupCultureStatus": "observed",
+        "cultureInput": null,
+        "cultureInputStatus": "absent",
+        "childConfigurationPresenceStatus": "observed-child-environment",
+        "childConfigurationPresence": {
+          "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT": "absent",
+          "DOTNET_SYSTEM_GLOBALIZATION_USENLS": "absent",
+          "DOTNET_SYSTEM_GLOBALIZATION_APPLOCALICU": "absent",
+          "DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY": "absent",
+          "CLR_ICU_VERSION_OVERRIDE": "absent",
+          "ICU_DATA": "absent"
+        },
+        "onDiskIdentityStatus": "observed",
+        "onDiskSha256": {
+          "Runner.Worker": "04db3805782ddc32208f1a1cae4b1cb99ef9232ed2ef95a10218e4f5665dbccb",
+          "Runner.Worker.dll": "f460f611aa5597a4d5331a8b9e848d5a535ece0e6dab396699328502b8b49c41",
+          "Runner.Common.dll": "b10853d9c1a8498779ba5236933281018627a8dc7ce54b977b6d9e2343035393",
+          "Runner.Sdk.dll": "0103c1fdcc73136592d2696c6ddf0966df98322f6aad589d14fe69a7687673fa",
+          "Sdk.dll": "cf9ba086a45675bd81f33b3001b69f9fcc90ff64c26ee201c4ca044fbe36581a",
+          "System.Private.CoreLib.dll": "003ac935a51189b420a7d84de724ccb94eca31e2d07b4faf1e2d943052018028",
+          "Runner.Worker.runtimeconfig.json": "2349aceaec47e742386005940d1f394c8433717bc321facc1162a05fb9b586d2",
+          "Runner.Worker.deps.json": "bd4cb38b3b5efe7f8081d56dcc155fc6b0b19a8c0aa5ee632816839e58d7be1e",
+          "libcoreclr.so": "fedf4074258e14b425cd3b4209bedc3e102765623445cc1bcfe8361f6193231c"
+        },
+        "allNineObservedFilesMatchPackageManifest": true
+      },
+      "package": {
+        "status": "passed",
+        "archive": {
+          "url": "https://github.com/actions/runner/releases/download/v2.337.0/actions-runner-linux-x64-2.337.0.tar.gz",
+          "sha256": "70920811a4f8ad4328818682bca5c6469c1c942fab52448868071d0063816613",
+          "size": 226430031
+        },
+        "runtimeConfig": {
+          "runtimeOptions": {
+            "tfm": "net8.0",
+            "includedFrameworks": [
+              {
+                "name": "Microsoft.NETCore.App",
+                "version": "8.0.30"
+              }
+            ],
+            "configProperties": {
+              "System.Globalization.PredefinedCulturesOnly": false,
+              "System.Reflection.Metadata.MetadataUpdater.IsSupported": false,
+              "System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization": false
+            }
+          }
+        },
+        "runtime": ".NET 8.0.30",
+        "architecture": "X64",
+        "os": "Ubuntu 24.04.5 LTS",
+        "globalization": {
+          "invariant": false,
+          "nls": null,
+          "hybrid": null,
+          "backendFromFlags": "Unknown"
+        },
+        "explicitCultures": [
+          {
+            "culture": "",
+            "backendObserved": "ICU",
+            "icu": {
+              "binding": "CoreLib:Interop.Globalization.GetICUVersion",
+              "versionRaw": 1241645056,
+              "version": "74.2.0.0"
+            }
+          },
+          {
+            "culture": "en-US",
+            "backendObserved": "ICU",
+            "icu": {
+              "binding": "CoreLib:Interop.Globalization.GetICUVersion",
+              "versionRaw": 1241645056,
+              "version": "74.2.0.0"
+            }
+          }
+        ],
+        "manifestObservedSha256": {
+          "Runner.Worker": "04db3805782ddc32208f1a1cae4b1cb99ef9232ed2ef95a10218e4f5665dbccb",
+          "Runner.Worker.dll": "f460f611aa5597a4d5331a8b9e848d5a535ece0e6dab396699328502b8b49c41",
+          "Runner.Common.dll": "b10853d9c1a8498779ba5236933281018627a8dc7ce54b977b6d9e2343035393",
+          "Runner.Sdk.dll": "0103c1fdcc73136592d2696c6ddf0966df98322f6aad589d14fe69a7687673fa",
+          "Sdk.dll": "cf9ba086a45675bd81f33b3001b69f9fcc90ff64c26ee201c4ca044fbe36581a",
+          "System.Private.CoreLib.dll": "003ac935a51189b420a7d84de724ccb94eca31e2d07b4faf1e2d943052018028",
+          "Runner.Worker.runtimeconfig.json": "2349aceaec47e742386005940d1f394c8433717bc321facc1162a05fb9b586d2",
+          "Runner.Worker.deps.json": "bd4cb38b3b5efe7f8081d56dcc155fc6b0b19a8c0aa5ee632816839e58d7be1e",
+          "libcoreclr.so": "fedf4074258e14b425cd3b4209bedc3e102765623445cc1bcfe8361f6193231c"
+        }
+      },
+      "modules": {
+        "status": "observed-module-metadata",
+        "ancestorWorkerPid": 2136,
+        "method": "proc-maps",
+        "modules": [
+          {
+            "name": "libcoreclr.so",
+            "mappedPathDeleted": false,
+            "onDiskStatus": "observed",
+            "onDiskSha256": "fedf4074258e14b425cd3b4209bedc3e102765623445cc1bcfe8361f6193231c",
+            "mappedFileIdentityStatus": "matched"
+          },
+          {
+            "name": "libicudata.so.74.2",
+            "mappedPathDeleted": false,
+            "onDiskStatus": "observed",
+            "onDiskSha256": "ddbb3718b8bd9cbd780e5ab08b4503c30a6c4fa0706ebe5d074ed6b596c1714e",
+            "mappedFileIdentityStatus": "matched"
+          },
+          {
+            "name": "libicui18n.so.74.2",
+            "mappedPathDeleted": false,
+            "onDiskStatus": "observed",
+            "onDiskSha256": "3550b194eb2cf2e6f798f033eb9ca279d498c21296b4a18790ce158d2023e47b",
+            "mappedFileIdentityStatus": "matched"
+          },
+          {
+            "name": "libicuuc.so.74.2",
+            "mappedPathDeleted": false,
+            "onDiskStatus": "observed",
+            "onDiskSha256": "7560aadde38e5f4237a47a1ddd5891f9b36768a77a60faae30beee003ac01901",
+            "mappedFileIdentityStatus": "matched"
+          }
+        ],
+        "selectedClasses": {
+          "coreclr": "observed",
+          "globalizationShim": "not-observed",
+          "icuCommon": "observed",
+          "icuInternational": "observed",
+          "icuData": "observed"
+        },
+        "activeBackend": null,
+        "effectiveData": null,
+        "loadedBytesAttested": false
+      },
+      "liveBoundary": {
+        "status": "passed",
+        "runnerVersion": "2.337.0",
+        "pinnedRunnerVersion": "2.337.0",
+        "runnerMatchesPin": true,
+        "jobId": 111400797829,
+        "maskCases": 8,
+        "annotationCases": 30,
+        "workerCulture": null,
+        "workerGlobalizationBackend": null,
+        "harnessSha256": "ce566ed214a26827b6c10b97a8621eb391e3887c6585bdcce4c5926ee0a759e4",
+        "logSha256": "61d73e09abcb8d5c821c8da3c9500d3054c6b936e3b61712788862e99661e11d",
+        "annotationsSha256": "8d4e418a18882372a0cccd0fa13ff5d1f7c8fe1112a06c2440747d9c1d59ad77",
+        "verifierAttempt": "1"
+      },
+      "verdicts": {
+        "Invariant": "unverified",
+        "en-US": "unverified"
+      },
+      "identitySource": "worker observation",
+      "sourceIdentities": {
+        "moduleObservation": {
+          "GITHUB_RUN_ID": "37190267207",
+          "GITHUB_RUN_ATTEMPT": "1",
+          "GITHUB_SHA": "06923b5ed9cdf9cd7e1413dc46f8a0593aeb0188",
+          "GITHUB_REPOSITORY": "send/shoutx",
+          "GITHUB_JOB": "runner-differential",
+          "RUNNER_OS": "Linux",
+          "RUNNER_ARCH": "X64",
+          "ImageOS": "ubuntu24",
+          "ImageVersion": "20260927.320.1",
+          "SHOUTX_SOURCE_HEAD": "290e1820544cbaa69192c6ce20b30e9b14a4c76d",
+          "SHOUTX_MATRIX_OS": "ubuntu-24.04",
+          "SHOUTX_MATRIX_RID": "linux-x64"
+        },
+        "liveBoundary": {
+          "GITHUB_RUN_ATTEMPT": "1",
+          "GITHUB_RUN_ID": "37190267207",
+          "GITHUB_SHA": "06923b5ed9cdf9cd7e1413dc46f8a0593aeb0188",
+          "ImageOS": "ubuntu24",
+          "ImageVersion": "20260927.320.1",
+          "RUNNER_ARCH": "X64",
+          "RUNNER_OS": "Linux",
+          "SHOUTX_SOURCE_HEAD": "290e1820544cbaa69192c6ce20b30e9b14a4c76d"
+        },
+        "packageEvidence": {
+          "githubRunId": "37190267207",
+          "githubSha": "06923b5ed9cdf9cd7e1413dc46f8a0593aeb0188",
+          "rid": "linux-x64",
+          "imageOS": "ubuntu24",
+          "imageVersion": "20260927.320.1"
+        },
+        "packageProbeArchitecture": "X64"
+      },
+      "authorDerivedChecks": {
+        "workerAndModulesIdentityFieldsAgree": true,
+        "workerAndBoundaryAvailableIdentityFieldsAgree": true,
+        "workerAndPackageRunImageRidAgree": true,
+        "packageProbeArchitectureMatchesWorkerAfterUppercasing": true,
+        "workerAndModuleAncestorPidAgree": true
+      },
+      "observerLaunch": {
+        "source": "author transcription of job-log shell line",
+        "command": "/usr/bin/python -I -S {0}",
+        "binaryContentAttested": false
+      }
+    },
+    {
+      "selector": "macos-15",
+      "rid": "osx-arm64",
+      "job": {
+        "id": 111400797837,
+        "startedAt": "2026-10-04T08:51:38Z",
+        "completedAt": "2026-10-04T08:57:51Z",
+        "conclusion": "success",
+        "runAttempt": 1
+      },
+      "sourceReports": {
+        "worker": {
+          "sha256": "f4b6d72ad445654f77c6715f58d768d63a4d503d0310b18e3a6d0ea2efd0a1be",
+          "artifact": "hosted-worker-input-macos-15-osx-arm64",
+          "file": "hosted-worker-evidence.json"
+        },
+        "evidence": {
+          "sha256": "8a0fa801de1bbd8178595b5be31878eba1ae8e61e38a3421239a0396f9cfad5c",
+          "artifact": "runner-package-evidence-macos-15-osx-arm64",
+          "file": "runner-package-evidence/evidence.json"
+        },
+        "probe": {
+          "sha256": "0acc0447e11863c574ef269a1ee54e7628224ff48fb45c07e4a51e3ccad09289",
+          "artifact": "runner-package-evidence-macos-15-osx-arm64",
+          "file": "runner-package-evidence/probe.json"
+        },
+        "manifest": {
+          "sha256": "0744c3affd5fd767bd6530cac616e0b4f9e40e3a791ebf0fe99e98921c8bd0df",
+          "artifact": "runner-package-evidence-macos-15-osx-arm64",
+          "file": "runner-package-evidence/package-bin-sha256.json"
+        },
+        "modules": {
+          "sha256": "c1e7fd53d054f342f56fb6a0035453110cda97ea5c7b15298c73a4e13da7b909",
+          "artifact": "hosted-worker-modules-macos-15-osx-arm64",
+          "file": "hosted-worker-modules.json"
+        },
+        "boundary": {
+          "sha256": "0ba5d5899d58c523f16212968b0793c4b43bb764bdded17e7e8bf5fe5a71bee3",
+          "artifact": "hosted-boundary-evidence",
+          "file": "package-matched/macos-15.json"
+        }
+      },
+      "identity": {
+        "GITHUB_RUN_ID": "37190267207",
+        "GITHUB_RUN_ATTEMPT": "1",
+        "GITHUB_SHA": "06923b5ed9cdf9cd7e1413dc46f8a0593aeb0188",
+        "GITHUB_REPOSITORY": "send/shoutx",
+        "GITHUB_JOB": "runner-differential",
+        "RUNNER_OS": "macOS",
+        "RUNNER_ARCH": "ARM64",
+        "ImageOS": "macos15",
+        "ImageVersion": "20260907.0337.1",
+        "SHOUTX_SOURCE_HEAD": "290e1820544cbaa69192c6ce20b30e9b14a4c76d",
+        "SHOUTX_MATRIX_OS": "macos-15",
+        "SHOUTX_MATRIX_RID": "osx-arm64"
+      },
+      "worker": {
+        "schemaVersion": 3,
+        "status": "observed-job-message-without-culture",
+        "ancestorWorkerPid": 1141,
+        "recordCorrelation": "unique-context-match-in-ancestor-installation",
+        "timelineJobId": "37f0e87f-adda-524b-9b36-df2d95088406",
+        "startupCulture": "en-US",
+        "startupCultureStatus": "observed",
+        "cultureInput": null,
+        "cultureInputStatus": "absent",
+        "childConfigurationPresenceStatus": "observed-child-environment",
+        "childConfigurationPresence": {
+          "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT": "absent",
+          "DOTNET_SYSTEM_GLOBALIZATION_USENLS": "absent",
+          "DOTNET_SYSTEM_GLOBALIZATION_APPLOCALICU": "absent",
+          "DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY": "absent",
+          "CLR_ICU_VERSION_OVERRIDE": "absent",
+          "ICU_DATA": "absent"
+        },
+        "onDiskIdentityStatus": "observed",
+        "onDiskSha256": {
+          "Runner.Worker": "7f81f8d6fc28b0766557ccc34665cfcce08beb2400ecd0f9445fe7c514ca31f7",
+          "Runner.Worker.dll": "d7d26ffdec4bf30b931fd35c98d792c32e20a5220ec3aaca039233398229ce70",
+          "Runner.Common.dll": "994120c86b7997b370a2ff59111f379ab8065ec03762be4e10dfb7fdf3d042c0",
+          "Runner.Sdk.dll": "3da92ed73346e1429af93f468620c6cba4974cc8cd9b913d71f719da710c987f",
+          "Sdk.dll": "7e2cd1052ebbc08ebf079c96da0e491155f745a948bc3c3cb1d134ab45c07ff7",
+          "System.Private.CoreLib.dll": "f43af84e79760beaab8e6b27e4f10d4a276c5c9e4b9b259cd65eb9d06fde2f78",
+          "Runner.Worker.runtimeconfig.json": "2349aceaec47e742386005940d1f394c8433717bc321facc1162a05fb9b586d2",
+          "Runner.Worker.deps.json": "df0d149dd441e07e29cb41b8816659518e024b6a5ed7e3e6eb14c8274a71b62a",
+          "libcoreclr.dylib": "943ba6f94d6af4ed818306418dc774cf3940bbf9062be93a39a3a2f3a4da285a"
+        },
+        "allNineObservedFilesMatchPackageManifest": true
+      },
+      "package": {
+        "status": "passed",
+        "archive": {
+          "url": "https://github.com/actions/runner/releases/download/v2.337.0/actions-runner-osx-arm64-2.337.0.tar.gz",
+          "sha256": "5a2cd92908a93d7276a194e1de6008099f3e7946f3f8e14aa7a1a7b4a31fdec2",
+          "size": 127732571
+        },
+        "runtimeConfig": {
+          "runtimeOptions": {
+            "tfm": "net8.0",
+            "includedFrameworks": [
+              {
+                "name": "Microsoft.NETCore.App",
+                "version": "8.0.30"
+              }
+            ],
+            "configProperties": {
+              "System.Globalization.PredefinedCulturesOnly": false,
+              "System.Reflection.Metadata.MetadataUpdater.IsSupported": false,
+              "System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization": false
+            }
+          }
+        },
+        "runtime": ".NET 8.0.30",
+        "architecture": "Arm64",
+        "os": "Darwin 24.6.0 Darwin Kernel Version 24.6.0: Tue Jul 21 20:51:34 PDT 2026; root:xnu-11417.140.69.711.44~1/RELEASE_ARM64_VMAPPLE",
+        "globalization": {
+          "invariant": false,
+          "nls": null,
+          "hybrid": null,
+          "backendFromFlags": "Unknown"
+        },
+        "explicitCultures": [
+          {
+            "culture": "",
+            "backendObserved": "ICU",
+            "icu": {
+              "binding": "CoreLib:Interop.Globalization.GetICUVersion",
+              "versionRaw": 1275133952,
+              "version": "76.1.0.0"
+            }
+          },
+          {
+            "culture": "en-US",
+            "backendObserved": "ICU",
+            "icu": {
+              "binding": "CoreLib:Interop.Globalization.GetICUVersion",
+              "versionRaw": 1275133952,
+              "version": "76.1.0.0"
+            }
+          }
+        ],
+        "manifestObservedSha256": {
+          "Runner.Worker": "7f81f8d6fc28b0766557ccc34665cfcce08beb2400ecd0f9445fe7c514ca31f7",
+          "Runner.Worker.dll": "d7d26ffdec4bf30b931fd35c98d792c32e20a5220ec3aaca039233398229ce70",
+          "Runner.Common.dll": "994120c86b7997b370a2ff59111f379ab8065ec03762be4e10dfb7fdf3d042c0",
+          "Runner.Sdk.dll": "3da92ed73346e1429af93f468620c6cba4974cc8cd9b913d71f719da710c987f",
+          "Sdk.dll": "7e2cd1052ebbc08ebf079c96da0e491155f745a948bc3c3cb1d134ab45c07ff7",
+          "System.Private.CoreLib.dll": "f43af84e79760beaab8e6b27e4f10d4a276c5c9e4b9b259cd65eb9d06fde2f78",
+          "Runner.Worker.runtimeconfig.json": "2349aceaec47e742386005940d1f394c8433717bc321facc1162a05fb9b586d2",
+          "Runner.Worker.deps.json": "df0d149dd441e07e29cb41b8816659518e024b6a5ed7e3e6eb14c8274a71b62a",
+          "libcoreclr.dylib": "943ba6f94d6af4ed818306418dc774cf3940bbf9062be93a39a3a2f3a4da285a"
+        }
+      },
+      "modules": {
+        "status": "observed-module-metadata",
+        "ancestorWorkerPid": 1141,
+        "method": "lsof-text-files",
+        "modules": [
+          {
+            "name": "libcoreclr.dylib",
+            "mappedPathDeleted": false,
+            "onDiskStatus": "observed",
+            "onDiskSha256": "943ba6f94d6af4ed818306418dc774cf3940bbf9062be93a39a3a2f3a4da285a",
+            "mappedFileIdentityStatus": "not-observed"
+          }
+        ],
+        "selectedClasses": {
+          "coreclr": "observed",
+          "globalizationShim": "not-observed",
+          "icuSystem": "not-observed"
+        },
+        "activeBackend": null,
+        "effectiveData": null,
+        "loadedBytesAttested": false
+      },
+      "liveBoundary": {
+        "status": "passed",
+        "runnerVersion": "2.337.0",
+        "pinnedRunnerVersion": "2.337.0",
+        "runnerMatchesPin": true,
+        "jobId": 111400797837,
+        "maskCases": 8,
+        "annotationCases": 30,
+        "workerCulture": null,
+        "workerGlobalizationBackend": null,
+        "harnessSha256": "ce566ed214a26827b6c10b97a8621eb391e3887c6585bdcce4c5926ee0a759e4",
+        "logSha256": "21209041d09e38b89872e80ff3d2bbcb6701e94458f7090833333765023e6790",
+        "annotationsSha256": "a3da6d4361dff540ec7eb4eed2eb5464daea0781e97b53083eebc5fb93085b7e",
+        "verifierAttempt": "1"
+      },
+      "verdicts": {
+        "Invariant": "unverified",
+        "en-US": "unverified"
+      },
+      "identitySource": "worker observation",
+      "sourceIdentities": {
+        "moduleObservation": {
+          "GITHUB_RUN_ID": "37190267207",
+          "GITHUB_RUN_ATTEMPT": "1",
+          "GITHUB_SHA": "06923b5ed9cdf9cd7e1413dc46f8a0593aeb0188",
+          "GITHUB_REPOSITORY": "send/shoutx",
+          "GITHUB_JOB": "runner-differential",
+          "RUNNER_OS": "macOS",
+          "RUNNER_ARCH": "ARM64",
+          "ImageOS": "macos15",
+          "ImageVersion": "20260907.0337.1",
+          "SHOUTX_SOURCE_HEAD": "290e1820544cbaa69192c6ce20b30e9b14a4c76d",
+          "SHOUTX_MATRIX_OS": "macos-15",
+          "SHOUTX_MATRIX_RID": "osx-arm64"
+        },
+        "liveBoundary": {
+          "GITHUB_RUN_ATTEMPT": "1",
+          "GITHUB_RUN_ID": "37190267207",
+          "GITHUB_SHA": "06923b5ed9cdf9cd7e1413dc46f8a0593aeb0188",
+          "ImageOS": "macos15",
+          "ImageVersion": "20260907.0337.1",
+          "RUNNER_ARCH": "ARM64",
+          "RUNNER_OS": "macOS",
+          "SHOUTX_SOURCE_HEAD": "290e1820544cbaa69192c6ce20b30e9b14a4c76d"
+        },
+        "packageEvidence": {
+          "githubRunId": "37190267207",
+          "githubSha": "06923b5ed9cdf9cd7e1413dc46f8a0593aeb0188",
+          "rid": "osx-arm64",
+          "imageOS": "macos15",
+          "imageVersion": "20260907.0337.1"
+        },
+        "packageProbeArchitecture": "Arm64"
+      },
+      "authorDerivedChecks": {
+        "workerAndModulesIdentityFieldsAgree": true,
+        "workerAndBoundaryAvailableIdentityFieldsAgree": true,
+        "workerAndPackageRunImageRidAgree": true,
+        "packageProbeArchitectureMatchesWorkerAfterUppercasing": true,
+        "workerAndModuleAncestorPidAgree": true
+      },
+      "observerLaunch": {
+        "source": "author transcription of job-log shell line",
+        "command": "/Library/Frameworks/Python.framework/Versions/Current/bin/python -I -S {0}",
+        "binaryContentAttested": false
+      },
+      "additionalServiceAnnotation": {
+        "source": "check-run annotations API, per_page=100",
+        "totalAnnotations": 31,
+        "path": ".github",
+        "title": "",
+        "message": "Due to capacity constraints, jobs targeting macOS arm64 runners may experience longer queue times."
+      }
+    },
+    {
+      "selector": "windows-latest",
+      "rid": "win-x64",
+      "job": {
+        "id": 111400797833,
+        "startedAt": "2026-10-04T08:51:31Z",
+        "completedAt": "2026-10-04T09:00:54Z",
+        "conclusion": "success",
+        "runAttempt": 1
+      },
+      "sourceReports": {
+        "worker": {
+          "sha256": "95188dc336a43078d6ad1e58b72e21f4dadfd971b8ee24985ba06846b553008f",
+          "artifact": "hosted-worker-input-windows-latest-win-x64",
+          "file": "hosted-worker-evidence.json"
+        },
+        "evidence": {
+          "sha256": "74560a118802d8cf37a89d3748a0b78ddaff9affd3875c10540c8d646e8167b6",
+          "artifact": "runner-package-evidence-windows-latest-win-x64",
+          "file": "runner-package-evidence/evidence.json"
+        },
+        "probe": {
+          "sha256": "4673aea8fcad5e8f9c941a4196c991c9cc00529f0a0b25444f04d754a6df3378",
+          "artifact": "runner-package-evidence-windows-latest-win-x64",
+          "file": "runner-package-evidence/probe.json"
+        },
+        "manifest": {
+          "sha256": "0e35974dc9404895944dfa67f7acc4ef9c8b3a5c2e490f0575e8ec59fec123fb",
+          "artifact": "runner-package-evidence-windows-latest-win-x64",
+          "file": "runner-package-evidence/package-bin-sha256.json"
+        },
+        "modules": {
+          "sha256": "576d03bc58599d202a0d6bc54627136180f1e382faf321813ced1e5ee8314646",
+          "artifact": "hosted-worker-modules-windows-latest-win-x64",
+          "file": "hosted-worker-modules.json"
+        },
+        "boundary": {
+          "sha256": "d1237749e244b4b3a1e9c2a3d2bbec1d1b302f2dfcca15dc40f68e27110537b7",
+          "artifact": "hosted-boundary-evidence",
+          "file": "package-matched/windows-latest.json"
+        }
+      },
+      "identity": {
+        "GITHUB_RUN_ID": "37190267207",
+        "GITHUB_RUN_ATTEMPT": "1",
+        "GITHUB_SHA": "06923b5ed9cdf9cd7e1413dc46f8a0593aeb0188",
+        "GITHUB_REPOSITORY": "send/shoutx",
+        "GITHUB_JOB": "runner-differential",
+        "RUNNER_OS": "Windows",
+        "RUNNER_ARCH": "X64",
+        "ImageOS": "win25-vs2026",
+        "ImageVersion": "20260925.250.1",
+        "SHOUTX_SOURCE_HEAD": "290e1820544cbaa69192c6ce20b30e9b14a4c76d",
+        "SHOUTX_MATRIX_OS": "windows-latest",
+        "SHOUTX_MATRIX_RID": "win-x64"
+      },
+      "worker": {
+        "schemaVersion": 3,
+        "status": "observed-job-message-without-culture",
+        "ancestorWorkerPid": 6940,
+        "recordCorrelation": "unique-context-match-in-ancestor-installation",
+        "timelineJobId": "d1939898-a4fa-5ffd-bae5-4fcd908451c0",
+        "startupCulture": "en-US",
+        "startupCultureStatus": "observed",
+        "cultureInput": null,
+        "cultureInputStatus": "absent",
+        "childConfigurationPresenceStatus": "observed-child-environment",
+        "childConfigurationPresence": {
+          "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT": "absent",
+          "DOTNET_SYSTEM_GLOBALIZATION_USENLS": "absent",
+          "DOTNET_SYSTEM_GLOBALIZATION_APPLOCALICU": "absent",
+          "DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY": "absent",
+          "CLR_ICU_VERSION_OVERRIDE": "absent",
+          "ICU_DATA": "absent"
+        },
+        "onDiskIdentityStatus": "observed",
+        "onDiskSha256": {
+          "Runner.Worker.exe": "7f8b0ea83d2ce023a42dd3b1b11eab0efeed3d0b33860344e3f2e30f59514f30",
+          "Runner.Worker.dll": "513d54f9a2df265c72eb79cbe1e953d4195ea409b138dc50f47b4d2045ee154f",
+          "Runner.Common.dll": "276d5dde79696aecd105686f4b9ff7787ee9b458183ba3779e2044e0219e6fd5",
+          "Runner.Sdk.dll": "1d8f53df02cfc79972e603c80723e29d5455e5a9b101641b525a243279cb3a5a",
+          "Sdk.dll": "5200ef0056d28d29e7f806739a9dc661469788951147da9d62254607526ebf81",
+          "System.Private.CoreLib.dll": "cc2cc43d28e3770d7cdeb80dc74eab265a1f5dd2f5547ccb236983b48d47d914",
+          "Runner.Worker.runtimeconfig.json": "adb89a4d3814780dd921a3e13d60e70d1568306516a40a0c8e883a90a453c606",
+          "Runner.Worker.deps.json": "4f079c1e5d408c9cd551d97e35b96969c5c1d15548afc3b49756739e69340124",
+          "coreclr.dll": "fc2909e16b3f70edfeac96d69d3f1d444705b1e4ad922dc760bb396338a7b1de"
+        },
+        "allNineObservedFilesMatchPackageManifest": true
+      },
+      "package": {
+        "status": "passed",
+        "archive": {
+          "url": "https://github.com/actions/runner/releases/download/v2.337.0/actions-runner-win-x64-2.337.0.zip",
+          "sha256": "1150692afa94e71f872017e254ea55b6eece1eece3fe7e3a6d4c93d0a1b85cfc",
+          "size": 103528051
+        },
+        "runtimeConfig": {
+          "runtimeOptions": {
+            "tfm": "net8.0",
+            "includedFrameworks": [
+              {
+                "name": "Microsoft.NETCore.App",
+                "version": "8.0.30"
+              }
+            ],
+            "configProperties": {
+              "System.Globalization.PredefinedCulturesOnly": false,
+              "System.Reflection.Metadata.MetadataUpdater.IsSupported": false,
+              "System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization": false
+            }
+          }
+        },
+        "runtime": ".NET 8.0.30",
+        "architecture": "X64",
+        "os": "Microsoft Windows 10.0.26100",
+        "globalization": {
+          "invariant": false,
+          "nls": false,
+          "hybrid": null,
+          "backendFromFlags": "Unknown"
+        },
+        "explicitCultures": [
+          {
+            "culture": "",
+            "backendObserved": "ICU",
+            "icu": {
+              "binding": "CoreLib:Interop.Globalization.GetICUVersion",
+              "versionRaw": 1208025092,
+              "version": "72.1.0.4"
+            }
+          },
+          {
+            "culture": "en-US",
+            "backendObserved": "ICU",
+            "icu": {
+              "binding": "CoreLib:Interop.Globalization.GetICUVersion",
+              "versionRaw": 1208025092,
+              "version": "72.1.0.4"
+            }
+          }
+        ],
+        "manifestObservedSha256": {
+          "Runner.Worker.exe": "7f8b0ea83d2ce023a42dd3b1b11eab0efeed3d0b33860344e3f2e30f59514f30",
+          "Runner.Worker.dll": "513d54f9a2df265c72eb79cbe1e953d4195ea409b138dc50f47b4d2045ee154f",
+          "Runner.Common.dll": "276d5dde79696aecd105686f4b9ff7787ee9b458183ba3779e2044e0219e6fd5",
+          "Runner.Sdk.dll": "1d8f53df02cfc79972e603c80723e29d5455e5a9b101641b525a243279cb3a5a",
+          "Sdk.dll": "5200ef0056d28d29e7f806739a9dc661469788951147da9d62254607526ebf81",
+          "System.Private.CoreLib.dll": "cc2cc43d28e3770d7cdeb80dc74eab265a1f5dd2f5547ccb236983b48d47d914",
+          "Runner.Worker.runtimeconfig.json": "adb89a4d3814780dd921a3e13d60e70d1568306516a40a0c8e883a90a453c606",
+          "Runner.Worker.deps.json": "4f079c1e5d408c9cd551d97e35b96969c5c1d15548afc3b49756739e69340124",
+          "coreclr.dll": "fc2909e16b3f70edfeac96d69d3f1d444705b1e4ad922dc760bb396338a7b1de"
+        }
+      },
+      "modules": {
+        "status": "observed-module-metadata",
+        "ancestorWorkerPid": 6940,
+        "method": "process-modules",
+        "modules": [
+          {
+            "name": "coreclr.dll",
+            "mappedPathDeleted": false,
+            "onDiskStatus": "observed",
+            "onDiskSha256": "fc2909e16b3f70edfeac96d69d3f1d444705b1e4ad922dc760bb396338a7b1de",
+            "mappedFileIdentityStatus": "not-observed"
+          },
+          {
+            "name": "icu.dll",
+            "mappedPathDeleted": false,
+            "onDiskStatus": "observed",
+            "onDiskSha256": "2a6a05f37da87d9faad3da6917706a53e669b77a51885e79e1fbb9412f7405db",
+            "mappedFileIdentityStatus": "not-observed"
+          }
+        ],
+        "selectedClasses": {
+          "coreclr.dll": "observed",
+          "icu.dll": "observed",
+          "icudt.dll": "not-observed",
+          "icuin.dll": "not-observed",
+          "icuuc.dll": "not-observed",
+          "system.globalization.native.dll": "not-observed"
+        },
+        "activeBackend": null,
+        "effectiveData": null,
+        "loadedBytesAttested": false
+      },
+      "liveBoundary": {
+        "status": "passed",
+        "runnerVersion": "2.337.0",
+        "pinnedRunnerVersion": "2.337.0",
+        "runnerMatchesPin": true,
+        "jobId": 111400797833,
+        "maskCases": 8,
+        "annotationCases": 30,
+        "workerCulture": null,
+        "workerGlobalizationBackend": null,
+        "harnessSha256": "ce566ed214a26827b6c10b97a8621eb391e3887c6585bdcce4c5926ee0a759e4",
+        "logSha256": "dc9964dc9b5fa770d3f1a71423ca858a6bbf2519607670063e8854813224f279",
+        "annotationsSha256": "8d4e418a18882372a0cccd0fa13ff5d1f7c8fe1112a06c2440747d9c1d59ad77",
+        "verifierAttempt": "1"
+      },
+      "verdicts": {
+        "Invariant": "unverified",
+        "en-US": "unverified"
+      },
+      "identitySource": "worker observation",
+      "sourceIdentities": {
+        "moduleObservation": {
+          "GITHUB_RUN_ID": "37190267207",
+          "GITHUB_RUN_ATTEMPT": "1",
+          "GITHUB_SHA": "06923b5ed9cdf9cd7e1413dc46f8a0593aeb0188",
+          "GITHUB_REPOSITORY": "send/shoutx",
+          "GITHUB_JOB": "runner-differential",
+          "RUNNER_OS": "Windows",
+          "RUNNER_ARCH": "X64",
+          "ImageOS": "win25-vs2026",
+          "ImageVersion": "20260925.250.1",
+          "SHOUTX_SOURCE_HEAD": "290e1820544cbaa69192c6ce20b30e9b14a4c76d",
+          "SHOUTX_MATRIX_OS": "windows-latest",
+          "SHOUTX_MATRIX_RID": "win-x64"
+        },
+        "liveBoundary": {
+          "GITHUB_RUN_ATTEMPT": "1",
+          "GITHUB_RUN_ID": "37190267207",
+          "GITHUB_SHA": "06923b5ed9cdf9cd7e1413dc46f8a0593aeb0188",
+          "ImageOS": "win25-vs2026",
+          "ImageVersion": "20260925.250.1",
+          "RUNNER_ARCH": "X64",
+          "RUNNER_OS": "Windows",
+          "SHOUTX_SOURCE_HEAD": "290e1820544cbaa69192c6ce20b30e9b14a4c76d"
+        },
+        "packageEvidence": {
+          "githubRunId": "37190267207",
+          "githubSha": "06923b5ed9cdf9cd7e1413dc46f8a0593aeb0188",
+          "rid": "win-x64",
+          "imageOS": "win25-vs2026",
+          "imageVersion": "20260925.250.1"
+        },
+        "packageProbeArchitecture": "X64"
+      },
+      "authorDerivedChecks": {
+        "workerAndModulesIdentityFieldsAgree": true,
+        "workerAndBoundaryAvailableIdentityFieldsAgree": true,
+        "workerAndPackageRunImageRidAgree": true,
+        "packageProbeArchitectureMatchesWorkerAfterUppercasing": true,
+        "workerAndModuleAncestorPidAgree": true
+      },
+      "observerLaunch": {
+        "source": "author transcription of job-log shell line",
+        "command": "C:\\hostedtoolcache\\windows\\Python\\3.12.10\\x64\\python.EXE -I -S {0}",
+        "binaryContentAttested": false
+      }
+    }
+  ],
+  "sourceCode": {
+    "testedCommit": "06923b5ed9cdf9cd7e1413dc46f8a0593aeb0188",
+    "authorDerivedFileHashesMatchHeadAndMergedCommit": true,
+    "sha256": {
+      "tests/runner-package/hosted_worker.py": "9b8b234e4701a65ebb039e8d059cf8f2d0207b6f3a9b3586d70ea5584686233a",
+      ".github/workflows/ci.yml": "0a869208f50514069ef8214f41ecfae0b8387ca790e534775663db94c4e97f2a"
+    }
+  }
+}

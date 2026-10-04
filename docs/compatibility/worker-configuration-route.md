@@ -581,6 +581,10 @@ automatic vendor-data expansion follows.
 Until those premises and the native/locale route are resolved, check 3 remains
 partial, check 4 remains open, and all eight culture verdicts remain unverified.
 
+The subsequent [host-configuration assessment](worker-host-configuration.md)
+narrows this finite list on the normal apphost path and records the specific
+remaining inputs and evaluated alternatives. It does not close check 3.
+
 ## Reproducing run 37190267207
 
 Each row records raw-byte SHA-256, artifact name and relative file path for six

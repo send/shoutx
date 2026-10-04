@@ -166,7 +166,7 @@ class HostedWorkerTests(unittest.TestCase):
                 patch.object(probe.subprocess, "run", return_value=answer) as run:
             pid, path = probe.worker_ancestor()
             self.assertEqual(pid, 10)
-            self.assertEqual(str(path), "C:/runner/bin/Runner.Worker.exe")
+            self.assertEqual(path, Path("C:/runner/bin/Runner.Worker.exe"))
             self.assertEqual(run.call_args.args[0][:4], ["pwsh", "-NoProfile", "-NonInteractive", "-Command"])
             self.assertNotIn("CommandLine", run.call_args.args[0][-1])
             self.assertEqual(run.call_args.kwargs["env"]["SHOUTX_OBSERVER_PID"], "30")

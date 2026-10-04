@@ -93,6 +93,67 @@ versions. A bare `normalizedIdentical False` does not identify these classes;
 neither the classes nor their hashes explain what differs. The description
 of the flag difference rests separately on inspection of the source diff.
 
+### Decoder dependency comparison
+
+The separate `--dependencies` mode extends the comparison to seven dependencies
+at the same five fixed commits. It does not change the original six-file
+report above. Acquire `collationdatareader.cpp`, `collationdatareader.h`, and
+`collationdata.h` from `icu4c/source/i18n/`; acquire `utrie2_impl.h`,
+`utrie2.h`, `utrie2.cpp`, and `ucharstrieiterator.cpp` from
+`icu4c/source/common/`. Use the same filename/version convention, then run:
+
+```sh
+python3 -B scripts/compare-icu-generation-sources.py --dependencies SOURCE_DIRECTORY
+```
+
+Compare the complete output with the [decoder hashes](evidence/icu-decoder-source-hashes.txt).
+All seven comparisons report equality across five versions. The raw hash
+always identifies the **complete file**, but the compared scope differs:
+
+| Dependency | Compared scope |
+| --- | --- |
+| `collationdatareader.cpp/.h`, `collationdata.h` | Complete files |
+| `utrie2_impl.h` | Complete file, also byte-identical before normalization |
+| `utrie2.h` | Prefix before the literal `#ifdef __cplusplus`, concatenated with the suffix starting at the `Internal definitions` banner; only the intervening C++ iterator declarations/includes are excluded, not the later layout/constants/lookup macros |
+| `utrie2.cpp` | From the `U_CAPI UTrie2 * U_EXPORT2` declaration of `utrie2_openFromSerialized` up to, excluding, the corresponding `utrie2_openDummy` declaration |
+| `ucharstrieiterator.cpp` | Complete file |
+
+Besides the disclosed word substitutions, exact replacements cover the data
+reader's `int32_t{settings->getMaxVariable()}` spelling and deleted private
+constructor; two enum blocks changed to explicit `int32_t` constants with the
+same values in `collationdata.h` (not a claim of identical C++ constant types);
+its `readCE32` cast; and four integer/`UBool` cast replacements, including their
+exact operator spacing, in `ucharstrieiterator.cpp`. The `int32_t{...}` rule
+normalizes the newer spelling to the older one, unlike the other rules.
+Only the selected pointer-returning
+`utrie2_openFromSerialized` section changes `return 0;` to `return nullptr;`.
+No general whitespace removal or function-body equivalence is asserted.
+The selector checks its literal boundaries, not C++ syntax. The raw hashes and
+raw-diff inspection are therefore essential: equality of a selected section
+does not assert equality of the excluded source or all its dependencies.
+
+Inspection of the complete 70.1-to-78.1 raw diff characterizes the exclusions:
+the omitted `utrie2.h` block changes the `mutex.h` include to `unicode/uobject.h`
+and changes `UChar`/`NULL` spellings in the C++ iterator declarations. Outside
+the selected `utrie2.cpp` function, that diff changes null/bool spellings,
+pointer-returning `openDummy` error returns, removes the `UBool` cast in
+`utrie2_isFrozen`, and changes a cast/spacing in `enumEitherTrie`. These are
+not covered by the selected-section equality claim. In particular,
+`utrie2_get32`, the U8 helpers, mutable-trie operations and enumeration helpers
+are outside the slice. The scalar reader directly uses the frozen 32-bit
+lookup equations in the compared header, not those wrappers or U8 iteration.
+This does not remove those functions from a future whole-consumer argument.
+The excluded regions in the intermediate versions have not been separately
+characterized here; their full-file hashes are identities, not that analysis.
+
+The comparison establishes cross-generation textual stability of the selected
+source, including the native context enumerator. The separate table below is
+the manually inspected source-to-model layout/lookup argument. Neither is a
+native build/ABI binding, complete decoder correctness proof, or evidence that
+the effective collator selects these root inputs. In particular, native
+context matching through `common/ucharstrie.cpp` is not in this comparison;
+enumeration stability does not prove native matching equivalence.
+
 ## Exploratory recovered-payload graph walk
 
 The unchanged 78.1 research graph reader was applied locally to the recovered
@@ -179,11 +240,114 @@ Do not run Python with assertions disabled. This is an offline research
 recipe, not a product input validator. It preserves the reader's original
 scope/false proof flags, and exit 0 establishes only a complete modeled walk.
 
+## Root layout and scalar lookup correspondence
+
+The following is a bounded source-to-model argument, not an assertion that the
+model accepts every native format. It uses the fixed-source comparisons above
+and `RootMappings` in `scripts/inspect-icu-mappings.py`:
+
+Primary references at the fixed 78.1 commit are the
+[section index enum](https://github.com/unicode-org/icu/blob/049e0d6a420629ac7db77256987d083a563287b5/icu4c/source/i18n/collationdatareader.h#L45-L100),
+[section loading and Jamo pointer](https://github.com/unicode-org/icu/blob/049e0d6a420629ac7db77256987d083a563287b5/icu4c/source/i18n/collationdatareader.cpp#L105-L256),
+[serialized header fields and options mask](https://github.com/unicode-org/icu/blob/049e0d6a420629ac7db77256987d083a563287b5/icu4c/source/common/utrie2_impl.h#L50-L93),
+[serialized-trie loader](https://github.com/unicode-org/icu/blob/049e0d6a420629ac7db77256987d083a563287b5/icu4c/source/common/utrie2.cpp#L128-L236),
+[lookup constants and macros](https://github.com/unicode-org/icu/blob/049e0d6a420629ac7db77256987d083a563287b5/icu4c/source/common/utrie2.h#L687-L875),
+[context CE32 assembly](https://github.com/unicode-org/icu/blob/049e0d6a420629ac7db77256987d083a563287b5/icu4c/source/i18n/collationdata.h#L89-L96),
+and [Jamo count](https://github.com/unicode-org/icu/blob/049e0d6a420629ac7db77256987d083a563287b5/icu4c/source/i18n/collationdata.h#L168-L186).
+The retained raw hashes identify the inspected copies; the disclosed
+cross-generation comparisons connect these sections to the other four
+upstream generations, not to vendor binaries.
+
+| Operation | Native source and model correspondence |
+| --- | --- |
+| Section addressing | `CollationDataReader` indexes 5–19 are byte offsets from the payload after the generic header. A section's length is the next offset minus its offset. The reader uses that same base and difference for CE (index 9, 8-byte units), CE32 (11, 4-byte units), and contexts (13, 2-byte units). |
+| Serialized trie | `utrie2_openFromSerialized` and `UTrie2Header` specify a 16-byte header, `ni` 16-bit indexes, and `nd = shiftedDataLength << 2` 32-bit values. The reader starts values at `16 + 2*ni` and checks the total `16 + 2*ni + 4*nd` against the trie section. |
+| BMP scalar | `_UTRIE2_INDEX_RAW` gives `(index[cp >> 5] << 2) + (cp & 31)`, the reader's expression. Normal scalar calls exclude all surrogate code points. |
+| Lead code unit | The reader's explicit lead-unit lookup corresponds to `_UTRIE2_INDEX_FROM_U16_SINGLE_LEAD`, not the different LSCP table for an isolated lead-surrogate **code point**. `initial` uses this path only for a supplementary scalar's derived lead unit. |
+| Supplementary scalar below `highStart` | `_UTRIE2_INDEX_FROM_SUPP` reduces to `index[index[2112-32+(cp>>11)] + ((cp>>5)&63)] << 2`, plus `cp & 31`, matching the reader. The compared header suffix includes the constants and macros in this expression. |
+| Supplementary scalar at/above `highStart` | Native `highStart = shiftedHighStart << 11` and `highValueIndex = dataLength - 4` for 32-bit values match the reader's threshold and final-value index. |
+| Jamo span | Native `jamoCE32s = ce32s + indexes[4]`; `CollationData` documents 19 + 21 + 27 canonical Jamo entries. The reader bounds that 67-entry span. This is storage correspondence, not the complete Hangul/iterator semantic argument. |
+| Context default | `CollationData::readCE32` combines the first two context units as `(p[0] << 16) \| p[1]`; the reader does the same before enumerating from the following unit. Context enumeration correctness remains a separate obligation from this two-unit assembly. |
+
+The native loader tests the masked trie value-width bits; the research reader
+requires the entire options field to be 1. It also imposes explicit bounds,
+alignment and slack limits. These are stricter research input restrictions,
+not a claim of identical native rejection behavior. Likewise, checking scalar
+lookup does not prove complete UTF-16 iteration, normalization or search.
+Existing synthetic tests in `test_mapping_inventory.py` distinguish ordinary
+BMP blocks, single-lead versus LSCP tables, successive supplementary index-1
+blocks, the `highStart` boundary and U+10FFFF. They check the model's equations;
+manual inspection of the pinned sources supplies evidence for the native
+equations; the source comparison establishes their cross-generation textual
+stability within its disclosed scope.
+
+### Fixed payload layout observations
+
+The following fields were checked on the same three hash-identified payloads
+listed above, without repeating the graph traversal. All have 20 indexes,
+zero bytes for both reorder-code and reorder-table sections, trie options 1,
+`highStart` 919552, null-index offset 1760, null-data offset 192, and no trie
+storage slack. The native root loader rejects reorder-code sections of at
+least 4 bytes when there is no base, and requires codes for reorder tables of
+at least 256 bytes. Their
+absence on these exact inputs discharges that local root-layout condition;
+it does not prove that these inputs are the effective root selected at runtime.
+
+| Payload | Jamo start / CE32 count | Index units / data32 units | Payload trailing bytes |
+| --- | --- | --- | ---: |
+| 70.1 | 6041 / 6138 | 6036 / 114620 | 8 |
+| 74.2; identical Windows member | 6042 / 6139 | 6164 / 119904 | 12 |
+| 76.1 | 6048 / 6145 | 6292 / 120824 | 0 |
+
+Each 67-entry Jamo span is in bounds. Serialized option low bits are `0x2010`
+on all three, with numeric collation and `CHECK_FCD` bits clear, using the
+[fixed bit definitions](https://github.com/unicode-org/icu/blob/049e0d6a420629ac7db77256987d083a563287b5/icu4c/source/i18n/collationsettings.h#L33-L46).
+These are
+**serialized root defaults**, not the final .NET collator settings; do not
+infer the effective normalization/search mode from this field.
+
+To reproduce only these observations, use the graph recipe's identical
+arguments and all its full-file/member/header/payload checks, but replace the
+code starting at `spec = ...` through its final exit with the following. No
+graph walk or native execution occurs:
+
+```python
+import struct
+spec = importlib.util.spec_from_file_location('mapping', 'scripts/inspect-icu-mappings.py')
+mapping = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(mapping)
+root = mapping.RootMappings(payload)
+ix = root.indexes
+sig, options, ni, nd4, null_index, null_data, high = struct.unpack_from('<I6H', payload, ix[7])
+print(json.dumps({
+    'payloadSha256': payload_sha,
+    'indexCount': ix[0],
+    'reorderCodesBytes': ix[6] - ix[5],
+    'reorderTableBytes': ix[7] - ix[6],
+    'optionsLow16': ix[1] & 0xffff,
+    'jamoStart': ix[4], 'ce32Count': len(root.ce32s),
+    'jamo67Bounded': 0 <= ix[4] <= len(root.ce32s) - 67,
+    'trieOptions': options, 'indexUnits': ni, 'data32Units': nd4 << 2,
+    'highStart': high << 11, 'nullIndex': null_index, 'nullData': null_data,
+    'trieSlack': ix[8] - ix[7] - (16 + ni * 2 + (nd4 << 2) * 4),
+    'payloadSlack': len(payload) - ix[19],
+    'nativeProfileProven': False,
+}, indent=2))
+```
+
+Compare every printed field with the table and common fields above; successful
+exit only means inspection completed, not that the observations match.
+`jamo67Bounded` reports the constructor's existing bound check, not an
+independent proof of it. The table is the retained expected observation;
+no second, independently maintained JSON baseline is required.
+
 ## Remaining work
 
 Finish reader-format/dependency validation before promoting these exploratory
 profiles. The source helper does not yet cover every decoder dependency;
-equal iterator files alone are insufficient. The
+equal iterator files alone are insufficient. Native context matching in
+`common/ucharstrie.cpp`, its relationship to the enumerator, and the model's
+context traversal still need a separate argument. The
 [compiled NFC evidence](unicode-compiled-nfc-evidence.md) adds native array and
 initializer correspondences, not complete normalization semantics.
 Effective root selection, compiled normalization and

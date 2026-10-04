@@ -1032,7 +1032,8 @@ verification job. No new Unicode inputs are accepted.
 
 #### Hosted Worker startup-input feasibility observation
 
-The same four package jobs run a read-only startup-input feasibility observer
+The historical heading/CI label covers two separate observations: process-start
+culture and job-supplied culture input. The same four package jobs run this read-only observer
 before the live emit. It walks only the observer's process ancestors to locate
 `Runner.Worker`, then examines bounded `Worker_*-utc.log` files under that
 executable's diagnostic directory in memory. It selects exactly one job message
@@ -1047,7 +1048,22 @@ environments, inject code, modify the Worker, or copy diagnostics elsewhere.
 Only the selected culture inputs Invariant/`en-US` may be recorded; secret,
 redacted, missing or other culture inputs remain null with a fixed status.
 `absent` distinguishes a missing variable from an unavailable/redacted value;
-it does not infer the host default culture. Fixed failure codes distinguish
+it does not infer the host default culture. Separately, the observer extracts
+exactly one `INFO Worker` `Culture:` line preceding the selected job message
+in the same file. `startupCulture` may contain only the exact empty string or
+`en-US`; no trimming is performed. Other/redacted values, missing lines and
+duplicates remain null with a separate `startupCultureStatus`. UI culture,
+other trace sources and lines after the job marker are not substitutes.
+The existing top-level status still describes job-input availability, not
+this independent startup observation. This uses the same diagnostic bounds
+and trust limitations, not process memory or environment inspection.
+The strict source-emitted line format is intentional: near-miss trace levels,
+indentation or spacing are ignored, not counted as matching duplicates.
+No authentication against a same-user log writer is claimed. Interpret an empty
+name subject to the [backend/default-locale caveat](compatibility/github-actions-workflow-command-parser.md#culture-diagnostic-observation-route);
+it does not establish ICU mode. `missing-or-ambiguous` deliberately groups absent,
+malformed and duplicate startup lines; it diagnoses no narrower cause.
+Fixed failure codes distinguish
 ancestry, diagnostic-read, message-parse and projection failures without
 including exception text. The observer's offline test is a prerequisite for
 the live emit; collection with an unavailable result is not a test failure.
@@ -1059,10 +1075,15 @@ fixed codes, not captured messages or tracebacks. Offline synthetic tests check
 matching, ambiguity, limits, sensitive-field suppression and no-overwrite.
 
 Successful collection does not mean a successful observation: inspect the JSON
-status and the separate `cultureInputStatus` and `onDiskIdentityStatus`.
-`observed-job-message-without-culture` is not a culture observation; a failure
+status and the separate `cultureInputStatus`, `startupCultureStatus` and
+`onDiskIdentityStatus`. Schema v2 adds the independent process-start fields
+and renames v1 `observed-startup-input` to `observed-job-culture-input`.
+Historical v1 reports lack the process-start observation, rather than
+implicitly measuring a default. No top-level status reflects `startupCulture`.
+`observed-job-message-without-culture` means no job culture input was observed;
+inspect the separate fields for any process-start observation. A failure
 to hash files does not discard a separately observed input. Even
-`observed-startup-input` is evidence only of a diagnostic input, not
+`observed-job-culture-input` is evidence only of a diagnostic job input, not
 processing-thread culture, loaded native identities, effective mappings or
 transfer to the other culture. A
 null culture is not Invariant (which is the explicitly recorded empty string).

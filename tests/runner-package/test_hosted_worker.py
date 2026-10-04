@@ -48,8 +48,69 @@ class HostedWorkerTests(unittest.TestCase):
             with self.subTest(culture=culture):
                 result = self.project(fixture(culture))
                 self.assertEqual(result, {"timelineJobId": "12345678-1234-1234-1234-123456789abc",
-                                         "cultureInput": culture, "cultureInputStatus": "observed"})
+                                         "cultureInput": culture, "cultureInputStatus": "observed",
+                                         "startupCulture": None,
+                                         "startupCultureStatus": "missing-or-ambiguous"})
                 self.assertNotIn(SECRET, json.dumps(result))
+
+    def test_startup_culture_is_separate_and_exact(self):
+        prefix = "[2026-10-04 04:59:59Z INFO Worker] Culture: "
+        message = fixture()
+        del message["Variables"]["system.culture"]
+        cases = [(prefix + culture + "\n", culture, "observed") for culture in ("", "en-US")]
+        cases += [(prefix + value + "\n", None, "redacted-or-outside-selected-scope")
+                  for value in (SECRET, "***", "th-TH", " en-US", "en-US ", " ",
+                                "en-us", "en_US", "en-US.UTF-8", "Invariant")]
+        cases += [("", None, "missing-or-ambiguous"),
+                  ((prefix + "en-US\n") * 2, None, "missing-or-ambiguous"),
+                  (prefix + "\n" + prefix + "en-US\n", None, "missing-or-ambiguous"),
+                  (prefix.replace("Culture:", "UI Culture:") + "en-US\n", None, "missing-or-ambiguous"),
+                  (prefix.replace("INFO Worker", "INFO Listener") + "en-US\n", None, "missing-or-ambiguous"),
+                  (prefix.rstrip() + "\n", None, "missing-or-ambiguous"),
+                  (" " + prefix + "en-US\n", None, "missing-or-ambiguous"),
+                  (prefix.replace("INFO", "WARN") + "en-US\n", None, "missing-or-ambiguous")]
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            path = directory / "Worker_20261004-050000-utc.log"
+            for newline in ("\n", "\r\n"):
+                for before, expected, status in cases:
+                    with self.subTest(newline=newline, status=status, before=before):
+                        # A later culture-looking line must never be selected.
+                        text = before + log(message) + prefix + "en-US\n"
+                        path.write_bytes(text.replace("\n", newline).encode())
+                        result = probe.observe_logs(directory, EXPECTED)
+                        self.assertEqual(result["startupCulture"], expected)
+                        self.assertEqual(result["startupCultureStatus"], status)
+                        self.assertEqual(result["cultureInputStatus"], "absent")
+                        self.assertNotIn(SECRET, json.dumps(result))
+            # Startup and job-supplied cultures are independent observations.
+            path.write_text(prefix + "\n" + log(fixture("en-US")))
+            result = probe.observe_logs(directory, EXPECTED)
+            self.assertEqual(result["startupCulture"], "")
+            self.assertEqual(result["cultureInput"], "en-US")
+
+    def test_startup_line_framing_and_file_boundary(self):
+        prefix = "[2026-10-04 04:59:59Z INFO Worker] Culture: "
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            path = directory / "Worker_20261004-050001-utc.log"
+            for value in ("en-US\rX\n", "en-US\r\r\n"):
+                path.write_bytes((prefix + value + log(fixture())).encode())
+                self.assertEqual(probe.observe_logs(directory, EXPECTED)["startupCultureStatus"],
+                                 "missing-or-ambiguous")
+            path.write_bytes((prefix + "en-US\r" + log(fixture())).encode())
+            with self.assertRaisesRegex(probe.Unavailable, "^missing-or-ambiguous-job-message$"):
+                probe.observe_logs(directory, EXPECTED)
+            path.write_bytes((prefix + "en-US\r\n" + log(fixture())).encode())
+            self.assertEqual(probe.observe_logs(directory, EXPECTED)["startupCulture"], "en-US")
+            # Deliberately recognize only the exact source-emitted form.
+            path.write_text(prefix.replace("INFO", "VERB") + "en-US\n" + prefix + "\n" + log(fixture()))
+            self.assertEqual(probe.observe_logs(directory, EXPECTED)["startupCulture"], "")
+            path.write_text(log(fixture()))
+            (directory / "Worker_20261004-050000-utc.log").write_text(prefix + "en-US\n")
+            (directory / "Runner_20261004-050000-utc.log").write_text(prefix + "en-US\n")
+            self.assertEqual(probe.observe_logs(directory, EXPECTED)["startupCultureStatus"],
+                             "missing-or-ambiguous")
 
     def test_unknown_or_secret_culture_not_disclosed(self):
         for value in (SECRET, "***", "th-TH", None):
@@ -138,7 +199,7 @@ class HostedWorkerTests(unittest.TestCase):
             with patch.object(probe, "worker_ancestor", return_value=(10, binary / "Runner.Worker")), \
                     patch.object(probe.platform, "system", return_value="Linux"):
                 result = probe.observe(EXPECTED)
-                self.assertEqual(result["status"], "observed-startup-input")
+                self.assertEqual(result["status"], "observed-job-culture-input")
                 self.assertEqual(set(result["onDiskSha256"]), set(names))
                 self.assertIsNone(result["processingThreadCulture"])
                 self.assertIsNone(result["loadedNativeInputs"])
@@ -148,6 +209,20 @@ class HostedWorkerTests(unittest.TestCase):
                 self.assertEqual(result["onDiskIdentityStatus"], "unavailable")
                 log_path.write_text(log(fixture(SECRET)))
                 self.assertEqual(probe.observe(EXPECTED)["status"], "observed-job-message-without-culture")
+                absent = fixture()
+                del absent["Variables"]["system.culture"]
+                log_path.write_text("[2026-10-04 04:59:59Z INFO Worker] Culture: en-US\n" + log(absent))
+                output = root / "report.json"
+                with patch.dict(os.environ, EXPECTED, clear=True), \
+                        patch.object(probe.sys, "argv", ["probe", "--output", str(output)]):
+                    self.assertEqual(probe.main(), 0)
+                result = json.loads(output.read_text())
+                self.assertEqual(result["schemaVersion"], 2)
+                self.assertEqual(result["startupCulture"], "en-US")
+                self.assertEqual(result["startupCultureStatus"], "observed")
+                self.assertEqual(result["cultureInputStatus"], "absent")
+                self.assertEqual(result["status"], "observed-job-message-without-culture")
+                self.assertNotIn(SECRET, json.dumps(result))
                 (diag / "Worker_20261004-050001-utc.log").write_text(log(fixture()))
                 with self.assertRaises(probe.Unavailable): probe.observe(EXPECTED)
 

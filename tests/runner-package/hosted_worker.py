@@ -1,7 +1,7 @@
 """Read-only feasibility observation; never dump job messages or process args.
 
-This observes a diagnostic startup input and on-disk files, not managed thread
-state or loaded native mappings. Unavailable observations are explicitly unknown.
+This observes diagnostic process-start culture, job culture input and on-disk
+files, not processing-thread state or loaded native mappings. Unknowns stay unknown.
 """
 import argparse
 import hashlib
@@ -15,6 +15,8 @@ import sys
 import uuid
 
 MESSAGE = re.compile(r"^\[\d{4}-\d\d-\d\d \d\d:\d\d:\d\dZ INFO Worker\] Job message:\r?$", re.M)
+STARTUP_CULTURE = re.compile(
+    r"^\[\d{4}-\d\d-\d\d \d\d:\d\d:\d\dZ INFO Worker\] Culture: ([^\r\n]*)\r?$", re.M)
 FILE_CAP = 16 * 1024 * 1024
 TOTAL_CAP = 64 * 1024 * 1024
 
@@ -156,6 +158,16 @@ def observe_logs(directory, expected):
             message, _ = at_stage("message-parse", decoder.raw_decode, value[marker.end():].lstrip())
             projected = at_stage("message-projection", project_message, message, expected)
             if projected is not None:
+                # Program.MainAsync logs this before Worker receives the job.
+                # Never infer it from a missing system.culture or a child locale.
+                startup = STARTUP_CULTURE.findall(value[:marker.start()])
+                startup_value, startup_status = None, "missing-or-ambiguous"
+                if len(startup) == 1:
+                    startup_status = "redacted-or-outside-selected-scope"
+                    if startup[0] in ("", "en-US"):
+                        startup_value, startup_status = startup[0], "observed"
+                projected.update(startupCulture=startup_value,
+                                 startupCultureStatus=startup_status)
                 matches.append(projected)
     require(len(matches) == 1, "missing-or-ambiguous-job-message")
     return matches[0]
@@ -181,7 +193,7 @@ def observe(expected):
             digests[name] = digest.hexdigest()
     except OSError:
         digests, disk_status = {}, "unavailable"
-    return {"status": ("observed-startup-input" if projected["cultureInputStatus"] == "observed"
+    return {"status": ("observed-job-culture-input" if projected["cultureInputStatus"] == "observed"
                        else "observed-job-message-without-culture"), "ancestorWorkerPid": pid,
             "recordCorrelation": "unique-context-match-in-ancestor-installation",
             **projected, "onDiskSha256": digests, "onDiskIdentityStatus": disk_status,
@@ -192,8 +204,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
-    report = {"schemaVersion": 1, "status": "unavailable",
-              "scope": "diagnostic startup input and on-disk identities; not live thread/native-state proof"}
+    report = {"schemaVersion": 2, "status": "unavailable",
+              "scope": "diagnostic process-start culture, job culture input and on-disk identities; not processing-thread/native-state proof"}
     try:
         report["identity"] = identity(os.environ)
         report.update(observe(report["identity"]))

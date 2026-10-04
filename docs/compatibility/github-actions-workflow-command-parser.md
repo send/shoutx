@@ -49,6 +49,23 @@ Any diagnostic projection needs trustworthy job/process correlation and
 strict output selection; startup information alone does not establish later
 thread state, effective native inputs or transfer to an unobserved culture.
 
+Pinned [`Program.MainAsync`](https://github.com/actions/runner/blob/397b032cbf865e9c3ddfab89d533ec19325e1273/src/Runner.Worker/Program.cs)
+also logs `CultureInfo.CurrentCulture.Name` at Info before calling
+`Worker.RunAsync`, hence before receiving the job and applying its culture.
+`Worker.SetCulture` does nothing when the variable is absent. The earlier
+`Culture:` line is therefore an available source route for observing the
+main thread's culture at that point, distinct from the later job input. It is not a measurement
+of the stdout-processing thread after the job starts. A missing variable is
+not evidence of Invariant or of a culture measured in a child process.
+The corresponding .NET 8.0.30 `GetUserDefaultCulture` paths on
+[Unix](https://github.com/dotnet/runtime/blob/a83db3e0eb2defb6220e15dae2f1a0462fdbf99f/src/libraries/System.Private.CoreLib/src/System/Globalization/CultureInfo.Unix.cs)
+and [Windows](https://github.com/dotnet/runtime/blob/a83db3e0eb2defb6220e15dae2f1a0462fdbf99f/src/libraries/System.Private.CoreLib/src/System/Globalization/CultureInfo.Windows.cs)
+return Invariant Culture when globalization-invariant mode is enabled. Thus an
+empty startup name does not establish ICU mode. Both linked paths also fall
+back to Invariant when a default locale cannot be obtained. A name alone
+does not identify which route was taken. The observation's backend remains
+unknown, independently of its culture-name field.
+
 For diagnostic job correlation, pinned
 [`ExecutionContext`](https://github.com/actions/runner/blob/397b032cbf865e9c3ddfab89d533ec19325e1273/src/Runner.Worker/ExecutionContext.cs)
 initializes `github.job` from `system.github.job`, then overlays the supplied

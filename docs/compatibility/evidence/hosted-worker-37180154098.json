@@ -1,0 +1,481 @@
+{
+  "schemaVersion": 1,
+  "kind": "hosted-worker-diagnostic-and-package-comparison",
+  "scope": "Hosted diagnostic input and on-disk package comparison only; not effective consumer linkage, acceptance or support evidence.",
+  "sourceRun": {
+    "id": 37180154098,
+    "attempt": 1,
+    "headSha": "64ffc6737b4cd78db632ef127b5d59b355971c68",
+    "testedSha": "d4a9a6109e14d4a9649a13a0e76a3d086fc7054c",
+    "conclusion": "success",
+    "verifierJob": {
+      "completed_at": "2026-10-04T05:41:12Z",
+      "conclusion": "success",
+      "head_sha": "64ffc6737b4cd78db632ef127b5d59b355971c68",
+      "id": 111372188999,
+      "name": "hosted-annotations",
+      "run_attempt": 1,
+      "run_id": 37180154098,
+      "started_at": "2026-10-04T05:40:53Z"
+    }
+  },
+  "projectionMethod": "Author-selected decoded observer and live boundary reports, selected package fields, API job metadata and source-file SHA-256 digests; no committed generator or signed attestation. Selected package manifest entries were compared exactly with every observed onDiskSha256 entry.",
+  "rows": [
+    {
+      "selector": "macos-15",
+      "rid": "osx-arm64",
+      "sourceJob": {
+        "completed_at": "2026-10-04T05:37:12Z",
+        "conclusion": "success",
+        "head_sha": "64ffc6737b4cd78db632ef127b5d59b355971c68",
+        "id": 111370934787,
+        "name": "runner-differential (macos-15, osx-arm64)",
+        "run_attempt": 1,
+        "run_id": 37180154098,
+        "started_at": "2026-10-04T05:31:58Z"
+      },
+      "jobAssociation": "Artifact selector/RID and workflow correlate reports to this Actions job; diagnostic GUID is a distinct timeline identifier, not the numeric API job ID.",
+      "workerObservation": {
+        "schemaVersion": 1,
+        "status": "observed-job-message-without-culture",
+        "scope": "diagnostic startup input and on-disk identities; not live thread/native-state proof",
+        "identity": {
+          "GITHUB_RUN_ID": "37180154098",
+          "GITHUB_RUN_ATTEMPT": "1",
+          "GITHUB_SHA": "d4a9a6109e14d4a9649a13a0e76a3d086fc7054c",
+          "GITHUB_REPOSITORY": "send/shoutx",
+          "GITHUB_JOB": "runner-differential",
+          "RUNNER_OS": "macOS",
+          "RUNNER_ARCH": "ARM64",
+          "ImageOS": "macos15",
+          "ImageVersion": "20260907.0337.1",
+          "SHOUTX_SOURCE_HEAD": "64ffc6737b4cd78db632ef127b5d59b355971c68",
+          "SHOUTX_MATRIX_OS": "macos-15",
+          "SHOUTX_MATRIX_RID": "osx-arm64"
+        },
+        "ancestorWorkerPid": 18580,
+        "recordCorrelation": "unique-context-match-in-ancestor-installation",
+        "timelineJobId": "b59ac49f-c3a2-5969-a176-e64d796930d9",
+        "cultureInput": null,
+        "cultureInputStatus": "absent",
+        "onDiskSha256": {
+          "Runner.Worker": "7f81f8d6fc28b0766557ccc34665cfcce08beb2400ecd0f9445fe7c514ca31f7",
+          "Runner.Worker.dll": "d7d26ffdec4bf30b931fd35c98d792c32e20a5220ec3aaca039233398229ce70",
+          "Runner.Common.dll": "994120c86b7997b370a2ff59111f379ab8065ec03762be4e10dfb7fdf3d042c0",
+          "System.Private.CoreLib.dll": "f43af84e79760beaab8e6b27e4f10d4a276c5c9e4b9b259cd65eb9d06fde2f78",
+          "Runner.Worker.runtimeconfig.json": "2349aceaec47e742386005940d1f394c8433717bc321facc1162a05fb9b586d2",
+          "Runner.Worker.deps.json": "df0d149dd441e07e29cb41b8816659518e024b6a5ed7e3e6eb14c8274a71b62a",
+          "libcoreclr.dylib": "943ba6f94d6af4ed818306418dc774cf3940bbf9062be93a39a3a2f3a4da285a"
+        },
+        "onDiskIdentityStatus": "observed",
+        "processingThreadCulture": null,
+        "loadedNativeInputs": null
+      },
+      "package": {
+        "archive": {
+          "url": "https://github.com/actions/runner/releases/download/v2.337.0/actions-runner-osx-arm64-2.337.0.tar.gz",
+          "sha256": "5a2cd92908a93d7276a194e1de6008099f3e7946f3f8e14aa7a1a7b4a31fdec2",
+          "size": 127732571
+        },
+        "status": "passed",
+        "identity": {
+          "run": "37180154098",
+          "sha": "d4a9a6109e14d4a9649a13a0e76a3d086fc7054c",
+          "image": "macos15",
+          "imageVersion": "20260907.0337.1"
+        },
+        "matchingOnDiskFiles": [
+          "Runner.Worker",
+          "Runner.Worker.dll",
+          "Runner.Common.dll",
+          "System.Private.CoreLib.dll",
+          "Runner.Worker.runtimeconfig.json",
+          "Runner.Worker.deps.json",
+          "libcoreclr.dylib"
+        ],
+        "onDiskSha256": {
+          "Runner.Worker": "7f81f8d6fc28b0766557ccc34665cfcce08beb2400ecd0f9445fe7c514ca31f7",
+          "Runner.Worker.dll": "d7d26ffdec4bf30b931fd35c98d792c32e20a5220ec3aaca039233398229ce70",
+          "Runner.Common.dll": "994120c86b7997b370a2ff59111f379ab8065ec03762be4e10dfb7fdf3d042c0",
+          "System.Private.CoreLib.dll": "f43af84e79760beaab8e6b27e4f10d4a276c5c9e4b9b259cd65eb9d06fde2f78",
+          "Runner.Worker.runtimeconfig.json": "2349aceaec47e742386005940d1f394c8433717bc321facc1162a05fb9b586d2",
+          "Runner.Worker.deps.json": "df0d149dd441e07e29cb41b8816659518e024b6a5ed7e3e6eb14c8274a71b62a",
+          "libcoreclr.dylib": "943ba6f94d6af4ed818306418dc774cf3940bbf9062be93a39a3a2f3a4da285a"
+        }
+      },
+      "liveBoundary": {
+        "status": "passed",
+        "identity": {
+          "GITHUB_RUN_ATTEMPT": "1",
+          "GITHUB_RUN_ID": "37180154098",
+          "GITHUB_SHA": "d4a9a6109e14d4a9649a13a0e76a3d086fc7054c",
+          "ImageOS": "macos15",
+          "ImageVersion": "20260907.0337.1",
+          "RUNNER_ARCH": "ARM64",
+          "RUNNER_OS": "macOS",
+          "SHOUTX_SOURCE_HEAD": "64ffc6737b4cd78db632ef127b5d59b355971c68"
+        },
+        "runnerVersion": "2.337.0",
+        "pinnedRunnerVersion": "2.337.0",
+        "runnerMatchesPin": true,
+        "workerCulture": null,
+        "workerGlobalizationBackend": null,
+        "maskCases": 8,
+        "annotationCases": 30,
+        "logSha256": "fd16193f83a8c2ec7c02ead5f795c241b9a3e1e5cca3b0c203d1e37f58003edc",
+        "harnessSha256": "ce566ed214a26827b6c10b97a8621eb391e3887c6585bdcce4c5926ee0a759e4",
+        "jobId": 111370934787,
+        "verifierAttempt": "1",
+        "annotationsSha256": "761167f678d4e5f272c395fb4d633c2369b94e38a99cf5b8b6f371caab79c430"
+      },
+      "sourceReportSha256": {
+        "hosted-worker-input-macos-15-osx-arm64/hosted-worker-evidence.json": "44342f3db25a57b50063a3e2f921613dfc49d48a10a1afa865f9187a52ca78ca",
+        "runner-package-evidence-macos-15-osx-arm64/runner-package-evidence/package-bin-sha256.json": "0744c3affd5fd767bd6530cac616e0b4f9e40e3a791ebf0fe99e98921c8bd0df",
+        "runner-package-evidence-macos-15-osx-arm64/runner-package-evidence/evidence.json": "821a755cca629e05653d45d27b8cd17f4c06d42e69b9a95fc56df60db1bcb38f",
+        "hosted-boundary-evidence/package-matched/macos-15.json": "aa2681c350bc97dd9c36e94f01e9b16af3cc4ed61e0520a8a50bd53f7812a9ad"
+      }
+    },
+    {
+      "selector": "ubuntu-22.04",
+      "rid": "linux-x64",
+      "sourceJob": {
+        "completed_at": "2026-10-04T05:39:23Z",
+        "conclusion": "success",
+        "head_sha": "64ffc6737b4cd78db632ef127b5d59b355971c68",
+        "id": 111370934814,
+        "name": "runner-differential (ubuntu-22.04, linux-x64)",
+        "run_attempt": 1,
+        "run_id": 37180154098,
+        "started_at": "2026-10-04T05:31:54Z"
+      },
+      "jobAssociation": "Artifact selector/RID and workflow correlate reports to this Actions job; diagnostic GUID is a distinct timeline identifier, not the numeric API job ID.",
+      "workerObservation": {
+        "schemaVersion": 1,
+        "status": "observed-job-message-without-culture",
+        "scope": "diagnostic startup input and on-disk identities; not live thread/native-state proof",
+        "identity": {
+          "GITHUB_RUN_ID": "37180154098",
+          "GITHUB_RUN_ATTEMPT": "1",
+          "GITHUB_SHA": "d4a9a6109e14d4a9649a13a0e76a3d086fc7054c",
+          "GITHUB_REPOSITORY": "send/shoutx",
+          "GITHUB_JOB": "runner-differential",
+          "RUNNER_OS": "Linux",
+          "RUNNER_ARCH": "X64",
+          "ImageOS": "ubuntu22",
+          "ImageVersion": "20260927.309.1",
+          "SHOUTX_SOURCE_HEAD": "64ffc6737b4cd78db632ef127b5d59b355971c68",
+          "SHOUTX_MATRIX_OS": "ubuntu-22.04",
+          "SHOUTX_MATRIX_RID": "linux-x64"
+        },
+        "ancestorWorkerPid": 1950,
+        "recordCorrelation": "unique-context-match-in-ancestor-installation",
+        "timelineJobId": "206f5fa3-90bb-5429-99a5-dd487d0381a1",
+        "cultureInput": null,
+        "cultureInputStatus": "absent",
+        "onDiskSha256": {
+          "Runner.Worker": "04db3805782ddc32208f1a1cae4b1cb99ef9232ed2ef95a10218e4f5665dbccb",
+          "Runner.Worker.dll": "f460f611aa5597a4d5331a8b9e848d5a535ece0e6dab396699328502b8b49c41",
+          "Runner.Common.dll": "b10853d9c1a8498779ba5236933281018627a8dc7ce54b977b6d9e2343035393",
+          "System.Private.CoreLib.dll": "003ac935a51189b420a7d84de724ccb94eca31e2d07b4faf1e2d943052018028",
+          "Runner.Worker.runtimeconfig.json": "2349aceaec47e742386005940d1f394c8433717bc321facc1162a05fb9b586d2",
+          "Runner.Worker.deps.json": "bd4cb38b3b5efe7f8081d56dcc155fc6b0b19a8c0aa5ee632816839e58d7be1e",
+          "libcoreclr.so": "fedf4074258e14b425cd3b4209bedc3e102765623445cc1bcfe8361f6193231c"
+        },
+        "onDiskIdentityStatus": "observed",
+        "processingThreadCulture": null,
+        "loadedNativeInputs": null
+      },
+      "package": {
+        "archive": {
+          "url": "https://github.com/actions/runner/releases/download/v2.337.0/actions-runner-linux-x64-2.337.0.tar.gz",
+          "sha256": "70920811a4f8ad4328818682bca5c6469c1c942fab52448868071d0063816613",
+          "size": 226430031
+        },
+        "status": "passed",
+        "identity": {
+          "run": "37180154098",
+          "sha": "d4a9a6109e14d4a9649a13a0e76a3d086fc7054c",
+          "image": "ubuntu22",
+          "imageVersion": "20260927.309.1"
+        },
+        "matchingOnDiskFiles": [
+          "Runner.Worker",
+          "Runner.Worker.dll",
+          "Runner.Common.dll",
+          "System.Private.CoreLib.dll",
+          "Runner.Worker.runtimeconfig.json",
+          "Runner.Worker.deps.json",
+          "libcoreclr.so"
+        ],
+        "onDiskSha256": {
+          "Runner.Worker": "04db3805782ddc32208f1a1cae4b1cb99ef9232ed2ef95a10218e4f5665dbccb",
+          "Runner.Worker.dll": "f460f611aa5597a4d5331a8b9e848d5a535ece0e6dab396699328502b8b49c41",
+          "Runner.Common.dll": "b10853d9c1a8498779ba5236933281018627a8dc7ce54b977b6d9e2343035393",
+          "System.Private.CoreLib.dll": "003ac935a51189b420a7d84de724ccb94eca31e2d07b4faf1e2d943052018028",
+          "Runner.Worker.runtimeconfig.json": "2349aceaec47e742386005940d1f394c8433717bc321facc1162a05fb9b586d2",
+          "Runner.Worker.deps.json": "bd4cb38b3b5efe7f8081d56dcc155fc6b0b19a8c0aa5ee632816839e58d7be1e",
+          "libcoreclr.so": "fedf4074258e14b425cd3b4209bedc3e102765623445cc1bcfe8361f6193231c"
+        }
+      },
+      "liveBoundary": {
+        "status": "passed",
+        "identity": {
+          "GITHUB_RUN_ATTEMPT": "1",
+          "GITHUB_RUN_ID": "37180154098",
+          "GITHUB_SHA": "d4a9a6109e14d4a9649a13a0e76a3d086fc7054c",
+          "ImageOS": "ubuntu22",
+          "ImageVersion": "20260927.309.1",
+          "RUNNER_ARCH": "X64",
+          "RUNNER_OS": "Linux",
+          "SHOUTX_SOURCE_HEAD": "64ffc6737b4cd78db632ef127b5d59b355971c68"
+        },
+        "runnerVersion": "2.337.0",
+        "pinnedRunnerVersion": "2.337.0",
+        "runnerMatchesPin": true,
+        "workerCulture": null,
+        "workerGlobalizationBackend": null,
+        "maskCases": 8,
+        "annotationCases": 30,
+        "logSha256": "22288ad0ad653b0c8a59a15dc9f59ebf01a011d532369d695334f1e593ace534",
+        "harnessSha256": "ce566ed214a26827b6c10b97a8621eb391e3887c6585bdcce4c5926ee0a759e4",
+        "jobId": 111370934814,
+        "verifierAttempt": "1",
+        "annotationsSha256": "e6e3c64b86548dd3930a9e90f57a87168ff1f17be5f61d0837400367f2f8e2ad"
+      },
+      "sourceReportSha256": {
+        "hosted-worker-input-ubuntu-22.04-linux-x64/hosted-worker-evidence.json": "33b6c4532357072bdd0b4bd6f081a10bd2242590330147bb184eb858d7913df8",
+        "runner-package-evidence-ubuntu-22.04-linux-x64/runner-package-evidence/package-bin-sha256.json": "f0f751b82ed658691738d7aeb8ae1d7fd8b10535cd563340edd86d3e128350df",
+        "runner-package-evidence-ubuntu-22.04-linux-x64/runner-package-evidence/evidence.json": "323007b1ff693f0885240bd1743e924c8f766a19b074bda69c1f5f51fcd1182b",
+        "hosted-boundary-evidence/package-matched/ubuntu-22.04.json": "02ac9e0286fba7b8b04152c2bcf93a5b0a8efdcd260fd048ab62a25bb3954442"
+      }
+    },
+    {
+      "selector": "ubuntu-24.04",
+      "rid": "linux-x64",
+      "sourceJob": {
+        "completed_at": "2026-10-04T05:36:29Z",
+        "conclusion": "success",
+        "head_sha": "64ffc6737b4cd78db632ef127b5d59b355971c68",
+        "id": 111370934876,
+        "name": "runner-differential (ubuntu-24.04, linux-x64)",
+        "run_attempt": 1,
+        "run_id": 37180154098,
+        "started_at": "2026-10-04T05:31:54Z"
+      },
+      "jobAssociation": "Artifact selector/RID and workflow correlate reports to this Actions job; diagnostic GUID is a distinct timeline identifier, not the numeric API job ID.",
+      "workerObservation": {
+        "schemaVersion": 1,
+        "status": "observed-job-message-without-culture",
+        "scope": "diagnostic startup input and on-disk identities; not live thread/native-state proof",
+        "identity": {
+          "GITHUB_RUN_ID": "37180154098",
+          "GITHUB_RUN_ATTEMPT": "1",
+          "GITHUB_SHA": "d4a9a6109e14d4a9649a13a0e76a3d086fc7054c",
+          "GITHUB_REPOSITORY": "send/shoutx",
+          "GITHUB_JOB": "runner-differential",
+          "RUNNER_OS": "Linux",
+          "RUNNER_ARCH": "X64",
+          "ImageOS": "ubuntu24",
+          "ImageVersion": "20260927.320.1",
+          "SHOUTX_SOURCE_HEAD": "64ffc6737b4cd78db632ef127b5d59b355971c68",
+          "SHOUTX_MATRIX_OS": "ubuntu-24.04",
+          "SHOUTX_MATRIX_RID": "linux-x64"
+        },
+        "ancestorWorkerPid": 1949,
+        "recordCorrelation": "unique-context-match-in-ancestor-installation",
+        "timelineJobId": "74a96fc0-873c-5221-b472-e690c891a271",
+        "cultureInput": null,
+        "cultureInputStatus": "absent",
+        "onDiskSha256": {
+          "Runner.Worker": "04db3805782ddc32208f1a1cae4b1cb99ef9232ed2ef95a10218e4f5665dbccb",
+          "Runner.Worker.dll": "f460f611aa5597a4d5331a8b9e848d5a535ece0e6dab396699328502b8b49c41",
+          "Runner.Common.dll": "b10853d9c1a8498779ba5236933281018627a8dc7ce54b977b6d9e2343035393",
+          "System.Private.CoreLib.dll": "003ac935a51189b420a7d84de724ccb94eca31e2d07b4faf1e2d943052018028",
+          "Runner.Worker.runtimeconfig.json": "2349aceaec47e742386005940d1f394c8433717bc321facc1162a05fb9b586d2",
+          "Runner.Worker.deps.json": "bd4cb38b3b5efe7f8081d56dcc155fc6b0b19a8c0aa5ee632816839e58d7be1e",
+          "libcoreclr.so": "fedf4074258e14b425cd3b4209bedc3e102765623445cc1bcfe8361f6193231c"
+        },
+        "onDiskIdentityStatus": "observed",
+        "processingThreadCulture": null,
+        "loadedNativeInputs": null
+      },
+      "package": {
+        "archive": {
+          "url": "https://github.com/actions/runner/releases/download/v2.337.0/actions-runner-linux-x64-2.337.0.tar.gz",
+          "sha256": "70920811a4f8ad4328818682bca5c6469c1c942fab52448868071d0063816613",
+          "size": 226430031
+        },
+        "status": "passed",
+        "identity": {
+          "run": "37180154098",
+          "sha": "d4a9a6109e14d4a9649a13a0e76a3d086fc7054c",
+          "image": "ubuntu24",
+          "imageVersion": "20260927.320.1"
+        },
+        "matchingOnDiskFiles": [
+          "Runner.Worker",
+          "Runner.Worker.dll",
+          "Runner.Common.dll",
+          "System.Private.CoreLib.dll",
+          "Runner.Worker.runtimeconfig.json",
+          "Runner.Worker.deps.json",
+          "libcoreclr.so"
+        ],
+        "onDiskSha256": {
+          "Runner.Worker": "04db3805782ddc32208f1a1cae4b1cb99ef9232ed2ef95a10218e4f5665dbccb",
+          "Runner.Worker.dll": "f460f611aa5597a4d5331a8b9e848d5a535ece0e6dab396699328502b8b49c41",
+          "Runner.Common.dll": "b10853d9c1a8498779ba5236933281018627a8dc7ce54b977b6d9e2343035393",
+          "System.Private.CoreLib.dll": "003ac935a51189b420a7d84de724ccb94eca31e2d07b4faf1e2d943052018028",
+          "Runner.Worker.runtimeconfig.json": "2349aceaec47e742386005940d1f394c8433717bc321facc1162a05fb9b586d2",
+          "Runner.Worker.deps.json": "bd4cb38b3b5efe7f8081d56dcc155fc6b0b19a8c0aa5ee632816839e58d7be1e",
+          "libcoreclr.so": "fedf4074258e14b425cd3b4209bedc3e102765623445cc1bcfe8361f6193231c"
+        }
+      },
+      "liveBoundary": {
+        "status": "passed",
+        "identity": {
+          "GITHUB_RUN_ATTEMPT": "1",
+          "GITHUB_RUN_ID": "37180154098",
+          "GITHUB_SHA": "d4a9a6109e14d4a9649a13a0e76a3d086fc7054c",
+          "ImageOS": "ubuntu24",
+          "ImageVersion": "20260927.320.1",
+          "RUNNER_ARCH": "X64",
+          "RUNNER_OS": "Linux",
+          "SHOUTX_SOURCE_HEAD": "64ffc6737b4cd78db632ef127b5d59b355971c68"
+        },
+        "runnerVersion": "2.337.0",
+        "pinnedRunnerVersion": "2.337.0",
+        "runnerMatchesPin": true,
+        "workerCulture": null,
+        "workerGlobalizationBackend": null,
+        "maskCases": 8,
+        "annotationCases": 30,
+        "logSha256": "7b88a5e2bc559de301c483bffb90d6c17545621ecae11fabb7f66cb01e4a090f",
+        "harnessSha256": "ce566ed214a26827b6c10b97a8621eb391e3887c6585bdcce4c5926ee0a759e4",
+        "jobId": 111370934876,
+        "verifierAttempt": "1",
+        "annotationsSha256": "e6e3c64b86548dd3930a9e90f57a87168ff1f17be5f61d0837400367f2f8e2ad"
+      },
+      "sourceReportSha256": {
+        "hosted-worker-input-ubuntu-24.04-linux-x64/hosted-worker-evidence.json": "9719094a488abb240664cbea893a1d141f56dac432d68b0794c594b6b72b6897",
+        "runner-package-evidence-ubuntu-24.04-linux-x64/runner-package-evidence/package-bin-sha256.json": "f0f751b82ed658691738d7aeb8ae1d7fd8b10535cd563340edd86d3e128350df",
+        "runner-package-evidence-ubuntu-24.04-linux-x64/runner-package-evidence/evidence.json": "4749f76e2f7b6b25999b06ea83ab97bac8f8b88dc188333f9e0512db496ec461",
+        "hosted-boundary-evidence/package-matched/ubuntu-24.04.json": "5f3be9d2a53bbf0a24307d96bd3b5962fbe78f9b9bcd3c9c5e03f75737b5eaf3"
+      }
+    },
+    {
+      "selector": "windows-latest",
+      "rid": "win-x64",
+      "sourceJob": {
+        "completed_at": "2026-10-04T05:40:51Z",
+        "conclusion": "success",
+        "head_sha": "64ffc6737b4cd78db632ef127b5d59b355971c68",
+        "id": 111370934726,
+        "name": "runner-differential (windows-latest, win-x64)",
+        "run_attempt": 1,
+        "run_id": 37180154098,
+        "started_at": "2026-10-04T05:31:57Z"
+      },
+      "jobAssociation": "Artifact selector/RID and workflow correlate reports to this Actions job; diagnostic GUID is a distinct timeline identifier, not the numeric API job ID.",
+      "workerObservation": {
+        "schemaVersion": 1,
+        "status": "observed-job-message-without-culture",
+        "scope": "diagnostic startup input and on-disk identities; not live thread/native-state proof",
+        "identity": {
+          "GITHUB_RUN_ID": "37180154098",
+          "GITHUB_RUN_ATTEMPT": "1",
+          "GITHUB_SHA": "d4a9a6109e14d4a9649a13a0e76a3d086fc7054c",
+          "GITHUB_REPOSITORY": "send/shoutx",
+          "GITHUB_JOB": "runner-differential",
+          "RUNNER_OS": "Windows",
+          "RUNNER_ARCH": "X64",
+          "ImageOS": "win25-vs2026",
+          "ImageVersion": "20260925.250.1",
+          "SHOUTX_SOURCE_HEAD": "64ffc6737b4cd78db632ef127b5d59b355971c68",
+          "SHOUTX_MATRIX_OS": "windows-latest",
+          "SHOUTX_MATRIX_RID": "win-x64"
+        },
+        "ancestorWorkerPid": 7624,
+        "recordCorrelation": "unique-context-match-in-ancestor-installation",
+        "timelineJobId": "bb0d613d-4906-5819-99d5-14e630d20fda",
+        "cultureInput": null,
+        "cultureInputStatus": "absent",
+        "onDiskSha256": {
+          "Runner.Worker.exe": "7f8b0ea83d2ce023a42dd3b1b11eab0efeed3d0b33860344e3f2e30f59514f30",
+          "Runner.Worker.dll": "513d54f9a2df265c72eb79cbe1e953d4195ea409b138dc50f47b4d2045ee154f",
+          "Runner.Common.dll": "276d5dde79696aecd105686f4b9ff7787ee9b458183ba3779e2044e0219e6fd5",
+          "System.Private.CoreLib.dll": "cc2cc43d28e3770d7cdeb80dc74eab265a1f5dd2f5547ccb236983b48d47d914",
+          "Runner.Worker.runtimeconfig.json": "adb89a4d3814780dd921a3e13d60e70d1568306516a40a0c8e883a90a453c606",
+          "Runner.Worker.deps.json": "4f079c1e5d408c9cd551d97e35b96969c5c1d15548afc3b49756739e69340124",
+          "coreclr.dll": "fc2909e16b3f70edfeac96d69d3f1d444705b1e4ad922dc760bb396338a7b1de"
+        },
+        "onDiskIdentityStatus": "observed",
+        "processingThreadCulture": null,
+        "loadedNativeInputs": null
+      },
+      "package": {
+        "archive": {
+          "url": "https://github.com/actions/runner/releases/download/v2.337.0/actions-runner-win-x64-2.337.0.zip",
+          "sha256": "1150692afa94e71f872017e254ea55b6eece1eece3fe7e3a6d4c93d0a1b85cfc",
+          "size": 103528051
+        },
+        "status": "passed",
+        "identity": {
+          "run": "37180154098",
+          "sha": "d4a9a6109e14d4a9649a13a0e76a3d086fc7054c",
+          "image": "win25-vs2026",
+          "imageVersion": "20260925.250.1"
+        },
+        "matchingOnDiskFiles": [
+          "Runner.Worker.exe",
+          "Runner.Worker.dll",
+          "Runner.Common.dll",
+          "System.Private.CoreLib.dll",
+          "Runner.Worker.runtimeconfig.json",
+          "Runner.Worker.deps.json",
+          "coreclr.dll"
+        ],
+        "onDiskSha256": {
+          "Runner.Worker.exe": "7f8b0ea83d2ce023a42dd3b1b11eab0efeed3d0b33860344e3f2e30f59514f30",
+          "Runner.Worker.dll": "513d54f9a2df265c72eb79cbe1e953d4195ea409b138dc50f47b4d2045ee154f",
+          "Runner.Common.dll": "276d5dde79696aecd105686f4b9ff7787ee9b458183ba3779e2044e0219e6fd5",
+          "System.Private.CoreLib.dll": "cc2cc43d28e3770d7cdeb80dc74eab265a1f5dd2f5547ccb236983b48d47d914",
+          "Runner.Worker.runtimeconfig.json": "adb89a4d3814780dd921a3e13d60e70d1568306516a40a0c8e883a90a453c606",
+          "Runner.Worker.deps.json": "4f079c1e5d408c9cd551d97e35b96969c5c1d15548afc3b49756739e69340124",
+          "coreclr.dll": "fc2909e16b3f70edfeac96d69d3f1d444705b1e4ad922dc760bb396338a7b1de"
+        }
+      },
+      "liveBoundary": {
+        "status": "passed",
+        "identity": {
+          "GITHUB_RUN_ATTEMPT": "1",
+          "GITHUB_RUN_ID": "37180154098",
+          "GITHUB_SHA": "d4a9a6109e14d4a9649a13a0e76a3d086fc7054c",
+          "ImageOS": "win25-vs2026",
+          "ImageVersion": "20260925.250.1",
+          "RUNNER_ARCH": "X64",
+          "RUNNER_OS": "Windows",
+          "SHOUTX_SOURCE_HEAD": "64ffc6737b4cd78db632ef127b5d59b355971c68"
+        },
+        "runnerVersion": "2.337.0",
+        "pinnedRunnerVersion": "2.337.0",
+        "runnerMatchesPin": true,
+        "workerCulture": null,
+        "workerGlobalizationBackend": null,
+        "maskCases": 8,
+        "annotationCases": 30,
+        "logSha256": "11d567ef849a56dcf17c946ece4697563e877e28214117c880e14af33a140041",
+        "harnessSha256": "ce566ed214a26827b6c10b97a8621eb391e3887c6585bdcce4c5926ee0a759e4",
+        "jobId": 111370934726,
+        "verifierAttempt": "1",
+        "annotationsSha256": "e6e3c64b86548dd3930a9e90f57a87168ff1f17be5f61d0837400367f2f8e2ad"
+      },
+      "sourceReportSha256": {
+        "hosted-worker-input-windows-latest-win-x64/hosted-worker-evidence.json": "02e8c5f4f84c149d84f38a14f82f9ecf72155c03048518e41254033174c6686f",
+        "runner-package-evidence-windows-latest-win-x64/runner-package-evidence/package-bin-sha256.json": "0e35974dc9404895944dfa67f7acc4ef9c8b3a5c2e490f0575e8ec59fec123fb",
+        "runner-package-evidence-windows-latest-win-x64/runner-package-evidence/evidence.json": "35255cf0823e158c1fd729c7c878ad54d5e1a40dacf848fed28d703bff6b67fd",
+        "hosted-boundary-evidence/package-matched/windows-latest.json": "5b20dd21653fb30b35b3d19d6694b5cf8d3a0b612d6d3c6bb4b2fa10f7c8ab36"
+      }
+    }
+  ]
+}

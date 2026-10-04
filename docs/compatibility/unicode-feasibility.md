@@ -138,14 +138,82 @@ drops missing rows nor treats unavailable evidence as proof of impossibility.
 The [parser note](github-actions-workflow-command-parser.md#culture-diagnostic-observation-route)
 owns the inspected source mechanism and diagnostic limitations.
 
-The in-progress observer implements an in-job allowlisted projection of that
+The observer implements an in-job allowlisted projection of that
 diagnostic input and named on-disk files, locating Worker through its ancestor
 chain and matching job context before extracting a culture. The
 [test plan](../test-plan.md#hosted-worker-startup-input-feasibility-observation) records its output
-limits. It has synthetic offline tests but, as of this draft, no hosted result.
-Availability, trustworthy job/process correlation and later thread state still
-need evaluation. Even a startup culture record would not alone prove effective
+limits. Its first hosted result is recorded below. Trustworthy job/process
+correlation and later thread state still need evaluation. Even a process-start
+culture record would not alone prove effective
 native mappings, loaded runtime identity or the other culture's transfer argument.
+
+### First hosted diagnostic observation
+
+Successful [run 37180154098](https://github.com/send/shoutx/actions/runs/37180154098),
+attempt 1, tested source head `64ffc6737b4cd78db632ef127b5d59b355971c68`
+through merge `d4a9a6109e14d4a9649a13a0e76a3d086fc7054c`.
+The [retained evidence](evidence/hosted-worker-37180154098.json) contains the
+four limited observer reports, package comparison fields, live boundary
+reports, original report hashes and Actions job metadata. It excludes raw
+diagnostics and vendor payloads. Like the earlier projection, this is an
+author-selected record, not a signed attestation or a committed generator.
+
+| Selector | Actions job ID | Diagnostic job input | On-disk comparison |
+| --- | --- | --- | --- |
+| ubuntu-22.04 | 111370934814 | `system.culture` absent | All 7 named files match package |
+| ubuntu-24.04 | 111370934876 | `system.culture` absent | All 7 named files match package |
+| macos-15 | 111370934787 | `system.culture` absent | All 7 named files match package |
+| windows-latest | 111370934726 | `system.culture` absent | All 7 named files match package |
+
+All four reports have `observed-job-message-without-culture`, null
+`cultureInput` and `cultureInputStatus: absent`; none measures Invariant.
+The matching live reports retain Runner 2.337.0, the exact same run/tested SHA
+and image identities, eight masks and 30 annotations. All package reports
+passed; the hosted verifier job 111372188999 also succeeded. The image versions
+are unchanged from the earlier inventory, but this is a separate observation,
+not an inference from image equality alone.
+
+The comparison checks each observer `onDiskSha256` entry against the same
+job's package `package-bin-sha256.json`; its seven corresponding entries are
+retained separately as `package.onDiskSha256` so this comparison remains
+inspectable after artifact expiry. They include Worker, parser assemblies,
+CoreLib, CoreCLR and runtime/dependency configuration. It closes the narrow
+question of whether those named files can be identified and matched on disk
+in this run.
+It does not attest loaded bytes, native ICU, process startup options or
+processing-thread state. Numeric Actions job IDs are correlated by artifact
+selector/RID and the workflow, not equated with diagnostic timeline GUIDs.
+The collector's unique-context, trusted-ephemeral-job assumptions remain in
+force; its logs are not authenticated against modifications by the job user.
+Both cultures on every row therefore remain unverified in the feasibility table.
+
+The next narrow observation uses the source route for the earlier `Culture:`
+line described in the parser note. The added extraction and its negative
+controls follow the
+[test plan](../test-plan.md#hosted-worker-startup-input-feasibility-observation).
+It has not yet run hosted. This does not require debug
+logging or reading process environments. A source/configuration argument for
+transfer to later execution and to the other culture remains a separate step;
+no native-data expansion is justified until that prerequisite is addressed.
+
+To reproduce the recorded comparison, download run 37180154098 into a new
+directory. Each `hosted-worker-input-SELECTOR-RID/hosted-worker-evidence.json`
+is paired with `runner-package-evidence-SELECTOR-RID/runner-package-evidence/`
+`evidence.json` and `package-bin-sha256.json`, and with
+`hosted-boundary-evidence/package-matched/SELECTOR.json`. Check their SHA-256
+against the retained `sourceReportSha256` entries before comparing fields.
+All named observed file digests must equal the corresponding package manifest
+entries; missing entries are not matches. Original Windows report hashes
+include CRLF bytes. Job metadata can be rechecked through the run/jobs APIs.
+Artifact expiry does not erase the retained observations, but their hashes
+cannot recreate missing original files or prove a new image has the same state.
+For an independent package-side check after artifact expiry, download the
+public archive at `package.archive.url`, verify its recorded size and SHA-256
+before extraction, then hash the seven named `bin/` files and compare with
+`package.onDiskSha256`. These names are the top-level bin entries used by
+`extract_bin` and the manifest in `scripts/test-runner-package.py`.
+This route depends on continued availability of those exact archive bytes;
+it reproduces package identities, not the expired live process or diagnostics.
 
 ## Reproduction of this inventory
 

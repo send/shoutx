@@ -214,7 +214,9 @@ the numeric fields are retained so a store-specific spelling can be rebuilt.
 The timestamp is a lookup field, not an asserted build date. This is not a
 general-purpose PE validator or an Authenticode check.
 
-The artifact contains only hashes, lengths, selected numeric PE fields and
+The artifact contains only hashes, lengths, selected numeric PE fields,
+comparison algorithm identifier and file offsets, certificate size/count,
+fixed schema/status/reason tokens, observation flags and
 allowlisted run/image identifiers; no DLL bytes, raw paths, full environment,
 exception text or mapping tables are uploaded. `candidate-mismatch` omits PE
 keys but publishes the current candidate's SHA-256 and size. `unavailable`
@@ -231,8 +233,95 @@ The report distinguishes source-head SHA from tested merge SHA and includes
 allowlisted event, repository and job key (`GITHUB_JOB`), not numeric Actions
 job ID. The latter is associated using the Actions API. Artifact retention is
 seven days. The [test plan](../test-plan.md#windows-icu-acquisition-locator)
-owns trigger, coverage and retention-verification requirements. A hosted result
-is still pending; this implementation does not close the Windows acquisition gap.
+owns trigger, coverage and retention-verification requirements.
+
+#### Retained locator observation
+
+The reviewed [PR #88](https://github.com/send/shoutx/pull/88) collector ran in
+[run 37222847326](https://github.com/send/shoutx/actions/runs/37222847326), attempt
+1, job 111496490533, in `send/shoutx` on the `pull_request` event. The API
+associated source head `37cbf24d8395f937f4ea40c3fc0022e360ef12d3` with tested
+merge `184e6ce2001e188ca3a91842154b62b2e3c5f6e6`; the latter's parents were
+`1f0bb707522f978606bd4546a23913f3c7bd6704` and that source head. The report
+identified `win25-vs2026` / `20260925.250.1`, the fixed image identifier.
+These are acquisition provenance, not proof of deployed loaded bytes.
+This schema-version-1 report predates the additive `prefixComparison` field;
+its absence is not an unavailable-comparison result.
+
+The report recorded `reference-hash-match`, length 2,765,824, and the exact
+reference DLL digest stated above. Selected PE fields were machine `0x8664`,
+timestamp `0x526957c3`, image size `0x29e000`, key `526957c329e000`.
+The downloaded JSON's raw SHA-256 was
+`b3a8f6d3d722c81f20bf01e94cd947b8ca3d9e77a3ea0722e8ca4637058910b8`.
+Its reference-projection digest was
+`15ba8fb93a70a6712aa8dd937931f0034b6e1b7466438b591dcc3fc690c168de`:
+hashing the source projection after LF-to-CRLF conversion reproduces that
+Windows checkout digest. The source LF file digest is
+`285eabb9d09ed386a306979ce2dcec653e27c091ad6025bf76d3f0cb13718f9e`.
+The raw digest distinction is retained, not silently normalized away.
+
+Downloading the [official symbol-store candidate](https://msdl.microsoft.com/download/symbols/icu.dll/526957c329e000/icu.dll)
+yielded 2,765,840 bytes with SHA-256
+`33bcc0ae43e8cbb2702ec2f73354865bf7bd0cca26ed14c72b840d3a23e57b2f`.
+This **does not match** the reference. Matching lookup fields do not authorize
+substitution. The candidate's terminal certificate table starts at 2,732,032
+and occupies 33,808 bytes. A signing-only difference is a hypothesis, not an
+established explanation for the 16-byte file-length difference.
+
+#### Bounded prefix comparison
+
+The collector additionally attempts `pe_prefix_digest.py` only after the
+unchanged whole-file reference SHA-256 gate and successful locator parsing,
+using the same in-memory bytes. Its `prefixComparison` records either
+`available` metadata or the fixed `unsupported-prefix-layout` reason, without
+discarding an already established whole-file match or lookup fields. Mismatches
+never receive this comparison. This is a research acquisition aid, not a new
+acceptance policy or relaxed reference-file identity test.
+
+For the supported x64 PE32+ layout, the comparison hashes **every byte before
+the terminal certificate table**, replacing only the four-byte CheckSum and
+eight-byte security-directory entry with zero bytes. It validates directory
+and header bounds, requires the certificate table to be eight-byte aligned,
+outside the headers and every declared nonempty raw section, and ending exactly at EOF.
+Walking length-prefixed certificate entries with eight-byte rounding must
+consume the complete table. Files outside this narrow layout are unsupported;
+this is not a general PE validity test or signature verification.
+Section checks use declared file offsets and sizes; the helper does not model
+loader rounding, `FileAlignment`, virtual mapping or self-inspection by code.
+
+The algorithm identifier, prefix length, checksum offset, security-directory
+offset and digest must all match before interpreting two results as evidence
+of equality outside those explicit exclusions (subject to SHA-256's collision
+resistance). Certificate size/count are descriptive and may differ. All
+pre-certificate gaps and overlays remain included. The digest is deliberately
+**not called an Authenticode hash**. The
+[PE specification](https://learn.microsoft.com/en-us/windows/win32/debug/pe-format#the-attribute-certificate-table-image-only)
+explains the certificate table's file-offset semantics and signing-related fields;
+the [optional-header CheckSum field](https://learn.microsoft.com/en-us/windows/win32/debug/pe-format#optional-header-windows-specific-fields-image-only)
+notes checksum-dependent loader validation. An equal comparison alone therefore
+does not establish equivalent signatures, loading, execution or effective ICU
+data. Any later use of a candidate's code for the reference argument must
+separately justify the relevance of the excluded bytes to that argument.
+
+The local symbol-store candidate downloaded and inspected on 2026-10-05 gives
+prefix length 2,732,032, checksum offset
+352, security-directory offset 432 and comparison SHA-256
+`a74972bace80cc4880755defce4b7cce6752f90ce0ac091a5eb130ed1be3bd04`.
+Its eight raw sections end no later than that prefix boundary; the final one
+ends exactly there. The reference-side comparison is pending. No equivalence,
+effective data binding or Windows acquisition closure is claimed.
+
+To reproduce this candidate-only result, first verify the downloaded file's
+whole-file hash against the candidate digest above, then use the reviewed
+helper implementing `pe32plus-terminal-certificate-zeroed-prefix-v1`:
+
+```sh
+PYTHONPATH=tests/runner-package python3 -c 'import json,sys; from pe_prefix_digest import prefix_digest; f=open(sys.argv[1],"rb"); data=f.read(8*1024*1024+1); f.close(); print(json.dumps(prefix_digest(data),sort_keys=True))' /local/path/to/candidate.dll
+```
+
+This explicit local inspection of a nonmatching download does not run through
+or bypass the collector's reference gate. Do not publish the input file or
+treat this candidate result as a reference-side observation.
 
 ### macOS
 

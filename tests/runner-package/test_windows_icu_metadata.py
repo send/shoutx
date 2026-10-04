@@ -10,6 +10,7 @@ import unittest
 from unittest.mock import patch
 
 import windows_icu_metadata as probe
+from test_pe_prefix_digest import fixture as signed_fixture
 
 
 def fixture():
@@ -25,6 +26,37 @@ def fixture():
 
 
 class MetadataTests(unittest.TestCase):
+    def test_prefix_comparison_is_hash_gated_and_failure_preserves_locator(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "fixture.dll"
+            data = signed_fixture()
+            struct.pack_into("<I", data, 144, 0x29E000)
+            path.write_bytes(data)
+            matching = probe.inspect_file(path, hashlib.sha256(data).hexdigest())
+            self.assertEqual(matching["status"], "reference-hash-match")
+            self.assertEqual(matching["prefixComparison"]["status"], "available")
+            with patch.object(probe, "prefix_digest", side_effect=AssertionError("must not run")):
+                self.assertNotIn("prefixComparison", probe.inspect_file(path, "0" * 64))
+            with patch.object(probe, "prefix_digest", side_effect=ValueError("PRIVATE")):
+                unavailable = probe.inspect_file(path, hashlib.sha256(data).hexdigest())
+            self.assertEqual(unavailable["status"], "reference-hash-match")
+            self.assertEqual(unavailable["symbolKey"], matching["symbolKey"])
+            self.assertEqual(unavailable["prefixComparison"],
+                             {"status": "unavailable", "reason": "unsupported-prefix-layout"})
+            self.assertNotIn("PRIVATE", json.dumps(unavailable))
+            with patch.object(probe, "prefix_digest", side_effect=struct.error("PRIVATE")):
+                self.assertEqual(probe.inspect_file(path, hashlib.sha256(data).hexdigest()), unavailable)
+            data = fixture()  # Real PE locator succeeds; strict prefix layout does not.
+            path.write_bytes(data)
+            unsupported = probe.inspect_file(path, hashlib.sha256(data).hexdigest())
+            self.assertEqual(unsupported["status"], "reference-hash-match")
+            self.assertEqual(unsupported["prefixComparison"],
+                             {"status": "unavailable", "reason": "unsupported-prefix-layout"})
+            path.write_bytes(b"not PE")
+            malformed = probe.inspect_file(path, hashlib.sha256(b"not PE").hexdigest())
+            self.assertEqual(malformed["status"], "reference-hash-match-pe-unavailable")
+            self.assertNotIn("prefixComparison", malformed)
+
     def test_key_and_target_gate(self):
         data = fixture()
         self.assertEqual(probe.pe_key(data)["symbolKey"], "0abcdef129e000")

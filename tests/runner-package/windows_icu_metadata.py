@@ -9,6 +9,8 @@ import re
 import struct
 import sys
 
+from pe_prefix_digest import prefix_digest
+
 ROOT = Path(__file__).resolve().parents[2]
 EVIDENCE = ROOT / "docs/compatibility/evidence/hosted-worker-modules-37184265280.json"
 FILE_CAP = 8 * 1024 * 1024
@@ -81,6 +83,13 @@ def inspect_file(path, expected):
         except ValueError as error:
             result["status"] = "reference-hash-match-pe-unavailable"
             result["reason"] = fixed_reason(error)
+    if result["status"] == "reference-hash-match":
+        try:
+            result["prefixComparison"] = {"status": "available", **prefix_digest(data)}
+        except (ValueError, struct.error):
+            # Preserve the whole-file match and locator even when this stricter
+            # comparison layout is unsupported. Never publish exception text.
+            result["prefixComparison"] = {"status": "unavailable", "reason": "unsupported-prefix-layout"}
     return result
 
 

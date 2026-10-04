@@ -981,7 +981,14 @@ records the fixed-source comparison and hash-gated exploratory reproduction.
 Run `python -B tests/runner-package/test_icu_source_comparison.py` for the
 comparison helper's word boundaries, limited normalization regressions,
 non-exported source contents, equal/unequal reports, raw newline sensitivity,
-missing/invalid UTF-8 input, CLI failure status and size-cap boundary. It runs
+missing/invalid UTF-8 input, CLI failure status and size-cap boundary. Dependency
+mode tests additionally cover explicit source slices, missing/duplicate/reversed
+boundaries, disclosed replacements, and full-file raw hashes remaining distinct
+when the selected portions compare equal. They also cover dependency CLI
+wiring/partial-output failures and the retained manifest's shape/internal
+equality consistency. Documentation-only edits skip the package job, so run
+this test locally when editing that manifest; it does not authenticate source
+hashes. It runs
 in the multi-OS package job using synthetic fixtures, not acquired ICU sources;
 green CI does not verify the retained upstream equality or substitution claims.
 Source text equality is not vendor binding or proof of

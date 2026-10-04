@@ -517,8 +517,8 @@ before reading a tailoring binary. Per-file presence fields below are not
 loader-visible results. This is upstream
 source guidance for the research, **not** established Microsoft binary/source
 correspondence or a proved en-US/root fallback path. Explicit parent/alias
-resources (`%%Parent`, `%%ALIAS`), `coll/res_index.res`, and their relevance to
-the selected route remain unobserved/unproved; they are not assumed absent.
+resources and build-dependent override data must also be checked; see the
+[conditional fallback path](#conditional-resource-fallback-path) below.
 
 The projection accepts only little-endian ResB-v2 with seven indexes and no
 pool dependency, bounded to 4 MiB. It checks key/16-bit-unit/bundle regions,
@@ -531,7 +531,16 @@ empty string, matching the pinned generator's
 These are collector constraints, not ICU's complete accepted format.
 It reports resource flags, root type and whether its offset is zero, presence of `collations`,
 `default`, and `standard`, the default's equality to the fixed token
-`standard`, and the standard resource's type. It publishes no key list,
+`standard`, and the standard resource's type. It also reports root-table
+presence of `%%ALIAS`, `%%Parent`, and `%%ParentIsRoot` as `aliasPresent`,
+`parentPresent`, and `parentIsRootPresent`. Presence includes a zero-valued
+resource handle; it does not validate the value's type or follow a redirect.
+This is stored-key presence, an over-approximation of loader-visible presence:
+even a stored `0xffffffff` yields true, while the pinned ICU reader uses that
+value as `RES_BOGUS` (missing). A true field therefore does not by itself
+establish that ICU follows an alias or stops a parent walk. A false field
+establishes only that this inspected table lacks the selected key.
+It publishes no key list,
 string value, tailoring binary, or resource tree. Missing and empty defaults
 are distinct. `rootOffsetZero` identifies the offset-zero empty-table encoding;
 it is not a general emptiness test for a nonzero-offset table with count zero.
@@ -553,7 +562,9 @@ The additive `resource` field keeps schema version 1; older observations omit it
 Exploratory local inspection of the recovered 70.1/74.2/76.1 candidates found
 empty `coll/en.res` and `coll/en_US.res` tables without the no-fallback flag, and root default
 `standard`. This identifies selected fields, not locale fallback, absence of
-other sources, or native use. The Windows resource observation is pending.
+other sources, or native use. The Windows observation below now supplies the
+original selected fields; the three redirect-presence fields are a later
+collector addition and are not present in that observation.
 R1/R2 still require the fixed reference's effective route; R3/R4 still require
 mapping/normalization/break prerequisites and arbitrary-suffix composition.
 
@@ -572,6 +583,87 @@ the full-file and selected storage hashes:
 ```sh
 PYTHONPATH=tests/runner-package python3 -B -c 'import hashlib,sys; from pathlib import Path; from icu_resource_probe import project_resource; b=Path(sys.argv[1]).read_bytes(); assert hashlib.sha256(b).hexdigest()==sys.argv[2]; p,n=map(int,sys.argv[3:5]); member=b[p:p+n]; assert len(member)==n and hashlib.sha256(member).hexdigest()==sys.argv[5]; r=project_resource(member); assert r["status"]=="observed-selected-fields"; print(r)' FILE EXPECTED_FULL_SHA256 OFFSET SIZE EXPECTED_STORAGE_SHA256
 ```
+
+#### Windows selected-field observation
+
+[Run 37229053857](https://github.com/send/shoutx/actions/runs/37229053857),
+attempt 1, job 111514650204, succeeded on the fixed Windows image with source
+head `216f042d9b1b25f8aaae2adad95e6f788c59d38e`. The tested merge
+`0fbc56b34780d8b61cdb55fab8d7981978530ed6` has API-verified parents
+`fd29d90f24633d130d28d4dc6c99a375f08a597a` and that head. The metadata-only
+JSON raw SHA-256 is
+`e2482d7891039350c7d6d7d8318a47156161a735f4af710fb14b41f4cbe3f61c`.
+DLL, data-file and previously selected member identities are unchanged.
+
+`coll/en_US.res` is at file offset **4,443,424**, length **80**, with the same
+`ee066818c0bfc2e92c9f4486f3087c3669b998786b0363a04467136d80c00d8b`
+storage hash as `coll/en.res` in the table above. Both have
+`observed-selected-fields`, attributes 0, root type 2, offset zero and no
+`collations` key. `coll/root.res` has attributes 0, root type 2, nonzero
+offset, and present `collations`, `default`, and `standard`; its default
+compares equal to `standard`, whose resource type is 2. This completes these
+selected-field observations across the four candidates, not their effective
+loading or arbitrary-input safety proof.
+
+#### Conditional resource fallback path
+
+The three new presence fields were checked locally on the recovered
+70.1/74.2/76.1 `coll/root.res` byte ranges, after verifying both their
+full-file and member hashes against the inventories above. All three fields
+were false for each root. The same reproduction command above now emits
+these fields. Windows root has different bytes and still needs its own
+observation; the local results are not substituted for it. These are
+same-author observations using the documented hash-gated procedure, not an
+independent reproduction or committed vendor-data fixture.
+
+The pinned upstream 72.1
+[`uresbund.cpp`](https://github.com/unicode-org/icu/blob/ff3514f257ea10afe7e710e9f946f68d256704b1/icu4c/source/common/uresbund.cpp)
+provides the following source-level route. These are conditional statements
+about that source, not an assertion that every vendor binary uses it:
+
+- `ures_openNoDefault` selects `URES_OPEN_LOCALE_ROOT`. The process default
+  locale is queried, but the branch inserting its resource chain requires
+  `URES_OPEN_LOCALE_DEFAULT_ROOT` and is not selected by this call.
+- `init_entry` loads a bundle and can redirect through a nonempty `%%ALIAS`.
+  Pool dependencies are another branch; the observed attributes exclude them
+  in the selected files, not in arbitrary other data sources.
+- After finding an existing real bundle, `findFirstExisting` uses
+  `chopLocale`, not the missing-bundle search's locale-fallback tables.
+  For `en_US` this produces `en`. `mayHaveParent("en")` is false.
+- On this candidate path, `loadParentsExceptRoot` checks no-fallback,
+  `%%ParentIsRoot` and `%%Parent` on `en_US`, then inserts `en`. The subsequent
+  `chopLocale("en") || mayHaveParent("en")` is false, so the loop does not
+  inspect `en`'s parent keys or no-fallback flag. The later root-insertion
+  guard checks the tail's missing parent and the initial entry's no-fallback
+  flag (`r`, here `en_US`), not `en`'s flag; it also requires `!isRoot` and a
+  tail name other than root, both satisfied on this candidate path.
+  In contrast, `init_entry` checks
+  `%%ALIAS` for each loaded bundle, including root. Subject to loading those
+  bytes and excluding an applicable override, root supplies the final parent.
+  The absence of special keys in the observed `en_US`/`en` tables follows
+  from their type-2 offset-zero empty-table encoding, not backfilled new
+  projection fields. Root's alias key still needs its Windows observation.
+- `entryOpen` can insert `usr` override bundles when `U_USE_USRDATA` and its
+  path condition hold. The pinned upstream
+  [`utypes.h`](https://github.com/unicode-org/icu/blob/ff3514f257ea10afe7e710e9f946f68d256704b1/icu4c/source/common/unicode/utypes.h)
+  defines `U_USE_USRDATA` as 0 inside the internal-API section, with no
+  `#ifndef U_USE_USRDATA` guard, excluding this branch for an unmodified build
+  using that header. The same definition occurs in the fixed upstream
+  [70.1](https://github.com/unicode-org/icu/blob/a56dde820dc35665a66f2e9ee8ba58e75049b668/icu4c/source/common/unicode/utypes.h),
+  [74.2](https://github.com/unicode-org/icu/blob/2d029329c82c7792b985024b2bdab5fc7278fbc8/icu4c/source/common/unicode/utypes.h), and
+  [76.1](https://github.com/unicode-org/icu/blob/8eca245c7484ac6cc179e3e5f7c1ea7680810f39/icu4c/source/common/unicode/utypes.h)
+  headers. Reference vendor implementation correspondence remains to be
+  established; a deployment-equivalence assumption cannot close it.
+
+Under this 72.1 source, the resulting **candidate** chain is
+`en_US → en → root`. Combined with the
+collation loader's root/standard shortcut described above, this identifies
+the next premises to close without decoding irrelevant tailoring binaries.
+It does not yet establish the .NET locale/keyword input, reference native
+implementation, selected package, override branch, or cache provenance.
+`res_index` is used by available-locale enumeration in this source; its
+irrelevance to the entire selected caller route is not proved merely by its
+absence in `entryOpen`. R1–R4 remain unproved.
 
 ### macOS
 

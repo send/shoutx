@@ -102,6 +102,27 @@ does not identify the live Worker's startup environment. Startup names,
 named file equality and mapped module presence leave active backend,
 effective native inputs and transfer to the other culture as separate gaps.
 
+The same fixed runtime's platform implementations make the selection routes
+explicit: [Unix GlobalizationMode](https://github.com/dotnet/runtime/blob/a83db3e0eb2defb6220e15dae2f1a0462fdbf99f/src/libraries/System.Private.CoreLib/src/System/Globalization/GlobalizationMode.Unix.cs)
+returns false for `UseNls` and, outside invariant mode, selects app-local ICU or
+the system loader. [Windows GlobalizationMode](https://github.com/dotnet/runtime/blob/a83db3e0eb2defb6220e15dae2f1a0462fdbf99f/src/libraries/System.Private.CoreLib/src/System/Globalization/GlobalizationMode.Windows.cs)
+outside invariant mode selects NLS when requested or the default system-ICU
+loader fails. When the app-local branch is selected instead, failure to load
+its required libraries terminates the process through `Environment.FailFast`;
+it is not an NLS fallback. Common `GlobalizationMode.cs`
+reads the string AppLocalIcu setting from AppContext before its environment
+fallback. The [boolean helper](https://github.com/dotnet/runtime/blob/a83db3e0eb2defb6220e15dae2f1a0462fdbf99f/src/libraries/System.Private.CoreLib/src/System/AppContextConfigHelper.cs)
+likewise checks AppContext first, using the environment only when the switch
+is unavailable. This is source precedence, not an observation of the Worker's
+effective AppContext values.
+The fixed [native shim](https://github.com/dotnet/runtime/blob/a83db3e0eb2defb6220e15dae2f1a0462fdbf99f/src/native/libs/System.Globalization.Native/pal_icushim.c)
+has a macOS system-path load branch; the Linux-style
+`CLR_ICU_VERSION_OVERRIDE` search is in the non-Windows/non-macOS/non-Android
+branch. The managed app-local branch must be considered before inferring that
+a Worker used the default system path. These source routes inform the audit's
+[named startup inputs](unicode-feasibility.md#startup-selection-inputs-to-resolve),
+not a conclusion that absent measurements are unset switches.
+
 For diagnostic job correlation, pinned
 [`ExecutionContext`](https://github.com/actions/runner/blob/397b032cbf865e9c3ddfab89d533ec19325e1273/src/Runner.Worker/ExecutionContext.cs)
 initializes `github.job` from `system.github.job`, then overlays the supplied

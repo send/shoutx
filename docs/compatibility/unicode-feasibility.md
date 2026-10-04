@@ -120,12 +120,13 @@ consumer-state obligations. The producer policy and corpus are unchanged.
 
 1. Preserve each subsequent same-job observation with source identities.
    Baseline and process-start availability are now recorded on all four rows;
-   live module/configuration observations are the next unverified acquisition.
+   the [module experiment](#hosted-module-metadata-result) also records partial
+   native file identities. Active configuration and binding remain unverified.
 2. Evaluate the source/configuration or direct-observation path connecting
    the live consumer to each explicit culture's implementation/settings,
    including the server-supplied culture input. This is currently unverified
    for **both cultures on every row**, including the observed startup names.
-3. For rows with a defensible connection, evaluate acquisition of native
+3. For each row/culture with a justified acquisition-target connection, evaluate acquisition of native
    identities, effective root/tailoring, normalization/break inputs and format
    support. No costly mapping expansion is justified by the package counts.
 4. Add any subsequent observation to the durable record and independently
@@ -195,7 +196,8 @@ controls follow the
 Its first hosted result is recorded below. This does not require debug
 logging or reading process environments. A source/configuration argument for
 transfer to later execution and to the other culture remains a separate step;
-no native-data expansion is justified until that prerequisite is addressed.
+the scope decision's [acquisition-target work order](../decisions/github-actions-unicode-scope.md#consequences-and-verification-requirements)
+governs any subsequent native-data acquisition.
 
 To reproduce the recorded comparison, download run 37180154098 into a new
 directory. Each `hosted-worker-input-SELECTOR-RID/hosted-worker-evidence.json`
@@ -267,12 +269,12 @@ route rechecks package digests after artifact expiry, not live state.
 
 The next consumer-linkage obligation is identifying relevant runtime/native
 modules and configuration in the Worker, separately from its child probe.
-Read-only module metadata is a possible acquisition route, not yet hosted
-evidence. The new collector and limits are specified in the
+Read-only module metadata supplies the limited hosted evidence below.
+The collector and limits are specified in the
 [test plan](../test-plan.md#hosted-worker-module-metadata-feasibility-observation).
-It has synthetic tests but no target-row result yet. Such metadata would still not by itself prove active backend,
+Such metadata does not by itself prove active backend,
 effective root/tailoring or processing-thread culture. Costly mapping expansion
-remains gated on a defensible consumer connection.
+remains gated on the acquisition-target connection defined by the scope decision.
 
 The proposed macOS route uses the text-file metadata returned by `lsof`, not
 `vmmap` on the live Worker. In Apple's published
@@ -306,9 +308,165 @@ when found, without assuming it is the binding used by CoreLib or that it
 must be mapped separately. Shared-cache-only files and inaccessible paths
 remain explicitly unverified.
 
+### Hosted module metadata result
+
+Successful [run 37184265280](https://github.com/send/shoutx/actions/runs/37184265280),
+attempt 1, tested source head `9aa3887c9e5efbfa811198c8f46981e366a0640b`
+through merge `2e1aeed897f1a2c6014dfa238048d5b35216d256`. Its
+[retained projection](evidence/hosted-worker-modules-37184265280.json) preserves
+the four startup-input and module reports, selected package fields and all four
+package-matched live reports, with SHA-256 hashes of 24 original reports.
+It is an author-selected projection, not a signed attestation or a committed
+generator. Job association uses the workflow/artifact selector and Actions jobs
+API, not equality between diagnostic GUIDs and numeric Actions job IDs.
+
+| Selector / job ID | Worker module metadata | Package comparison, both explicit cultures |
+| --- | --- | --- |
+| ubuntu-22.04 / 111382850276 | CoreCLR, ICU common/international/data 70.1 filenames | Common/international disk hashes match |
+| ubuntu-24.04 / 111382850325 | CoreCLR, ICU common/international/data 74.2 filenames | Common/international disk hashes match |
+| macos-15 / 111382850331 | CoreCLR only | System ICU disk hashes unavailable; no native ICU match established |
+| windows-latest / 111382850362 | CoreCLR and `icu.dll` | Combined ICU disk hash matches both selected library roles |
+
+All four module reports have `observed-module-metadata`. That status means at
+least one selected entry, not a complete module inventory. All four report the
+optional standalone globalization shim as not observed. Linux map device/inode
+matches each opened selected file; Windows/macOS do not make that identity
+check. Linux data-library hashes have no package counterpart here. The macOS
+ICU omission is consistent with the previously observed `lsof` limitation,
+but does not prove its cause or that ICU was absent. Neither an ICU filename
+nor module presence measures the active .NET backend/version.
+
+The startup reports again record absent `system.culture`; process-start names
+are empty on Linux and `en-US` on macOS/Windows. All **nine** selected
+Worker/parser/SDK/runtime disk files match the corresponding package manifest,
+including the newly added `Runner.Sdk.dll` and `Sdk.dll`. CoreCLR hashes in the
+module report also equal those manifests. This adds disk identities for the
+inspected output-event path, not a source-to-binary derivation or loaded-byte
+attestation. Historical seven-file reports remain seven-file evidence.
+
+Each live report passed with Runner 2.337.0, eight masks and 30 annotations.
+Run/tested SHA, resolved image version and architecture (case-insensitive name
+comparison: `Arm64` / `ARM64`) match its paired
+package report. Image versions are the same as the first table above; their
+actual values are independently retained in this projection. The package ICU
+versions remain 70.1.0.0, 74.2.0.0, 76.1.0.0 and 72.1.0.4 respectively, under
+both explicit cultures. The observed collator attributes, cached-search match
+and external-break presence also remain the package observations recorded
+above. Verifier job 111384257500 passed (07:05:48–07:06:05 UTC). These finite
+effects do not measure arbitrary-suffix safety or live culture/backend.
+An API recheck for this run found an additional `.github` ARM64-capacity service
+notice on macOS, retained separately in the projection. This is consistent with an
+extra non-corpus entry; whole-response digest equality across OSes is not a
+requirement. The successful verifier checks the corpus semantics separately.
+
+The projection also retains actual/compiled **break-iterator** rule digests
+and source/resource digests for both cultures. `CollationProbe.Run` obtains
+`actualRuleSha256` from `RuleHash(GetBreaker(search))`; these are not collation
+root/tailoring digests. Equality of these rule hashes must not be used to claim
+equal effective collator mappings. The probe has no retained resolved-collator
+locale field; that remains a separate acquisition question.
+The projection's `breakRules` fields come from each source culture's
+`collationObservation` object, not a source object named `breakRules`.
+`ruleResourceSha256` identifies the original JSON bytes, so cross-platform
+equality is not required. Its Windows difference is retained without assigning
+an unverified cause; compare each row's source bytes independently.
+
+Reproduce by downloading run 37184265280 into a fresh directory. Pair
+`hosted-worker-modules-SELECTOR-RID/hosted-worker-modules.json`,
+`hosted-worker-input-SELECTOR-RID/hosted-worker-evidence.json`, package
+`evidence.json`, `package-bin-sha256.json`, `probe.json`, and the
+`hosted-boundary-evidence/package-matched/SELECTOR.json` report. Check the six
+original byte digests for each row before comparing fields (Windows CRLF is
+significant). For each Linux/Windows culture and common/international role,
+verify equality of the observed package hash and the same-name observed Worker
+module hash. For macOS, reproduce the reported unknown: both roles have unavailable
+status and null hash, and the selected Worker modules contain CoreCLR only.
+This reproduces the unavailable result; null hashes are not matches.
+Recheck run/attempt/job metadata through the API.
+
+### What these alternatives can and cannot close
+
+The feasibility table's eight consumer-linkage verdicts remain unverified;
+the module experiment does not promote either culture to verified. The exact
+remaining issue is the relation between the identified on-disk implementation
+and the comparison state used by the live Worker, including transfer to the
+other explicitly tested culture. It is not another shortage of string samples.
+
+| Evaluated route | Evidence obtained | Remaining limitation / next condition |
+| --- | --- | --- |
+| Same-job package plus live effects | Matching baseline, image, architecture and finite effects on all four rows | Does not identify comparison culture, backend or effective data |
+| Existing Worker diagnostic input/startup record | Absent job culture input and separate startup names on all rows | Does not measure output-processing thread state or culture transfer |
+| Selected disk and module metadata | Nine package file matches; native ICU file matches on three rows | Presence does not prove active binding; macOS ICU remains unobserved |
+| Pinned source/configuration reasoning | Culture default/async propagation and output-event path identified; runtime config retained | Must justify dependencies, relevant startup overrides and each culture's effective settings/data, rather than infer them from absence of a source assignment |
+| Local macOS metadata alternatives | Self-process `vmmap` can expose ICU where `lsof` did not | Target interaction/hosted suitability not established; no live Worker invocation authorized by this experiment |
+
+The retained runtime configuration does not set globalization-invariant or NLS
+mode explicitly. This alone is not a mode observation: the inspected runtime
+also reads AppContext/environment inputs, and the package harness deliberately
+sanitizes its child environment. Equal runtimeconfig bytes therefore cannot
+establish equal startup inputs. The parser note owns the
+[source route and its limitations](github-actions-workflow-command-parser.md#culture-diagnostic-observation-route).
+
+The next decision is whether a reviewed source-and-configuration argument can
+discharge these specific gaps under the existing
+[trust assumptions](../threat-model.md#trust-assumptions).
+Direct loaded-memory attestation is not mandated as the only
+method; conversely, an unproven assumption cannot silently become a fact.
+If that argument cannot be justified, report the missing inputs for maintainer
+direction under the scope decision's stop rule. Instrumenting or replacing the
+Worker, collecting memory/full environments, removing macOS or accepting only
+the observed startup culture are not silent fallbacks.
+
+Effective-root/tailoring and normalization/break data acquisition on these
+four generations remains gated by identifying and justifying the acquisition
+target for each culture, following the scope decision's work order. None of
+those target connections has yet been completed here.
+The current 78.1 reader has not been applied to 70.1, 74.2, 76.1 or 72.1 here.
+The module/file experiment neither proves those formats accessible nor proves
+them inaccessible. This audit is still incomplete; no positive feasibility,
+Unicode acceptance or release conclusion follows from the successful CI run.
+
+### Source/configuration linkage assessment
+
+The [test plan](../test-plan.md#sourceconfiguration-acquisition-target-checks) owns the
+conditional per-culture claim and its four acquisition-target checks. None is discharged
+by this run's module observation. The nine-file matches support only the disk
+identity component; loader/source correspondence, dependency behaviour,
+startup selection and native/locale route remain incomplete. The next bounded
+package-side check is a direct-member-reference scan of the assemblies resolved
+by the observed `deps.json`; no such scan is claimed in this retained run.
+
+#### Startup-selection inputs to resolve
+
+This is the run-specific input assessment, not a second verification gate.
+The fixed runtime's `GlobalizationMode` files linked in the parser note read
+the following switches. The retained runtimeconfig explicitly sets only
+`PredefinedCulturesOnly=false` among these inputs. AppContext/environment and
+native loader behaviour are not measured by that file.
+
+| Input / source route | Linux rows | macOS row | Windows row |
+| --- | --- | --- | --- |
+| `System.Globalization.Invariant` / `DOTNET_SYSTEM_GLOBALIZATION_INVARIANT` | Open: empty startup name ambiguous; ICU mappings support a source inference only if their origin is justified | Open source inference: default-locale route returns Invariant in invariant mode; observed `en-US` excludes that route only after earlier explicit culture overrides are accounted for | Same conditional exclusion as macOS |
+| `System.Globalization.UseNls` / `DOTNET_SYSTEM_GLOBALIZATION_USENLS` | Fixed Unix source returns false; not a target selector | Fixed Unix source returns false; not a target selector | Open: outside invariant mode, fixed source selects NLS when requested or default system-ICU loading fails; selected app-local library-load failure is fatal, not an NLS fallback. `icu.dll` presence alone does not exclude another loader |
+| `System.Globalization.AppLocalIcu` / `DOTNET_SYSTEM_GLOBALIZATION_APPLOCALICU` | Open selection input; observed system-file matches narrow the possible resolved outcome | Open: this branch has not been excluded, so the system-ICU path has not been established | Open selection input; combined system-file match narrows the observed modules, not necessarily the binding |
+| `CLR_ICU_VERSION_OVERRIDE` in fixed `pal_icushim.c` | Version-selection input; mapped filenames/hashes identify observed files but still need the loader-origin argument | Linux-style version-override branch is not the target's system load route | Linux-style version-override branch is not the target's system load route |
+| `System.Globalization.PredefinedCulturesOnly` / corresponding `DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY` | File value false observed; fixed boolean helper prefers an available AppContext switch over environment. Whether that file supplies the unchanged effective switch and how it affects the selected mode remain unverified | Same | Same |
+
+This table is the runtime selection layer, not an exhaustive effective-data
+input list. ICU data loading (including any applicable `ICU_DATA` route),
+platform library resolution and application-level AppContext changes need
+their respective fixed-source/data arguments. The known package environment
+sanitization does not establish the Worker's values. No new live environment
+read, raw memory access or behavioural corpus change is part of this report.
+
 ## Reproduction of this inventory
 
-For the current observation, use `gh run download 37177815281 --repo
+For the latest module observation (run 37184265280), use the six-report
+[module-result procedure above](#hosted-module-metadata-result), including the
+explicit macOS unavailable result. The following procedure describes the older
+baseline inventory, not the current module report.
+
+For that baseline inventory, use `gh run download 37177815281 --repo
 send/shoutx --dir NEW_DIRECTORY`. Compare each selector's
 `hosted-boundary-evidence/package-matched/SELECTOR.json` with its
 `runner-package-evidence-SELECTOR-RID/runner-package-evidence/evidence.json`

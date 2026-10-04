@@ -69,12 +69,24 @@ This section owns the work order and stop rule. The first milestone is a
 feasibility pass across every target row/culture. First check whether live
 hosted evidence exists with the baseline Runner and matching resolved image;
 an unavailable baseline or missing row is an early gap, not a reason to start
-expensive format analysis. For available rows, identify the actual ICU
+expensive format analysis. For available rows, under the ordering below,
+identify the actual ICU
 generation and effective root/tailoring relationship, determine whether its
 formats and required inputs can be inspected, and establish the package-to-live
 consumer link required by the test plan. The existing 78.1 root reader is not
-assumed usable unchanged for the other generations. Then consolidate the
-remaining header/search/iterator argument and check its data premises.
+assumed usable unchanged for the other generations.
+For a source/configuration connection, distinguish acquisition-target
+identification from completed consumer linkage. First identify and justify the
+live implementation/native selection route and the acquisition target for each
+culture. This permits bounded acquisition of the corresponding effective data;
+it does not establish that data's identity or complete the feasibility pass.
+Complete the consumer connection with the acquired effective mappings/settings
+before proceeding to the full prerequisite/iterator proof. If even the
+acquisition-target connection is unavailable, stop before format/data expansion.
+This ordering avoids requiring already-acquired data merely to identify what
+to acquire, while preserving the final per-culture linkage requirement.
+Then consolidate the remaining header/search/iterator argument and check its
+data premises.
 Only after the [completion criteria](../test-plan.md#unicode-adoption-completion-criteria)
 are met should a coordinated acceptance-table and command-contract change be
 proposed. Each additional experiment should identify the unresolved obligation

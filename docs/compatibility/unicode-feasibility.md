@@ -26,7 +26,7 @@ does not close a reference proof obligation.
 
 | ID | Required claim/evidence | Existing evidence and gap | Next work / closure condition | State |
 | --- | --- | --- | --- | --- |
-| R1 | Identify four fixed reference configurations and both cultures | Historical images, package ICU generations and managed settings are recorded below; native paths are not hashes or complete input identities | Inventory package/runtime/native/data identities and startup inputs with provenance; obtain missing reference inputs or document failed acquisition routes; complete the row-by-condition applicability table and eight-way reference claim statuses | Unproved |
+| R1 | Identify four fixed reference configurations and both cultures | The linked input inventory populates initial per-row applicability and eight-way Unproved statuses, recovers matching Linux files and macOS distribution candidates; inputs are not yet complete | Complete startup/native/data identities with provenance and effective reference-path binding; obtain remaining inputs or document failed acquisition routes; update, rather than recreate, the existing status tables | Unproved |
 | R2 | Probe characterizes normal reference prefilter/parser/extension path | Package invocation, managed scans and host-source analysis exist; harness uses an SDK host and explicit cultures | Audit harness differences against package host/runtimeconfig/deps, normal culture/cache propagation and native selection; bind reference path to R1 without live attestation | Unproved |
 | R3 | Effective data satisfies positive-predicate prerequisites | Local 78.1 root readers/graph checks do not establish 70.1, 74.2, 76.1 or 72.1 effective data | Obtain R1/R2 targets, validate generation-specific readers and complete base/tailoring, normalization/break and reachable mapping premises per row/culture | Unproved |
 | R4 | Fixed headers and predicate preserve intended delimiter for arbitrary permitted suffixes | Conditional header/iterator/search arguments leave premises open | Bind premises to R2/R3; close incoming-state, context/FCD, retained-half, offset/end/termination obligations and compose with existing ASCII rules | Unproved |
@@ -35,14 +35,15 @@ does not close a reference proof obligation.
 
 ### Deployment applicability inventory
 
-This is an initial aggregate, not the required completed row-by-condition
-deliverable. R1 must produce that table using the later observations below,
-distinguishing observed process-start names and absent job variables from
-unobserved processing-thread cultures/settings, and on-disk hashes from loaded
-identity. It must retain row-specific native evidence (including the missing
-macOS ICU module observation), record known mismatches separately, and label
-an unrelated macOS 26 run as a different configuration. The eight-way reference
-claim statuses are also still to be evaluated, not inferred from this summary.
+The [reference input inventory](unicode-reference-inputs.md) now records
+eight-way reference status, per-row deployment observations and Linux native-file
+acquisition, with one member's streaming extraction repeated locally. Its
+initial row-by-condition table distinguishes
+process-start names and job variables from unobserved processing-thread state,
+and on-disk hashes from loaded identity. It retains the missing historical
+hosted macOS ICU identity and the unrelated macOS 26 configuration separately. Its eight
+reference-correctness statuses remain Unproved. R1 remains open for complete
+startup and effective-data identities; none of R2–R6 is closed by file recovery.
 
 The historical per-culture table below is retained unchanged. For each of its
 eight rows, these distinctions apply; none closes R1–R6 by itself.

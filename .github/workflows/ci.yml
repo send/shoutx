@@ -413,6 +413,12 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python scripts/test-runner-package.py --output target/runner-package-evidence
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Test environment transport controls independently
+        if: ${{ always() }}
+        shell: pwsh
+        run: |
+          python -B tests/runner-package/test_environment_transport.py
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Retain package runtime evidence
         if: ${{ always() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a

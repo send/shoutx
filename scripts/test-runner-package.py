@@ -389,6 +389,19 @@ def verify_collation(probe, rules_sha):
             raise ValueError("incomplete native collation coverage")
 
 
+def verify_environment_transport(report):
+    keys = ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "DOTNET_SYSTEM_GLOBALIZATION_USENLS",
+            "DOTNET_SYSTEM_GLOBALIZATION_APPLOCALICU", "DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY",
+            "CLR_ICU_VERSION_OVERRIDE", "ICU_DATA")
+    expected = {"status": "passed", "route": "package-sdk-invoker-to-isolated-python",
+                "cases": [{"case": mode, "presence": {key: "absent" if mode == "absent" else "defined" for key in keys},
+                           "valuesMatch": True, "inheritedControlMatches": True}
+                          for mode in ("absent", "empty", "null", "text")]}
+    # JSON spelling distinguishes booleans from 0/1; exact shape rejects omissions.
+    if json.dumps(report, sort_keys=True) != json.dumps(expected, sort_keys=True):
+        raise ValueError("incomplete environment transport evidence")
+
+
 def verify_coverage(probe, evidence):
     if probe.get("unicodeResearchStatus") != "passed":
         raise ValueError("incomplete Unicode research")
@@ -456,6 +469,22 @@ def verify_managed(probe, files, pins):
         raise ValueError("unexpected dynamic assembly evidence")
 
 
+def verify_probe_completion(probe, exit_code, evidence, record):
+    # Earlier probe failures keep their original diagnosis. A transport failure
+    # occurs after these suites; validate and retain their independent outcome.
+    if (exit_code != 0 or probe["status"] != "passed") and probe.get("failedPhase") != "environment-transport":
+        raise ValueError("probe did not pass")
+    verify_coverage(probe, evidence)
+    verify_collation(probe, record["breakRulesSha256"])
+    record["preTransportEvidenceVerified"] = True
+    if not {"Runner.Sdk.dll", "System.Diagnostics.Process.dll"}.issubset(
+            entry["file"] for entry in probe["loadedManagedAssemblies"]):
+        raise ValueError("missing environment transport assembly identities")
+    verify_environment_transport(probe.get("environmentTransport"))
+    if exit_code != 0 or probe["status"] != "passed":
+        raise ValueError("probe did not pass")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True, help="new evidence directory")
@@ -477,6 +506,8 @@ def main():
         record["pythonVersion"] = platform.python_version()
         record["sourceDigests"] = {name: digest(ROOT / name) for name in (
             "scripts/test-runner-package.py", "tests/runner-package/test_harness.py", "tests/runner-package/Program.cs", "tests/runner-package/WorkerProbe.cs", "tests/runner-package/Probe.csproj",
+            "tests/runner-package/EnvironmentTransportProbe.cs", "tests/runner-package/environment_transport_child.py",
+            "tests/runner-package/hosted_worker.py", "tests/runner-package/test_environment_transport.py",
             "tests/runner-package/UnicodeCandidateProbe.cs", "tests/runner-package/CollationProbe.cs", "tests/runner-package/unicode-candidate.json",
             "tests/runner-package/unicode-pins.json", "tests/runner-package/UNICODE-LICENSE.txt",
             "scripts/generate-unicode-candidate.py")}
@@ -554,7 +585,8 @@ def main():
             exit_code = run(["dotnet", "exec", "--runtimeconfig", str(binary / "Runner.Worker.runtimeconfig.json"),
                  "--depsfile", str(binary / "Runner.Worker.deps.json"), str(binary / "Probe.dll"),
                  str(evidence / "probe.json"), str(evidence / "mask-corpus.json"),
-                 str(evidence / "annotation-corpus.json")], evidence, "execute-probe", probe_env, cwd=work, check=False, timeout=900)
+                 str(evidence / "annotation-corpus.json"), sys.executable,
+                 str(ROOT / "tests/runner-package")], evidence, "execute-probe", probe_env, cwd=work, check=False, timeout=900)
             record["probeExitCode"] = exit_code
             record["phase"] = "verify-loaded-identities"
             trace = (evidence / "corehost.log").read_text(encoding="utf-8")
@@ -575,10 +607,7 @@ def main():
             for name, sha in files.items():
                 if digest(binary / name) != sha:
                     raise ValueError("package binary changed during probe")
-            if exit_code != 0 or probe["status"] != "passed":
-                raise ValueError("probe did not pass")
-            verify_coverage(probe, evidence)
-            verify_collation(probe, record["breakRulesSha256"])
+            verify_probe_completion(probe, exit_code, evidence, record)
             record["phase"] = "cleanup"
         record["status"] = "passed"
         record["phase"] = "complete"

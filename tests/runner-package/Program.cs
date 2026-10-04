@@ -126,7 +126,7 @@ static class Program
         var report = new Dictionary<string, object?> { ["schemaVersion"] = 1, ["status"] = "failed" };
         try
         {
-            Require(args.Length == 3, "expected evidence path and two corpus paths");
+            Require(args.Length == 5, "expected evidence, corpus and Python transport paths");
             string directory = Path.TrimEndingDirectorySeparator(Path.GetFullPath(AppContext.BaseDirectory));
             report["coreLibrary"] = Identity(typeof(object).Assembly, directory);
             report["parserAssembly"] = Identity(typeof(ActionCommand).Assembly, directory);
@@ -218,6 +218,11 @@ static class Program
                 catch { collation["status"] = "failed"; throw; }
             }
             report["collationResearchStatus"] = "passed";
+            // Retain existing parser/collation evidence even if a transport
+            // counterexample is found. The overall probe still fails closed.
+            phase = "environment-transport";
+            File.WriteAllText(args[0], JsonSerializer.Serialize(report, new JsonSerializerOptions { WriteIndented = true }));
+            report["environmentTransport"] = EnvironmentTransportProbe.Run(args[3], args[4]);
             report["status"] = "passed";
         }
         catch (Exception error)
@@ -229,6 +234,7 @@ static class Program
             if (error is ProbeFailure) report["errorRule"] = error.Message;
             report["failedPhase"] = phase;
             report["testCase"] = testCase;
+            if (phase == "environment-transport") report["testCase"] = EnvironmentTransportProbe.CurrentCase;
             if (phase is "worker-effects" or "unicode-worker-effects") report["workerCase"] = WorkerProbe.CurrentCase;
             Console.Error.WriteLine("package probe failed; see evidence (no corpus values logged)");
         }

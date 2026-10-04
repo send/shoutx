@@ -10,6 +10,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Program.cs" />
+    <Compile Include="EnvironmentTransportProbe.cs" />
     <Compile Include="WorkerProbe.cs" />
     <Compile Include="UnicodeCandidateProbe.cs" />
     <Compile Include="CollationProbe.cs" />

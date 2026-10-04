@@ -491,6 +491,49 @@ No loaded-memory measurement is a mandatory additional fifth item. If any named 
 bounded source analysis, apply the accepted stop rule instead of extending the
 collector or weakening the matrix without direction.
 
+#### Package environment transport control
+
+The package probe executes the published `Runner.Sdk.ProcessInvoker` against
+the harness's absolute Python executable, using `-I -S` and the actual
+`hosted_worker.py` presence function. The probe's managed parent selectors must
+be absent before testing four child overlays: absent, empty, null, and a fixed
+synthetic text value for all six observed configuration keys. Require exact
+presence results, synthetic-value comparisons and a parent managed-environment
+marker inherited in every case. Values are never emitted. The null case tests
+the pinned .NET serializer; Python fixtures supply its expected empty string,
+not a Python null environment value. The marker is restored in `finally`;
+globalization keys are assigned only to the Python child's overlay, never the
+probe parent's environment.
+
+Require success under the package's verified runtime, a 30-second child timeout,
+zero stderr, one JSON output line of at most 4096 characters (checked after
+buffering, not a bounded-read guarantee), and exact complete result coverage.
+Require the invoker and Process assemblies in the hash-verified loaded-assembly
+inventory. Run transport after the existing parser/collation phases; a transport
+failure must fail the overall probe without discarding those earlier results.
+On the first transport counterexample, record the active case and validated
+fixed-field mismatch summary, never raw child output; later cases are not run
+and are not reported as passed. Launch/JSON/type errors instead retain exception
+type and active case, without exception text. Snapshot completed earlier phases
+before transport. The harness verifies earlier evidence and file continuity
+before the transport gate, recording `preTransportEvidenceVerified`; that flag
+does not make the overall failed row successful.
+Offline child/verifier tests include missing/extra state, wrong value, absent
+marker, invalid mode, missing observations and integer-instead-of-boolean
+controls. The positive subprocess fixtures themselves test platform-dependent
+Python empty-entry behavior. Run them after package execution in all four rows,
+in an independent always-run step: neither test result prevents collecting the
+other. They still fail CI and cannot replace the .NET-to-Python experiment.
+The inheritance marker must initially be absent, so cleanup cannot overwrite
+an existing empty-valued marker. Retain producer source hashes with the package
+report, including the child and observer functions.
+
+This tests the SDK invoker-to-Python suffix of the launch route; it does not
+execute job/step evaluation, ScriptHandler, a macOS Node wrapper, or the live
+Worker. It does not measure startup/native environment, managed cache history,
+AppContext, ICU selection or either culture's effective mappings. Use actual
+run results, not the presence of this gate, as evidence for that limited route.
+
 #### Offline dependency member-reference inventory
 
 The [research helper](../tests/runner-package/managed-references/README.md)

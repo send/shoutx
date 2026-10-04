@@ -961,6 +961,19 @@ when producer-compatible behavior might still be safe. CLI acceptance,
 metadata restrictions, the deferred `th-TH` issue and release eligibility are
 unchanged.
 
+### Offline compiled NFC input research
+
+The [compiled NFC input evidence](compatibility/unicode-compiled-nfc-evidence.md)
+has a separate hash-gated array locator. Run
+`python -B tests/runner-package/test_compiled_nfc.py` for its synthetic format-4
+and format-5, distinct/hex/multiline generated fixtures, malformed input, bounds,
+cross-chunk capture, whole-file identity before and after the selected range,
+size-change controls, bounded metadata/match counts and empty-stdout failure
+checks. A Unix-only test verifies FIFO rejection without a writer. These tests
+run in the package CI job and do not
+verify acquired vendor binaries, the manual initializer observations, complete
+normalization semantics or effective native use.
+
 ### Offline root mapping graph research
 
 The [cross-generation evidence](compatibility/unicode-root-generation-evidence.md)

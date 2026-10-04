@@ -183,7 +183,10 @@ scope/false proof flags, and exit 0 establishes only a complete modeled walk.
 
 Finish reader-format/dependency validation before promoting these exploratory
 profiles. The source helper does not yet cover every decoder dependency;
-equal iterator files alone are insufficient. Effective root selection, compiled normalization and
+equal iterator files alone are insufficient. The
+[compiled NFC evidence](unicode-compiled-nfc-evidence.md) adds native array and
+initializer correspondences, not complete normalization semantics.
+Effective root selection, compiled normalization and
 break inputs, normal Worker/probe correspondence, arbitrary-suffix state and
 the final adoption plan remain separate obligations. None is closed by an
 acyclic decoded graph alone.

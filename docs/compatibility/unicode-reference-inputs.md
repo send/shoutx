@@ -948,7 +948,9 @@ python3 -c 'import hashlib,sys; f=open(sys.argv[1],"rb"); f.seek(5793664); b=f.r
 This establishes accessible bounded input regions, not effective-data binding
 or correct decoding of mappings. Generation-specific root/resource decoding,
 locale fallback, normalization data (including any compiled-in data), break
-data and consumer connection remain R2/R3 work. The existing 78.1 reader has
+data and consumer connection remain R2/R3 work. The subsequent
+[compiled NFC correspondence](unicode-compiled-nfc-evidence.md) records the
+normalization-input observations and their limits. The existing 78.1 reader has
 not been promoted to a 70.1/74.2 verifier by this experiment.
 
 ## Probe/normal-startup differences to resolve (R2)

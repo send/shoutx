@@ -1030,6 +1030,50 @@ not an aggregate of these additional reports. A separate summary line reports
 the four-row verifier step's outcome. Missing observations fail the hosted
 verification job. No new Unicode inputs are accepted.
 
+#### Hosted Worker startup-input feasibility observation
+
+The same four package jobs run a read-only startup-input feasibility observer
+before the live emit. It walks only the observer's process ancestors to locate
+`Runner.Worker`, then examines bounded `Worker_*-utc.log` files under that
+executable's diagnostic directory in memory. It selects exactly one job message
+matching resolved `github.job`, matrix OS/RID, repository, run, attempt and
+tested SHA. The job-key source follows the
+[inspected consumer path](compatibility/github-actions-workflow-command-parser.md#culture-diagnostic-observation-route),
+not assumed equivalence with `JobName`. Duplicate JSON
+keys, multiple matches, unsupported structure and bounded-read failures remain
+unavailable. It does not enable debug logging, inspect process arguments or
+environments, inject code, modify the Worker, or copy diagnostics elsewhere.
+
+Only the selected culture inputs Invariant/`en-US` may be recorded; secret,
+redacted, missing or other culture inputs remain null with a fixed status.
+`absent` distinguishes a missing variable from an unavailable/redacted value;
+it does not infer the host default culture. Fixed failure codes distinguish
+ancestry, diagnostic-read, message-parse and projection failures without
+including exception text. The observer's offline test is a prerequisite for
+the live emit; collection with an unavailable result is not a test failure.
+The observer retains job identity, a timeline job GUID, ancestor Worker PID and SHA-256
+of explicitly named on-disk Worker/parser/runtime files, not their bytes or
+diagnostic contents. The separate `hosted-worker-input-OS-RID` artifact contains
+only the JSON projection, for 30 days. Unexpected errors are reported through
+fixed codes, not captured messages or tracebacks. Offline synthetic tests check
+matching, ambiguity, limits, sensitive-field suppression and no-overwrite.
+
+Successful collection does not mean a successful observation: inspect the JSON
+status and the separate `cultureInputStatus` and `onDiskIdentityStatus`.
+`observed-job-message-without-culture` is not a culture observation; a failure
+to hash files does not discard a separately observed input. Even
+`observed-startup-input` is evidence only of a diagnostic input, not
+processing-thread culture, loaded native identities, effective mappings or
+transfer to the other culture. A
+null culture is not Invariant (which is the explicitly recorded empty string).
+The log record does not contain a PID: `ancestorWorkerPid` locates an
+installation, not a cryptographic or direct process-to-log binding. Correlation
+depends on a trusted ephemeral hosted job and a unique matching matrix context.
+Multiple message markers in a file are rejected, rather than selecting a later
+marker that preceding workload output could forge. These checks are observation
+sanity checks, not authentication of a log writable by the job user.
+Review [the audit](compatibility/unicode-feasibility.md) for per-row conclusions.
+
 ### Continuing compatibility checks
 
 CI runs weekly on Wednesday at 03:37 UTC (12:37 JST) and can be started manually

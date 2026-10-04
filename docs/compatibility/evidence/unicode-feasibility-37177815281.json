@@ -1,0 +1,730 @@
+{
+  "schemaVersion": 1,
+  "recordedDate": "2026-10-04",
+  "sourceRun": {
+    "url": "https://github.com/send/shoutx/actions/runs/37177815281",
+    "id": 37177815281,
+    "attempt": 1,
+    "event": "pull_request",
+    "headSha": "a5cbc93c53f47255c8e6210466d2ef83242d9430",
+    "testedMergeSha": "b2fb07df49a10afa70e704fcf398ca3f82de91ca",
+    "conclusion": "success",
+    "verifierJobId": 111365444318,
+    "verifier": {
+      "jobId": 111365444318,
+      "attempt": 1,
+      "startedAt": "2026-10-04T04:53:26Z",
+      "completedAt": "2026-10-04T04:53:48Z",
+      "conclusion": "success",
+      "source": "Actions jobs API"
+    }
+  },
+  "scope": "Whitelisted observed package/live identities and finite tests. Live culture/native input binding and Unicode adoption remain unverified.",
+  "rows": [
+    {
+      "live": {
+        "status": "passed",
+        "identity": {
+          "GITHUB_RUN_ATTEMPT": "1",
+          "GITHUB_RUN_ID": "37177815281",
+          "GITHUB_SHA": "b2fb07df49a10afa70e704fcf398ca3f82de91ca",
+          "ImageOS": "ubuntu22",
+          "ImageVersion": "20260927.309.1",
+          "RUNNER_ARCH": "X64",
+          "RUNNER_OS": "Linux",
+          "SHOUTX_SOURCE_HEAD": "a5cbc93c53f47255c8e6210466d2ef83242d9430"
+        },
+        "runnerVersion": "2.337.0",
+        "pinnedRunnerVersion": "2.337.0",
+        "runnerMatchesPin": true,
+        "workerCulture": null,
+        "workerGlobalizationBackend": null,
+        "maskCases": 8,
+        "annotationCases": 30,
+        "logSha256": "07d0c5c8ff0f6a66c8f7504e8e631457abbe8f02bf5c06e8650d44e034d33861",
+        "harnessSha256": "ce566ed214a26827b6c10b97a8621eb391e3887c6585bdcce4c5926ee0a759e4",
+        "jobId": 111364128021,
+        "verifierAttempt": "1",
+        "annotationsSha256": "2c26a6b09b782c9350bb4ad1c5957447740247398c29e9ccee6ff5e5e7619454"
+      },
+      "package": {
+        "status": "passed",
+        "rid": "linux-x64",
+        "githubRunId": "37177815281",
+        "githubSha": "b2fb07df49a10afa70e704fcf398ca3f82de91ca",
+        "imageOS": "ubuntu22",
+        "imageVersion": "20260927.309.1",
+        "archive": {
+          "url": "https://github.com/actions/runner/releases/download/v2.337.0/actions-runner-linux-x64-2.337.0.tar.gz",
+          "sha256": "70920811a4f8ad4328818682bca5c6469c1c942fab52448868071d0063816613",
+          "size": 226430031
+        },
+        "selectedCoreClr": {
+          "file": "libcoreclr.so",
+          "sha256": "fedf4074258e14b425cd3b4209bedc3e102765623445cc1bcfe8361f6193231c"
+        },
+        "workerRuntimeConfig": {
+          "runtimeOptions": {
+            "tfm": "net8.0",
+            "includedFrameworks": [
+              {
+                "name": "Microsoft.NETCore.App",
+                "version": "8.0.30"
+              }
+            ],
+            "configProperties": {
+              "System.Globalization.PredefinedCulturesOnly": false,
+              "System.Reflection.Metadata.MetadataUpdater.IsSupported": false,
+              "System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization": false
+            }
+          }
+        },
+        "sourceDigests": {
+          "scripts/test-runner-package.py": "fc31da74f929fee68314f911292c11cada1abc37803f44ce191c6b9b38f974d2",
+          "tests/runner-package/test_harness.py": "d8e55d668b06cabb6ed0d757243bb78b290b2e27fb0f0e77660092e230fe30a3",
+          "tests/runner-package/Program.cs": "a1a0911fcdcf2733a1fa0d6591412c5015799862b615a53ff7e27dba6a7cd789",
+          "tests/runner-package/WorkerProbe.cs": "5e2ea897a033e988b731caff2c4358ac957752c8bb692b4bce68949308c5dae6",
+          "tests/runner-package/Probe.csproj": "5c9a55cb1db83d5a79aaab906693eeea5e552ad2c83da816811751cc8914b781",
+          "tests/runner-package/UnicodeCandidateProbe.cs": "6eebd7f7af7a20a8cf6f5edd6f71ae1267b5544eac46f0fcc0dede5cd73f50ec",
+          "tests/runner-package/CollationProbe.cs": "fd3a297124152450271bd6ce7b5757430cb34cdfec6ddae552333a70864f6f56",
+          "tests/runner-package/unicode-candidate.json": "165691c4ca41c5934229b9f9bc9c3d49d2c638e7126f7b30275738e093063ee1",
+          "tests/runner-package/unicode-pins.json": "e5d57af5059bea1262f8e4015c7d854ab9badb000d7597b119fe2f6fc78718f6",
+          "tests/runner-package/UNICODE-LICENSE.txt": "e7a93b009565cfce55919a381437ac4db883e9da2126fa28b91d12732bc53d96",
+          "scripts/generate-unicode-candidate.py": "3668aa128899f565329321c38e9ac38cdeddafe73d7b8a5ede118fabff094675"
+        },
+        "probeSha256": "5db1842ced8efb2f3ce922fe60ef68d8ce433862641f833de6c3bb45b1c0d6c5",
+        "runtime": ".NET 8.0.30",
+        "os": "Ubuntu 22.04.5 LTS",
+        "architecture": "X64",
+        "globalization": {
+          "invariant": false,
+          "nls": null,
+          "hybrid": null,
+          "backendFromFlags": "Unknown"
+        },
+        "assemblies": [
+          {
+            "file": "System.Private.CoreLib.dll",
+            "sha256": "003ac935a51189b420a7d84de724ccb94eca31e2d07b4faf1e2d943052018028",
+            "informationalVersion": "8.0.30+a83db3e0eb2defb6220e15dae2f1a0462fdbf99f",
+            "inPackage": true
+          },
+          {
+            "file": "Runner.Common.dll",
+            "sha256": "b10853d9c1a8498779ba5236933281018627a8dc7ce54b977b6d9e2343035393",
+            "informationalVersion": "2.337.0+397b032cbf865e9c3ddfab89d533ec19325e1273",
+            "inPackage": true
+          },
+          {
+            "file": "Runner.Worker.dll",
+            "sha256": "f460f611aa5597a4d5331a8b9e848d5a535ece0e6dab396699328502b8b49c41",
+            "informationalVersion": "2.337.0+397b032cbf865e9c3ddfab89d533ec19325e1273",
+            "inPackage": true
+          }
+        ],
+        "cultures": [
+          {
+            "culture": "",
+            "backendObserved": "ICU",
+            "icu": {
+              "binding": "CoreLib:Interop.Globalization.GetICUVersion",
+              "versionRaw": 1174470656,
+              "version": "70.1.0.0"
+            },
+            "icuSourcePreconditionsObserved": true,
+            "asciiEqualityOrdinal": true,
+            "native": {
+              "status": "passed",
+              "collatorAttributes": {
+                "french": 16,
+                "alternate": 21,
+                "caseFirst": 16,
+                "caseLevel": 16,
+                "normalization": 16,
+                "strength": 2,
+                "hiragana": 16,
+                "numeric": 16
+              },
+              "searchCollatorMatches": true,
+              "externalBreakIterator": true,
+              "internationalLibrary": "/usr/lib/x86_64-linux-gnu/libicui18n.so.70.1",
+              "commonLibrary": "/usr/lib/x86_64-linux-gnu/libicuuc.so.70.1"
+            }
+          },
+          {
+            "culture": "en-US",
+            "backendObserved": "ICU",
+            "icu": {
+              "binding": "CoreLib:Interop.Globalization.GetICUVersion",
+              "versionRaw": 1174470656,
+              "version": "70.1.0.0"
+            },
+            "icuSourcePreconditionsObserved": true,
+            "asciiEqualityOrdinal": true,
+            "native": {
+              "status": "passed",
+              "collatorAttributes": {
+                "french": 16,
+                "alternate": 21,
+                "caseFirst": 16,
+                "caseLevel": 16,
+                "normalization": 16,
+                "strength": 2,
+                "hiragana": 16,
+                "numeric": 16
+              },
+              "searchCollatorMatches": true,
+              "externalBreakIterator": true,
+              "internationalLibrary": "/usr/lib/x86_64-linux-gnu/libicui18n.so.70.1",
+              "commonLibrary": "/usr/lib/x86_64-linux-gnu/libicuuc.so.70.1"
+            }
+          }
+        ]
+      },
+      "selector": "ubuntu-22.04",
+      "sourceReportSha256": {
+        "live": "4adb9d87cf6363b4b5bd08be38162f4b723f40a7620064caf1f52f21dc1eff73",
+        "packageEvidence": "639beafbc02108a5d06ceb590f31dae2abea30884156d5dada991315a3d6dbfe",
+        "packageProbe": "509880f2e134696491d74ce5012818a13adc2ddcad686f497bc0fb51616a9ac7"
+      },
+      "sourceJob": {
+        "id": 111364128021,
+        "attempt": 1,
+        "name": "runner-differential (ubuntu-22.04, linux-x64)",
+        "startedAt": "2026-10-04T04:44:04Z",
+        "completedAt": "2026-10-04T04:51:19Z",
+        "conclusion": "success",
+        "source": "Actions jobs API; package association inferred from artifact selector/RID and workflow at source head. Package evidence itself does not contain job ID/attempt."
+      }
+    },
+    {
+      "live": {
+        "status": "passed",
+        "identity": {
+          "GITHUB_RUN_ATTEMPT": "1",
+          "GITHUB_RUN_ID": "37177815281",
+          "GITHUB_SHA": "b2fb07df49a10afa70e704fcf398ca3f82de91ca",
+          "ImageOS": "ubuntu24",
+          "ImageVersion": "20260927.320.1",
+          "RUNNER_ARCH": "X64",
+          "RUNNER_OS": "Linux",
+          "SHOUTX_SOURCE_HEAD": "a5cbc93c53f47255c8e6210466d2ef83242d9430"
+        },
+        "runnerVersion": "2.337.0",
+        "pinnedRunnerVersion": "2.337.0",
+        "runnerMatchesPin": true,
+        "workerCulture": null,
+        "workerGlobalizationBackend": null,
+        "maskCases": 8,
+        "annotationCases": 30,
+        "logSha256": "94a5b7244115d6ac3ee596861e2e494e66f78b5a3f813352b3e48618d61ee759",
+        "harnessSha256": "ce566ed214a26827b6c10b97a8621eb391e3887c6585bdcce4c5926ee0a759e4",
+        "jobId": 111364128056,
+        "verifierAttempt": "1",
+        "annotationsSha256": "2c26a6b09b782c9350bb4ad1c5957447740247398c29e9ccee6ff5e5e7619454"
+      },
+      "package": {
+        "status": "passed",
+        "rid": "linux-x64",
+        "githubRunId": "37177815281",
+        "githubSha": "b2fb07df49a10afa70e704fcf398ca3f82de91ca",
+        "imageOS": "ubuntu24",
+        "imageVersion": "20260927.320.1",
+        "archive": {
+          "url": "https://github.com/actions/runner/releases/download/v2.337.0/actions-runner-linux-x64-2.337.0.tar.gz",
+          "sha256": "70920811a4f8ad4328818682bca5c6469c1c942fab52448868071d0063816613",
+          "size": 226430031
+        },
+        "selectedCoreClr": {
+          "file": "libcoreclr.so",
+          "sha256": "fedf4074258e14b425cd3b4209bedc3e102765623445cc1bcfe8361f6193231c"
+        },
+        "workerRuntimeConfig": {
+          "runtimeOptions": {
+            "tfm": "net8.0",
+            "includedFrameworks": [
+              {
+                "name": "Microsoft.NETCore.App",
+                "version": "8.0.30"
+              }
+            ],
+            "configProperties": {
+              "System.Globalization.PredefinedCulturesOnly": false,
+              "System.Reflection.Metadata.MetadataUpdater.IsSupported": false,
+              "System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization": false
+            }
+          }
+        },
+        "sourceDigests": {
+          "scripts/test-runner-package.py": "fc31da74f929fee68314f911292c11cada1abc37803f44ce191c6b9b38f974d2",
+          "tests/runner-package/test_harness.py": "d8e55d668b06cabb6ed0d757243bb78b290b2e27fb0f0e77660092e230fe30a3",
+          "tests/runner-package/Program.cs": "a1a0911fcdcf2733a1fa0d6591412c5015799862b615a53ff7e27dba6a7cd789",
+          "tests/runner-package/WorkerProbe.cs": "5e2ea897a033e988b731caff2c4358ac957752c8bb692b4bce68949308c5dae6",
+          "tests/runner-package/Probe.csproj": "5c9a55cb1db83d5a79aaab906693eeea5e552ad2c83da816811751cc8914b781",
+          "tests/runner-package/UnicodeCandidateProbe.cs": "6eebd7f7af7a20a8cf6f5edd6f71ae1267b5544eac46f0fcc0dede5cd73f50ec",
+          "tests/runner-package/CollationProbe.cs": "fd3a297124152450271bd6ce7b5757430cb34cdfec6ddae552333a70864f6f56",
+          "tests/runner-package/unicode-candidate.json": "165691c4ca41c5934229b9f9bc9c3d49d2c638e7126f7b30275738e093063ee1",
+          "tests/runner-package/unicode-pins.json": "e5d57af5059bea1262f8e4015c7d854ab9badb000d7597b119fe2f6fc78718f6",
+          "tests/runner-package/UNICODE-LICENSE.txt": "e7a93b009565cfce55919a381437ac4db883e9da2126fa28b91d12732bc53d96",
+          "scripts/generate-unicode-candidate.py": "3668aa128899f565329321c38e9ac38cdeddafe73d7b8a5ede118fabff094675"
+        },
+        "probeSha256": "16e276dcb9dce698243c9b565e61eb18623a6f5bb8feb7c1eea99ba1c3444a19",
+        "runtime": ".NET 8.0.30",
+        "os": "Ubuntu 24.04.5 LTS",
+        "architecture": "X64",
+        "globalization": {
+          "invariant": false,
+          "nls": null,
+          "hybrid": null,
+          "backendFromFlags": "Unknown"
+        },
+        "assemblies": [
+          {
+            "file": "System.Private.CoreLib.dll",
+            "sha256": "003ac935a51189b420a7d84de724ccb94eca31e2d07b4faf1e2d943052018028",
+            "informationalVersion": "8.0.30+a83db3e0eb2defb6220e15dae2f1a0462fdbf99f",
+            "inPackage": true
+          },
+          {
+            "file": "Runner.Common.dll",
+            "sha256": "b10853d9c1a8498779ba5236933281018627a8dc7ce54b977b6d9e2343035393",
+            "informationalVersion": "2.337.0+397b032cbf865e9c3ddfab89d533ec19325e1273",
+            "inPackage": true
+          },
+          {
+            "file": "Runner.Worker.dll",
+            "sha256": "f460f611aa5597a4d5331a8b9e848d5a535ece0e6dab396699328502b8b49c41",
+            "informationalVersion": "2.337.0+397b032cbf865e9c3ddfab89d533ec19325e1273",
+            "inPackage": true
+          }
+        ],
+        "cultures": [
+          {
+            "culture": "",
+            "backendObserved": "ICU",
+            "icu": {
+              "binding": "CoreLib:Interop.Globalization.GetICUVersion",
+              "versionRaw": 1241645056,
+              "version": "74.2.0.0"
+            },
+            "icuSourcePreconditionsObserved": true,
+            "asciiEqualityOrdinal": true,
+            "native": {
+              "status": "passed",
+              "collatorAttributes": {
+                "french": 16,
+                "alternate": 21,
+                "caseFirst": 16,
+                "caseLevel": 16,
+                "normalization": 16,
+                "strength": 2,
+                "hiragana": 16,
+                "numeric": 16
+              },
+              "searchCollatorMatches": true,
+              "externalBreakIterator": true,
+              "internationalLibrary": "/usr/lib/x86_64-linux-gnu/libicui18n.so.74.2",
+              "commonLibrary": "/usr/lib/x86_64-linux-gnu/libicuuc.so.74.2"
+            }
+          },
+          {
+            "culture": "en-US",
+            "backendObserved": "ICU",
+            "icu": {
+              "binding": "CoreLib:Interop.Globalization.GetICUVersion",
+              "versionRaw": 1241645056,
+              "version": "74.2.0.0"
+            },
+            "icuSourcePreconditionsObserved": true,
+            "asciiEqualityOrdinal": true,
+            "native": {
+              "status": "passed",
+              "collatorAttributes": {
+                "french": 16,
+                "alternate": 21,
+                "caseFirst": 16,
+                "caseLevel": 16,
+                "normalization": 16,
+                "strength": 2,
+                "hiragana": 16,
+                "numeric": 16
+              },
+              "searchCollatorMatches": true,
+              "externalBreakIterator": true,
+              "internationalLibrary": "/usr/lib/x86_64-linux-gnu/libicui18n.so.74.2",
+              "commonLibrary": "/usr/lib/x86_64-linux-gnu/libicuuc.so.74.2"
+            }
+          }
+        ]
+      },
+      "selector": "ubuntu-24.04",
+      "sourceReportSha256": {
+        "live": "545bd3214646f99249647ec8846138ce2c8d9604e35fb2791aa6ebace4bc4687",
+        "packageEvidence": "d7459c1364b9797d4e2bb3762ad18fe4f784634fcdfef36fb4c6951789846e0c",
+        "packageProbe": "1a13aae5d2051549f469da13f72847d70104bedf999b52d90d7f0ab4b8574aaf"
+      },
+      "sourceJob": {
+        "id": 111364128056,
+        "attempt": 1,
+        "name": "runner-differential (ubuntu-24.04, linux-x64)",
+        "startedAt": "2026-10-04T04:44:04Z",
+        "completedAt": "2026-10-04T04:50:21Z",
+        "conclusion": "success",
+        "source": "Actions jobs API; package association inferred from artifact selector/RID and workflow at source head. Package evidence itself does not contain job ID/attempt."
+      }
+    },
+    {
+      "live": {
+        "status": "passed",
+        "identity": {
+          "GITHUB_RUN_ATTEMPT": "1",
+          "GITHUB_RUN_ID": "37177815281",
+          "GITHUB_SHA": "b2fb07df49a10afa70e704fcf398ca3f82de91ca",
+          "ImageOS": "macos15",
+          "ImageVersion": "20260907.0337.1",
+          "RUNNER_ARCH": "ARM64",
+          "RUNNER_OS": "macOS",
+          "SHOUTX_SOURCE_HEAD": "a5cbc93c53f47255c8e6210466d2ef83242d9430"
+        },
+        "runnerVersion": "2.337.0",
+        "pinnedRunnerVersion": "2.337.0",
+        "runnerMatchesPin": true,
+        "workerCulture": null,
+        "workerGlobalizationBackend": null,
+        "maskCases": 8,
+        "annotationCases": 30,
+        "logSha256": "efa8a9a4132b4b241da8d8d34a79139f5416f0d2c4b623692e10e9b246a760e6",
+        "harnessSha256": "ce566ed214a26827b6c10b97a8621eb391e3887c6585bdcce4c5926ee0a759e4",
+        "jobId": 111364128037,
+        "verifierAttempt": "1",
+        "annotationsSha256": "9e1a8bc5f6a7ff67b47c2749bc396b0b6a49c6c8167728cf2afba82eb2e69b72"
+      },
+      "package": {
+        "status": "passed",
+        "rid": "osx-arm64",
+        "githubRunId": "37177815281",
+        "githubSha": "b2fb07df49a10afa70e704fcf398ca3f82de91ca",
+        "imageOS": "macos15",
+        "imageVersion": "20260907.0337.1",
+        "archive": {
+          "url": "https://github.com/actions/runner/releases/download/v2.337.0/actions-runner-osx-arm64-2.337.0.tar.gz",
+          "sha256": "5a2cd92908a93d7276a194e1de6008099f3e7946f3f8e14aa7a1a7b4a31fdec2",
+          "size": 127732571
+        },
+        "selectedCoreClr": {
+          "file": "libcoreclr.dylib",
+          "sha256": "943ba6f94d6af4ed818306418dc774cf3940bbf9062be93a39a3a2f3a4da285a"
+        },
+        "workerRuntimeConfig": {
+          "runtimeOptions": {
+            "tfm": "net8.0",
+            "includedFrameworks": [
+              {
+                "name": "Microsoft.NETCore.App",
+                "version": "8.0.30"
+              }
+            ],
+            "configProperties": {
+              "System.Globalization.PredefinedCulturesOnly": false,
+              "System.Reflection.Metadata.MetadataUpdater.IsSupported": false,
+              "System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization": false
+            }
+          }
+        },
+        "sourceDigests": {
+          "scripts/test-runner-package.py": "fc31da74f929fee68314f911292c11cada1abc37803f44ce191c6b9b38f974d2",
+          "tests/runner-package/test_harness.py": "d8e55d668b06cabb6ed0d757243bb78b290b2e27fb0f0e77660092e230fe30a3",
+          "tests/runner-package/Program.cs": "a1a0911fcdcf2733a1fa0d6591412c5015799862b615a53ff7e27dba6a7cd789",
+          "tests/runner-package/WorkerProbe.cs": "5e2ea897a033e988b731caff2c4358ac957752c8bb692b4bce68949308c5dae6",
+          "tests/runner-package/Probe.csproj": "5c9a55cb1db83d5a79aaab906693eeea5e552ad2c83da816811751cc8914b781",
+          "tests/runner-package/UnicodeCandidateProbe.cs": "6eebd7f7af7a20a8cf6f5edd6f71ae1267b5544eac46f0fcc0dede5cd73f50ec",
+          "tests/runner-package/CollationProbe.cs": "fd3a297124152450271bd6ce7b5757430cb34cdfec6ddae552333a70864f6f56",
+          "tests/runner-package/unicode-candidate.json": "165691c4ca41c5934229b9f9bc9c3d49d2c638e7126f7b30275738e093063ee1",
+          "tests/runner-package/unicode-pins.json": "e5d57af5059bea1262f8e4015c7d854ab9badb000d7597b119fe2f6fc78718f6",
+          "tests/runner-package/UNICODE-LICENSE.txt": "e7a93b009565cfce55919a381437ac4db883e9da2126fa28b91d12732bc53d96",
+          "scripts/generate-unicode-candidate.py": "3668aa128899f565329321c38e9ac38cdeddafe73d7b8a5ede118fabff094675"
+        },
+        "probeSha256": "ea382a578a1aebed6264da651fa4e13660f755de8c76864e3b330b7a4d7a5f65",
+        "runtime": ".NET 8.0.30",
+        "os": "Darwin 24.6.0 Darwin Kernel Version 24.6.0: Tue Jul 21 20:51:34 PDT 2026; root:xnu-11417.140.69.711.44~1/RELEASE_ARM64_VMAPPLE",
+        "architecture": "Arm64",
+        "globalization": {
+          "invariant": false,
+          "nls": null,
+          "hybrid": null,
+          "backendFromFlags": "Unknown"
+        },
+        "assemblies": [
+          {
+            "file": "System.Private.CoreLib.dll",
+            "sha256": "f43af84e79760beaab8e6b27e4f10d4a276c5c9e4b9b259cd65eb9d06fde2f78",
+            "informationalVersion": "8.0.30+a83db3e0eb2defb6220e15dae2f1a0462fdbf99f",
+            "inPackage": true
+          },
+          {
+            "file": "Runner.Common.dll",
+            "sha256": "994120c86b7997b370a2ff59111f379ab8065ec03762be4e10dfb7fdf3d042c0",
+            "informationalVersion": "2.337.0+397b032cbf865e9c3ddfab89d533ec19325e1273",
+            "inPackage": true
+          },
+          {
+            "file": "Runner.Worker.dll",
+            "sha256": "d7d26ffdec4bf30b931fd35c98d792c32e20a5220ec3aaca039233398229ce70",
+            "informationalVersion": "2.337.0+397b032cbf865e9c3ddfab89d533ec19325e1273",
+            "inPackage": true
+          }
+        ],
+        "cultures": [
+          {
+            "culture": "",
+            "backendObserved": "ICU",
+            "icu": {
+              "binding": "CoreLib:Interop.Globalization.GetICUVersion",
+              "versionRaw": 1275133952,
+              "version": "76.1.0.0"
+            },
+            "icuSourcePreconditionsObserved": true,
+            "asciiEqualityOrdinal": true,
+            "native": {
+              "status": "passed",
+              "collatorAttributes": {
+                "french": 16,
+                "alternate": 21,
+                "caseFirst": 16,
+                "caseLevel": 16,
+                "normalization": 16,
+                "strength": 2,
+                "hiragana": 16,
+                "numeric": 16
+              },
+              "searchCollatorMatches": true,
+              "externalBreakIterator": true,
+              "internationalLibrary": "/usr/lib/libicucore.A.dylib",
+              "commonLibrary": "/usr/lib/libicucore.A.dylib"
+            }
+          },
+          {
+            "culture": "en-US",
+            "backendObserved": "ICU",
+            "icu": {
+              "binding": "CoreLib:Interop.Globalization.GetICUVersion",
+              "versionRaw": 1275133952,
+              "version": "76.1.0.0"
+            },
+            "icuSourcePreconditionsObserved": true,
+            "asciiEqualityOrdinal": true,
+            "native": {
+              "status": "passed",
+              "collatorAttributes": {
+                "french": 16,
+                "alternate": 21,
+                "caseFirst": 16,
+                "caseLevel": 16,
+                "normalization": 16,
+                "strength": 2,
+                "hiragana": 16,
+                "numeric": 16
+              },
+              "searchCollatorMatches": true,
+              "externalBreakIterator": true,
+              "internationalLibrary": "/usr/lib/libicucore.A.dylib",
+              "commonLibrary": "/usr/lib/libicucore.A.dylib"
+            }
+          }
+        ]
+      },
+      "selector": "macos-15",
+      "sourceReportSha256": {
+        "live": "235b1c48d5641039c3620134234ef5e2501875116096b8575d6afd9bfb0d8b29",
+        "packageEvidence": "6bae65cdc27a9bd5f7c01878591b1ab2ccde31885ad520c9c8c746ba08a4fe41",
+        "packageProbe": "74be751ba7818f966ff8b68825716350978168443518aa98dd9b69a5457399fe"
+      },
+      "sourceJob": {
+        "id": 111364128037,
+        "attempt": 1,
+        "name": "runner-differential (macos-15, osx-arm64)",
+        "startedAt": "2026-10-04T04:44:10Z",
+        "completedAt": "2026-10-04T04:50:57Z",
+        "conclusion": "success",
+        "source": "Actions jobs API; package association inferred from artifact selector/RID and workflow at source head. Package evidence itself does not contain job ID/attempt."
+      }
+    },
+    {
+      "live": {
+        "status": "passed",
+        "identity": {
+          "GITHUB_RUN_ATTEMPT": "1",
+          "GITHUB_RUN_ID": "37177815281",
+          "GITHUB_SHA": "b2fb07df49a10afa70e704fcf398ca3f82de91ca",
+          "ImageOS": "win25-vs2026",
+          "ImageVersion": "20260925.250.1",
+          "RUNNER_ARCH": "X64",
+          "RUNNER_OS": "Windows",
+          "SHOUTX_SOURCE_HEAD": "a5cbc93c53f47255c8e6210466d2ef83242d9430"
+        },
+        "runnerVersion": "2.337.0",
+        "pinnedRunnerVersion": "2.337.0",
+        "runnerMatchesPin": true,
+        "workerCulture": null,
+        "workerGlobalizationBackend": null,
+        "maskCases": 8,
+        "annotationCases": 30,
+        "logSha256": "3c847b5ea4f3472f76bfac85bfe715e1aa4ed8a36848e2793c385884f74061be",
+        "harnessSha256": "ce566ed214a26827b6c10b97a8621eb391e3887c6585bdcce4c5926ee0a759e4",
+        "jobId": 111364128060,
+        "verifierAttempt": "1",
+        "annotationsSha256": "2c26a6b09b782c9350bb4ad1c5957447740247398c29e9ccee6ff5e5e7619454"
+      },
+      "package": {
+        "status": "passed",
+        "rid": "win-x64",
+        "githubRunId": "37177815281",
+        "githubSha": "b2fb07df49a10afa70e704fcf398ca3f82de91ca",
+        "imageOS": "win25-vs2026",
+        "imageVersion": "20260925.250.1",
+        "archive": {
+          "url": "https://github.com/actions/runner/releases/download/v2.337.0/actions-runner-win-x64-2.337.0.zip",
+          "sha256": "1150692afa94e71f872017e254ea55b6eece1eece3fe7e3a6d4c93d0a1b85cfc",
+          "size": 103528051
+        },
+        "selectedCoreClr": {
+          "file": "coreclr.dll",
+          "sha256": "fc2909e16b3f70edfeac96d69d3f1d444705b1e4ad922dc760bb396338a7b1de"
+        },
+        "workerRuntimeConfig": {
+          "runtimeOptions": {
+            "tfm": "net8.0",
+            "includedFrameworks": [
+              {
+                "name": "Microsoft.NETCore.App",
+                "version": "8.0.30"
+              }
+            ],
+            "configProperties": {
+              "System.Globalization.PredefinedCulturesOnly": false,
+              "System.Reflection.Metadata.MetadataUpdater.IsSupported": false,
+              "System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization": false
+            }
+          }
+        },
+        "sourceDigests": {
+          "scripts/test-runner-package.py": "bb0449ab8e14bf7b026df5c53d1786012504ea7d976c5241996929b01a464d3c",
+          "tests/runner-package/test_harness.py": "ec68e2da8735313e36495133e68513ee85a74f072d1848282086f89276b6b5f7",
+          "tests/runner-package/Program.cs": "80c96fdf8dbc22a573e14e966c3fd3a877231024b8e610afe1166720b02255fd",
+          "tests/runner-package/WorkerProbe.cs": "9655f599139ae6696fc00a35f9cf423a7ecb73e31de6981893be989e8a28c3de",
+          "tests/runner-package/Probe.csproj": "ccd39474e028660d0b77a5ac3bdb8593bee036722e63c5d9a0bfac31b272a0ae",
+          "tests/runner-package/UnicodeCandidateProbe.cs": "4a74c8bbfe93c371bc770134f27a147b8b848a7f5ecbe0d5454d7e80c22661a3",
+          "tests/runner-package/CollationProbe.cs": "38600c03efec644cd7710478dd1d54f65e3de8f65b1ccab448b8e9b6dc4781a9",
+          "tests/runner-package/unicode-candidate.json": "165691c4ca41c5934229b9f9bc9c3d49d2c638e7126f7b30275738e093063ee1",
+          "tests/runner-package/unicode-pins.json": "bf761ad9273c571424d7199b9a2a28ed923edaea14922557d5411fec90177172",
+          "tests/runner-package/UNICODE-LICENSE.txt": "8437ba5f4e4c8ae0268c3df5cf106006f2d045ff3452eedd1f27e8eb26c5f327",
+          "scripts/generate-unicode-candidate.py": "68257238a98b129331c2643a5b5405de2d6c7993fff97a13d67e6a8791958a37"
+        },
+        "probeSha256": "85a63f2ae6b2aa2e1aa98deb7217aadd7c2e34291372feb6d3cafe60e473dfa4",
+        "runtime": ".NET 8.0.30",
+        "os": "Microsoft Windows 10.0.26100",
+        "architecture": "X64",
+        "globalization": {
+          "invariant": false,
+          "nls": false,
+          "hybrid": null,
+          "backendFromFlags": "Unknown"
+        },
+        "assemblies": [
+          {
+            "file": "System.Private.CoreLib.dll",
+            "sha256": "cc2cc43d28e3770d7cdeb80dc74eab265a1f5dd2f5547ccb236983b48d47d914",
+            "informationalVersion": "8.0.30+a83db3e0eb2defb6220e15dae2f1a0462fdbf99f",
+            "inPackage": true
+          },
+          {
+            "file": "Runner.Common.dll",
+            "sha256": "276d5dde79696aecd105686f4b9ff7787ee9b458183ba3779e2044e0219e6fd5",
+            "informationalVersion": "2.337.0+397b032cbf865e9c3ddfab89d533ec19325e1273",
+            "inPackage": true
+          },
+          {
+            "file": "Runner.Worker.dll",
+            "sha256": "513d54f9a2df265c72eb79cbe1e953d4195ea409b138dc50f47b4d2045ee154f",
+            "informationalVersion": "2.337.0+397b032cbf865e9c3ddfab89d533ec19325e1273",
+            "inPackage": true
+          }
+        ],
+        "cultures": [
+          {
+            "culture": "",
+            "backendObserved": "ICU",
+            "icu": {
+              "binding": "CoreLib:Interop.Globalization.GetICUVersion",
+              "versionRaw": 1208025092,
+              "version": "72.1.0.4"
+            },
+            "icuSourcePreconditionsObserved": true,
+            "asciiEqualityOrdinal": true,
+            "native": {
+              "status": "passed",
+              "collatorAttributes": {
+                "french": 16,
+                "alternate": 21,
+                "caseFirst": 16,
+                "caseLevel": 16,
+                "normalization": 16,
+                "strength": 2,
+                "hiragana": 16,
+                "numeric": 16
+              },
+              "searchCollatorMatches": true,
+              "externalBreakIterator": true,
+              "internationalLibrary": "C:\\Windows\\SYSTEM32\\icu.dll",
+              "commonLibrary": "C:\\Windows\\SYSTEM32\\icu.dll"
+            }
+          },
+          {
+            "culture": "en-US",
+            "backendObserved": "ICU",
+            "icu": {
+              "binding": "CoreLib:Interop.Globalization.GetICUVersion",
+              "versionRaw": 1208025092,
+              "version": "72.1.0.4"
+            },
+            "icuSourcePreconditionsObserved": true,
+            "asciiEqualityOrdinal": true,
+            "native": {
+              "status": "passed",
+              "collatorAttributes": {
+                "french": 16,
+                "alternate": 21,
+                "caseFirst": 16,
+                "caseLevel": 16,
+                "normalization": 16,
+                "strength": 2,
+                "hiragana": 16,
+                "numeric": 16
+              },
+              "searchCollatorMatches": true,
+              "externalBreakIterator": true,
+              "internationalLibrary": "C:\\Windows\\SYSTEM32\\icu.dll",
+              "commonLibrary": "C:\\Windows\\SYSTEM32\\icu.dll"
+            }
+          }
+        ]
+      },
+      "selector": "windows-latest",
+      "sourceReportSha256": {
+        "live": "88292ba05dd2c44030d0fd69c23dc8c3a296cdfb216440222c186e2edaf13c6c",
+        "packageEvidence": "191bc42330ea0391df91745d93c6fd12e43ee92e08329b5e042ded5f4700daa9",
+        "packageProbe": "31387ec9ffbe77e1bf4f2195eb339e468ed75b57e8b21ed759005ad0f38f242b"
+      },
+      "sourceJob": {
+        "id": 111364128060,
+        "attempt": 1,
+        "name": "runner-differential (windows-latest, win-x64)",
+        "startedAt": "2026-10-04T04:44:04Z",
+        "completedAt": "2026-10-04T04:53:24Z",
+        "conclusion": "success",
+        "source": "Actions jobs API; package association inferred from artifact selector/RID and workflow at source head. Package evidence itself does not contain job ID/attempt."
+      }
+    }
+  ],
+  "projectionMethod": "Author-selected fields, cross-checked against source reports and Actions jobs API; no committed projection generator."
+}

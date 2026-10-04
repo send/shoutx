@@ -416,6 +416,24 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
+      - name: Test hosted Worker input projection offline
+        shell: bash
+        run: python -B tests/runner-package/test_hosted_worker.py
+      - name: Observe hosted Worker startup input availability
+        id: worker_observation
+        shell: bash
+        env:
+          SHOUTX_MATRIX_OS: ${{ matrix.os }}
+          SHOUTX_MATRIX_RID: ${{ matrix.runtime }}
+        run: python -B tests/runner-package/hosted_worker.py --output target/hosted-worker-evidence.json
+      - name: Retain limited hosted Worker observation
+        if: ${{ always() && steps.worker_observation.outcome != 'skipped' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: hosted-worker-input-${{ matrix.os }}-${{ matrix.runtime }}
+          path: target/hosted-worker-evidence.json
+          if-no-files-found: error
+          retention-days: 30
       - name: Build research binary for package-matched hosted observations
         shell: pwsh
         run: |

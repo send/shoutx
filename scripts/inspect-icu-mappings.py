@@ -23,6 +23,15 @@ class Unverified(ValueError):
     """Unsupported or malformed evidence must not become positive evidence."""
 
 
+class DecoderBudgetExceeded(Unverified):
+    """A decoder traversal limit, not a malformed-reference classification."""
+
+
+def require_decoder_budget(condition, message):
+    if not condition:
+        raise DecoderBudgetExceeded(message)
+
+
 class ResearchParser(argparse.ArgumentParser):
     def error(self, message):
         self.exit(1, f'unverified: {message}\n')
@@ -54,7 +63,7 @@ class ContextTrie:
 
     def tick(self, depth):
         self.visits += 1
-        require(self.visits <= self.max_visits and depth <= 128,
+        require_decoder_budget(self.visits <= self.max_visits and depth <= 128,
                 "context traversal bound")
 
     def value(self, pos, lead):
@@ -86,7 +95,7 @@ class ContextTrie:
             unit, lead = at(self.units, pos), at(self.units, pos + 1)
             value, pos = self.value(pos + 2, lead & 0x7fff)
             child = key + (unit,)
-            require(len(child) <= self.max_key, "context key bound")
+            require_decoder_budget(len(child) <= self.max_key, "context key bound")
             if lead & 0x8000:
                 yield child, value
             else:
@@ -95,7 +104,7 @@ class ContextTrie:
 
     def node(self, pos, key=(), depth=0):
         self.tick(depth)
-        require(len(key) <= self.max_key, "context key bound")
+        require_decoder_budget(len(key) <= self.max_key, "context key bound")
         lead = at(self.units, pos)
         pos += 1
         if lead & 0x8000:
@@ -209,11 +218,11 @@ class RootMappings:
 
     def context_values(self, index):
         if index not in self.context_cache:
-            require(len(self.context_cache) < 4096, "context count bound")
+            require_decoder_budget(len(self.context_cache) < 4096, "context count bound")
             default = (at(self.contexts, index) << 16) | at(self.contexts, index + 1)
             entries = ContextTrie(self.contexts).entries(index + 2)
             self.context_entry_count += len(entries)
-            require(self.context_entry_count <= 100000, "total context entry bound")
+            require_decoder_budget(self.context_entry_count <= 100000, "total context entry bound")
             self.context_cache[index] = (default, entries)
         default, entries = self.context_cache[index]
         return (default,) + tuple(value for _, value in entries)

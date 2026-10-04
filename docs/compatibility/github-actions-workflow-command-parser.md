@@ -951,6 +951,56 @@ settings, external break boundaries and other search premises remain separate.
 No FCD normalization path, NLS backend, different ICU release, or uninspected
 platform fork inherits this argument merely by reporting similar samples.
 
+#### Single-root structural graph experiment
+
+`scripts/inspect-icu-graph.py` implements a bounded, offline structural graph
+walk using the existing 78.1 little-endian root decoder. Unlike the earlier
+leading-weight inventory, it starts from every non-NUL Unicode scalar and
+tracks exact scalar/sentinel arguments. There is only one data object in this
+implementation: any required base object or tailoring is unverified, not
+implicitly replaced by the supplied root. The shared decoder's `initial()`
+establishes initial lead-unit correspondence; the graph walk checks all selected
+Jamo children, default and trie successors,
+expansion spans, forbidden internal sentinels and scalar-sensitive dispatch.
+Successful postorder traversal assigns terminal nodes rank zero and each
+structural parent one plus its greatest child rank. The fast Hangul branch
+does direct conversions and therefore has no recursive graph edge.
+
+Contraction trie values are checked with both the caller argument and sentinel.
+The default is checked only with the caller argument (which may already be
+sentinel). This differs deliberately from the more conservative leading-weight
+reader. In the inspected `nextCE32FromDiscontiguousContraction`, sentinel
+dispatch of the selected result happens only when a top-level match has a
+non-empty skipped prefix. `skipLengthAtMatch` starts at zero; a non-empty
+selected prefix can be recorded only when a trie value replaces `ce32` at a
+successful match. A no-match default cannot reach that sentinel dispatch.
+Both argument variants of every trie value remain an overapproximation, not a
+claim that every branch is reachable for every header or suffix.
+
+An initial prototype also applied sentinel to the default and stopped at
+U+FDD1 on an implicit/sentinel combination. This was an extra verifier branch,
+not evidence of a consumer failure. Applying the source-based default rule
+above allowed the full root walk to finish without removing any scalar root.
+
+On 2026-10-04 the final walk over the previously acquired local 78.1 payload
+(SHA-256 `22e8a8ae4b3291ead304290ca73c5facc4e8c330e21ebf5b2437dbe8b2fd93e0`)
+completed 1,112,063 scalar roots, 1,115,181 distinct `(CE32, argument)` nodes,
+3,150 examined successor edges and 77 context tries. Maximum completed rank
+was 1 and no cycle was found. These counts describe that exact decoded graph,
+not the amount of work done by arbitrary ICU searches. The payload is the
+separately opened local resource described below, not a new native acquisition
+or evidence of the cached collator's actual fallback-object identity.
+
+The tool stops at the first unsupported, invalid, cyclic or over-budget path.
+It reports that root, the reason and partial counts; incomplete reports never
+claim an acyclic complete graph. `structuralGraphAcyclic: true` means only that
+the enumerated graph of the supplied payload passed this model. Input profile,
+consumer identity, offsets, consumer termination and acceptance-table flags
+remain false. It is not a complete ICU binary-format validator, a supported
+consumer matrix gate, an acceptance generator or a runtime performance test.
+See the [verification procedure](../test-plan.md#offline-root-mapping-graph-research)
+for limits and exit-status semantics.
+
 ### Mapping-data acquisition feasibility (local research)
 
 A 2026-10-03 local macOS 26.6.2 (25G83) ARM64 experiment used the Runner-package CoreLib

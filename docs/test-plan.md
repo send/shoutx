@@ -333,6 +333,101 @@ remain outside this package suite, with broader policies covered by the
 source-built oracle and live hosted checks. Neither suite changes stdout
 release eligibility or the deferred `th-TH` decision.
 
+### Unicode adoption completion criteria
+
+The [research-scope decision](decisions/github-actions-unicode-scope.md) fixes
+the initial target; it does not expand CLI acceptance or release eligibility.
+Use the dated latest-release baseline in the
+[package evidence note](compatibility/runner-package-runtime.md#research-baseline-selection)
+and the reviewed archive/source identities in `tests/runner-package/pins.json`.
+The initial matrix below snapshots `runner-differential` on the 2026-10-04
+scope-decision date. It defines the research target until explicitly revised;
+subsequent CI edits do not silently add or remove target rows:
+
+| Hosted CI row | Package architecture | Explicit comparison cultures |
+| --- | --- | --- |
+| `ubuntu-22.04` | `linux-x64` | Invariant, `en-US` |
+| `ubuntu-24.04` | `linux-x64` | Invariant, `en-US` |
+| `macos-15` | `osx-arm64` | Invariant, `en-US` |
+| `windows-latest` | `win-x64` | Invariant, `en-US` |
+
+These are execution selectors, not immutable OS/backend identities. Retain
+the resolved image, OS, architecture, package, runtime, native code/data,
+effective settings and observed search/break path for each row and culture.
+Explicit Invariant Culture does not enable globalization-invariant mode.
+Local research results cannot substitute for a missing row. Do not infer
+live Worker culture from these explicitly configured probes or child locale.
+
+The existing live experiment has a **different** matrix: `ubuntu-latest`,
+`macos-latest` and `windows-latest`. In particular it has no explicit Ubuntu
+22.04 row, and `macos-latest` is not a binding to macOS 15. For closure, each
+target row needs corresponding live evidence from the same resolved
+OS/image/architecture and baseline Runner version, not merely a similar label.
+Match exact recorded image version/build, not just image family. Identify the
+reference package-probe job and live job by run, attempt and job ID; prefer
+the same CI source run. A cross-run comparison requires the same recorded
+identities and an explicit check for intervening relevant runtime/data changes;
+run proximity or identical labels are not sufficient.
+A mismatched version/image is evidence only for that observed combination;
+it does not close the baseline row. Obtaining missing matching live runs or
+explicitly revising the target is future work, not a CI change made here.
+
+The initial feasibility pass must also establish how the live Worker fits the
+explicit-culture proof scope. Acceptable evidence is a direct observation of
+the relevant consumer state, or a reviewed source-and-configuration argument
+that binds the actual live build and its relevant startup/job inputs to all
+required states/settings. In particular it must account for the
+[server-supplied culture mechanism](compatibility/github-actions-workflow-command-parser.md#finding),
+not assume child locale selects Worker culture. Package hashes, API effects,
+image labels and finite successful cases alone do not establish this link.
+Closure is evaluated per row **and culture**: each needs its package proof and
+a justified link to the live implementation/settings for that culture. A live
+`en-US` observation does not by itself close Invariant. Direct live execution
+under both cultures is sufficient linkage evidence only for the states actually
+observed; alternatively, the source-and-configuration argument must explicitly
+cover each culture's effective mappings/settings and explain transfer from the
+observed live state. It may not relabel an unobserved culture as measured.
+If only one culture's link is established, record that partial result and keep
+the other combination incomplete. No ability to set live Worker culture is
+assumed or required as the only possible proof method.
+If matching live evidence or this link is unavailable, the feasibility
+obligation is incomplete and the decision's
+[stop rule](decisions/github-actions-unicode-scope.md#consequences-and-verification-requirements)
+applies; the checklist must not proceed as though the missing row passed.
+
+The following are completion checks for proposing Unicode acceptance, not
+claims that the current research gate has satisfied them. All are required;
+failure/unknown in a prerequisite is not a successful empty result.
+
+| Obligation | Required closure evidence | Current gap / evidence owner |
+| --- | --- | --- |
+| Effective consumer inputs | Bind the executed package and native implementation, settings, effective tailoring/root mappings and relevant normalization/break properties to the consumer path on every row/culture; archive hashes and reproducible acquisition/validation steps. Justify any source-to-binary inference explicitly. | Package identity and native observations are partial evidence; the separately opened local root is not the cached collator's proven effective data. See [package identity limits](compatibility/runner-package-runtime.md#identity-chain) and [acquisition research](compatibility/github-actions-workflow-command-parser.md#mapping-data-acquisition-feasibility-local-research). |
+| Full data prerequisites | Check the positive leading-weight condition and complete reachable dispatch/rank premises against those effective inputs, including base/tailoring resolution and supplementary summaries; all unsupported references or exhausted bounds stay unverified. | Existing readers are root-only and model 78.1; they do not cover the entire target matrix. See [structural graph research](compatibility/github-actions-workflow-command-parser.md#single-root-structural-graph-experiment). |
+| Header, iterator and search composition | Close the fixed-header/prefix and intended-delimiter argument, incoming iterator state, colon FCD/context handling, retained first raw half, offset/termination conditions and external end boundary for arbitrary permitted wire suffixes, at the effective settings. Address resource assumptions separately from mathematical termination. | Existing conditional arguments leave premises open. See [source obligations](compatibility/github-actions-workflow-command-parser.md#remaining-source-argument) and [delimiter entry step](compatibility/github-actions-workflow-command-parser.md#delimiter-mapping-and-conditional-entry-state-step). |
+| Independent execution and hosted connection | Run fresh package parser/Worker effects and live hosted boundary checks; retain exact identities and negative controls, and justify how the observed live consumer relates to the explicit-culture proof scope. Archive retrievable evidence beyond transient local files. | Package and live hosted measurements are distinct; finite cases do not establish arbitrary-suffix safety or an unobserved live culture. See [published runtime checks](#published-runner-runtime-evidence) and [live hosted checks](#live-hosted-stdout-boundary-experiment). |
+| Adoption and updates | Review the resulting predicate/table across all target combinations, reproducible generation, lookup cost, fail-before-output behavior, documented consumer prerequisites, treatment of unknown/updated environments and security response; explicitly reconcile design invariant 16 concerning locale-sensitive protocol delimiters and update authoritative contracts before implementation. | No table or changed contract is authorized. [Continuing checks](#continuing-compatibility-checks) detect some drift but do not automatically certify a new environment; framing and release decisions remain separate. |
+
+For closure, preserve the necessary redacted reports, source/run identities,
+hashes and reproduction instructions in repository-versioned evidence before
+the existing 30-day CI artifacts expire. Link the adopting commit to those
+records; temporary paths and expired artifact URLs alone are insufficient.
+Do not commit secrets, full job logs or vendor ICU payloads. Raw vendor data
+and substantial derived extracts (such as mapping tables or graph dumps) must
+not be published through repository commits, CI artifact uploads or other
+sharing channels without separate permission/license review. Retain hashes and
+acquisition instructions for an appropriately licensed environment instead.
+If those records cannot support reproducing a required input/claim, that
+obligation remains unverified rather than assuming a hash supplies the bytes.
+This adds no artifact-retention automation or permission to publish payloads.
+
+Work order and handling of blocked obligations are owned by the
+[scope decision](decisions/github-actions-unicode-scope.md#consequences-and-verification-requirements).
+Completion here permits proposing the acceptance change; stable distribution
+still requires the separate
+[framing](decisions/github-actions-stdout-framing.md) and
+[release](release.md) gates. Existing other-culture regressions are retained,
+not expanded into additional support obligations by this checklist.
+
 ### V2 Unicode data-start research
 
 The package probe additionally evaluates a candidate, not a production input

@@ -5,6 +5,17 @@ change accepted input, the deferred `th-TH` issue, or stdout release eligibility
 The [workflow-command note](github-actions-workflow-command-parser.md#ascii-boundary-allowlist-derivation)
 owns the ASCII fast-path argument; this note connects it to a concrete package.
 
+## Research baseline selection
+
+On 2026-10-04 the official GitHub API `repos/actions/runner/releases/latest`
+returned [v2.337.0](https://github.com/actions/runner/releases/tag/v2.337.0),
+published on 2026-08-26. This matches the existing reviewed package pin below;
+no new package was selected or downloaded for the scope decision. The
+[bounded Unicode research scope](../decisions/github-actions-unicode-scope.md)
+uses that snapshot as its starting baseline, not a guarantee for later
+versions or proof that every hosted job already runs it. A dated latest-release
+query does not attest a live Worker or any of its settings.
+
 ## Identity chain
 
 The reviewed [pins](../../tests/runner-package/pins.json) bind Runner v2.337.0

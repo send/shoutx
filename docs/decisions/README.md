@@ -44,3 +44,8 @@ Current cross-repository decisions:
 
 - [`official-setup-action.md`](official-setup-action.md) — repository boundary
   and security constraints for the planned official installer action.
+
+GitHub Actions stdout research scope:
+
+- [`github-actions-unicode-scope.md`](github-actions-unicode-scope.md) — bounded
+  consumer target for Unicode adoption research; not framing/release approval.

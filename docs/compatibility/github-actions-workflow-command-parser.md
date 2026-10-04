@@ -382,10 +382,15 @@ close the suffix-dependent premise: it needs an invariant over all possible
 following mappings and contexts at the active settings, or a justified narrower
 acceptance rule. Excluding these five alone would not prove the other candidates
 safe. For the remaining candidates, establish that their leading retained
-elements and contextual offsets satisfy the premises. Before implementation,
-an explicit compatibility decision must also define the supported consumer
-scope and treatment of unobserved/old/null-iterator paths; a separate producer
-cannot enforce the worker's runtime, culture or iterator choice. This does not
+elements and contextual offsets satisfy the premises. The
+[research-scope decision](../decisions/github-actions-unicode-scope.md) now fixes
+the initial investigation target, with explicit
+[completion criteria](../test-plan.md#unicode-adoption-completion-criteria).
+The supported consumer scope remains undefined as a product contract. Before
+implementation, an explicit compatibility decision must establish that scope
+and address unobserved/old/null-iterator paths; [the design](../design.md) will
+own the accepted boundary. A separate producer cannot enforce the
+worker's runtime, culture or iterator choice. This does not
 reopen legacy framing, the deferred `th-TH` decision, metadata acceptance or
 release eligibility.
 

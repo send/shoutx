@@ -723,6 +723,38 @@ unchanged.
 
 ### Offline root mapping graph research
 
+The full-scalar structural graph experiment is separate from the leading-weight
+classification below:
+
+```sh
+python -B scripts/inspect-icu-graph.py \
+  --root-data PATH_TO_ROOT_PAYLOAD --sha256 EXPECTED_PAYLOAD_SHA256
+python -B tests/runner-package/test_structural_graph.py
+```
+
+It requires no candidate file: all 1,112,063 non-NUL Unicode scalar roots must
+complete. Exit 0 means the supplied root's bounded graph walk completed, not
+consumer safety; exit 2 emits an incomplete report with the first failing root
+and reason. Input/hash/header/usage failures exit 1 without a JSON report.
+Cycles, graph-budget exhaustion (`budget`) and shared context-decoder limits
+(`decoder_budget`) are separately labeled; unsupported dispatch and other
+decoder/data failures remain unverified rather than positive evidence.
+An incomplete report uses `structuralGraphAcyclic: null`, even when completed
+subgraphs have ranks. Root-only scope and false consumer/acceptance flags must
+be preserved.
+
+Limits are 2,000,000 started graph nodes, 4,000,000 examined edges and 128 active
+nodes, in addition to the shared decoder's input/context limits. A cycle must
+not be confused with a cached shared child; cache only complete subgraphs.
+Synthetic tests cover direct/indirect mappings, malformed references, scalar
+preconditions, default versus trie argument handling, internal sentinels,
+cycles, non-zero node/depth limits reached mid-traversal, edge and decoder
+limits, supplementary initial correspondence and its rejection reasons, fast
+and recursive Hangul, full root counts and CLI success/failure outputs. The existing
+multi-OS package job runs these tests without requiring a private payload.
+Native root acquisitions and full graph observations remain separate evidence;
+no test or report establishes loaded consumer identity or CLI eligibility.
+
 `scripts/inspect-icu-mappings.py` is a separate research reader for an acquired
 little-endian ICU 78.1 root UCol-v5 payload (without its data header), not a CLI
 allow-list generator or a replacement for the native package gate. It requires

@@ -563,8 +563,9 @@ Exploratory local inspection of the recovered 70.1/74.2/76.1 candidates found
 empty `coll/en.res` and `coll/en_US.res` tables without the no-fallback flag, and root default
 `standard`. This identifies selected fields, not locale fallback, absence of
 other sources, or native use. The Windows observation below now supplies the
-original selected fields; the three redirect-presence fields are a later
-collector addition and are not present in that observation.
+original selected fields. The three redirect-presence fields are absent from
+run 37229053857; the later run 37230492630, recorded in the conditional fallback
+section below, supplies them without backfilling the older observation.
 R1/R2 still require the fixed reference's effective route; R3/R4 still require
 mapping/normalization/break prerequisites and arbitrary-suffix composition.
 
@@ -611,10 +612,22 @@ The three new presence fields were checked locally on the recovered
 70.1/74.2/76.1 `coll/root.res` byte ranges, after verifying both their
 full-file and member hashes against the inventories above. All three fields
 were false for each root. The same reproduction command above now emits
-these fields. Windows root has different bytes and still needs its own
-observation; the local results are not substituted for it. These are
+these fields. Windows root has different bytes and requires its own
+observation, recorded below; the local results are not substituted for it. These are
 same-author observations using the documented hash-gated procedure, not an
 independent reproduction or committed vendor-data fixture.
+
+The Windows follow-up is now observed in
+[run 37230492630](https://github.com/send/shoutx/actions/runs/37230492630),
+attempt 1, job 111518933929, source head
+`6dc2dd21efa8dd5f6ab4062405767083efc5a4ce`. Tested merge
+`363894bdf5d54fbfd450fc7cb93784a0692aae5c` has API-verified parents
+`9e3a6ea0eaeb2fcc0a0218daee35b3924f8cacfe` and that head. Metadata JSON raw
+SHA-256: `7816aace0f826b15745a4507cf86bf0f66d3ecac59aff527c5159a92a751a321`.
+The fixed image and data/member hashes are unchanged. All three fields are
+false for `en`, `en_US`, and root, each with `observed-selected-fields`.
+This closes the selected Windows root-key observation, not effective native
+loading or the vendor-source correspondence below.
 
 The pinned upstream 72.1
 [`uresbund.cpp`](https://github.com/unicode-org/icu/blob/ff3514f257ea10afe7e710e9f946f68d256704b1/icu4c/source/common/uresbund.cpp)
@@ -642,7 +655,8 @@ about that source, not an assertion that every vendor binary uses it:
   bytes and excluding an applicable override, root supplies the final parent.
   The absence of special keys in the observed `en_US`/`en` tables follows
   from their type-2 offset-zero empty-table encoding, not backfilled new
-  projection fields. Root's alias key still needs its Windows observation.
+  projection fields. The separate Windows follow-up above now observes
+  root's alias key absence as well.
 - `entryOpen` can insert `usr` override bundles when `U_USE_USRDATA` and its
   path condition hold. The pinned upstream
   [`utypes.h`](https://github.com/unicode-org/icu/blob/ff3514f257ea10afe7e710e9f946f68d256704b1/icu4c/source/common/unicode/utypes.h)
@@ -664,6 +678,11 @@ implementation, selected package, override branch, or cache provenance.
 `res_index` is used by available-locale enumeration in this source; its
 irrelevance to the entire selected caller route is not proved merely by its
 absence in `entryOpen`. R1–R4 remain unproved.
+
+The next [root-generation evidence](unicode-root-generation-evidence.md)
+compares upstream decoder premises and records exploratory graph coverage of
+the recovered root payloads. It does not infer effective selection from these
+resource-key results.
 
 ### macOS
 

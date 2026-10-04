@@ -958,6 +958,17 @@ unchanged.
 
 ### Offline root mapping graph research
 
+The [cross-generation evidence](compatibility/unicode-root-generation-evidence.md)
+records the fixed-source comparison and hash-gated exploratory reproduction.
+Run `python -B tests/runner-package/test_icu_source_comparison.py` for the
+comparison helper's word boundaries, limited normalization regressions,
+non-exported source contents, equal/unequal reports, raw newline sensitivity,
+missing/invalid UTF-8 input, CLI failure status and size-cap boundary. It runs
+in the multi-OS package job using synthetic fixtures, not acquired ICU sources;
+green CI does not verify the retained upstream equality or substitution claims.
+Source text equality is not vendor binding or proof of
+the reader's complete input profile; keep those conclusions separate.
+
 The full-scalar structural graph experiment is separate from the leading-weight
 classification below:
 

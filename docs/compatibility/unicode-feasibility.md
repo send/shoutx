@@ -492,7 +492,10 @@ Effective-root/tailoring and normalization/break data acquisition on these
 four generations remains gated by identifying and justifying the acquisition
 target for each culture, following the scope decision's work order. None of
 those target connections has yet been completed here.
-The current 78.1 reader has not been applied to 70.1, 74.2, 76.1 or 72.1 here.
+At the time of that run the 78.1 reader had not been applied to these inputs.
+The subsequent [generation experiment](unicode-root-generation-evidence.md)
+applies it exploratorily to recovered 70.1, 74.2 and 76.1 payloads (the selected
+Windows payload matches 74.2), without promoting their profiles to verified.
 The module/file experiment neither proves those formats accessible nor proves
 them inaccessible. This audit is still incomplete; no positive feasibility,
 Unicode acceptance or release conclusion follows from the successful CI run.

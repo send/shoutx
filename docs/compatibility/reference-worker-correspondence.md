@@ -120,6 +120,98 @@ ICU cannot load. The retained per-culture native observations supply separate
 positive probe ICU evidence. Their transfer to the normal reference path is
 not inferred just from these selector values.
 
+## Application base versus process working directory
+
+The distinct entry assembly and cwd do not by themselves imply distinct
+hostpolicy application bases. The following bounded argument combines normal
+package/source inference with the recorded probe handoff, not a claim that
+the probe's SDK hostfxr is the normal Worker hostfxr.
+
+The historical [launcher](https://github.com/send/shoutx/blob/9aa3887c9e5efbfa811198c8f46981e366a0640b/scripts/test-runner-package.py#L484-L506)
+resolves the temporary work path before constructing `binary = work / "bin"`.
+Its [execution arguments](https://github.com/send/shoutx/blob/9aa3887c9e5efbfa811198c8f46981e366a0640b/scripts/test-runner-package.py#L546-L557)
+therefore give absolute paths for `Probe.dll`, Worker runtimeconfig and Worker
+deps, while leaving process cwd at `work`. No relative `--depsfile` is used.
+
+In [`args.cpp`](https://github.com/dotnet/runtime/blob/a83db3e0eb2defb6220e15dae2f1a0462fdbf99f/src/native/corehost/hostpolicy/args.cpp#L18-L142),
+`parse_arguments` obtains the managed application from host information in
+apphost mode and from the first application argument in muxer mode. Both
+call `init_arguments`. Its non-bundle `set_root_from_app` resolves the managed
+application path and starts with its directory as `app_root`. A nonempty
+explicit deps path then **replaces** `app_root` with that deps file's directory.
+For the absolute deps path here, this rule does not depend on process cwd.
+This explains the 8.0 hostpolicy rule, not the uninspected 10.0.12 hostfxr's
+forwarding of command-line arguments. The latter is bridged by the observed
+property values below. In the ordinary
+Worker route there is no user deps override. The pinned
+[`get_init_info_for_app`](https://github.com/dotnet/runtime/blob/a83db3e0eb2defb6220e15dae2f1a0462fdbf99f/src/native/corehost/fxr/fx_muxer.cpp#L366-L384)
+gets an empty deps option by default and [passes that value](https://github.com/dotnet/runtime/blob/a83db3e0eb2defb6220e15dae2f1a0462fdbf99f/src/native/corehost/fxr/fx_muxer.cpp#L493-L498)
+to `corehost_init_t`. Its [stored value](https://github.com/dotnet/runtime/blob/a83db3e0eb2defb6220e15dae2f1a0462fdbf99f/src/native/corehost/fxr/corehost_init.cpp#L19-L26)
+is [placed in the interface](https://github.com/dotnet/runtime/blob/a83db3e0eb2defb6220e15dae2f1a0462fdbf99f/src/native/corehost/fxr/corehost_init.cpp#L108)
+and copied into hostpolicy's `deps_file` by
+[`hostpolicy_init_t::init`](https://github.com/dotnet/runtime/blob/a83db3e0eb2defb6220e15dae2f1a0462fdbf99f/src/native/corehost/hostpolicy/hostpolicy_init.cpp#L17-L38).
+Thus its derived Worker deps and
+resolved managed application are both in the package bin directory.
+
+| Path | Managed application | Deps selection | Resulting application base |
+| --- | --- | --- | --- |
+| Package Worker apphost | Bound `Runner.Worker.dll` | Normal derived Worker deps | Resolved directory of the bound Worker DLL, under the existing package/source inference |
+| Recorded SDK-launched probe | Copied `Probe.dll` in extracted bin | Explicit absolute Worker deps in the same bin | Observed selected CoreCLR directory, not the temporary parent cwd |
+
+“Same” here means the corresponding package-bin role within each execution,
+not equality of the absolute paths of two different installations.
+[`deps_resolver_t`](https://github.com/dotnet/runtime/blob/a83db3e0eb2defb6220e15dae2f1a0462fdbf99f/src/native/corehost/hostpolicy/deps_resolver.h#L42-L93)
+stores this `args.app_root` as `m_app_dir` and uses `args.deps_path` for the app's
+deps input. Its [`get_app_dir`](https://github.com/dotnet/runtime/blob/a83db3e0eb2defb6220e15dae2f1a0462fdbf99f/src/native/corehost/hostpolicy/deps_resolver.h#L147-L175)
+returns that directory with a trailing separator for these modes. Its libhost
+empty-base and legacy single-file extraction exceptions are not these paths.
+[`hostpolicy_context`](https://github.com/dotnet/runtime/blob/a83db3e0eb2defb6220e15dae2f1a0462fdbf99f/src/native/corehost/hostpolicy/hostpolicy_context.cpp#L272-L315)
+uses this result for `APP_CONTEXT_BASE_DIRECTORY`; optional `APP_PATHS` uses
+the same base only when its separate configuration switch requests it.
+The source also uses `m_app_dir` when processing published-directory deps
+entries, but a common seed directory does not identify each winning asset.
+
+The projection's added `applicationBase` fields check the probe independently
+of the SDK-forwarding assumption, not independently of the same-author evidence.
+They check the probe
+side on **all four recorded rows**. After the existing report/trace hash gates,
+the recipe requires a single CoreCLR-path line, absolute base/CoreCLR/deps
+paths, the base equal to that CoreCLR path's parent, and exactly one app deps
+path naming `Runner.Worker.deps.json` in that base. All three retained Boolean
+fields are true on all four rows. The historical harness's
+[`verify_coreclr`](https://github.com/send/shoutx/blob/9aa3887c9e5efbfa811198c8f46981e366a0640b/scripts/test-runner-package.py#L426-L431)
+already checks that selected CoreCLR path against the extracted package file.
+Thus this probe-base result does not assume that SDK 10.0.12 forwards the
+argument exactly as hostfxr 8.0 would; it uses the resulting initialization
+properties. The probe DLL's placement in bin is also explicit in the launcher,
+not inferred solely from the deps override.
+
+Offline path comparison uses target-OS pure-path lexical conventions (including
+Windows case folding), not the inspecting machine's filesystem. A Windows
+case-sensitive directory could distinguish names that this comparison equates.
+The four recorded path sets are ASCII; the recipe requires that bounded
+observation rather than claiming arbitrary non-ASCII trace encoding fidelity.
+It establishes recorded
+path relationships, not symlink resolution or loaded-file attestation. No
+paths or full logs are published. The normal Worker result remains the stated
+source inference, not a newly observed live Worker base; a linked/versioned
+installation directory is not equated to its launch cwd string.
+
+It does **not** make all initialization inputs equal. The
+[TPA construction](https://github.com/dotnet/runtime/blob/a83db3e0eb2defb6220e15dae2f1a0462fdbf99f/src/native/corehost/hostpolicy/deps_resolver.cpp#L514-L548)
+adds the managed entry assembly before processing the app deps; the probe has
+an additional, different entry assembly. Full TPA equality is neither asserted
+nor needed merely to identify the base. Likewise, the existing
+[servicing/store assessment](worker-host-configuration.md#residual-inputs-and-evaluated-alternatives)
+records a relative Unix fallback `opt/coreservicing`: different cwd values can
+still select different lookup locations there. The muxer-only host-relative
+shared-store probe is another host-mode difference, and Windows servicing
+selection is not disposed of by a cwd argument. Published-directory base
+correspondence does not establish which candidate wins each asset lookup or
+bind the resolved globalization library/data. Resolved-asset evidence and the
+remaining normal startup/cache/native arguments are still required; no
+deployment-absence audit is added by this lemma.
+
 ## Command-path correspondence and what is still open
 
 [`WorkerProbe`](https://github.com/send/shoutx/blob/9aa3887c9e5efbfa811198c8f46981e366a0640b/tests/runner-package/WorkerProbe.cs) invokes the package
@@ -133,12 +225,14 @@ not a measurement of arbitrary preceding workflow state.
 | Difference | Evidence established here / already retained | Required continuation |
 | --- | --- | --- |
 | SDK muxer/hostfxr versus package apphost | Distinct versions and host modes explicitly identified; probe reports the 8.0.30 hostpolicy banner before its initialization bag, and normal package route is source-assessed | Bind hostpolicy path/bytes and relevant resolved assets/settings on normal reference route; do not substitute the SDK launcher source for the package launcher |
-| Probe.dll entry and temporary cwd | Explicitly identified; relevant runtime/managed identities are checked by the package harness | Account for cwd-sensitive lookup and normal Worker startup before treating a probe result as full path equivalence |
+| Probe.dll entry and temporary cwd | [Application-base correspondence](#application-base-versus-process-working-directory) identifies the package-bin base despite distinct cwd; relevant runtime/managed identities are checked by the harness | Resolve remaining cwd-sensitive asset lookup (including servicing), different entry/TPA inputs and normal Worker startup before claiming full path equivalence |
 | Explicit culture / initialized caches | Per-culture CompareInfo/backend and Worker expectations are checked | Bind normal reference comparison/cache/settings path; live culture propagation remains an applicability condition |
 | Service doubles / limited extension list / initial state | Actual target processing/effects are exercised with finite controls | The universal framing argument must establish the intended command before dispatch; a reduced extension list cannot rule out every fallback interpretation by itself |
 | Native data/search/break path | Probe observations and acquired-file inventories exist separately | Finish effective selection, source/data correspondence and arbitrary-suffix composition (R1/R3/R4) |
 
-The **probe host-property handoff** subclaim is now evidenced. R2 as a whole
+The **probe host-property handoff** and **probe base** are observed in the four
+recorded rows; the **normal Worker base** is source-inferred. The bounded
+correspondence is by directory role, not complete execution equivalence. R2 as a whole
 remains Unproved; no row or culture is promoted to Go. The next work is the
 identified normal-path and effective-input argument, not another live
 absence collector or a repetition of passing string samples.
@@ -155,7 +249,7 @@ the recipe also explicitly rejects disabled assertions before reading inputs.
 ```sh
 python3 -I -B - DIR_UBUNTU22 DIR_UBUNTU24 DIR_MACOS15 DIR_WINDOWS <<'PY'
 import hashlib, json, re, sys
-from pathlib import Path
+from pathlib import Path, PurePosixPath, PureWindowsPath
 if not __debug__:
     raise SystemExit('projection requires assertions enabled')
 base = Path('docs/compatibility/evidence')
@@ -175,6 +269,10 @@ for folder, identity, selected in zip(sys.argv[1:], owner['rows'], expected['row
     sha = hashlib.sha256(raw).hexdigest()
     assert sha == identity['sourceReportSha256']['evidence'] == selected['sourceEvidenceSha256']
     evidence = json.loads(raw)
+    assert evidence['status'] == 'passed'
+    expected_coreclr = {'linux-x64': 'libcoreclr.so', 'osx-arm64': 'libcoreclr.dylib',
+                       'win-x64': 'coreclr.dll'}[selected['rid']]
+    assert evidence['selectedCoreClr']['file'] == expected_coreclr
     trace = read(Path(folder) / 'corehost.log', 64 * 1024 * 1024)
     assert hashlib.sha256(trace).hexdigest() == evidence['corehostTraceSha256'] == selected['sourceTraceSha256']
     text = trace.decode('utf-8')
@@ -197,6 +295,23 @@ for folder, identity, selected in zip(sys.argv[1:], owner['rows'], expected['row
     assert ('HOSTFXR_PATH' in props) == selected['hostFxrPathPropertyPresent']
     assert (props.get('PROBING_DIRECTORIES') == '') == selected['probingDirectoriesEmpty']
     assert (props.get('FX_DEPS_FILE') == '') == selected['frameworkDepsFileEmpty']
+    clr = re.findall(r"^CoreCLR path = '(.*)', CoreCLR dir = ", text, re.M)
+    assert len(clr) == 1
+    path_type = PureWindowsPath if selected['rid'] == 'win-x64' else PurePosixPath
+    app_base = path_type(props['APP_CONTEXT_BASE_DIRECTORY'])
+    coreclr = path_type(clr[0])
+    deps = props['APP_CONTEXT_DEPS_FILES'].split(';')
+    assert coreclr.name == expected_coreclr
+    assert all(p.isascii() for p in [props['APP_CONTEXT_BASE_DIRECTORY'], clr[0], *deps])
+    actual_base = {
+        'pathsAbsolute': app_base.is_absolute() and coreclr.is_absolute()
+                         and all(path_type(p).is_absolute() for p in deps),
+        'matchesCoreclrDirectory': app_base == coreclr.parent,
+        'depsIsSingleWorkerInBase': len(deps) == 1
+                         and path_type(deps[0]) == app_base / 'Runner.Worker.deps.json',
+    }
+    assert actual_base == selected['applicationBase']
+    assert all(actual_base.values())
 print(json.dumps(expected, indent=2))
 PY
 ```

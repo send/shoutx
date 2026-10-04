@@ -373,6 +373,11 @@ For each row/culture record package/runtime/native identities, enumerated
 startup inputs and their provenance, effective settings and data, and any
 difference between the probe harness and that normal path. A successful
 explicit-culture probe alone does not establish those correspondences.
+The [reference/probe correspondence](compatibility/reference-worker-correspondence.md)
+records the bounded host-handoff subclaim and a hash-gated reproduction of
+selected original trace fields. That check must match report and trace hashes
+before emitting the projection; it neither publishes full logs nor substitutes
+initialization properties for native/data or command-path equivalence.
 
 Live observations remain separate interoperability evidence. Record their
 run/attempt/job IDs, resolved image/version, architecture and Runner version.

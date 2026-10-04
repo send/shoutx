@@ -1,0 +1,141 @@
+{
+  "schemaVersion": 1,
+  "kind": "selected-package-probe-host-handoff-observation",
+  "sourceRunId": 37184265280,
+  "identityOwner": "docs/compatibility/evidence/hosted-worker-modules-37184265280.json",
+  "scope": "Probe trace properties only; not live Worker properties or normal-path equivalence. Same-author projection; raw logs excluded.",
+  "rows": [
+    {
+      "selector": "ubuntu-22.04",
+      "rid": "linux-x64",
+      "sourceEvidenceSha256": "4dcdf20b335a5215e452690cc91bd59871b8ae0695dd295043fa5cd31c97e59f",
+      "sourceTraceSha256": "267048e9dad4671498d1b7c818c063ef3a814562bbbcfa1b83b3cd71d4fe86a9",
+      "launcherHostFxrBuild": [
+        "version: 10.0.12 @Commit: 95017c711e6afc1085133d440e42b4bd78155701"
+      ],
+      "invokedHostPolicyBuild": [
+        "version: 8.0.30 @Commit: a83db3e0eb2defb6220e15dae2f1a0462fdbf99f"
+      ],
+      "propertyNames": [
+        "APP_CONTEXT_BASE_DIRECTORY",
+        "APP_CONTEXT_DEPS_FILES",
+        "FX_DEPS_FILE",
+        "HOST_RUNTIME_CONTRACT",
+        "NATIVE_DLL_SEARCH_DIRECTORIES",
+        "PLATFORM_RESOURCE_ROOTS",
+        "PROBING_DIRECTORIES",
+        "RUNTIME_IDENTIFIER",
+        "System.Globalization.PredefinedCulturesOnly",
+        "System.Reflection.Metadata.MetadataUpdater.IsSupported",
+        "System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization",
+        "TRUSTED_PLATFORM_ASSEMBLIES"
+      ],
+      "globalizationProperties": {
+        "System.Globalization.PredefinedCulturesOnly": "false"
+      },
+      "startupHooksPropertyPresent": false,
+      "hostFxrPathPropertyPresent": false,
+      "probingDirectoriesEmpty": true,
+      "frameworkDepsFileEmpty": true
+    },
+    {
+      "selector": "ubuntu-24.04",
+      "rid": "linux-x64",
+      "sourceEvidenceSha256": "cd1de34a7cf1bfee00a31d6b1d751813ab237edb618adb08009493715ed5b2dc",
+      "sourceTraceSha256": "4b75adfdeff50ced9efe12dab106b3e307cdf687d59da3378e2ef593b50cf6da",
+      "launcherHostFxrBuild": [
+        "version: 10.0.12 @Commit: 95017c711e6afc1085133d440e42b4bd78155701"
+      ],
+      "invokedHostPolicyBuild": [
+        "version: 8.0.30 @Commit: a83db3e0eb2defb6220e15dae2f1a0462fdbf99f"
+      ],
+      "propertyNames": [
+        "APP_CONTEXT_BASE_DIRECTORY",
+        "APP_CONTEXT_DEPS_FILES",
+        "FX_DEPS_FILE",
+        "HOST_RUNTIME_CONTRACT",
+        "NATIVE_DLL_SEARCH_DIRECTORIES",
+        "PLATFORM_RESOURCE_ROOTS",
+        "PROBING_DIRECTORIES",
+        "RUNTIME_IDENTIFIER",
+        "System.Globalization.PredefinedCulturesOnly",
+        "System.Reflection.Metadata.MetadataUpdater.IsSupported",
+        "System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization",
+        "TRUSTED_PLATFORM_ASSEMBLIES"
+      ],
+      "globalizationProperties": {
+        "System.Globalization.PredefinedCulturesOnly": "false"
+      },
+      "startupHooksPropertyPresent": false,
+      "hostFxrPathPropertyPresent": false,
+      "probingDirectoriesEmpty": true,
+      "frameworkDepsFileEmpty": true
+    },
+    {
+      "selector": "macos-15",
+      "rid": "osx-arm64",
+      "sourceEvidenceSha256": "124b8631bde9ced485ceadadc4936cbf529c1f67ab263cacf819f6c2369a6f2d",
+      "sourceTraceSha256": "f3432884f9feda63cc8859f19dfc1fd02447a2d2889f3bd53c8690589daf3511",
+      "launcherHostFxrBuild": [
+        "version: 10.0.12 @Commit: 95017c711e6afc1085133d440e42b4bd78155701"
+      ],
+      "invokedHostPolicyBuild": [
+        "version: 8.0.30 @Commit: a83db3e0eb2defb6220e15dae2f1a0462fdbf99f"
+      ],
+      "propertyNames": [
+        "APP_CONTEXT_BASE_DIRECTORY",
+        "APP_CONTEXT_DEPS_FILES",
+        "FX_DEPS_FILE",
+        "HOST_RUNTIME_CONTRACT",
+        "NATIVE_DLL_SEARCH_DIRECTORIES",
+        "PLATFORM_RESOURCE_ROOTS",
+        "PROBING_DIRECTORIES",
+        "RUNTIME_IDENTIFIER",
+        "System.Globalization.PredefinedCulturesOnly",
+        "System.Reflection.Metadata.MetadataUpdater.IsSupported",
+        "System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization",
+        "TRUSTED_PLATFORM_ASSEMBLIES"
+      ],
+      "globalizationProperties": {
+        "System.Globalization.PredefinedCulturesOnly": "false"
+      },
+      "startupHooksPropertyPresent": false,
+      "hostFxrPathPropertyPresent": false,
+      "probingDirectoriesEmpty": true,
+      "frameworkDepsFileEmpty": true
+    },
+    {
+      "selector": "windows-latest",
+      "rid": "win-x64",
+      "sourceEvidenceSha256": "2c07ba918880780159f8f4691c024d55412adc7b9eabb6f50a5041a23ff6af7e",
+      "sourceTraceSha256": "1d6b7a7de04a611a354da0be2302049a930c6834a78fa2c1636876edcd742148",
+      "launcherHostFxrBuild": [
+        "version: 10.0.12 @Commit: 95017c711e6afc1085133d440e42b4bd78155701"
+      ],
+      "invokedHostPolicyBuild": [
+        "version: 8.0.30 @Commit: a83db3e0eb2defb6220e15dae2f1a0462fdbf99f"
+      ],
+      "propertyNames": [
+        "APP_CONTEXT_BASE_DIRECTORY",
+        "APP_CONTEXT_DEPS_FILES",
+        "FX_DEPS_FILE",
+        "HOST_RUNTIME_CONTRACT",
+        "NATIVE_DLL_SEARCH_DIRECTORIES",
+        "PLATFORM_RESOURCE_ROOTS",
+        "PROBING_DIRECTORIES",
+        "RUNTIME_IDENTIFIER",
+        "System.Globalization.PredefinedCulturesOnly",
+        "System.Reflection.Metadata.MetadataUpdater.IsSupported",
+        "System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization",
+        "TRUSTED_PLATFORM_ASSEMBLIES"
+      ],
+      "globalizationProperties": {
+        "System.Globalization.PredefinedCulturesOnly": "false"
+      },
+      "startupHooksPropertyPresent": false,
+      "hostFxrPathPropertyPresent": false,
+      "probingDirectoriesEmpty": true,
+      "frameworkDepsFileEmpty": true
+    }
+  ]
+}

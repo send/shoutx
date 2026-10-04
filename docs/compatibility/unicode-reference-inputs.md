@@ -959,6 +959,11 @@ environment overrides and then enables host tracing. It invokes SDK
 `Probe.csproj` uses `UseAppHost=false`. Thus its entry path is not the ordinary
 Worker apphost, even though later runtime identities are checked.
 
+The [reference/probe correspondence](reference-worker-correspondence.md)
+now retains the original four probe host handoffs and accounts for their
+property-bag observations, selector filtering and explicit entry/cwd differences.
+It evidences that subclaim, not complete native or command-path equivalence.
+
 Enumerate relevant reference startup inputs with evidence, distinguishing
 controlled probe absence from unobserved live values. Use the existing host
 source analysis to resolve apphost versus SDK selection, package configuration

@@ -95,11 +95,11 @@ of the flag difference rests separately on inspection of the source diff.
 
 ### Decoder dependency comparison
 
-The separate `--dependencies` mode extends the comparison to seven dependencies
+The separate `--dependencies` mode extends the comparison to eight dependencies
 at the same five fixed commits. It does not change the original six-file
 report above. Acquire `collationdatareader.cpp`, `collationdatareader.h`, and
 `collationdata.h` from `icu4c/source/i18n/`; acquire `utrie2_impl.h`,
-`utrie2.h`, `utrie2.cpp`, and `ucharstrieiterator.cpp` from
+`utrie2.h`, `utrie2.cpp`, `ucharstrieiterator.cpp`, and `ucharstrie.cpp` from
 `icu4c/source/common/`. Use the same filename/version convention, then run:
 
 ```sh
@@ -107,7 +107,7 @@ python3 -B scripts/compare-icu-generation-sources.py --dependencies SOURCE_DIREC
 ```
 
 Compare the complete output with the [decoder hashes](evidence/icu-decoder-source-hashes.txt).
-All seven comparisons report equality across five versions. The raw hash
+All eight comparisons report equality across five versions. The raw hash
 always identifies the **complete file**, but the compared scope differs:
 
 | Dependency | Compared scope |
@@ -117,6 +117,7 @@ always identifies the **complete file**, but the compared scope differs:
 | `utrie2.h` | Prefix before the literal `#ifdef __cplusplus`, concatenated with the suffix starting at the `Internal definitions` banner; only the intervening C++ iterator declarations/includes are excluded, not the later layout/constants/lookup macros |
 | `utrie2.cpp` | From the `U_CAPI UTrie2 * U_EXPORT2` declaration of `utrie2_openFromSerialized` up to, excluding, the corresponding `utrie2_openDummy` declaration |
 | `ucharstrieiterator.cpp` | Complete file |
+| `ucharstrie.cpp` | Complete file |
 
 Besides the disclosed word substitutions, exact replacements cover the data
 reader's `int32_t{settings->getMaxVariable()}` spelling and deleted private
@@ -128,6 +129,10 @@ normalizes the newer spelling to the older one, unlike the other rules.
 Only the selected pointer-returning
 `utrie2_openFromSerialized` section changes `return 0;` to `return nullptr;`.
 No general whitespace removal or function-body equivalence is asserted.
+For `ucharstrie.cpp`, the complete 70.1-to-78.1 raw diff contains only the
+disclosed word changes and two occurrences of the same `UBool` cast/spacing
+replacement; these substitutions give whole-file equality for all five
+versions. No matcher function or new flag is excised.
 The selector checks its literal boundaries, not C++ syntax. The raw hashes and
 raw-diff inspection are therefore essential: equality of a selected section
 does not assert equality of the excluded source or all its dependencies.
@@ -150,9 +155,10 @@ The comparison establishes cross-generation textual stability of the selected
 source, including the native context enumerator. The separate table below is
 the manually inspected source-to-model layout/lookup argument. Neither is a
 native build/ABI binding, complete decoder correctness proof, or evidence that
-the effective collator selects these root inputs. In particular, native
-context matching through `common/ucharstrie.cpp` is not in this comparison;
-enumeration stability does not prove native matching equivalence.
+the effective collator selects these root inputs. The separate
+[context matching coverage argument](unicode-context-matching-evidence.md)
+relates the enumerator to matching through `common/ucharstrie.cpp`;
+enumeration stability alone does not prove that relationship.
 
 ## Exploratory recovered-payload graph walk
 
@@ -345,9 +351,9 @@ no second, independently maintained JSON baseline is required.
 
 Finish reader-format/dependency validation before promoting these exploratory
 profiles. The source helper does not yet cover every decoder dependency;
-equal iterator files alone are insufficient. Native context matching in
-`common/ucharstrie.cpp`, its relationship to the enumerator, and the model's
-context traversal still need a separate argument. The
+equal iterator files alone are insufficient. The
+[context matching note](unicode-context-matching-evidence.md) addresses bounded
+enumeration coverage, not native binding or complete iterator composition. The
 [compiled NFC evidence](unicode-compiled-nfc-evidence.md) adds native array and
 initializer correspondences, not complete normalization semantics.
 Effective root selection, compiled normalization and

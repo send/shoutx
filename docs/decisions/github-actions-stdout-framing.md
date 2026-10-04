@@ -23,8 +23,9 @@ This record must not restate its culture matrix or parser transcript.
   UTF-8 data without implicit normalization.
 - The child process cannot treat its own success as proof that the runner
   worker accepted the record.
-- A security claim must survive the supported OS and globalization backends
-  without a culture allowlist maintained by guesswork.
+- A security claim must hold throughout its explicitly reviewed support scope,
+  including OS and globalization backends; culture names selected without
+  supporting evidence are insufficient.
 - Before a framing decision is accepted, the project must define which self-
   hosted runner versions and host environments its claim covers, how they are
   verified, and how hosted runners are covered separately.
@@ -38,9 +39,12 @@ or category denylist cannot make the delimiter search culture-independent.
 
 ### Support only selected runner cultures
 
-Not preferred. shoutx cannot reliably observe the worker process's culture,
-and a finite allowlist would not account for collation backend or data-version
-changes.
+Not sufficient by itself. shoutx cannot reliably observe the worker process's
+culture, and culture names alone do not account for collation backend or
+data-version changes. The subsequently accepted
+[Unicode research scope](github-actions-unicode-scope.md) selects explicit
+cultures and named environments for investigation; it does not treat a
+culture allowlist as a protocol repair or runtime enforcement mechanism.
 
 ### Emit both V2 and legacy commands
 
@@ -82,22 +86,29 @@ not in a universal safety claim.
 Keep the exact input rules in the command specifications. Explicit-culture
 runner tests must cover rejection counterexamples and accepted-value fidelity.
 The `th-TH` ASCII failure is deferred, not fixed or shown to be unreachable.
-This prioritization does not accept V2 framing, establish a supported-culture
-allowlist, or remove the research feature / release exclusion.
+This prioritization does not accept V2 framing or remove the research feature /
+release exclusion. The later [scope decision](github-actions-unicode-scope.md)
+defines the target of further research, not a shipped compatibility guarantee.
 
 ## Decision
 
 No wire format is accepted by this proposed record yet. Before acceptance, a
 candidate must pass the real-runner verification described below, and
 the exact encoding contract and compatibility policy must be reviewed. Failure
-of that evidence selects the no-release fallback rather than a culture-specific
-exception.
+of evidence within the eventual claimed support scope selects the no-release
+fallback rather than silently exempting a failing culture. The research target
+is selected, but the supported-culture contract and release compatibility policy
+are not yet accepted. A deliberately narrower support proposal must explicitly
+address excluded/unknown environments and the deferred `th-TH` failure; a
+two-culture test pass alone cannot authorize it.
 
 ### Runner compatibility findings and open policy
 
 This subsection records constraints discovered while evaluating a self-hosted
-runner baseline. It is not an active compatibility contract and does not select
-one of the policy alternatives below.
+runner baseline. It is not an active compatibility contract. The later
+[scope decision](github-actions-unicode-scope.md) selects the named-hosted
+direction for initial Unicode research; it does not resolve the release-policy
+requirements below or authorize arbitrary self-hosted configurations.
 
 GitHub's registration floor is not a permanent runtime baseline. The
 repository-scoped deprecation API returns planning dates for individual
@@ -111,7 +122,7 @@ ICU, NLS, or globalization-mode state. shoutx cannot observe the worker
 process's runner version, culture, backend, or backend version. A finite matrix
 is useful evidence for named environments, but it cannot justify a guarantee
 over arbitrary self-hosted systems; treating it as such would recreate the
-culture allowlist rejected above.
+culture-name-only policy described above as insufficient.
 
 Testing a named environment would require executing the parsing path from the
 published runner package, verifying and recording the package digest, version,
@@ -129,7 +140,8 @@ The response must follow the authoritative
 [release policy](../release.md) and account for the documentation packaged in
 an existing release rather than defining asset-mutation rules in this record.
 
-The policy remains open among at least these alternatives:
+The release compatibility policy remains open among these alternatives,
+even though initial research follows the named-hosted direction:
 
 - support only specifically named GitHub-hosted environments, with an explicit
   validity and refresh rule;
@@ -169,18 +181,32 @@ policy covering every security consequence. It must also reconcile the current
 pinned-oracle rule in the test plan and release-level tested-version declaration
 in the threat model with their authoritative owners.
 
-For every tested runner environment, the oracle must enumerate every .NET
-culture available in each supported CI environment and exercise both the
-output prefilter and command manager. For every culture it must prove the fixed
-prefix position, selected command, decoded properties, decoded data, and
-command-extension side effect. Failures must identify the runner version,
-culture, and observed parse result.
+Over whatever cultures/environments that pending policy selects, framing
+acceptance still requires fixed prefix position, intended command selection,
+exact decoded properties/data and the intended command-extension effects.
+Its evidence must cover every selected OS generation, report rather than infer
+the required backend/version dimensions, and separately verify live hosted
+masking/annotation effects. Missing required observations remain gaps. Passing
+the bounded research checks below is necessary supporting evidence, not a
+substitute for defining and meeting that acceptance policy.
 
-The CI environments must span every OS generation in the selected scope. Tests
-must report rather than infer the active globalization backend and relevant
-version; inability to observe a dimension required by the selected policy is a
-gap, not permission to omit it. Hosted checks must separately verify actual
-masking and annotation effects.
+### Research verification, not framing acceptance
+
+For the selected research scope, the oracle must exercise both the output
+prefilter and command manager under each explicitly targeted culture on every
+target matrix row, as defined by the
+[completion criteria](../test-plan.md#unicode-adoption-completion-criteria).
+The original all-available-cultures paragraph was an acceptance proposal, not
+an already accepted support contract. It is not a requirement of this bounded
+research workstream. Which cultures framing acceptance must cover remains part
+of the pending compatibility-policy decision; this subsection does not replace
+that decision with a two-culture acceptance gate. Retain existing other-culture
+negative controls without treating those cultures as research support targets.
+Verify fixed prefix position, selected command, decoded
+properties/data and command-extension effects. Finite test success does not
+prove these properties over arbitrary allowed suffixes; the source/data
+argument remains required. Failures must identify the runner version, culture
+and observed parse result.
 
 These tests are continuing compatibility evidence, not a proof over future
 cultures or runtime versions. The shared verification policy remains
@@ -190,7 +216,8 @@ remains authoritative in [`release.md`](../release.md).
 ## Reconsideration conditions
 
 Reconsider the accepted framing if GitHub removes or changes the selected
-parser, if any culture or backend violates the round trip, or if an upstream
+parser, if a culture or backend within the eventual accepted scope violates
+the round trip, or if an upstream
 ordinal V2 parser becomes available throughout the accepted support scope.
 Evaluate GitHub Enterprise Server independently if it later enters that scope.
 

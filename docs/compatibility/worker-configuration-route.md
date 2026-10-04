@@ -27,7 +27,10 @@ For Unix, any transfer from the child to the parent's managed view therefore
 does **not** establish the input seen by native getenv consumers. In particular,
 the shim's version override and ICU's data selection require an independent
 native-environment/source argument. Even managed startup reads must be tied
-to their time and cache state, not just the later snapshot.
+to their time and cache state, not just the later snapshot. The
+[conditional stability argument below](#cache-timing-is-conditional-not-a-new-measurement-requirement)
+explains when exact cache timing would be immaterial; its premises are not
+established by this initial observation.
 The relationship to Windows native getenv consumers is likewise unestablished;
 the Unix analysis does not imply a Windows child-to-native equivalence.
 The fixed [native shim](https://github.com/dotnet/runtime/blob/a83db3e0eb2defb6220e15dae2f1a0462fdbf99f/src/native/libs/System.Globalization.Native/pal_icushim.c)
@@ -393,6 +396,190 @@ run/image identities. The named pinned packages and source commit support
 rerunning the experiment. No vendor payload or mapping table is published.
 Native/startup settings and effective per-culture inputs remain subject to the
 existing acquisition-target checks and stop rule.
+
+## Startup-state source follow-up
+
+This 2026-10-04 assessment addresses the remaining time/view distinction in
+acquisition-target check 3. It adds fixed-source reasoning, not another live
+measurement. The source pins remain Runner
+`397b032cbf865e9c3ddfab89d533ec19325e1273` and .NET
+`a83db3e0eb2defb6220e15dae2f1a0462fdbf99f`. Source-to-package correspondence
+and trusted installation remain inferences, not reproduced-build attestations.
+
+### Cache timing is conditional, not a new measurement requirement
+
+At the pinned runtime, Unix
+[Environment.Variables.Unix.cs](https://github.com/dotnet/runtime/blob/a83db3e0eb2defb6220e15dae2f1a0462fdbf99f/src/libraries/System.Private.CoreLib/src/System/Environment.Variables.Unix.cs)
+has two paths. Before `s_environment` is initialized, a single-key getter calls
+System.Native's `GetEnv`; enumeration or a managed setter initializes the
+dictionary from `GetEnviron`. Later managed getters and setters use that cache.
+Initialization uses CompareExchange; a setter changes the dictionary, not the
+native environment. The inspected file has no cache-reset operation.
+[pal_environment.c](https://github.com/dotnet/runtime/blob/a83db3e0eb2defb6220e15dae2f1a0462fdbf99f/src/native/libs/System.Native/pal_environment.c)
+implements those reads with libc `getenv` and `environ` (or `_NSGetEnviron` on
+the configured Apple route), not CoreCLR's separate PAL environment copy.
+
+For a particular well-formed ASCII selector key, the following is a conditional
+argument, not a claim that its premises have all been measured:
+
+1. Suppose its presence in the relevant native environment is unchanged from
+   Worker startup through the later of the observer launch and the last
+   relevant configuration read (managed GlobalizationMode or native shim/ICU,
+   including a lazy data-selection read).
+2. Suppose no managed setter or other relevant mutation changes that key in
+   the managed cache during this interval.
+3. Cache initialization then preserves its native presence, including `KEY=`.
+   Managed reads before initialization and after initialization agree on that
+   presence. The exact initialization time is immaterial under these premises.
+4. Once the direct-launch inference above supplies absence in the launch-time
+   managed view, absence transfers back to the initial native view under those
+   premises. It is not an unconditional inference from a child report.
+
+The argument needs native stability through the configuration read, not just
+through cache creation: a later native change could otherwise be invisible in
+the cached child environment while changing a native ICU read. It also concerns
+presence, not equivalence of arbitrary values or a guarantee about malformed
+environment blocks. No cache-initialization timestamp or memory dump becomes
+a mandatory new observation. macOS still has the separate launcher connection
+described above; this cache argument alone does not supply it.
+
+Windows uses a different implementation: enumeration reads the Win32 environment
+block afresh and its managed setter calls the Win32 setter. Constancy of the
+relevant key would similarly relate the launch-time Win32 view to startup, but
+does not by itself establish a CRT/native ICU view. Do not transfer the Unix
+cache explanation to Windows.
+
+### Bounded mutation assessment
+
+The [managed reference inventory](managed-runtime-references.md) identifies
+the package dependencies and selected external references. Its source follow-up
+locates process-level Runner setters for proxy variables and the tracking ID,
+and Azure.Core's AppDomain data write for an event-name registry. None of those
+identified keys is one of the six selectors. The FileCommandManager helper is
+an overlay write, not a process-environment setter, as distinguished above.
+The proxy setter can initialize the Unix cache; that timing alone is not a
+counterexample to the conditional argument.
+
+A bounded textual scan of the pinned runtime's `src/libraries` source
+(`src/libraries`, C# files excluding `tests` and `ref`) for
+`SetEnvironmentVariable(` finds the Environment API/implementation and native
+interop declaration, not an additional ordinary library caller. Scanning
+`AppContext.SetData(` and `AppContext.SetSwitch(` finds AppDomain's forwarding
+operation. These are exact textual searches, not an alias/indirect-call census;
+they supplement, rather than replace, the package metadata inventory. Internal
+CoreLib initialization and native/host configuration require separate analysis:
+for example, AppContext.Setup writes the data store directly without calling
+SetData, so the textual search cannot inventory the host-property initialization
+discussed below.
+
+CoreCLR's CoreLib partials are in a different directory,
+`src/coreclr/System.Private.CoreLib`. Repeating those exact searches there
+finds a real additional caller in
+[ThreadPool.CoreCLR.cs](https://github.com/dotnet/runtime/blob/a83db3e0eb2defb6220e15dae2f1a0462fdbf99f/src/coreclr/System.Private.CoreLib/src/System/Threading/ThreadPool.CoreCLR.cs),
+which calls both AppContext setters using names supplied by an internal call.
+The corresponding
+[comthreadpool.cpp](https://github.com/dotnet/runtime/blob/a83db3e0eb2defb6220e15dae2f1a0462fdbf99f/src/coreclr/vm/comthreadpool.cpp)
+has a finite switch with 19 cases, all supplying fixed names under
+`System.Threading.ThreadPool.`; it does not pass an arbitrary configuration
+name through to AppContext. This caller does not overwrite globalization keys.
+The other textual hit is a GC.CoreCLR.cs documentation example, not a call.
+These source checks still are not a whole-program alias analysis.
+
+Generic native mutation facilities do exist. The pinned
+[diagnostics adapter](https://github.com/dotnet/runtime/blob/a83db3e0eb2defb6220e15dae2f1a0462fdbf99f/src/coreclr/vm/eventing/eventpipe/ds-rt-coreclr.h)
+and [profiler interface](https://github.com/dotnet/runtime/blob/a83db3e0eb2defb6220e15dae2f1a0462fdbf99f/src/coreclr/vm/proftoeeinterfaceimpl.cpp)
+provide setters through `SetEnvironmentVariableW`. Their existence is not
+evidence that either was invoked in these jobs. On Unix, the
+[PAL environment implementation](https://github.com/dotnet/runtime/blob/a83db3e0eb2defb6220e15dae2f1a0462fdbf99f/src/coreclr/pal/src/misc/environ.cpp)
+initializes a separate `palEnvironment` copy. Do not equate a PAL write with
+mutation of System.Native's libc view merely from the function name.
+The globalization shim's `ICU_DATA` setter in
+[pal_icushim.c](https://github.com/dotnet/runtime/blob/a83db3e0eb2defb6220e15dae2f1a0462fdbf99f/src/native/libs/System.Globalization.Native/pal_icushim.c)
+is guarded by `ANDROID_FORCE_ICU_DATA_DIR`, outside the matrix; its Linux
+`CLR_ICU_VERSION_OVERRIDE` path is a native getter, not a setter.
+
+This supports a finite review of ordinary relevant mutation paths; it is not
+a proof that every possible runtime extension is inert. Excluding hostile
+same-job instrumentation uses the existing trust model, whereas ordinary
+startup hooks, host configuration and dependency behaviour must not silently be
+declared absent. No new exhaustive instrumentation-defence gate is introduced.
+
+### AppContext remains a separate startup input
+
+The pinned
+[AppContextConfigHelper](https://github.com/dotnet/runtime/blob/a83db3e0eb2defb6220e15dae2f1a0462fdbf99f/src/libraries/System.Private.CoreLib/src/System/AppContextConfigHelper.cs)
+uses a recognized AppContext boolean switch before its environment fallback.
+[AppContext.TryGetSwitch](https://github.com/dotnet/runtime/blob/a83db3e0eb2defb6220e15dae2f1a0462fdbf99f/src/libraries/System.Private.CoreLib/src/System/AppContext.cs)
+first checks the switch dictionary, then parses a string from its data store.
+`GlobalizationMode` initializes its invariant/predefined settings statically;
+the app-local ICU string uses AppContext before an empty/missing-value
+environment fallback. Consequently, proving the six environment keys absent
+would still not by itself prove the effective startup settings. Windows also
+uses the boolean helper for `UseNls`; its separate ICU-load-failure fallback
+is an outcome, not just a switch value. The full runtime-selection input list
+remains owned by the [feasibility assessment](unicode-feasibility.md#startup-selection-inputs-to-resolve).
+
+There is a concrete host-configuration route to check, not just a hypothetical
+reflection concern. At the same runtime source pin,
+[runtime_config.cpp](https://github.com/dotnet/runtime/blob/a83db3e0eb2defb6220e15dae2f1a0462fdbf99f/src/native/corehost/runtime_config.cpp)
+parses a sidecar `runtimeconfig.dev.json` before the main runtime configuration.
+Both can contribute `configProperties`; the main file overwrites matching keys
+but does not discard unrelated properties from the dev file. Absence of the dev
+file is allowed, and `ensure_parsed` logs a failed dev parse then continues
+to the main file; this is not a claim that all malformed shapes are harmless.
+The
+[muxer](https://github.com/dotnet/runtime/blob/a83db3e0eb2defb6220e15dae2f1a0462fdbf99f/src/native/corehost/fxr/fx_muxer.cpp)
+derives configuration paths from the application or an explicit runtimeconfig
+argument, and
+[host initialization](https://github.com/dotnet/runtime/blob/a83db3e0eb2defb6220e15dae2f1a0462fdbf99f/src/native/corehost/fxr/corehost_init.cpp)
+passes combined properties onward. Its additional-property vector is not
+evidence of arbitrary injected settings: at this pin the muxer's application
+path adds only `HOSTFXR_PATH`, and only for an SDK command. The subsequent
+[hostpolicy property construction](https://github.com/dotnet/runtime/blob/a83db3e0eb2defb6220e15dae2f1a0462fdbf99f/src/native/corehost/hostpolicy/hostpolicy_context.cpp)
+is a separate route still to assess for the actual launch. Host initialization
+also combines properties across framework definitions. Referenced
+frameworks have their own configurations/sidecars; a self-contained app does
+not imply a shared framework configuration. This identifies source routes, not the
+executed live host's identity or proof of a sidecar's presence.
+
+The nine-file Worker observation hashes `Runner.Worker.runtimeconfig.json`, not
+the presence/absence of `Runner.Worker.runtimeconfig.dev.json`. The known main
+file's `PredefinedCulturesOnly=false` therefore is not an inventory of all
+possible AppContext inputs. Nor does the package harness's selected CoreCLR
+8.0.30 identify its launcher hostfxr as 8.0.30: launcher and selected runtime
+are separately recorded. This host-source observation must not be silently
+applied to a different launcher version.
+
+The next bounded task is a source/configuration assessment of the following
+finite property routes, not a requirement for raw-value or memory observation:
+
+- Actual apphost, hostfxr and hostpolicy correspondence, kept separate from
+  the package harness's SDK launcher.
+- App runtimeconfig and its dev sidecar, distinguishing package inventory from
+  the live installation.
+- Framework configurations: justify non-applicability if the actual route is
+  self-contained, rather than assuming it from a project property alone.
+- Host-injected properties and startup-hook inputs, alongside the identified
+  ordinary dependency setters.
+
+In particular, the pinned hostpolicy reads `DOTNET_STARTUP_HOOKS` natively and
+combines it with a `STARTUP_HOOKS` property. That environment input is outside
+the six observed keys: neither their child observation nor the key-specific
+cache argument establishes its absence. Configuration files alone cannot close
+that input; it remains subject to source/configuration justification or the
+stop rule, not an assumed empty setting.
+
+For each route, record source/version correspondence and either the relevant
+observed outcome, a justified configuration inference, non-applicability, or
+the exact remaining gap. The first route to inspect is the fixed Listener's
+Worker launch plus the published package inventory. This change does not
+extend the live collector or authorize a schema change. If bounded source and
+existing evidence cannot resolve a required input, apply the existing stop
+rule and report the specific gap/options; do not silently add collector fields.
+Another string corpus cannot resolve these inputs. No raw environment dump or
+automatic vendor-data expansion follows.
+Until those premises and the native/locale route are resolved, check 3 remains
+partial, check 4 remains open, and all eight culture verdicts remain unverified.
 
 ## Reproducing run 37190267207
 

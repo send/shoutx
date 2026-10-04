@@ -181,7 +181,11 @@ name. No actual store directory, serviceable replacement or relevant resolved
 asset is observed by this note. Their applicability/effect on the required
 assets remains a check-3/4 loader gap, not a claimed changed binary or a new
 requirement to collect raw paths. An identified resolved asset could make an
-unused lookup input irrelevant.
+unused lookup input irrelevant. The later
+[selected-deps inspection](reference-worker-correspondence.md#selected-deps-assets-and-servicing)
+bounds servicing/store selection for the five identified non-serviceable
+libraries and the native-directory contribution. It does not resolve every
+managed load, native dependency or effective ICU identity.
 
 At this exact Unix source pin, the fallback is relative `opt/coreservicing`,
 not `/opt/coreservicing`: with the normal launch cwd it is beneath bin.

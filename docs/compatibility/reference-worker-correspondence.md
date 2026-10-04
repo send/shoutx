@@ -212,6 +212,138 @@ bind the resolved globalization library/data. Resolved-asset evidence and the
 remaining normal startup/cache/native arguments are still required; no
 deployment-absence audit is added by this lemma.
 
+## Selected deps assets and servicing
+
+On 2026-10-05, the three local `Runner.Worker.deps.json` files were matched by
+SHA-256 to both `worker.onDiskSha256` and `manifestWorkerFiles` in the
+[retained identity projection](evidence/environment-transport-37193467498.json).
+Both Ubuntu rows use the same Linux file. This is a new inspection of those
+identified files, not a new hosted run or an observation of loaded bytes.
+
+Only `targets[runtimeTarget.name]` was inspected, not the union of the portable
+and RID targets. All three name `.NETCoreApp,Version=v8.0/<rid>`.
+
+| RID | Libraries | Selected runtime assets | Selected native assets | Non-serviceable libraries |
+| --- | ---: | ---: | ---: | ---: |
+| linux-x64 | 152 | 209 | 14 | 5 |
+| osx-arm64 | 152 | 209 | 14 | 5 |
+| win-x64 | 151 | 210 | 14 | 5 |
+
+The five libraries are `Runner.Worker/2.337.0`, `Runner.Common/1.0.0`,
+`Runner.Sdk/1.0.0`, `Sdk/1.0.0`, and
+`runtimepack.Microsoft.NETCore.App.Runtime.<rid>/8.0.30`. The runtimepack has
+162 runtime and all 14 native assets; each of the other four has one runtime
+asset and no native assets. Other libraries are serviceable: this observation
+does not exempt every dependency from servicing. Within each asset type there
+are no duplicate selected asset names, including after ASCII case folding and
+the host's `.ni` name adjustment. The probe entry `Probe` is not among them.
+
+At the fixed .NET commit, the following source chain gives this data meaning:
+
+1. [`deps_format.cpp`](https://github.com/dotnet/runtime/blob/a83db3e0eb2defb6220e15dae2f1a0462fdbf99f/src/native/corehost/hostpolicy/deps_format.cpp#L104-L181)
+   copies the library's `serviceable` boolean to each asset entry.
+   `load_self_contained` uses `process_targets` on the selected target and
+   sets `is_rid_specific=false`; a RID in the target name does not change this
+   to RID-subdirectory probing.
+2. [`deps_resolver.cpp`](https://github.com/dotnet/runtime/blob/a83db3e0eb2defb6220e15dae2f1a0462fdbf99f/src/native/corehost/hostpolicy/deps_resolver.cpp#L210-L374)
+   orders servicing before published-directory probes and shared/additional
+   lookup stores after them. Each servicing probe is skipped for a
+   non-serviceable entry. The app probe uses `to_dir_path` for these entries
+   and returns immediately on success.
+3. [`deps_entry.cpp`](https://github.com/dotnet/runtime/blob/a83db3e0eb2defb6220e15dae2f1a0462fdbf99f/src/native/corehost/hostpolicy/deps_entry.cpp#L19-L173)
+   constructs the published basename path for runtime/native entries.
+   When file-existence checking is enabled it requires that path to exist;
+   otherwise it accepts the constructed path. Every runtime/native basename
+   of the five libraries exists in the inspected local package-bin copies.
+   That presence check is not a hash check of those assets. Under the identified
+   non-bundle package layout, it covers both existence-check branches, so later
+   stores do not win these individual lookups.
+4. [`resolve_additional_deps`](https://github.com/dotnet/runtime/blob/a83db3e0eb2defb6220e15dae2f1a0462fdbf99f/src/native/corehost/hostpolicy/deps_resolver.cpp#L610-L627)
+   returns immediately for self-contained applications. Framework deps are
+   also not appended on this route. These are source properties, not presumed
+   observations that deployment-added files were absent.
+
+The [TPA resolver](https://github.com/dotnet/runtime/blob/a83db3e0eb2defb6220e15dae2f1a0462fdbf99f/src/native/corehost/hostpolicy/deps_resolver.cpp#L416-L590)
+still inserts the entry assembly first and has duplicate/version replacement
+rules. Normal Worker and Probe therefore do not have identical TPA lists.
+The selected-target non-duplication check removes a competing manifest entry
+for the named assets; it does not characterize every managed load or cache.
+
+The [native-directory resolver](https://github.com/dotnet/runtime/blob/a83db3e0eb2defb6220e15dae2f1a0462fdbf99f/src/native/corehost/hostpolicy/deps_resolver.cpp#L745-L919)
+projects resolved native paths to parent directories and deduplicates them.
+Because all selected native entries belong to that non-serviceable runtimepack,
+the entries contribute the single published-bin directory role on both paths.
+This bounds the cwd-sensitive servicing/store difference for these entries;
+it does **not** establish OS-loader dependency resolution, active ICU identity,
+source/binary correspondence, or complete normal-path equivalence. Those
+remain R1/R2 obligations, not new deployment-absence gates.
+
+### Reproduce the deps inspection
+
+Use the extracted `bin` directories from the three pinned official Runner
+packages, in Linux/macOS/Windows order. This recipe reads files only; it does
+not execute acquired binaries or print vendor asset tables. Do not run Python
+with `-O`, which removes its assertions. It verifies deps identity against
+both retained fields before inspecting the selected target. Local asset
+presence remains separate from the deps hash and from loaded-file identity.
+
+```sh
+python3 - /path/linux/bin /path/macos/bin /path/windows/bin <<'PY'
+import collections
+import hashlib
+import json
+from pathlib import Path, PurePosixPath
+import sys
+
+assert len(sys.argv) == 4
+owner = json.loads(Path(
+    'docs/compatibility/evidence/environment-transport-37193467498.json'
+).read_text())
+specs = [('linux-x64', 152, 209), ('osx-arm64', 152, 209),
+         ('win-x64', 151, 210)]
+for directory, (rid, library_count, runtime_count) in zip(sys.argv[1:], specs):
+    base = Path(directory)
+    raw = (base / 'Runner.Worker.deps.json').read_bytes()
+    digest = hashlib.sha256(raw).hexdigest()
+    rows = [row for row in owner['rows'] if row['rid'] == rid]
+    assert len(rows) == (2 if rid == 'linux-x64' else 1)
+    for row in rows:
+        assert row['worker']['onDiskSha256']['Runner.Worker.deps.json'] == digest
+        assert row['manifestWorkerFiles']['Runner.Worker.deps.json'] == digest
+    deps = json.loads(raw)
+    assert deps['runtimeTarget']['name'] == '.NETCoreApp,Version=v8.0/' + rid
+    target = deps['targets'][deps['runtimeTarget']['name']]
+    libs = deps['libraries']
+    assert len(libs) == library_count and set(target) <= set(libs)
+    pack = 'runtimepack.Microsoft.NETCore.App.Runtime.' + rid + '/8.0.30'
+    nonserviceable = {name for name, lib in libs.items()
+                      if lib['serviceable'] is False}
+    assert nonserviceable == {pack, 'Runner.Worker/2.337.0',
+        'Runner.Common/1.0.0', 'Runner.Sdk/1.0.0', 'Sdk/1.0.0'}
+    for name in nonserviceable:
+        assets = target[name]
+        assert len(assets.get('runtime', {})) == (162 if name == pack else 1)
+        assert len(assets.get('native', {})) == (14 if name == pack else 0)
+        for kind in ('runtime', 'native'):
+            for asset in assets.get(kind, {}):
+                assert (base / PurePosixPath(asset).name).is_file()
+    for kind, count in [('runtime', runtime_count), ('native', 14)]:
+        names = collections.Counter()
+        for library, assets in target.items():
+            for asset in assets.get(kind, {}):
+                assert asset.isascii() and '\\' not in asset
+                name = PurePosixPath(asset).stem
+                if name.endswith('.ni'):
+                    name = name[:-3]
+                names[name.lower()] += 1
+                if kind == 'native':
+                    assert library == pack
+        assert sum(names.values()) == count
+        assert max(names.values()) == 1 and 'probe' not in names
+    print(rid, digest, 'PASS: counts, names, ownership and local presence')
+PY
+```
+
 ## Command-path correspondence and what is still open
 
 [`WorkerProbe`](https://github.com/send/shoutx/blob/9aa3887c9e5efbfa811198c8f46981e366a0640b/tests/runner-package/WorkerProbe.cs) invokes the package
@@ -225,7 +357,7 @@ not a measurement of arbitrary preceding workflow state.
 | Difference | Evidence established here / already retained | Required continuation |
 | --- | --- | --- |
 | SDK muxer/hostfxr versus package apphost | Distinct versions and host modes explicitly identified; probe reports the 8.0.30 hostpolicy banner before its initialization bag, and normal package route is source-assessed | Bind hostpolicy path/bytes and relevant resolved assets/settings on normal reference route; do not substitute the SDK launcher source for the package launcher |
-| Probe.dll entry and temporary cwd | [Application-base correspondence](#application-base-versus-process-working-directory) identifies the package-bin base despite distinct cwd; relevant runtime/managed identities are checked by the harness | Resolve remaining cwd-sensitive asset lookup (including servicing), different entry/TPA inputs and normal Worker startup before claiming full path equivalence |
+| Probe.dll entry and temporary cwd | [Application-base correspondence](#application-base-versus-process-working-directory) identifies the package-bin base; [selected deps](#selected-deps-assets-and-servicing) bound servicing/store selection for named assets and the native-directory contribution | Resolve other managed/native loads, different entry/TPA inputs and normal Worker startup before claiming full path equivalence |
 | Explicit culture / initialized caches | Per-culture CompareInfo/backend and Worker expectations are checked | Bind normal reference comparison/cache/settings path; live culture propagation remains an applicability condition |
 | Service doubles / limited extension list / initial state | Actual target processing/effects are exercised with finite controls | The universal framing argument must establish the intended command before dispatch; a reduced extension list cannot rule out every fallback interpretation by itself |
 | Native data/search/break path | Probe observations and acquired-file inventories exist separately | Finish effective selection, source/data correspondence and arbitrary-suffix composition (R1/R3/R4) |

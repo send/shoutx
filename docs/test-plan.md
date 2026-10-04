@@ -1316,6 +1316,19 @@ check. Retain bounded metadata only; compare official-update identities
 separately from proving the reference's effective data binding.
 Prefix-comparison availability is not part of the data-candidate gate.
 
+For the selected package inventory, additionally run
+`python -B tests/runner-package/test_icu_package_inventory.py` in both CI
+locations. Cover header/TOC/name/offset bounds, sorted unique names, unselected
+entry bounds, selected member headers, storage-padding hashes, exact input cap,
+the final-entry unknown-length case, and zero/partial/full prefix counts with
+the slash boundary. Candidate integration tests must prove
+that size or digest mismatch prevents parsing, hashing and parsing share one
+read buffer, and malformed matched data yields a closed reason without a
+partial inventory. Only fixed selected metadata may leave the job. These
+synthetic tests establish collector behavior, not vendor resource semantics;
+native observations belong in the reference inventory and do not close its
+effective-data obligations.
+
 #### Hosted Worker module-metadata feasibility observation
 
 `tests/runner-package/hosted_modules.py` separately follows its own ancestor

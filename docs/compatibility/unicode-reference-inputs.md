@@ -395,8 +395,64 @@ The dated KB5122871 CSV above lists a 31,158,064-byte `icudtl.dat` with SHA-256
 `8b1eb674fd6493f2009a8305b0ab0ed083754e9d0590d12d1cae4cf95f6268e9`
 in both the x64 and arm64 Windows Server 2025 LCU sections. This supports a
 concrete official-update comparison and the selected size cap, not an assertion
-that the file is already bound to the reference's effective data. The next
-hosted data-candidate observation is pending.
+that the file is already bound to the reference's effective data.
+
+#### Data candidate observation and bounded package inspection
+
+[Run 37225475724](https://github.com/send/shoutx/actions/runs/37225475724),
+attempt 1, job 111504118991, succeeded on the fixed
+`win25-vs2026 / 20260925.250.1` image. Its source head was
+`d6f9e7c2339bbb29af18719fd6712a02107e5fd1`, tested merge
+`2e3b23448626218d503d9719698f528833461eb3` (API-verified parents
+`e48b26ef13861e54bbbf8df869a79bf4643155c0` and that head).
+The downloaded JSON's raw SHA-256 is
+`5b4acd47e35897aa5984369cc7414628e37dc8bac98121d8d20741c0755a03a6`.
+It reports the exact reference DLL hash and the same prefix comparison above,
+plus a data candidate of **31,158,064 bytes** with the KB5122871 hash above.
+This closes the pending candidate observation, not effective-data binding.
+No vendor file was downloaded from the job.
+
+The next research collector retains the bounded file buffer after hashing and
+inspects it only if both that observed size and SHA-256 match. It does not
+reopen the file between hashing and parsing. This prevents mixing two reads,
+but does not make the original read an atomic filesystem snapshot. A mismatch
+retains candidate metadata and reports `candidate-hash-mismatch`; an unsupported
+layout reports a closed reason without partial inventory or exception text.
+No names under the assumed prefix yields `prefix-mismatch`, not seven absent
+members. A successful inventory includes the bounded `prefixNameCount`.
+If it is less than `entryCount`, absent selected names can also reflect members
+under a different prefix; the count alone does not resolve that ambiguity.
+
+`icu_package_inventory.py` implements a bounded little-endian `CmnD` format-1
+offset-TOC inspection, interpreting offsets using upstream ICU 72.1
+[`offsetTOCLookupFn`](https://github.com/unicode-org/icu/blob/release-72-1/icu4c/source/common/ucmndata.cpp).
+This is a format interpretation, not a claim that upstream source is identical
+to Microsoft's binary. Names must be bounded printable ASCII (0x20–0x7E), strictly ordered and
+unique; all declared offsets are checked for bounds and data-offset order,
+including unselected entries. Exact four-byte format version and strictly
+increasing offsets are collector constraints, not claims about ICU's full
+accepted format range. Name storage may overlap; it is not fully validated.
+The count is capped at 100,000, name storage at 1,024 bytes per name, and input
+at 64 MiB. Only these seven fixed suffixes are projected:
+`coll/en.res`, `coll/root.res`, `coll/ucadata.icu`, `nfc.nrm`, `nfkc.nrm`,
+`brkitr/root.res`, and `brkitr/char.brk`. No full name table, member payload bytes or
+mapping table is returned. Windows inspection assumes `icudt72l`, pending
+the hosted structure observation; the helper
+also permits the other three fixed research generations for local inspection.
+
+Selected non-final entries report offset from the start of the supplied package
+(the file offset for Windows), storage size,
+SHA-256 and header format/version fields. Storage includes the member header
+and padding through the next data offset. The final entry has no such length
+in this format: if selected, it reports `last-entry-length-unknown` without a
+size or digest. Its member header is not validated: EOF bounds the bytes but
+does not supply a next-entry length to the native lookup. An absent exact name
+is not proof that ICU lacks those data;
+normalization, for example, may be compiled into the native library.
+Unselected member payloads are not validated. This is neither a complete ICU
+validator nor a collator/mapping decoder. Header or storage-hash agreement
+does not establish semantics, fallback selection, or native acceptance.
+The Windows structure observation is pending; R2/R3 remain open.
 
 ### macOS
 

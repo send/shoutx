@@ -1020,6 +1020,17 @@ An incomplete report uses `structuralGraphAcyclic: null`, even when completed
 subgraphs have ranks. Root-only scope and false consumer/acceptance flags must
 be preserved.
 
+Offset tags additionally require the sufficient nonnegative arithmetic profile
+described in the [offset follow-up](compatibility/unicode-root-generation-evidence.md#offset-arithmetic-follow-up).
+Tests cover both compression radices, carry transitions, the signed-shift
+boundary, lead overflow, negative intermediate/lower-word rejection, scalar
+and width guards, zero step, cached-node counts, empty-set aggregation, and
+failure preventing both node caching and complete-walk evidence. Complete-walk
+tests assert both zero-node and nonzero-node aggregate results, including
+the false native-profile flag; see the linked follow-up for field semantics.
+These tests are
+synthetic checks of the sufficient predicate, not native equivalence tests.
+
 Limits are 2,000,000 started graph nodes, 4,000,000 examined edges and 128 active
 nodes, in addition to the shared decoder's input/context limits. A cycle must
 not be confused with a cached shared child; cache only complete subgraphs.

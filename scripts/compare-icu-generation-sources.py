@@ -93,11 +93,31 @@ DEPENDENCY_PAIRS = {
     'ucharstrie.cpp': [
         ('UBool isFinal=(UBool)(node>>15);', 'UBool isFinal = static_cast<UBool>(node >> 15);'),
     ],
+    'collation.cpp': [
+        (f'({t})({x})', f'static_cast<{t}>({x})') for t, x in [
+            ('int32_t', 'basePrimary >> 8'), ('int32_t', 'basePrimary >> 16'),
+            ('uint32_t', '(offset % 254) + 2'), ('uint32_t', '(offset % 251) + 4'),
+            ('uint32_t', 'offset << 24'), ('uint32_t', 'dataCE >> 32'),
+        ]
+    ] + [('(int32_t)dataCE;  //', 'static_cast<int32_t>(dataCE); //'),
+         ('static_cast<uint32_t>(dataCE >> 32);  //',
+          'static_cast<uint32_t>(dataCE >> 32); //')],
 }
 
 
 def select_dependency(name, source):
     """Explicit text slices, not C++ parsing; raw hashes always cover full files."""
+    if name == 'collation.cpp':
+        markers = ('uint32_t\nCollation::incThreeBytePrimaryByOffset(',
+                   'uint32_t\nCollation::decTwoBytePrimaryByOneStep(',
+                   'uint32_t\nCollation::getThreeBytePrimaryForOffsetData(',
+                   'U_NAMESPACE_END')
+        if any(source.count(marker) != 1 for marker in markers):
+            raise ValueError('missing or ambiguous collation helper boundaries')
+        a, b, c, d = (source.index(marker) for marker in markers)
+        if not a < b < c < d:
+            raise ValueError('reversed collation helper boundaries')
+        return source[a:b] + source[c:d]
     if name == 'utrie2.h':
         marker = '#ifdef __cplusplus'
         tail = '/* Internal definitions ----------------------------------------------------- */'
@@ -151,7 +171,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('folder', type=Path)
     parser.add_argument('--dependencies', action='store_true',
-                        help='compare decoder dependencies; utrie2.h/.cpp use explicit slices')
+                        help='compare decoder dependencies; utrie2.h/.cpp and collation.cpp use explicit slices')
     args = parser.parse_args()
     try:
         compare(args.folder, args.dependencies)

@@ -95,10 +95,10 @@ of the flag difference rests separately on inspection of the source diff.
 
 ### Decoder dependency comparison
 
-The separate `--dependencies` mode extends the comparison to eight dependencies
+The separate `--dependencies` mode extends the comparison to nine dependencies
 at the same five fixed commits. It does not change the original six-file
-report above. Acquire `collationdatareader.cpp`, `collationdatareader.h`, and
-`collationdata.h` from `icu4c/source/i18n/`; acquire `utrie2_impl.h`,
+report above. Acquire `collationdatareader.cpp`, `collationdatareader.h`,
+`collationdata.h`, and `collation.cpp` from `icu4c/source/i18n/`; acquire `utrie2_impl.h`,
 `utrie2.h`, `utrie2.cpp`, `ucharstrieiterator.cpp`, and `ucharstrie.cpp` from
 `icu4c/source/common/`. Use the same filename/version convention, then run:
 
@@ -107,7 +107,7 @@ python3 -B scripts/compare-icu-generation-sources.py --dependencies SOURCE_DIREC
 ```
 
 Compare the complete output with the [decoder hashes](evidence/icu-decoder-source-hashes.txt).
-All eight comparisons report equality across five versions. The raw hash
+All nine comparisons report equality across five versions. The raw hash
 always identifies the **complete file**, but the compared scope differs:
 
 | Dependency | Compared scope |
@@ -118,6 +118,7 @@ always identifies the **complete file**, but the compared scope differs:
 | `utrie2.cpp` | From the `U_CAPI UTrie2 * U_EXPORT2` declaration of `utrie2_openFromSerialized` up to, excluding, the corresponding `utrie2_openDummy` declaration |
 | `ucharstrieiterator.cpp` | Complete file |
 | `ucharstrie.cpp` | Complete file |
+| `collation.cpp` | Two concatenated slices: the `uint32_t` declaration of `incThreeBytePrimaryByOffset` up to, excluding, the declaration of `decTwoBytePrimaryByOneStep`; then the declaration of `getThreeBytePrimaryForOffsetData` up to, excluding, `U_NAMESPACE_END` (including `unassignedPrimaryFromCodePoint`) |
 
 Besides the disclosed word substitutions, exact replacements cover the data
 reader's `int32_t{settings->getMaxVariable()}` spelling and deleted private
@@ -133,6 +134,18 @@ For `ucharstrie.cpp`, the complete 70.1-to-78.1 raw diff contains only the
 disclosed word changes and two occurrences of the same `UBool` cast/spacing
 replacement; these substitutions give whole-file equality for all five
 versions. No matcher function or new flag is excised.
+For the selected `collation.cpp` helpers, the additional substitutions are
+the explicitly listed integer casts and the two comment-spacing changes in
+`getThreeBytePrimaryForOffsetData`. No arithmetic operator, constant or
+branch is removed. Outside these slices, the complete 70.1-to-78.1 diff also
+removes four out-of-line static-constant definitions guarded by `_MSC_VER`
+and changes casts in the other increment/decrement helpers. Those definitions
+and helpers are not covered by this selected-source equality claim.
+The lower-word comment-spacing change is fused with its cast replacement;
+the upper-word spacing replacement runs after its cast replacement.
+Inspection of all adjacent-version diffs places the removed definitions at
+70.1→72.1 and the cast/spacing changes at 74.2→76.1; the other adjacent pairs
+are byte-identical for this file.
 The selector checks its literal boundaries, not C++ syntax. The raw hashes and
 raw-diff inspection are therefore essential: equality of a selected section
 does not assert equality of the excluded source or all its dependencies.
@@ -162,7 +175,7 @@ enumeration stability alone does not prove that relationship.
 
 ## Exploratory recovered-payload graph walk
 
-The unchanged 78.1 research graph reader was applied locally to the recovered
+The then-unchanged 78.1 research graph reader was initially applied locally to the recovered
 70.1, 74.2 and 76.1 `coll/ucadata.icu` root-collation payloads. Both full-file and selected-member hashes
 were checked first; the 32-byte little-endian UCol-v5 header was checked and
 removed before decoding. The Windows `coll/ucadata.icu` member is byte-identical to the
@@ -245,6 +258,91 @@ PY
 Do not run Python with assertions disabled. This is an offline research
 recipe, not a product input validator. It preserves the reader's original
 scope/false proof flags, and exit 0 establishes only a complete modeled walk.
+
+### Offset arithmetic follow-up
+
+The original structural walk checked an offset tag's scalar and CE-array
+index, but not the arithmetic performed before emission. The updated reader
+adds that missing local condition; this is not merely another acyclicity run.
+The native chain is
+[`getCEFromOffsetCE32`](https://github.com/unicode-org/icu/blob/049e0d6a420629ac7db77256987d083a563287b5/icu4c/source/i18n/collationdata.h#L111-L114),
+[`getThreeBytePrimaryForOffsetData`](https://github.com/unicode-org/icu/blob/049e0d6a420629ac7db77256987d083a563287b5/icu4c/source/i18n/collation.cpp#L115-L121),
+and [`incThreeBytePrimaryByOffset`](https://github.com/unicode-org/icu/blob/049e0d6a420629ac7db77256987d083a563287b5/icu4c/source/i18n/collation.cpp#L41-L62).
+The source comparison above covers the latter two complete functions across
+all five pinned generations. The additional implicit-primary function in the
+second slice is compared, but is not an offset node or part of this data check.
+The wrapper is covered by the whole-file `collationdata.h` comparison.
+Special/tag and index extraction use the separately qualified `collation.h`
+evidence above, specifically [the tag helpers](https://github.com/unicode-org/icu/blob/049e0d6a420629ac7db77256987d083a563287b5/icu4c/source/i18n/collation.h#L339-L345)
+and [index helper](https://github.com/unicode-org/icu/blob/049e0d6a420629ac7db77256987d083a563287b5/icu4c/source/i18n/collation.h#L404-L406).
+The later [makeCE helper](https://github.com/unicode-org/icu/blob/049e0d6a420629ac7db77256987d083a563287b5/icu4c/source/i18n/collation.h#L449-L451)
+is outside the arithmetic predicate. Completeness of the selected functions
+was manually checked in all five source files, not inferred from marker checks.
+
+`offset_arithmetic` checks a **sufficient**, deliberately conservative profile.
+Let `p` be the upper 32 bits of the stored CE bit pattern and `l` its lower
+32 bits. It requires a non-NUL scalar `c`, a 64-bit data value, `l <= INT32_MAX`,
+and `b = l >> 8 <= c`. It computes `s = l & 127` and `d = (c-b)*s`, then
+`t = d + ((p >> 8) & 255) - 2`. Both `d` and `t` must be nonnegative and at
+most `INT32_MAX`. With `(r,m) = (251,4)` when bit 7 of `l` is set, otherwise
+`(254,2)`, it checks `u = t/254 + ((p >> 16) & 255) - m` in the same range.
+Only after each nonnegative check is division performed, so Python floor
+division agrees with C++ truncation for the checked operands. Finally,
+`k = u/r` must be at most 127, and `(p >> 24) + k` at most 255.
+
+Under the stored-bit-pattern interpretation, these conditions keep the signed
+subtraction, multiplication, additions and `k << 24` representable. The third
+and second result bytes use nonnegative remainders plus 2 or 4; their unsigned
+shifts fit 32 bits, and the final lead addition does not wrap. This avoids
+relying on negative division or signed-shift edge cases in the 32-bit offset
+computation. It is not a generic
+emulator of all legal native data; failure means unverified, not proof of a
+consumer bug. In particular, native conversion from `int64_t dataCE` to
+`int32_t`, signed upper-word extraction, ABI/compiler semantics, and the
+following `makeCE` bit construction still require implementation binding.
+The model reads stored CEs as unsigned 64-bit bit patterns. Narrowing from
+the wider CE and signed upper-word extraction are exercised by the measured
+data, including base primary leads above 127; they are not hypothetical gaps.
+Textual equality does not establish that binding. Here “offset” denotes the
+algorithmic primary-weight increment, not the iterator's UTF-16 input offsets.
+
+The run on 2026-10-05 used graph-script SHA-256
+`39d79727011c7314daee59b2d85c148c956a26866089a16fd4bfb863f56f8c89`
+with the unchanged mapping dependency from commit
+`49c5ef9a6fea5d19eb7c4c408d547f927925bc09`. A subsequent graph docstring edit
+only clarified “offsets” as UTF-16 input offsets; reconstruct the executed
+file by replacing its single module-docstring line
+`No tailoring/base objects, consumer attestation, UTF-16 input-offset proof or acceptance table.`
+with `No tailoring/base objects, consumer attestation, offsets or acceptance table.`
+No executable statement changed. The following table and common ranges are the retained bounded
+evidence projection, rather than a separate raw-data or mapping artifact.
+
+Re-running the same hash-gated recipe above with that reader completed all
+three full scalar graphs, retaining every root/node/edge count above:
+
+| Payload | Checked offset nodes | Distinct CE-array indices | Base range |
+| --- | ---: | ---: | --- |
+| 70.1 | 54255 | 1100 | 2010–201178 |
+| 74.2; identical Windows member | 54594 | 1119 | 2010–204699 |
+| 76.1 | 59374 | 1125 | 2010–204699 |
+
+On each input, the remaining observed ranges were: step 2–14, delta 0–12270,
+third intermediate 0–12272, second intermediate 0–254, carry 0–1, and result
+lead 12–253. Every checked node met the sufficient conditions. These are
+min/max aggregates, not a mapping table, and do not claim that every value
+between the endpoints occurs. Counts are distinct completed `(CE32, scalar)`
+nodes, not dynamic calls or unique characters; shared visits are cached.
+
+`offsetArithmeticEvidence` is emitted only after a complete graph walk, with
+`sufficientArithmeticConditionsMet: true` and `nativeProfileProven: false`.
+An arithmetic failure prevents caching that node and leaves the overall walk
+incomplete with this evidence field null. Zero reachable offset nodes would
+produce zero counts and empty ranges, a vacuous result rather than sampled
+coverage. Compare all counts/ranges with the table and common ranges here;
+exit 0 alone does not authenticate those observations. The graph's existing
+false profile/consumer/acceptance flags remain unchanged. This closes a
+data-dependent arithmetic premise of the local model, not native dispatch,
+effective-root selection, or arbitrary-suffix composition.
 
 ## Root layout and scalar lookup correspondence
 

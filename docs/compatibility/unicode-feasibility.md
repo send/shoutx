@@ -435,6 +435,10 @@ identity component; loader/source correspondence, dependency behaviour,
 startup selection and native/locale route remain incomplete. The next bounded
 package-side check is a direct-member-reference scan of the assemblies resolved
 by the observed `deps.json`; no such scan is claimed in this retained run.
+A subsequent [offline inventory](managed-runtime-references.md) records those
+selected references and manifest matches for all three package RIDs.
+It narrows dependency inspection without discharging the live configuration,
+execution-context or native-selection obligations.
 
 #### Startup-selection inputs to resolve
 

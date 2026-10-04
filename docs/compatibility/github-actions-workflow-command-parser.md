@@ -623,8 +623,10 @@ the high offset observed by search is the position after this entire process,
 not necessarily the position when the first CE was appended.
 
 The induction below uses shared buffer state rather than a per-call count.
-It is a **conditional partial-correctness argument**: it bounds the return
-position of a finite, successful execution. It does not establish termination
+Its invariants are safety properties at accounting points of every finite
+execution prefix satisfying the premises, including prefixes of a potentially
+nonterminating run. If the raw-element call returns successfully, they imply
+the stated return-position bound. This alone does not establish termination
 or successful completion for every permitted suffix, and therefore does not
 complete the positive leading-mapping criterion.
 
@@ -747,20 +749,184 @@ Having no outstanding per-phase rewind does not imply `b = 0`: physical reads
 retained by an earlier match can leave a positive shared beyond-buffer count
 across dispatches. The epoch invariant explicitly permits this state.
 
-Starting at `p`, these facts support induction over the accounting transitions
-of any finite successful execution, without choosing a maximum nesting depth:
+Starting at `p`, these facts support induction over each finite prefix of
+accounting transitions, without assuming the complete call returns or choosing
+a maximum nesting depth:
 non-empty epochs preserve their anchors, replacement does not decrease them,
 and empty-buffer matching returns at or after its entry position. Balanced
-lookbehind is the only permitted temporary excursion below an anchor. On
-return from the complete raw-element call, the physical cursor is therefore
+lookbehind is the only permitted temporary excursion below an anchor. The
+matching-phase facts depend on local read counts and finite input, not on
+completion of the enclosing dispatch or drain. Thus they can also be used
+in a termination induction. If the complete raw-element call returns, its
+physical cursor is therefore
 at or after `p`, **under the stated dispatch and entry premises**.
 
-This does not prove that every suffix yields such a finite successful
-execution. A termination argument must cover restarting virtual iteration,
-newly skipped physical marks, and recursive mapping dispatch; finite input
-alone is not a decreasing measure for the whole algorithm. Nor has this draft
-verified the dispatch premises for all mappings in every loaded consumer.
-Those are remaining obligations, not consequences of the cursor invariant.
+This cursor argument alone does not prove that every suffix yields a finite
+successful execution. The conditional termination argument below adds separate
+data-graph premises; neither argument has verified those premises for every
+loaded consumer. Finite input alone is not a decreasing measure for the whole
+algorithm.
+
+#### Termination measure and mapping-graph premise (research draft)
+
+This is a proposed sufficient condition for termination of the same upstream
+78.1 forward path. It imports all the preceding entry, valid-dispatch and
+successful-operation assumptions. It is not a proof of success despite
+allocation failure or native stack exhaustion, an execution-time bound, or a
+claim that the current root inventory establishes termination. The relevant
+implementation is still
+[`CollationIterator`](https://github.com/unicode-org/icu/blob/release-78.1/icu4c/source/i18n/collationiterator.cpp);
+the finite-input and buffer arguments below do not apply to an uninspected
+override or normalization iterator.
+
+At dispatch and completed matching-phase boundaries after `p` is established,
+define `N` as the sum of:
+
+- source scalars still unread at the physical cursor; and
+- virtual scalars in `oldBuffer` after its current reading position, or zero
+  when that position is at or beyond the buffer end.
+
+The scalar currently being dispatched is already consumed and is not counted
+in `N`. Neither are already-read virtual prefixes or speculative `newBuffer`
+copies. In particular, a positive beyond-buffer count does not add another
+copy of already-consumed physical characters. Count scalars, not UTF-16 units.
+
+For one matching phase, let `k` be the number of logical suffix scalars retained
+after its final unmatched-lookahead rewind. Reads are from the unread virtual
+buffer followed by physical text; the count discipline described above makes
+`k >= 0`. A contiguous match leaves the remaining count at `N - k`. A
+discontiguous replacement reinserts `s` skipped scalars, where `s` is the
+scalar length of the prefix selected by `skipLengthAtMatch`. These are a subset
+of the `k` retained scalars, not new input. The resulting remaining count is
+`N - k + s <= N`.
+
+The subset property follows from the matching loop, not merely the allocation
+size of `newBuffer`: `setFirstSkipped` and `skip` record traversed mismatches;
+`recordMatch` freezes only the skipped prefix preceding a successful match.
+The final rewind removes reads after that match. If no discontiguous match was
+recorded, `skipLengthAtMatch` stays zero, even if speculative marks were copied.
+Replacement discards the consumed old-buffer prefix and retains only its
+unread tail plus that selected skipped prefix. Already-drained marks before
+this matching phase are not resurrected. When a non-empty skipped prefix is
+inserted, at least one additional matched scalar is omitted from it, so
+`s < k`. Moving skipped physical characters into virtual storage can increase
+the buffer length, but not this combined count.
+
+This accounting is at phase boundaries. Speculative reads followed by rewind,
+or prefix lookbehind followed by restoration, need not monotonically decrease
+`N` instruction by instruction. Each individual matching loop nevertheless
+finishes for finite input: it reads new logical scalars without dispatch or
+buffer replacement during the loop. Its contiguous rewind/refetch transfers
+to the discontiguous helper or exits; it does not restart that loop indefinitely.
+The bounded replay and prefix scan also have finite input to traverse.
+
+One further premise is necessary for this proposed proof. Form a finite
+**structural dispatch graph** with nodes keyed by the data object, CE32 and
+exact scalar argument (or `U_SENTINEL`). Define roots independently of execution:
+use mappings for every non-NUL Unicode scalar from the original iterator data,
+with the same base resolution as `getDataCE32` and the drain loop. This is a
+conservative superset of permitted leading and skipped scalars, not a proposed
+CLI allow-list. It avoids defining roots as characters observed in terminating
+runs. Narrower roots or scalar-class quotients require separate justification.
+The initial supplementary lead-unit path before `p` must also be validated as
+described above; these roots describe full-scalar dispatch after that step.
+For each initial scalar, verify that the actual initial dispatch reaches its
+corresponding graph root, or add the distinct resulting node as another root.
+This includes lead-unit shortcuts that select base data directly and the
+implicit-unassigned shortcut. Reject non-canonical fallback-tag encodings:
+`nextCE()` tests the low byte, while the drain's base-resolution test compares
+the complete value with `FALLBACK_CE32`. Agreement cannot be inferred merely
+from the scalar being well-formed.
+
+Starting with a finite, identified collection of data objects, compute static
+successor closure using bounds-checked arrays and context tries. The scalar
+domain plus sentinel is finite; decoded CE32 values and data objects are
+finite. Use a visited set so constructing the graph does not itself require
+runtime termination. Include both caller-scalar and sentinel interpretations
+of contraction results where the forward paths can use them; enumerate
+defaults and all trie values rather than following a sampled suffix.
+
+Add edges
+for every possible mapping selection without fetching a new scalar for a drain
+iteration: prefix/default/context results, contraction results including the
+first selected mapping appended by a top-level discontiguous match, non-numeric
+digit indirection, valid base resolution, and each recursive Jamo child. Include
+all permitted alternatives even when the matching phase may consume input.
+Direct CE conversions and finite expansion arrays are terminal work, not
+arbitrary recursive CE32 dispatch.
+
+Every tag/scalar pair outside the permitted model fails verification; omission
+from an edge list must never mean terminal work. Audit every loop-continuing
+switch case as either an edge or an explicit rejection:
+
+- `U0000_TAG` is rejected in this non-NUL/sentinel model, not treated as a leaf.
+  A broader model would have to include its `ce32s[0]` successor and validate
+  the scalar precondition.
+- Lead-surrogate resolution, including its base switch, belongs to the
+  separately validated initial lead-unit step. Any later lead-surrogate tag
+  in the full-scalar graph is rejected.
+- The implicit-to-`FFFD_CE32` branch requires a surrogate scalar and is excluded
+  by the well-formed scalar-domain premise. Invalid implicit/sentinel dispatch
+  is rejected; valid implicit dispatch is terminal.
+- Builder dispatch and its fallback are rejected under the runtime-data
+  premise. Base resolution where permitted is an explicit edge; unresolved
+  fallback, reserved or unknown tags are verification failures.
+- Encoded `NO_CE32` (`1`) is rejected in mapping data, including defaults and
+  context-trie values. It is an internal signal for an already-appended
+  discontiguous result, not an ordinary selected mapping. Treating such stored
+  data as terminal would not establish valid CE emission even if it terminates.
+
+The other selection edges listed above must likewise be complete, with tag
+preconditions and expansion lengths/contents checked. Unknown data objects,
+invalid pointers/indices, incomplete trie decoding or traversal-budget
+exhaustion yield **unverified**, not a successful graph check.
+
+Require the resulting closure to be acyclic. Its finite DAG
+height supplies a rank that decreases on every structural dispatch edge. This
+is a conservative sufficient premise: a cycle might still terminate by
+consuming input, but this argument does not accept it without a separate
+justification. A graph of CE32 integers alone is insufficient when the same
+value has different base-data or scalar-dependent interpretations.
+
+There are then two kinds of further work:
+
+1. Structural selection/recursion has non-increasing `N` and strictly smaller
+   graph rank. A Hangul frame has only finitely many child dispatches; each
+   child must satisfy this rule, not merely the first one.
+2. A drain iteration obtains its next scalar via `skipped->next()` before
+   dispatching it. This reduces `N` by one; the mapping rank may restart at any
+   reachable scalar mapping. The first dispatch of the selected contraction
+   result is instead a structural edge, not a fictitious new scalar read.
+
+The full inductive claim is: a dispatch entered after `p` with the safety
+invariants and measure `(N, rank)` terminates, preserves those invariants at
+its return boundary, and returns with `N_out <= N_in`, under the stated
+successful-operation premises. This is a simultaneous termination and
+postcondition claim, not an assumption that children have already finished.
+Terminal conversions establish the base case. Finite matching phases supply
+the conservation step before structural selection or draining. Each structural
+child is lexicographically smaller; each newly fetched drain scalar lowers
+`N` before its child is entered, even if rank increases. The induction
+hypothesis supplies termination **and** the non-increase postcondition for
+those children. It therefore justifies later Jamo siblings and drain
+iterations. Finite structural children per frame and strict decrease on
+loop-continuing selections finish the candidate induction on `(N, rank)`.
+Nested replacement that empties a buffer changes the accounting mode but does
+not increase `N`; creating a new skipped buffer uses the same conservation
+equation. There is no need to choose a maximum nesting depth or enumerate
+suffix strings for this argument.
+
+The unresolved implementation obligation is to verify the finite, valid,
+acyclic structural graph for the complete reachable data of each supported
+consumer, and independently attest the source/data and entry-state premises.
+The root reader's cycle/depth guard while classifying leading mappings is not
+that verification: it does not cover every suffix mapping dispatched while
+draining marks, and a traversal cap is not a rank proof. Accordingly this
+proposal does not change `offsetsProven: false`, establish runtime acceptance,
+or promise a practical worst-case time, heap or native-stack bound. Finite
+recursive depth is not proof that the consumer's available stack suffices;
+stack exhaustion need not be reported as a `UErrorCode`. These require separate
+validation even if the mathematical termination premise can be discharged.
 
 This exposes a distinct coverage requirement for an executable verifier:
 classifying the possible **first emitted weight** of the leading scalar does
@@ -770,7 +936,7 @@ and Jamo children, but does not enumerate arbitrary suffix marks dispatched
 while draining `SkippedState`, or prove their cursor behavior. Its existing
 `offsetsProven: false` result must remain false. The conditional source argument
 above still needs its dispatch premises checked against the complete reachable
-data, as well as the remaining termination and consumer-identity obligations;
+data, as well as the termination-graph and consumer-identity obligations;
 candidate membership alone cannot stand in for that check.
 
 Once the full return-position property is established, it can be composed

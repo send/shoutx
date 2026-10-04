@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Bounded structural graph research for one caller-declared ICU 78.1 root.
 
-No tailoring/base objects, consumer attestation, offsets or acceptance table.
+No tailoring/base objects, consumer attestation, UTF-16 input-offset proof or acceptance table.
 Reuses the bounded root decoder; graph keys are (CE32, exact scalar/sentinel)
 within this single data object. Both caller and sentinel contraction results
 are conservatively included for trie results. Defaults keep the caller scalar:
@@ -25,6 +25,36 @@ class GraphFailure(reader.Unverified):
     def __init__(self, kind, message):
         super().__init__(message)
         self.kind = kind
+
+
+def offset_arithmetic(cp, data_ce):
+    """Sufficient nonnegative-arithmetic profile for ICU's offset helper.
+
+    Not a generic emulation of signed C++ arithmetic or all valid ICU data.
+    Reject before using floor division where C++ truncation could differ.
+    """
+    require(1 <= cp <= 0x10ffff and not 0xd800 <= cp <= 0xdfff,
+            'offset arithmetic requires non-NUL scalar')
+    require(0 <= data_ce <= 0xffffffffffffffff, 'offset data width')
+    primary, lower = data_ce >> 32, data_ce & 0xffffffff
+    require(lower <= 0x7fffffff, 'offset signed lower word')
+    base, step = lower >> 8, lower & 127
+    require(base <= cp, 'offset base exceeds scalar')
+    delta = (cp - base) * step
+    require(0 <= delta <= 0x7fffffff, 'offset multiplication range')
+    third = delta + ((primary >> 8) & 255) - 2
+    require(0 <= third <= 0x7fffffff, 'offset third-byte intermediate')
+    radix, minimum = (251, 4) if lower & 128 else (254, 2)
+    second = third // 254 + ((primary >> 16) & 255) - minimum
+    require(0 <= second <= 0x7fffffff, 'offset second-byte intermediate')
+    carry = second // radix
+    # This stricter bound keeps the signed shift itself within INT32_MAX.
+    require(0 <= carry <= 127, 'offset signed shift range')
+    lead = (primary >> 24) + carry
+    require(lead <= 255, 'offset primary lead overflow')
+    return {'base': base, 'step': step, 'delta': delta,
+            'thirdIntermediate': third, 'secondIntermediate': second,
+            'carry': carry, 'resultLead': lead}
 
 
 class StructuralGraph:
@@ -78,7 +108,7 @@ class StructuralGraph:
             return tuple((v, -1) for v in values)
         elif tag == 14:
             require(cp != -1, 'offset requires scalar')
-            at(root.ces, index)
+            offset_arithmetic(cp, at(root.ces, index))
         elif tag == 15:
             require(value == 0xffffffff and cp != -1, 'implicit encoding/scalar')
         else:
@@ -111,6 +141,23 @@ class StructuralGraph:
 def scalars():
     yield from range(1, 0xd800)
     yield from range(0xe000, 0x110000)
+
+
+def offset_arithmetic_evidence(graph):
+    """Aggregate only fully checked nodes; caller requires a complete graph."""
+    count, indices, ranges = 0, set(), {}
+    for value, cp in graph.ranks:
+        if value & 255 < 0xc0 or value & 15 != 14:
+            continue
+        count += 1
+        index = value >> 13
+        indices.add(index)
+        for name, n in offset_arithmetic(cp, at(graph.root.ces, index)).items():
+            lo, hi = ranges.get(name, (n, n))
+            ranges[name] = [min(lo, n), max(hi, n)]
+    return {'checkedOffsetNodes': count, 'distinctDataIndices': len(indices),
+            'ranges': ranges, 'sufficientArithmeticConditionsMet': True,
+            'nativeProfileProven': False}
 
 
 def delimiter_mapping_evidence(root):
@@ -171,6 +218,7 @@ def inspect(raw):
             'limits': {'nodes': graph.max_nodes, 'depth': graph.max_depth,
                        'edges': graph.max_edges},
             'contextTries': len(root.context_cache),
+            'offsetArithmeticEvidence': offset_arithmetic_evidence(graph) if complete else None,
             'delimiterMappingEvidence': delimiter_mapping_evidence(root) if complete else None}
 
 

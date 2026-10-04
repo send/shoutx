@@ -43,6 +43,13 @@ class SourceComparisonTests(unittest.TestCase):
                                   'U_CAPI UTrie2 * U_EXPORT2\nutrie2_openFromSerialized() { return ' +
                                   ('0' if i == 0 else 'nullptr') + '; }\n'
                                   'U_CAPI UTrie2 * U_EXPORT2\nutrie2_openDummy() { return ' + str(i) + '; }')
+                    if name == 'collation.cpp':
+                        source = ('outside' + str(i) + '\n'
+                                  'uint32_t\nCollation::incThreeBytePrimaryByOffset() {}\n'
+                                  'uint32_t\nCollation::decTwoBytePrimaryByOneStep() {' + str(i) + '}\n'
+                                  'uint32_t\nCollation::getThreeBytePrimaryForOffsetData() {}\n'
+                                  'uint32_t\nCollation::unassignedPrimaryFromCodePoint() {}\n'
+                                  'U_NAMESPACE_END\n' + str(i))
                     (folder / f'{name}-{version}').write_bytes(source.encode('utf-8'))
             command = [sys.executable, '-B', str(PATH), '--dependencies', str(folder)]
             result = subprocess.run(command, capture_output=True, text=True, check=False)
@@ -84,6 +91,27 @@ class SourceComparisonTests(unittest.TestCase):
                     self.assertEqual(comparison.normalize(name, before, comparison.DEPENDENCY_PAIRS), after)
             self.assertNotEqual(comparison.normalize(name, 'return 1;', comparison.DEPENDENCY_PAIRS),
                                 comparison.normalize(name, 'return 2;', comparison.DEPENDENCY_PAIRS))
+
+    def test_collation_helper_slice_boundaries(self):
+        markers = ('uint32_t\nCollation::incThreeBytePrimaryByOffset(',
+                   'uint32_t\nCollation::decTwoBytePrimaryByOneStep(',
+                   'uint32_t\nCollation::getThreeBytePrimaryForOffsetData(',
+                   'U_NAMESPACE_END')
+        a, b, c, d = markers
+        source = 'excluded' + a + 'A' + b + 'excluded' + c + 'B' + d + 'excluded'
+        self.assertEqual(comparison.select_dependency('collation.cpp', source), a + 'A' + c + 'B')
+        for marker in markers:
+            for invalid in (source.replace(marker, ''), source + marker):
+                with self.subTest(marker=marker), self.assertRaises(ValueError):
+                    comparison.select_dependency('collation.cpp', invalid)
+        for invalid in (b + a + c + d, a + c + b + d, a + b + d + c):
+            with self.assertRaises(ValueError):
+                comparison.select_dependency('collation.cpp', invalid)
+
+    def test_collation_cast_then_comment_spacing(self):
+        source = 'uint32_t p = (uint32_t)(dataCE >> 32);  // primary'
+        self.assertEqual(comparison.normalize('collation.cpp', source, comparison.DEPENDENCY_PAIRS),
+                         'uint32_t p = static_cast<uint32_t>(dataCE >> 32); // primary')
 
     def test_dependency_report_hashes_entire_file_but_compares_slice(self):
         with tempfile.TemporaryDirectory() as directory:

@@ -41,6 +41,62 @@ def valid_fixture(lead=0x2cd, *, colon=SIMPLE, context_key=None):
     return bytes(raw)
 
 
+class OffsetArithmeticTests(unittest.TestCase):
+    @staticmethod
+    def data(primary, base=1, step=1, compressed=False):
+        return (primary << 32) | (base << 8) | step | (128 if compressed else 0)
+
+    def test_radices_and_carry(self):
+        for compressed, second_byte, radix in ((False, 2, 254), (True, 4, 251)):
+            with self.subTest(compressed=compressed):
+                data = self.data((12 << 24) | (second_byte << 16) | (2 << 8), compressed=compressed)
+                before = graph.offset_arithmetic(254 * radix, data)
+                after = graph.offset_arithmetic(254 * radix + 1, data)
+                self.assertEqual(before['carry'], 0)
+                self.assertEqual(after['carry'], 1)
+                self.assertEqual(after['resultLead'], 13)
+
+    def test_signed_shift_bound(self):
+        data = self.data(0x00020200, step=127)
+        self.assertEqual(graph.offset_arithmetic(254 * 254 + 1, data)['carry'], 127)
+        first_over = 1 + (128 * 254 * 254 + 126) // 127
+        with self.assertRaisesRegex(graph.reader.Unverified, 'signed shift range'):
+            graph.offset_arithmetic(first_over, data)
+
+    def test_primary_lead_overflow(self):
+        data = self.data(0xff020200)
+        self.assertEqual(graph.offset_arithmetic(254 * 254, data)['resultLead'], 255)
+        with self.assertRaisesRegex(graph.reader.Unverified, 'primary lead overflow'):
+            graph.offset_arithmetic(254 * 254 + 1, data)
+
+    def test_rejected_signed_and_negative_intermediates(self):
+        cases = [((0x12020200 << 32) | 0x80000000, 'signed lower word'),
+                 (self.data(0x12020200, base=2), 'base exceeds scalar'),
+                 (self.data(0x12020000), 'third-byte intermediate'),
+                 (self.data(0x12000200), 'second-byte intermediate'),
+                 (self.data(0x12020200, compressed=True), 'second-byte intermediate')]
+        for data, message in cases:
+            with self.subTest(message=message), self.assertRaisesRegex(graph.reader.Unverified, message):
+                graph.offset_arithmetic(1, data)
+
+    def test_scalar_and_width_guards(self):
+        for cp in (-1, 0, 0xd800, 0xdfff, 0x110000):
+            with self.subTest(cp=cp), self.assertRaises(graph.reader.Unverified):
+                graph.offset_arithmetic(cp, self.data(0x12020200))
+        for data in (-1, 1 << 64):
+            with self.subTest(data=data), self.assertRaisesRegex(graph.reader.Unverified, 'data width'):
+                graph.offset_arithmetic(1, data)
+
+    def test_zero_step_is_constant_and_zero_nodes_is_vacuous(self):
+        data = self.data(0x12020200, step=0)
+        result = graph.offset_arithmetic(0x10ffff, data)
+        self.assertEqual(result['delta'], 0)
+        self.assertEqual(result['carry'], 0)
+        evidence = graph.offset_arithmetic_evidence(graph.StructuralGraph(None))
+        self.assertEqual(evidence['checkedOffsetNodes'], 0)
+        self.assertEqual(evidence['ranges'], {})
+
+
 class GraphTests(unittest.TestCase):
     def setUp(self):
         self.root = graph.reader.RootMappings(fixture())
@@ -48,9 +104,33 @@ class GraphTests(unittest.TestCase):
 
     def test_terminal_kinds(self):
         for value in (0, SIMPLE, 0x123400c1, 0x050005c2, 0x120505c4,
-                      0xffffffff, 0xce, 0x1c5, 0x1c6):
+                      0xffffffff, 0x1c5, 0x1c6):
             with self.subTest(value=value):
                 self.assertEqual(self.g.rank(value, 65), 0)
+
+    def test_offset_terminal_and_cached_aggregate(self):
+        self.root.ces = ((0x12340200 << 32) | (65 << 8) | 2,)
+        for cp in (65, 66, 65):
+            self.assertEqual(self.g.rank(0xce, cp), 0)
+        evidence = graph.offset_arithmetic_evidence(self.g)
+        self.assertEqual(evidence['checkedOffsetNodes'], 2)
+        self.assertEqual(evidence['distinctDataIndices'], 1)
+        self.assertEqual(evidence['ranges']['delta'], [0, 2])
+        self.assertTrue(evidence['sufficientArithmeticConditionsMet'])
+        self.assertFalse(evidence['nativeProfileProven'])
+
+    def test_offset_failure_not_cached_or_reported_as_complete(self):
+        self.root.ces = ((0x12340200 << 32) | (66 << 8) | 2,)
+        with self.assertRaisesRegex(graph.reader.Unverified, 'base exceeds scalar'):
+            self.g.rank(0xce, 65)
+        self.assertFalse(self.g.ranks)
+        self.assertFalse(self.g.active)
+        self.root.initial = lambda cp: 0xce
+        with patch.object(graph.reader, 'RootMappings', return_value=self.root):
+            result = graph.inspect(b'')
+        self.assertFalse(result['allNonNulScalarRootsCompleted'])
+        self.assertIsNone(result['offsetArithmeticEvidence'])
+        self.assertIsNone(result['structuralGraphAcyclic'])
 
     def test_delimiter_simple_mapping(self):
         evidence = graph.delimiter_mapping_evidence(self.root)
@@ -267,6 +347,25 @@ class GraphTests(unittest.TestCase):
         self.assertEqual(result['rootCountCompleted'], 1112063)
         self.assertEqual(result['maxCompletedRank'], 0)
         self.assertFalse(result['consumerTerminationProven'])
+        self.assertEqual(result['offsetArithmeticEvidence'], {
+            'checkedOffsetNodes': 0, 'distinctDataIndices': 0, 'ranges': {},
+            'sufficientArithmeticConditionsMet': True, 'nativeProfileProven': False})
+
+    def test_complete_graph_with_offset_evidence(self):
+        root = graph.reader.RootMappings(valid_fixture())
+        original_initial = root.initial
+        root.initial = lambda cp: 0xce if cp == 65 else original_initial(cp)
+        root.ces = ((0x12340200 << 32) | (65 << 8) | 2,)
+        with patch.object(graph.reader, 'RootMappings', return_value=root):
+            result = graph.inspect(b'')
+        self.assertTrue(result['allNonNulScalarRootsCompleted'])
+        self.assertEqual(result['rootCountCompleted'], 1112063)
+        self.assertEqual(result['offsetArithmeticEvidence'], {
+            'checkedOffsetNodes': 1, 'distinctDataIndices': 1,
+            'ranges': {'base': [65, 65], 'step': [2, 2], 'delta': [0, 0],
+                       'thirdIntermediate': [0, 0], 'secondIntermediate': [50, 50],
+                       'carry': [0, 0], 'resultLead': [18, 18]},
+            'sufficientArithmeticConditionsMet': True, 'nativeProfileProven': False})
 
     def test_prefix_keeps_argument(self):
         self.root.context_values = lambda _: (SIMPLE, 0xffffffff)

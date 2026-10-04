@@ -9,8 +9,15 @@ import ctypes
 from pathlib import Path, PureWindowsPath
 import sys
 
+from icu_package_inventory import inventory
+
 DATA_CAP = 64 * 1024 * 1024
 CHUNK_SIZE = 1024 * 1024
+# Pinned gate from docs/compatibility/unicode-reference-inputs.md,
+# "Data candidate observation and bounded package inspection" (run 37225475724).
+# This identifies the inspected candidate, not its effective consumer binding.
+PACKAGE_SIZE = 31158064
+PACKAGE_SHA256 = "8b1eb674fd6493f2009a8305b0ab0ed083754e9d0590d12d1cae4cf95f6268e9"
 
 
 def native_data_path():
@@ -42,6 +49,7 @@ def collect_data_candidate():
 def inspect_data_candidate(path):
     digest = hashlib.sha256()
     size = 0
+    data = bytearray()
     try:
         with path.open("rb") as stream:
             while True:
@@ -52,11 +60,22 @@ def inspect_data_candidate(path):
                 if size > DATA_CAP:
                     return {"status": "unavailable", "reason": "file-size-limit"}
                 digest.update(block)
+                data.extend(block)
     except FileNotFoundError:
         return {"status": "unavailable", "reason": "file-not-found"}
     except PermissionError:
         return {"status": "unavailable", "reason": "access-denied"}
     except OSError:
         return {"status": "unavailable", "reason": "file-read-error"}
-    return {"status": "observed-candidate", "size": size,
-            "sha256": digest.hexdigest()}
+    sha256 = digest.hexdigest()
+    result = {"status": "observed-candidate", "size": size, "sha256": sha256}
+    if size != PACKAGE_SIZE or sha256 != PACKAGE_SHA256:
+        result["inventory"] = {"status": "unavailable", "reason": "candidate-hash-mismatch"}
+    else:
+        try:
+            result["inventory"] = {"status": "observed-structure",
+                                   **inventory(data, "icudt72l")}
+        except ValueError as error:
+            reason = "prefix-mismatch" if str(error) == "prefix-mismatch" else "unsupported-package-layout"
+            result["inventory"] = {"status": "unavailable", "reason": reason}
+    return result

@@ -4,6 +4,7 @@ import importlib.util
 import json
 from pathlib import Path
 import subprocess
+import struct
 import sys
 import tempfile
 import unittest
@@ -18,12 +19,26 @@ spec.loader.exec_module(graph)
 SIMPLE = 0x12340505
 
 
-def valid_fixture(lead=0x2cd):
+def valid_fixture(lead=0x2cd, *, colon=SIMPLE, context_key=None):
     ti, td = [0] * 2112, [SIMPLE] * 192
     for i in range(0xd800 >> 5, 0xdc00 >> 5):
         ti[i] = 8
     td[32:64] = [lead] * 32
-    return fixture(ti=ti, td=td)
+    td[0x3a & 31] = colon
+    if context_key is not None:
+        # A and B use a separate data block and share one serialized trie.
+        ti[65 >> 5] = 16
+        td[64 + (65 & 31)] = 0xc9  # contraction
+        td[64 + (66 & 31)] = 0xc8  # prefix
+    raw = bytearray(fixture(ti=ti, td=td))
+    if context_key is not None:
+        contexts = (SIMPLE >> 16, SIMPLE & 0xffff, 0x30, context_key,
+                    0xffff, SIMPLE >> 16, SIMPLE & 0xffff)
+        raw.extend(struct.pack('<7H', *contexts))
+        # Context section starts at index 13; all later sections are empty.
+        for index in range(14, 20):
+            struct.pack_into('<i', raw, index * 4, len(raw))
+    return bytes(raw)
 
 
 class GraphTests(unittest.TestCase):
@@ -36,6 +51,85 @@ class GraphTests(unittest.TestCase):
                       0xffffffff, 0xce, 0x1c5, 0x1c6):
             with self.subTest(value=value):
                 self.assertEqual(self.g.rank(value, 65), 0)
+
+    def test_delimiter_simple_mapping(self):
+        evidence = graph.delimiter_mapping_evidence(self.root)
+        self.assertEqual(evidence['colonCE32'], '12340505')
+        self.assertEqual(evidence['colonFirstRawHalf'], SIMPLE)
+        self.assertEqual(evidence['colonSecondRawHalf'], 0)
+        self.assertTrue(evidence['colonSingleNonzeroRawHalf'])
+        self.assertFalse(evidence['delimiterEntryStateProven'])
+
+    def test_delimiter_zero_is_not_positive(self):
+        self.root.initial = lambda cp: 0
+        evidence = graph.delimiter_mapping_evidence(self.root)
+        self.assertTrue(evidence['colonSimpleMapping'])
+        self.assertEqual(evidence['colonFirstRawHalf'], 0)
+        self.assertFalse(evidence['colonSingleNonzeroRawHalf'])
+
+    def test_delimiter_special_mappings_not_inferred(self):
+        for value in (1, 0x123400c1, 0x050005c2, 0xc8, 0xc9, 0x1c5):
+            self.root.initial = lambda cp: value
+            with self.subTest(value=value):
+                evidence = graph.delimiter_mapping_evidence(self.root)
+                self.assertFalse(evidence['colonSimpleMapping'])
+                self.assertIsNone(evidence['colonFirstRawHalf'])
+                self.assertIsNone(evidence['colonSecondRawHalf'])
+                self.assertFalse(evidence['colonSingleNonzeroRawHalf'])
+
+    def test_delimiter_simple_tag_boundary(self):
+        for value, simple in ((0x123405bf, True), (0x123405c0, False)):
+            with self.subTest(value=value):
+                self.root.initial = lambda cp: value
+                evidence = graph.delimiter_mapping_evidence(self.root)
+                self.assertEqual(evidence['colonSimpleMapping'], simple)
+                self.assertEqual(evidence['colonFirstRawHalf'], value if simple else None)
+                self.assertEqual(evidence['colonSecondRawHalf'], 0 if simple else None)
+
+    def test_inspect_populated_contexts(self):
+        for key in (58, 97):
+            with self.subTest(key=key):
+                result = graph.inspect(valid_fixture(context_key=key))
+                self.assertTrue(result['allNonNulScalarRootsCompleted'])
+                self.assertTrue(result['structuralGraphAcyclic'])
+                self.assertEqual(result['rootCountCompleted'], 1112063)
+                self.assertEqual(result['contextTries'], 1)
+                evidence = result['delimiterMappingEvidence']
+                self.assertEqual(evidence['contextEntriesExamined'], 1)
+                self.assertEqual(evidence['contextKeysContainingColon'], int(key == 58))
+                self.assertEqual(evidence['colonAbsentFromContextKeys'], key != 58)
+                self.assertFalse(evidence['delimiterEntryStateProven'])
+
+    def test_delimiter_context_keys_any_position(self):
+        # Both reversed prefix keys and forward contraction keys are counted;
+        # this property is independent of their direction or selected value.
+        self.root.context_cache = {
+            0: (SIMPLE, [((58, 97), SIMPLE), ((97, 58), 0)]),
+            9: (SIMPLE, [((97, 58, 98), SIMPLE), ((58, 58), SIMPLE),
+                         ((), SIMPLE), ((97,), SIMPLE)])}
+        evidence = graph.delimiter_mapping_evidence(self.root)
+        self.assertEqual(evidence['contextEntriesExamined'], 6)
+        self.assertEqual(evidence['contextKeysContainingColon'], 4)
+        self.assertFalse(evidence['colonAbsentFromContextKeys'])
+        self.assertFalse(evidence['delimiterEntryStateProven'])
+
+    def test_delimiter_context_values_are_not_keys(self):
+        self.root.context_cache = {0: (58, [((0xd83d, 0xde00), 58)])}
+        evidence = graph.delimiter_mapping_evidence(self.root)
+        self.assertEqual(evidence['contextEntriesExamined'], 1)
+        self.assertEqual(evidence['contextKeysContainingColon'], 0)
+        self.assertTrue(evidence['colonAbsentFromContextKeys'])
+
+    def test_delimiter_uses_contexts_discovered_by_graph(self):
+        self.root.contexts = (SIMPLE >> 16, SIMPLE & 0xffff, 0x30, 58,
+                              0xffff, SIMPLE >> 16, SIMPLE & 0xffff)
+        self.assertFalse(self.root.context_cache)
+        self.g.rank(0xc9, 65)
+        self.g.rank(0xc8, 66)  # Same stored trie, count its entry only once.
+        evidence = graph.delimiter_mapping_evidence(self.root)
+        self.assertEqual(evidence['contextEntriesExamined'], 1)
+        self.assertEqual(evidence['contextKeysContainingColon'], 1)
+        self.assertFalse(evidence['colonAbsentFromContextKeys'])
 
     def test_rejected_tags_and_sentinel(self):
         for value in (1, 0xc0, 0x100c0, 0xc3, 0xc7, 0xcb, 0xcd):
@@ -235,6 +329,7 @@ class GraphTests(unittest.TestCase):
         self.assertFalse(result['allNonNulScalarRootsCompleted'])
         self.assertIsNone(result['structuralGraphAcyclic'])
         self.assertFalse(result['offsetsProven'])
+        self.assertIsNone(result['delimiterMappingEvidence'])
 
     def test_failed_initial_mapping_report(self):
         result = graph.inspect(fixture(td=[0xca] * 192))
@@ -244,6 +339,7 @@ class GraphTests(unittest.TestCase):
         self.assertEqual(result['failure']['rootScalar'], 0x10000)
         self.assertEqual(result['failure']['kind'], 'unverified_data')
         self.assertEqual(result['failure']['reason'], 'lead-unit tag')
+        self.assertIsNone(result['delimiterMappingEvidence'])
 
     def test_initial_summary_rejections_reported(self):
         for lead, reason in ((0x1cd, 'root lead summary requires missing base'),
@@ -269,6 +365,10 @@ class GraphTests(unittest.TestCase):
         self.assertEqual(result['rootSha256'], digest)
         self.assertEqual(result['rootCountCompleted'], 1112063)
         self.assertTrue(result['structuralGraphAcyclic'])
+        evidence = result['delimiterMappingEvidence']
+        self.assertTrue(evidence['colonSingleNonzeroRawHalf'])
+        self.assertTrue(evidence['colonAbsentFromContextKeys'])
+        self.assertFalse(evidence['delimiterEntryStateProven'])
         for key in ('acceptanceTable', 'offsetsProven', 'consumerIdentityProven',
                     'consumerTerminationProven', 'inputProfileVerified'):
             self.assertFalse(result[key])
@@ -287,10 +387,42 @@ class GraphTests(unittest.TestCase):
             self.assertEqual(unresolved.returncode, 2)
             result = json.loads(unresolved.stdout)
             self.assertIsNone(result['structuralGraphAcyclic'])
+            self.assertIsNone(result['delimiterMappingEvidence'])
             self.assertEqual(result['failure']['kind'], 'unsupported_dispatch')
         usage = subprocess.run([sys.executable, '-B', str(SCRIPT)], capture_output=True)
         self.assertEqual(usage.returncode, 1)
         self.assertEqual(usage.stdout, b'')
+
+    def test_cli_populated_context_observations(self):
+        for key, colon in ((58, SIMPLE), (97, SIMPLE), (97, 0)):
+            with self.subTest(key=key, colon=colon), tempfile.TemporaryDirectory() as directory:
+                raw = valid_fixture(colon=colon, context_key=key)
+                path = Path(directory) / 'root.bin'
+                path.write_bytes(raw)
+                digest = hashlib.sha256(raw).hexdigest()
+                done = subprocess.run(
+                    [sys.executable, '-B', str(SCRIPT), '--root-data', str(path),
+                     '--sha256', digest], capture_output=True, text=True)
+                self.assertEqual(done.returncode, 0, done.stderr)
+                self.assertEqual(done.stderr, '')
+                result = json.loads(done.stdout)
+                self.assertEqual(result['rootSha256'], digest)
+                self.assertTrue(result['allNonNulScalarRootsCompleted'])
+                self.assertEqual(result['rootCountCompleted'], 1112063)
+                self.assertTrue(result['structuralGraphAcyclic'])
+                self.assertEqual(result['contextTries'], 1)
+                evidence = result['delimiterMappingEvidence']
+                self.assertEqual(evidence['contextEntriesExamined'], 1)
+                self.assertEqual(evidence['contextKeysContainingColon'], int(key == 58))
+                self.assertEqual(evidence['colonAbsentFromContextKeys'], key != 58)
+                self.assertEqual(evidence['colonCE32'], f'{colon:08x}')
+                self.assertEqual(evidence['colonFirstRawHalf'], colon)
+                self.assertEqual(evidence['colonSecondRawHalf'], 0)
+                self.assertEqual(evidence['colonSingleNonzeroRawHalf'], colon != 0)
+                self.assertFalse(evidence['delimiterEntryStateProven'])
+                for flag in ('acceptanceTable', 'inputProfileVerified', 'offsetsProven',
+                             'consumerIdentityProven', 'consumerTerminationProven'):
+                    self.assertFalse(result[flag])
 
 
 if __name__ == '__main__':

@@ -755,6 +755,26 @@ multi-OS package job runs these tests without requiring a private payload.
 Native root acquisitions and full graph observations remain separate evidence;
 no test or report establishes loaded consumer identity or CLI eligibility.
 
+On a complete walk, `delimiterMappingEvidence` reports the initial colon
+CE32, whether it is simple, its raw halves only when simple, and colon-unit
+occurrence counts in all visited stored context keys. On an incomplete walk
+the whole field is null, so a partial context cache cannot claim absence.
+Counts are per entry of each distinct context trie; shared trie references do
+not multiply them, and defaults/CE32 values are not text keys. A complete walk
+with no reachable context entries reports count zero and absence true; inspect
+the count to distinguish this empty-set result from examined nonempty tries.
+A false colon
+predicate does not change exit 0 for an otherwise complete graph: these are
+observations, not a new acceptance gate. `delimiterEntryStateProven` stays
+false even when the static predicates hold. Tests cover zero and non-simple
+colon mappings, the simple/special low-byte boundary, colon anywhere in a key,
+values versus keys, shared context discovery and incomplete reports. Serialized
+fixtures with nonempty contexts cover both colon and non-colon keys through
+the complete `inspect()` walk and CLI, checking entry counts and exit 0 even
+when colon occurs in a key or its mapping is zero. The
+[conditional entry-state discussion](compatibility/github-actions-workflow-command-parser.md#delimiter-mapping-and-conditional-entry-state-step)
+owns the source argument and its separate premises.
+
 `scripts/inspect-icu-mappings.py` is a separate research reader for an acquired
 little-endian ICU 78.1 root UCol-v5 payload (without its data header), not a CLI
 allow-list generator or a replacement for the native package gate. It requires

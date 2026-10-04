@@ -113,6 +113,33 @@ def scalars():
     yield from range(0xe000, 0x110000)
 
 
+def delimiter_mapping_evidence(root):
+    """Static observations; caller must first complete the full graph walk.
+
+    Context-cache coverage comes from that walk, not from looking up colon.
+    Neither these observations nor absence from stored keys proves live entry
+    state, normalization behavior, or absence of discontiguous consumption.
+    """
+    value = root.initial(0x3a)
+    simple = value != 1 and value & 255 < 0xc0
+    ce = reader.direct_ce(value) if simple else None
+    # coleitr.cpp getSecondHalf(), with uint32_t truncation of p << 16.
+    second = (((ce >> 32) << 16) & 0xffffffff |
+              ((ce >> 8) & 0xff00) | (ce & 0x3f)) if simple else None
+    entries = [key for _, items in root.context_cache.values() for key, _ in items]
+    colon_keys = sum(0x3a in key for key in entries)
+    first = reader.first_half(ce) if simple else None
+    return {'colonCE32': f'{value:08x}',
+            'colonSimpleMapping': simple,
+            'colonFirstRawHalf': first,
+            'colonSecondRawHalf': second,
+            'colonSingleNonzeroRawHalf': simple and first != 0 and second == 0,
+            'contextEntriesExamined': len(entries),
+            'contextKeysContainingColon': colon_keys,
+            'colonAbsentFromContextKeys': colon_keys == 0,
+            'delimiterEntryStateProven': False}
+
+
 def inspect(raw):
     root = reader.RootMappings(raw)
     graph = StructuralGraph(root)
@@ -143,7 +170,8 @@ def inspect(raw):
             'maxCompletedRank': max(graph.ranks.values(), default=0),
             'limits': {'nodes': graph.max_nodes, 'depth': graph.max_depth,
                        'edges': graph.max_edges},
-            'contextTries': len(root.context_cache)}
+            'contextTries': len(root.context_cache),
+            'delimiterMappingEvidence': delimiter_mapping_evidence(root) if complete else None}
 
 
 def main():

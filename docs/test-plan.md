@@ -430,6 +430,60 @@ still requires the separate
 [release](release.md) gates. Existing other-culture regressions are retained,
 not expanded into additional support obligations by this checklist.
 
+#### Source/configuration linkage closure
+
+Limits of a collector's measurements are not an extra demand for memory dumps
+or an exhaustive reflection proof.
+The existing [trust assumptions](threat-model.md#trust-assumptions) already
+trust the workflow, Runner and OS and exclude arbitrary attacker code in the
+same job. Excluding hostile file/log replacement or injected culture changes
+under that model is not a new guarantee against them. Ordinary trusted
+dependencies and startup configuration still require analysis; trust does not
+mean that the intended backend was selected.
+
+The allowed source/configuration claim has the following form:
+**if this identified Worker compares under culture C, its parser's comparison
+path uses the implementation/settings characterized by the same-image package
+probe under C**, for C independently equal to Invariant and `en-US`. This is a
+conditional connection, not a claim that a single live job executed under both
+cultures. Observed startup names and the actual server-supplied culture input must separately be
+carried through the documented culture-default/execution-context path; an
+unobserved culture is never relabelled measured. Effective mappings for each
+culture still need their own acquisition argument, even if shared runtime code
+selects them.
+
+The finite closure checklist for this source route is:
+
+1. State the official-package/source correspondence inference, loader resolution
+   and trusted-run file-continuity assumptions explicitly. File
+   matches can support, but do not independently prove, these inferences. Resolve
+   ordinary dependency behaviour rather than demand defence against hostile
+   instrumentation outside the threat model.
+2. Account for relevant culture setters/defaults/cache resets on the output
+   call path, including package dependencies. A package-side managed metadata
+   scan of the managed assemblies resolved by the hash-matched `deps.json`,
+   targeting the member/search families in the
+   [parser source note](compatibility/github-actions-workflow-command-parser.md#processing-culture-connection-still-to-establish), is a bounded
+   next check. A change without a direct reference remains a recorded residual
+   under the trusted-Runner assumption, not proof that reflection is impossible.
+3. Resolve each applicable startup-selection input (invariant/NLS mode, app-local
+   ICU and version selection, predefined-culture restrictions, and relevant
+   loader/data configuration), by observation plus
+   fixed-source reasoning or an explicit justified configuration inference.
+   An input may be irrelevant once the resolved outcome is established; its
+   raw value is not inherently required. No unknown is classified as absent.
+4. Identify the resolved native instance and locale-to-collator selection route
+   that each explicit culture's acquisition plan must target, and connect this
+   route to the same-image package observation. This closes the linkage gate,
+   not the effective-data obligation. Acquiring/binding the actual mappings and
+   normalization/break inputs follows that gate under the test plan's Effective
+   consumer inputs row; it is not a prerequisite for identifying the route.
+   Module names and equal break-rule hashes alone cannot identify that route.
+
+No loaded-memory measurement is a mandatory additional fifth item. If any named input remains unobtainable after
+bounded source analysis, apply the accepted stop rule instead of extending the
+collector or weakening the matrix without direction.
+
 ### V2 Unicode data-start research
 
 The package probe additionally evaluates a candidate, not a production input

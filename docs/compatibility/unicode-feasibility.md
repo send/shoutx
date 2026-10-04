@@ -420,60 +420,19 @@ The module/file experiment neither proves those formats accessible nor proves
 them inaccessible. This audit is still incomplete; no positive feasibility,
 Unicode acceptance or release conclusion follows from the successful CI run.
 
-### Bounded source/configuration closure target
+### Source/configuration linkage assessment
 
-The preceding caveats describe what the collector does **not** measure; they
-are not an extra demand for memory dumps or an exhaustive reflection proof.
-The existing [trust assumptions](../threat-model.md#trust-assumptions) already
-trust the workflow, Runner and OS and exclude arbitrary attacker code in the
-same job. Excluding hostile file/log replacement or injected culture changes
-under that model is not a new guarantee against them. Ordinary trusted
-dependencies and startup configuration still require analysis; trust does not
-mean that the intended backend was selected.
-
-For this audit, the allowed source/configuration claim has the following form:
-**if this identified Worker compares under culture C, its parser's comparison
-path uses the implementation/settings characterized by the same-image package
-probe under C**, for C independently equal to Invariant and `en-US`. This is a
-conditional connection, not a claim that a single live job executed under both
-cultures. The observed startup name and absent server input must separately be
-carried through the documented culture-default/execution-context path; an
-unobserved culture is never relabelled measured. Effective mappings for each
-culture still need their own acquisition argument, even if shared runtime code
-selects them.
-
-The finite closure checklist for this source route is:
-
-1. State the official-package/source correspondence inference, loader resolution
-   and trusted-run file-continuity assumptions explicitly. The current nine-file
-   matches support, but do not independently prove, these inferences. Resolve
-   ordinary dependency behaviour rather than demand defence against hostile
-   instrumentation outside the threat model.
-2. Account for relevant culture setters/defaults/cache resets on the output
-   call path, including package dependencies. A package-side managed metadata
-   scan of the managed assemblies resolved by the hash-matched `deps.json`,
-   targeting the six member/search families in the parser note, is a bounded
-   next check. A change without a direct reference remains a recorded residual
-   under the trusted-Runner assumption, not proof that reflection is impossible.
-3. Resolve each applicable startup-selection input below, by observation plus
-   fixed-source reasoning or an explicit justified configuration inference.
-   An input may be irrelevant once the resolved outcome is established; its
-   raw value is not inherently required. No unknown is classified as absent.
-4. Identify the resolved native instance and locale-to-collator selection route
-   that each explicit culture's acquisition plan must target, and connect this
-   route to the same-image package observation. This closes the linkage gate,
-   not the effective-data obligation. Acquiring/binding the actual mappings and
-   normalization/break inputs follows that gate under the test plan's Effective
-   consumer inputs row; it is not a prerequisite for identifying the route.
-   Module names and equal break-rule hashes alone cannot identify that route.
-
-Items 1–4 have not yet been discharged. No loaded-memory measurement is a
-mandatory additional fifth item. If any named input remains unobtainable after
-bounded source analysis, apply the accepted stop rule instead of extending the
-collector or weakening the matrix without direction.
+The [test plan](../test-plan.md#sourceconfiguration-linkage-closure) owns the
+conditional per-culture claim and its four closure checks. None is discharged
+by this run's module observation. The nine-file matches support only the disk
+identity component; loader/source correspondence, dependency behaviour,
+startup selection and native/locale route remain incomplete. The next bounded
+package-side check is a direct-member-reference scan of the assemblies resolved
+by the observed `deps.json`; no such scan is claimed in this retained run.
 
 #### Startup-selection inputs to resolve
 
+This is the run-specific input assessment, not a second verification gate.
 The fixed runtime's `GlobalizationMode` files linked in the parser note read
 the following switches. The retained runtimeconfig explicitly sets only
 `PredefinedCulturesOnly=false` among these inputs. AppContext/environment and
@@ -483,9 +442,9 @@ native loader behaviour are not measured by that file.
 | --- | --- | --- | --- |
 | `System.Globalization.Invariant` / `DOTNET_SYSTEM_GLOBALIZATION_INVARIANT` | Open: empty startup name ambiguous; ICU mappings support a source inference only if their origin is justified | Open source inference: default-locale route returns Invariant in invariant mode; observed `en-US` excludes that route only after earlier explicit culture overrides are accounted for | Same conditional exclusion as macOS |
 | `System.Globalization.UseNls` / `DOTNET_SYSTEM_GLOBALIZATION_USENLS` | Fixed Unix source returns false; not a target selector | Fixed Unix source returns false; not a target selector | Open: fixed source selects NLS when requested or ICU loading fails; `icu.dll` presence alone does not exclude another loader |
-| `System.Globalization.AppLocalIcu` / `DOTNET_SYSTEM_GLOBALIZATION_APPLOCALICU` | Open selection input; observed system-file matches narrow the possible resolved outcome | Open: must account for this branch before relying on the shim's fixed system-ICU path | Open selection input; combined system-file match narrows the observed modules, not necessarily the binding |
+| `System.Globalization.AppLocalIcu` / `DOTNET_SYSTEM_GLOBALIZATION_APPLOCALICU` | Open selection input; observed system-file matches narrow the possible resolved outcome | Open: this branch has not been excluded, so the system-ICU path has not been established | Open selection input; combined system-file match narrows the observed modules, not necessarily the binding |
 | `CLR_ICU_VERSION_OVERRIDE` in fixed `pal_icushim.c` | Version-selection input; mapped filenames/hashes identify observed files but still need the loader-origin argument | Linux-style version-override branch is not the target's system load route | Linux-style version-override branch is not the target's system load route |
-| `System.Globalization.PredefinedCulturesOnly` / corresponding `DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY` | File value false observed; fixed boolean helper prefers an available AppContext switch over environment. Establish that the observed file supplies the unchanged effective switch and its relevance to the selected mode | Same | Same |
+| `System.Globalization.PredefinedCulturesOnly` / corresponding `DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY` | File value false observed; fixed boolean helper prefers an available AppContext switch over environment. Whether that file supplies the unchanged effective switch and how it affects the selected mode remain unverified | Same | Same |
 
 This table is the runtime selection layer, not an exhaustive effective-data
 input list. ICU data loading (including any applicable `ICU_DATA` route),

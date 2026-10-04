@@ -1,0 +1,460 @@
+# Unicode reference input inventory
+
+Status: partial R1/R2 evidence, inspected 2026-10-05; no adoption recommendation.
+
+This implements the [claim inventory](unicode-feasibility.md#claim-inventory).
+It separates reference inputs, probe observations and deployment conditions.
+File identity is not proof of the Unicode acceptance predicate.
+
+## Reference identities and per-culture state
+
+Runner/runtime/source identities remain owned by
+[`pins.json`](../../tests/runner-package/pins.json): Runner 2.337.0, runtime
+8.0.30, SDK 8.0.424. The
+[retained projection](evidence/hosted-worker-modules-37184265280.json) records
+run 37184265280, attempt 1, source head
+`9aa3887c9e5efbfa811198c8f46981e366a0640b` and tested merge
+`2e1aeed897f1a2c6014dfa238048d5b35216d256`. Native reacquisition below compares
+against those recorded hashes, not a moving hosted label.
+
+This table is a derived status index keyed to that projection, not a second
+definition of the supported matrix. The projection owns observation values;
+`pins.json` owns the package/runtime pins. The scope decision owns the fixed
+research target. The initial applicability table is populated; complete
+reference input/normal-path correctness is still open.
+
+The OS strings used below come from locally retained **same-run** `probe.json`
+artifacts, not fields added to the published projection. Their byte hashes
+were checked against its `sourceReportSha256.probe` values:
+
+| Artifact (`runner-package-evidence-…`) | Raw probe SHA-256 | Selected field |
+| --- | --- | --- |
+| `windows-latest-win-x64` | `5dc737390da8b2a0a1c153a70a8cba3d09143f3298f603d874b5a3167c6fff27` | `os`: Microsoft Windows 10.0.26100 |
+| `macos-15-osx-arm64` | `5b0bd7ab6ca037027c4f97328168829196186d22437ab48bf168fd41f92d58d0` | `os`: Darwin 24.6.0; xnu-11417.140.69.711.44~1 |
+
+These are selected observations from the original reports, not a cross-run
+same-image inference. Raw report retention is finite; the hashes and selected
+fields here preserve the provenance without publishing full logs.
+
+| Selector / RID | Recorded image | Probe culture | Probe ICU | Native file reacquisition | Reference correctness |
+| --- | --- | --- | --- | --- | --- |
+| ubuntu-22.04 / linux-x64 | ubuntu22 / 20260927.309.1 | Invariant | 70.1.0.0 | Common/international match probe; data matches Worker module only | Unproved |
+| ubuntu-22.04 / linux-x64 | ubuntu22 / 20260927.309.1 | en-US | 70.1.0.0 | Same files, not proof of identical culture mappings | Unproved |
+| ubuntu-24.04 / linux-x64 | ubuntu24 / 20260927.320.1 | Invariant | 74.2.0.0 | Common/international match probe; data matches Worker module only | Unproved |
+| ubuntu-24.04 / linux-x64 | ubuntu24 / 20260927.320.1 | en-US | 74.2.0.0 | Same files, not proof of identical culture mappings | Unproved |
+| macos-15 / osx-arm64 | macos15 / 20260907.0337.1 | Invariant | 76.1.0.0 | 24G830 distribution cache/data obtained; no historical ICU file hash to compare | Unproved |
+| macos-15 / osx-arm64 | macos15 / 20260907.0337.1 | en-US | 76.1.0.0 | Same distribution inputs, not proof of effective culture mappings | Unproved |
+| windows-latest / win-x64 | win25-vs2026 / 20260925.250.1 | Invariant | 72.1.0.4 | Combined ICU hash recorded; file not yet reacquired | Unproved |
+| windows-latest / win-x64 | win25-vs2026 / 20260925.250.1 | en-US | 72.1.0.4 | Same acquisition gap | Unproved |
+
+Both probe cultures report ICU and retained collator attributes. Normal startup
+equivalence is not inferred. R1 remains open for complete startup/native/data
+identities, R2 for the normal-path argument, R3/R4 for data and suffix proof.
+Finite execution evidence for R5 and outstanding R6 plans are not promoted
+by acquisition success.
+
+## Deployment applicability, per observed row
+
+The same deployment observation accompanies both target cultures; a startup
+name does not establish either later processing-thread culture.
+
+| Row / job ID | Startup name / job culture input | Processing culture/settings | Disk identity | Native evidence | Added configuration absence / known mismatch |
+| --- | --- | --- | --- | --- | --- |
+| ubuntu-22.04 / 111382850276 | Observed empty / absent | Unobserved | Nine selected package files match | ICU common/international/data mapped-file identities; common/international hashes match probe | Absence unestablished; no mismatch established for compared fields |
+| ubuntu-24.04 / 111382850325 | Observed empty / absent | Unobserved | Nine selected package files match | Same categories for 74.2 | Absence unestablished; no mismatch established for compared fields |
+| macos-15 / 111382850331 | Observed en-US / absent | Unobserved | Nine selected package files match | CoreCLR only; ICU module/hash unavailable | Absence unestablished; unavailable identity is not a mismatch |
+| windows-latest / 111382850362 | Observed en-US / absent | Unobserved | Nine selected package files match | CoreCLR and combined icu.dll; ICU hash matches both probe roles | Absence unestablished; no mismatch established for compared fields |
+
+An empty startup name does not distinguish Invariant comparisons from
+globalization-invariant mode. Startup en-US is not measurement of the later
+processing thread. The earlier macos-latest/macOS 26 observation in the
+[historical audit](unicode-feasibility.md#initial-baseline-availability-historical-inventory)
+is a different configuration, not a failing macOS 15 row. Updated image/version
+equality remains unverified everywhere. None of these observations attests
+loaded bytes or complete deployment state.
+
+## Ubuntu native-file reacquisition
+
+Official Ubuntu download pages identify
+[`libicu70_70.1-2_amd64.deb`](https://packages.ubuntu.com/jammy/amd64/libicu70/download)
+and the initial
+[`libicu74_74.2-1ubuntu3_amd64.deb`](https://packages.ubuntu.com/noble/amd64/libicu74/download).
+The [official archive directory](https://archive.ubuntu.com/ubuntu/pool/main/i/icu/)
+also supplies 74.2-1ubuntu3.1. Downloads used HTTPS from that directory, followed
+by local SHA-256 hashing. Initial-release hashes match the package-page values;
+the update hash is a local download identity, not verification of a signed APT
+index. No package was installed or executed.
+
+| Downloaded package | SHA-256 | Outcome |
+| --- | --- | --- |
+| libicu70_70.1-2_amd64.deb | `58a154f6307289813da2276f900498ef536ae7c0522d2cf31a3c3c5cf62dfd9a` | Three selected files match Ubuntu 22.04 observations |
+| libicu74_74.2-1ubuntu3_amd64.deb | `d29c97a21a3e3254731cfac186e4d4e611e5e67d2c9a0430f6acfbd9acaefa2e` | Three files differ from Ubuntu 24.04; not substituted |
+| libicu74_74.2-1ubuntu3.1_amd64.deb | `c9a70989678660eed9a1e904c74fa043da8bec8e2036856fc16e31ced79b04f8` | Three selected files match Ubuntu 24.04 observations |
+
+The update was a specific alternative after the initial 74.2 revision failed
+identity comparison, not a reference-matrix change. Matching files can be
+recovered without rerunning the old VM. This does not recover the VM or prove
+which data the collator consumed.
+
+| Selected member | Recovered SHA-256 |
+| --- | --- |
+| libicudata.so.70.1 | `c1404396288e178c8db2f30203cb8150e4d2c14cacee9a2883e0092f45399cc8` |
+| libicui18n.so.70.1 | `24fa78caa9b66c10c90711c51089f45273b643f132031172d54a3e98d711d48e` |
+| libicuuc.so.70.1 | `4683f3623dc47a92e862dc3c8770caff81c9f4c7e116bb672fc439737b06d88a` |
+| libicudata.so.74.2 | `ddbb3718b8bd9cbd780e5ab08b4503c30a6c4fa0706ebe5d074ed6b596c1714e` |
+| libicui18n.so.74.2 | `3550b194eb2cf2e6f798f033eb9ca279d498c21296b4a18790ce158d2023e47b` |
+| libicuuc.so.74.2 | `7560aadde38e5f4237a47a1ddd5891f9b36768a77a60faae30beee003ac01901` |
+
+Common/international hashes match both explicit probe cultures and Worker file
+observations. Data hashes match the Worker module report; the projection has
+no corresponding probe data-library hash. Effective-data binding remains open.
+
+### Reproduction
+
+In a fresh local directory, download the named packages from
+`https://archive.ubuntu.com/ubuntu/pool/main/i/icu/` and verify their hashes.
+`ar -t PACKAGE.deb` lists `data.tar.zst`. With zstd-capable **bsdtar** (including
+the research Mac's tar), hash a member
+without extracting or executing it:
+
+```sh
+set -o pipefail
+ar -p libicu70_70.1-2_amd64.deb data.tar.zst |
+  tar -xOf - ./usr/lib/x86_64-linux-gnu/libicuuc.so.70.1 |
+  shasum -a 256
+```
+
+Repeat for the exact six regular-file members above in their matching packages.
+Compare common/international against the selected row's
+`package.explicitCultures[].collation.onDiskLibraries` and all three against
+`moduleObservation.modules[].onDiskSha256` in the projection. The assessment
+used selected-member extraction followed by `shasum`; the streaming command
+above was also executed for the 70.1 common library and returned the same hash.
+That is a same-author reproduction, not independent review. GNU tar may need
+an explicit `--zstd` decompressor for stdin. Only URLs, hashes and procedure are published,
+not vendor payloads or mapping tables. Acquisition does not authorize their
+redistribution.
+
+Archive pool retention is not promised. If a named revision disappears, seek
+an official Ubuntu snapshot or retained original package and require the same
+archive/member hashes; do not substitute a newer revision. Such a fallback
+was not needed or validated in this acquisition.
+
+## Windows/macOS source-acquisition checks
+
+These checks narrow acquisition routes; they do not establish impossibility
+or an adoption No-Go.
+
+### Windows
+
+The retained probe reports `Microsoft Windows 10.0.26100`. The combined
+`icu.dll` observation records SHA-256
+`2a6a05f37da87d9faad3da6917706a53e669b77a51885e79e1fbb9412f7405db`.
+It does not retain PE timestamp/SizeOfImage lookup keys or the library bytes.
+
+On 2026-10-05, querying the official
+[Microsoft ICU releases](https://github.com/microsoft/icu/releases) and tags
+returned 72.1.0.3 and 72.1.0.1, but no 72.1.0.4 release/tag. The 72.1.0.3
+release offers source and Linux symbol archives, not the recorded Windows
+combined DLL. The fork's
+[README](https://github.com/microsoft/icu/blob/v72.1.0.3/README.md) explicitly
+describes Microsoft-specific changes, including locale changes; upstream 72.1
+is therefore not substituted for the observed vendor revision. The in-box
+72.1.0.4 binary's correspondence to this GitHub fork is itself unestablished;
+absence of a release tag is a failed candidate-source route, not evidence that
+the Windows binary cannot be obtained. The probe's build prefix alone also
+does not select a complete servicing revision.
+
+A remaining alternative is exact-file recovery from an official Windows
+distribution or Microsoft's symbol store, followed by comparison with the
+recorded SHA-256. Symbol-store keys would first need to be recovered from a
+candidate build or additional metadata; the retained SHA-256 is not such a
+lookup key. Microsoft's
+[debugging documentation](https://learn.microsoft.com/en-us/windows/win32/dxtecharts/debugging-with-symbols)
+describes binary as well as symbol retrieval. The release-list check alone
+does not exhaust that route. A newly available hosted DLL is also only an
+acquisition candidate until its hash matches; it cannot silently replace the
+fixed reference.
+
+### macOS
+
+The fixed
+[image release](https://github.com/actions/runner-images/releases/tag/macos-15-arm64/20260907.0337)
+points to source commit `9312c564c4df0b842ce00a6c202dccb519b8dfdd`. Its
+[ARM64 manifest](https://github.com/actions/runner-images/blob/9312c564c4df0b842ce00a6c202dccb519b8dfdd/images/macos/macos-15-arm64-Readme.md)
+identifies macOS 15.7.9 (`24G830`), Darwin 24.6.0, image
+20260907.0337.1. This is stronger OS identification than the retained probe's
+Darwin kernel string, but remains an image manifest, not a native module hash.
+
+The Apple distribution tag listing inspected on 2026-10-05 contains macOS
+15.0 through 15.6, with no 15.7 tag. The
+[15.6 source distribution](https://github.com/apple-oss-distributions/distribution-macOS/tree/c5dd598fefabbef580b6b286bad79d2c939ee005)
+references ICU commit `86abee34b1ba209ab286020ed49cf6029e94c503`
+(`ICU-76104.4`). Its
+[import metadata](https://github.com/apple-oss-distributions/ICU/blob/86abee34b1ba209ab286020ed49cf6029e94c503/ICU.plist)
+names upstream 76.1. That matches the observed major/minor version, not the
+identity of the 15.7.9 binary or its effective data. Neither that source nor
+the moving ICU `main` branch closes this gap.
+
+The fixed release's `sbom.macos-15.json.zip` was downloaded and locally hashed
+as `7d1c2427567bcf9cc903f086d81e7f93fac0a3ee199b8ac84a28d7d9c0c5f9e0`.
+Its sole member is `sbom.json`. A case-insensitive `icu` search over SPDX
+package names found only `icu4c@78`, version `78.3`, without package checksums;
+searching file names for `icucore`, `icudt` or `icu.dll` found none. This does
+not identify the system 76.1 library. The SBOM is not a complete inventory of
+the effective consumer inputs merely because it belongs to the right image.
+
+The source/SBOM attempts therefore led to the 24G830 distribution acquisition
+below, rather than equating 15.6 and 15.7.9.
+The absence of a historical hosted regular-file ICU hash remains explicit; a same-version
+replacement or the earlier local ICU 78.1 extraction is not equivalent evidence.
+
+On 2026-10-05, the read-only `softwareupdate --list-full-installers` command
+on the research Mac listed **15.7.9, build 24G830**, size 15,289,021 KiB.
+Apple documents this listing route in its
+[installer instructions](https://support.apple.com/en-ie/102662). Thus an
+exact-build installer acquisition route is available; the source-tag/SBOM
+limitations above do not justify declaring the macOS inputs unobtainable.
+No installer was fetched or installed by that listing check. A subsequent
+read of Apple's
+[`index-15-1.sucatalog.gz`](https://swscan.apple.com/content/catalogs/others/index-15-1.sucatalog.gz)
+identified product `140-85388` and its
+[`InstallAssistant.pkg`](https://swcdn.apple.com/content/downloads/16/08/140-85388-A_3LX3Q36I6P/zxod6nr7zkovvsml6s628z44gdbc4exa5p/InstallAssistant.pkg),
+size 15,655,958,320 bytes. The associated
+[MobileAsset metadata](https://swcdn.apple.com/content/downloads/16/08/140-85388-A_3LX3Q36I6P/zxod6nr7zkovvsml6s628z44gdbc4exa5p/com_apple_MobileAsset_MacSoftwareUpdate.plist)
+contains OSVersion 15.7.9 / Build 24G830. Local SHA-256 identities of the
+downloaded catalog and metadata are respectively
+`7013f47e6044457542f31b305012a298d6b9b3c858aad1f53e607cc2a8f67ca7` and
+`2c3c461805a2305110eb9eafee76bd7cc9c440d66538b0b635cc388678bffdfb`.
+These identify inspected metadata bytes, not a completed package/signature
+verification. The catalog is a moving service, not a permanent snapshot URL.
+
+HTTP range reads of the package's 28-byte XAR header and 4,311-byte compressed
+TOC identify a top-level `SharedSupport.dmg` of 15,640,665,291 bytes, alongside
+Payload, PackageInfo, Scripts and Bom. The TOC inspection does not execute
+those scripts. Full package acquisition matched the catalog's size. Locally
+computed full-package hashes are
+SHA-256 `3a0d0ce4422a51b826699508a50e3f6b559cff7014daaa5b3600bbef935ecc9e`
+and SHA-1 `94295f31d12db20110e7036cfc09edc8d9900b38`.
+
+Authentication initially had a verification-context caveat: after download completion, macOS
+`pkgutil --check-signature` returned `invalid signature`; `spctl --assess
+--type install -vv` returned an internal Code Signing subsystem error. This
+was not recorded as successful platform trust validation. Independently, the
+compressed TOC SHA-1 matches its stored checksum and the catalog's `Digest`
+(`9b45bc4ef6f36decb1e7b41915956193d98d01df`, **not the full-package hash**).
+A local RSA/PKCS#1 v1.5 SHA-1 calculation using the embedded leaf certificate
+also matches the TOC signature. That arithmetic check does not validate the
+certificate chain or explain the platform error. Repeating the same
+`pkgutil --check-signature` on the completed file outside the execution sandbox
+then exited 0 with **signed Apple Software**, and a chain from Software Update
+through Apple Software Update Certification Authority to Apple Root CA.
+The leaf SHA-256 fingerprint was
+`e074d204ac2498e9dc904a7bc7ced8464119b79d05668028920583b1e896ebb4`.
+The sandboxed error is retained as a failed diagnostic context, not a remaining
+failed validation of this download. This comparison does not isolate the exact
+Code Signing subsystem failure. No trust setting was changed.
+
+`xar` extracted only `SharedSupport.dmg`, without running Payload or Scripts.
+The extracted file's locally computed SHA-1,
+`82726f6620a1f9f7b25ce054996ee0d07c5ea193`, matches the signed TOC's
+`extracted-checksum` and `archived-checksum` for this uncompressed member.
+This records the member-to-TOC binding, not merely successful extraction.
+`hdiutil attach -readonly -noautoopen` verified the image's CRC32 and mounted
+it in a temporary research directory; CRC32 is not authentication. The
+contained MobileAsset ZIP is
+`com_apple_MobileAsset_MacSoftwareUpdate/9d95c64142a9a426f56d3265d4f8a6fa31585333.zip`.
+Its `AssetData/Info.plist` names ProductVersion 15.7.9 and Build 24G830 and
+lists both arm64e and x86_64 system cryptex sizes. A model field in that plist
+is not used as proof of the ARM64 reference's contents. The nested payloads
+are not installed or executed. Recovery results follow; binding their output
+to the normal reference path remains work rather than completed evidence.
+
+### macOS distribution data recovery
+
+Intermediate byte identities from this local acquisition are:
+
+| Intermediate | SHA-256 |
+| --- | --- |
+| `SharedSupport.dmg` extracted by xar | `fd9f33091a442203e4fc365fac8d5a390d4a013f10d657618ba618204605cfce` |
+| MobileAsset ZIP named above | `1c76ee0ffbc8bcb4ec74e94d2b68fe31032f90a9a52f39847ae7fa946fa36d45` |
+| ZIP member `AssetData/payloadv2/payload.019` | `cab029379ae76a9a237c6ce2b8b48ff43046dc1dd824ed845a137c86e0a1a574` |
+| ZIP member `AssetData/payloadv2/image_patches/cryptex-system-arm64e` | `b52cea9e8a7669a14f2a9113d2b6e9b62261dd4bf37d8dcbfed990f3df09121c` |
+
+These hashes permit comparison with this acquisition; they are not separately
+signed vendor digests or independent verification of either decoder's output.
+
+The ZIP's `AssetData/payloadv2/image_patches/cryptex-system-arm64e` is a
+3,739,720,226-byte `RIDIFF10` patch, not directly a mountable disk image.
+A local helper followed the ABI in
+[`ipsw`'s pinned restoration wrapper](https://github.com/blacktop/ipsw/blob/5727faf392125073a057291cfe21659667aa9c79/pkg/ota/ridiff/ridiff.go)
+to call the research host's existing `/usr/lib/libParallelCompression.dylib`
+`RawImagePatch`, with empty base input, two worker threads, exclusive new
+output, a 16-GiB output-file cap and 300 CPU-second cap. A guard would reject
+`pbzm` in the initial 256 bytes; that marker was absent in this input.
+This is use of a private host API for local acquisition, not a supported
+product dependency or an independently verified patch decoder. The local
+helper's SHA-256 is
+`a503aba94359e89fe0d5167b8e3cccf2e4fc806614f1a7867b4eb1d8cd958570`.
+It is not archived with this repository, so this cache-restoration step is
+not yet a complete third-party reproduction recipe. Do not confuse its
+identified local result with a reviewed, portable acquisition tool.
+
+The research host reports macOS **26.6.2 / 25G83**, not the reference OS.
+Its `/usr/bin/aa` SHA-256 is
+`7c044bed6385a33ff7fc39286a48da7c37fd52420022bbed47038ba7fe6f3109`;
+`aa -version` printed usage, so no separate version value is asserted.
+
+The call returned 0 and produced a 5,985,271,808-byte image, locally hashed as
+SHA-256 `36e116d370e93fe36bae7b847dbe66d770fe54fba7467bb1ee7f4cd1036c4804`.
+A read-only mount
+contains `System/Library/CoreServices/SystemVersion.plist` with ProductVersion
+15.7.9 and ProductBuildVersion 24G830. Its **system** (not DriverKit)
+`System/Library/dyld/dyld_shared_cache_arm64e.map` lists
+`/usr/lib/libicucore.A.dylib`, including a `__TEXT` range
+`0x183CA8000`–`0x183F73C1C`. The shared cache and its `.01` subcache are
+available locally for subsequent code/UUID/section inspection. A map entry is
+not extraction of a relocatable library, proof of its runtime binding or a
+comparison with the historical hosted process.
+
+Read-only `aa list` scans of the 47 `payload.NNN` archive members found
+`usr/share/icu/icudt76l.dat` in `payload.019`. An exact-path, regular-file-only
+`aa extract` with filesystem attributes excluded and filesystem compression
+disabled recovered **33,979,312 bytes**, SHA-256
+`8f4dbfa2ea1a43bd07ba6a12885798b1f7c6f8ead23e1ce08e5625457fe6df76`.
+No payload code was executed or installed; recovered vendor bytes remain
+local. The following is the extraction procedure used with the identified ZIP;
+a second extraction has not been recorded:
+
+```sh
+set -o pipefail
+unzip -p PATH_TO_ASSET_ZIP AssetData/payloadv2/payload.019 |
+  aa extract -include-path usr/share/icu/icudt76l.dat -include-type f \
+    -exclude-field attr -afsc-none -d FRESH_LOCAL_DIRECTORY
+```
+
+The recovered file has a little-endian `CmnD` v1 header of 144 bytes and 4,855
+TOC entries. A bounded offset-TOC inspection found these regions; storage
+hashes include each 32-byte member header and padding, not just its payload:
+
+| Member suffix | File offset | Storage bytes | Storage SHA-256 |
+| --- | ---: | ---: | --- |
+| `coll/en.res` | 4810592 | 80 | `ee066818c0bfc2e92c9f4486f3087c3669b998786b0363a04467136d80c00d8b` |
+| `coll/root.res` | 5941360 | 347536 | `e9ba5da6fb872dc8ad2d23731013c366e530f94a3e921a3d8daf94e17e027949` |
+| `coll/ucadata.icu` | 6572048 | 577504 | `57ca8fa4ed257687cedd0420094edc808122003600fc2de57bfcab787c1972ac` |
+
+The offset-TOC interpretation follows `offsetTOCLookupFn` in the identified
+[Apple 15.6 ICU source](https://github.com/apple-oss-distributions/ICU/blob/86abee34b1ba209ab286020ed49cf6029e94c503/icu/icu4c/source/common/ucmndata.cpp):
+offsets are relative to the TOC and consecutive data offsets delimit storage.
+This identifies the format interpretation used, not 15.7.9 binary/source
+correspondence or validation of each member's internal format.
+
+The identical small `en.res` hashes across distributions do not prove equivalent
+complete collators. This supersedes the initial acquisition gap for the
+distribution data. It
+does not close generation-specific decoder validation, vendor code/data load
+binding, effective tailoring/fallback, or the historical unobserved file
+identity. The reference proof must still connect the recovered distribution
+inputs to the declared normal reference path; deployment identity remains a
+separate applicability condition.
+
+### macOS cached-library identity and path evidence
+
+Hashing the recovered system cache pair gives:
+
+| File | SHA-256 | Cache UUID |
+| --- | --- | --- |
+| `dyld_shared_cache_arm64e` | `c88d3a9885614d4ee8be36f0e9a50ee09e640311ca0ea843bc67613933e00184` | `0517ae48-31dc-3086-8d85-545fef4d70b7` |
+| `dyld_shared_cache_arm64e.01` | `bc07c9ed09350888003cd15777cdb17053d86c1e97dadd1582f4051d6ac4b296` | `50354eb3-77f7-390a-82ff-add75e24e40f` |
+
+The cache header/mapping layout was checked against Apple's
+[`dyld_cache_format.h`](https://github.com/apple-oss-distributions/dyld/blob/fd8d0c4d52320ebf64db34f3cb280310d905c5ae/include/mach-o/dyld_cache_format.h).
+Using the map's ICU address and the cache's mapping table locates a 64-bit
+ARM64e Mach-O header at primary-file offset **63,602,688**, with 18 load
+commands. A bounded load-command walk reports:
+
+- `LC_ID_DYLIB`: `/usr/lib/libicucore.A.dylib`, current version **76.1.0**;
+- `LC_UUID`: **5a8ab5d2-79d5-389e-8c2d-27d6c797125a**;
+- a `__cstring` region at primary-file offset 66,488,232, length 36,255,
+  containing `/usr/share/icu`, `icudt76l` and `icudt76l-coll` among other
+  package-name literals.
+
+Cache hashes and UUIDs identify locally reconstructed outputs, not independently
+authenticated reconstruction results or historical installed/loaded bytes.
+Treating the full installer's 24G830 contents as candidates for the hosted
+image is an explicit same-OS-build inference, not proof of on-disk equality;
+image provisioning or servicing may differ. The header's version is consistent with the earlier probe's
+76.1 report; equality of that version alone is not an implementation identity
+proof. No cached library was loaded into the research process.
+
+The older, explicitly identified Apple 15.6 source's
+[`dataDirectoryInitFn`](https://github.com/apple-oss-distributions/ICU/blob/86abee34b1ba209ab286020ed49cf6029e94c503/icu/icu4c/source/common/putil.cpp)
+has branches for a preselected directory, package data, permitted `ICU_DATA`
+environment overrides and compiled-in default directories. The inspected
+binary literals are consistent with the system-directory route but do **not**
+prove which compile-time branches exist or which path a call executes. This
+source comparison does not promote 15.6 source into attested 15.7.9 source.
+Binary/source correspondence and the normal reference's effective data loading
+remain R2 obligations, not deployment assumptions or reasons to repeat file
+hashing without new evidence.
+
+## Ubuntu embedded-data location experiment
+
+A local, read-only ELF64 little-endian section/TOC inspection of the recovered
+data libraries found `.rodata` at file offset 8192 in both. Its header is ICU
+`CmnD` format 1, with a 144-byte header. The TOCs contain 3,825 (70.1) and
+4,083 (74.2) entries. The experiment checked file/section bounds, TOC count and
+entry bounds, NUL-terminated sorted names, and increasing data offsets.
+
+The interpretation follows `UDataOffsetTOC` and `offsetTOCLookupFn` in official
+[`release-70-1`, a56dde8](https://github.com/unicode-org/icu/blob/a56dde820dc35665a66f2e9ee8ba58e75049b668/icu4c/source/common/ucmndata.cpp)
+and
+[`release-74-2`, 2d02932](https://github.com/unicode-org/icu/blob/2d029329c82c7792b985024b2bdab5fc7278fbc8/icu4c/source/common/ucmndata.cpp):
+offsets are relative to the TOC, and a non-final item's storage length is the
+next data offset minus its own. This is a source-based interpretation of the
+recovered Ubuntu bytes, not validation of every member or a native comparison.
+
+| Library | Member suffix | File offset | Storage bytes | SHA-256 of storage |
+| --- | --- | ---: | ---: | --- |
+| 70.1 | `coll/en.res` | 4183216 | 80 | `ee066818c0bfc2e92c9f4486f3087c3669b998786b0363a04467136d80c00d8b` |
+| 70.1 | `coll/root.res` | 5250016 | 299440 | `7b4313fa560441868f486bde30e3ac3c08b67778d68b0b5d8b7269e1ff07222b` |
+| 70.1 | `coll/ucadata.icu` | 5793664 | 550688 | `4acf5c47f636d2edf69bb20d22fa724bf07f6ca53ae759beb81a99f1e631e8ec` |
+| 74.2 | `coll/en.res` | 4352672 | 80 | `ee066818c0bfc2e92c9f4486f3087c3669b998786b0363a04467136d80c00d8b` |
+| 74.2 | `coll/root.res` | 5409840 | 307808 | `f6bfa76f91688c9137b76c0c6b64b0f16663b10a95b9ef8aa839eccd56c902fd` |
+| 74.2 | `coll/ucadata.icu` | 5960464 | 572656 | `16396c0d5ca673cb0cdf63f91b7aa8d8e1eafafe7dbc77360a177bd75aca1c5c` |
+
+Names have `icudt70l/` or `icudt74l/` prefixes. These hashes include the
+32-byte member header and any trailing storage padding; they are **not**
+headerless indexed-payload hashes. The resource members identify as `ResB`
+format 2 and the collation roots as `UCol` format 5. Neither format equality
+nor the identical small `en.res` proves equivalent complete collators.
+
+After checking the full-library hash, individual byte-range hashes are
+reproducible without loading or publishing the library. For the 70.1
+`coll/ucadata.icu` member:
+
+```sh
+python3 -c 'import hashlib,sys; f=open(sys.argv[1],"rb"); f.seek(5793664); b=f.read(550688); assert len(b)==550688; print(hashlib.sha256(b).hexdigest())' libicudata.so.70.1
+```
+
+This establishes accessible bounded input regions, not effective-data binding
+or correct decoding of mappings. Generation-specific root/resource decoding,
+locale fallback, normalization data (including any compiled-in data), break
+data and consumer connection remain R2/R3 work. The existing 78.1 reader has
+not been promoted to a 70.1/74.2 verifier by this experiment.
+
+## Probe/normal-startup differences to resolve (R2)
+
+At this source baseline, `scripts/test-runner-package.py` sanitizes probe
+environment overrides and then enables host tracing. It invokes SDK
+`dotnet exec` with the package Worker runtimeconfig/deps and added Probe.dll.
+`Probe.csproj` uses `UseAppHost=false`. Thus its entry path is not the ordinary
+Worker apphost, even though later runtime identities are checked.
+
+Enumerate relevant reference startup inputs with evidence, distinguishing
+controlled probe absence from unobserved live values. Use the existing host
+source analysis to resolve apphost versus SDK selection, package configuration
+and culture/cache propagation. Sharing runtimeconfig alone does not close R2.
+Linux file recovery does not settle Windows/macOS selection or data access;
+those remain bounded reference acquisition tasks, not a demand to inspect
+GitHub's internal deployment.

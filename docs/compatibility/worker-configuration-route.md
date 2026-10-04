@@ -11,6 +11,15 @@ The observation contract belongs to the
 The first same-job schema-v3 results are retained below. They do not change
 the status of the consumer-linkage argument.
 
+Research-status update, 2026-10-05: the
+[scope revision](../decisions/github-actions-unicode-scope.md#consequences-and-verification-requirements)
+supersedes this note's earlier linkage-first work order and requests for
+maintainer direction. Observations and conditional source arguments below are
+retained as historical evidence. Reference startup/native selection remains a
+proof obligation; actual deployment identity is an applicability condition.
+Unknown live inputs are not newly verified and need not be exhaustively
+collected to continue reference analysis.
+
 ## Fixed-source evidence
 
 At the package-corresponding .NET 8.0.30 commit
@@ -398,6 +407,10 @@ Native/startup settings and effective per-culture inputs remain subject to the
 existing acquisition-target checks and stop rule.
 
 ## Startup-state source follow-up
+
+Historical follow-up under the superseded live-linkage gate. Current work uses
+the [claim inventory](unicode-feasibility.md#claim-inventory); the source
+observations below do not impose the old deployment-attestation stop rule.
 
 This 2026-10-04 assessment addresses the remaining time/view distinction in
 acquisition-target check 3. It adds fixed-source reasoning, not another live

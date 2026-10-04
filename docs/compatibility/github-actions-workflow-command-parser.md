@@ -6,6 +6,13 @@ a decision to use either supported wire syntax. Normative behavior remains in
 the command specifications, framing choices remain in decision records, and
 release eligibility remains in the release policy.
 
+The [2026-10-05 research scope revision](../decisions/github-actions-unicode-scope.md#consequences-and-verification-requirements)
+separates reference-configuration proof from deployment applicability. Source
+arguments and historical live-linkage gaps below retain their evidence limits;
+they are not instructions to attest the entire deployed Worker. The
+[current claim inventory](unicode-feasibility.md#claim-inventory) tracks the
+reference obligations that remain open.
+
 ## Finding
 
 The pinned runner's V2 parser recognizes commands shaped like

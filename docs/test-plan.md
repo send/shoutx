@@ -358,48 +358,45 @@ Explicit Invariant Culture does not enable globalization-invariant mode.
 Local research results cannot substitute for a missing row. Do not infer
 live Worker culture from these explicitly configured probes or child locale.
 
-The ordinary live experiment has a **different** matrix: `ubuntu-latest`,
-`macos-latest` and `windows-latest`. In particular it has no explicit Ubuntu
-22.04 row, and `macos-latest` is not a binding to macOS 15. For closure, each
-target row needs corresponding live evidence from the same resolved
-OS/image/architecture and baseline Runner version, not merely a similar label.
-Match exact recorded image version/build, not just image family. Identify the
-reference package-probe job and live job by run, attempt and job ID; prefer
-the same CI source run. A cross-run comparison requires the same recorded
-identities and an explicit check for intervening relevant runtime/data changes;
-run proximity or identical labels are not sufficient.
-A mismatched version/image is evidence only for that observed combination;
-it does not close the baseline row. The additional package-matched experiment
-described under [package-matched observations](#package-matched-feasibility-observations) addresses
-selector coverage; only inspected successful runs, not its configuration,
-supply the missing observations.
+The recorded reference snapshots are ubuntu22 / 20260927.309.1,
+ubuntu24 / 20260927.320.1, macos15 / 20260907.0337.1 and
+win25-vs2026 / 20260925.250.1, respectively. Their observations are retained in
+the [feasibility audit](compatibility/unicode-feasibility.md#same-job-observations-after-pr-74).
+A current run on the same selector is not necessarily that reference.
 
-The initial feasibility pass must also establish how the live Worker fits the
-explicit-culture proof scope. Acceptable evidence is a direct observation of
-the relevant consumer state, or a reviewed source-and-configuration argument
-that binds the actual live build and its relevant startup/job inputs to all
-required states/settings. In particular it must account for the
-[server-supplied culture mechanism](compatibility/github-actions-workflow-command-parser.md#finding),
-not assume child locale selects Worker culture. Package hashes, API effects,
-image labels and finite successful cases alone do not establish this link.
-Closure is evaluated per row **and culture**: each needs its package proof and
-a justified link to the live implementation/settings for that culture. A live
-`en-US` observation does not by itself close Invariant. Direct live execution
-under both cultures is sufficient linkage evidence only for the states actually
-observed; alternatively, the source-and-configuration argument must explicitly
-cover each culture's effective mappings/settings and explain transfer from the
-observed live state. It may not relabel an unobserved culture as measured.
-If only one culture's link is established, record that partial result and keep
-the other combination incomplete. No ability to set live Worker culture is
-assumed or required as the only possible proof method.
-Acquisition-target identification is not the completed per-culture consumer
-link required above; its relation to subsequent work follows the
-[scope decision's work order](decisions/github-actions-unicode-scope.md#consequences-and-verification-requirements).
-Feasibility remains incomplete until the effective mappings/settings are bound
-to the consumer. If matching live evidence, the acquisition-target connection,
-or subsequent effective-data binding is unavailable, the decision's
-[stop rule](decisions/github-actions-unicode-scope.md#consequences-and-verification-requirements)
-applies; the checklist must not proceed as though the missing row passed.
+The [2026-10-05 scope revision](decisions/github-actions-unicode-scope.md#consequences-and-verification-requirements)
+replaces mandatory live Worker linkage with reference-configuration validation
+and explicit deployment applicability conditions. Use the
+[proposed reference definition](decisions/github-actions-stdout-framing.md#proposed-reference-configuration-boundary),
+including package startup and the normal prefilter/parser/extension path.
+For each row/culture record package/runtime/native identities, enumerated
+startup inputs and their provenance, effective settings and data, and any
+difference between the probe harness and that normal path. A successful
+explicit-culture probe alone does not establish those correspondences.
+
+Live observations remain separate interoperability evidence. Record their
+run/attempt/job IDs, resolved image/version, architecture and Runner version.
+The ordinary live experiment has a different selector matrix, so do not
+silently equate `macos-latest` with macOS 15 or `ubuntu-latest` with both
+Ubuntu rows. A mismatched observation supports only its own combination.
+The [package-matched experiment](#package-matched-feasibility-observations)
+provides historical same-job observations, not complete deployment attestation.
+
+Record each deployment condition as observed, unobserved or known-mismatching.
+Neither package hashes nor finite API effects establish live culture or loaded
+code/data identity. In particular, do not infer the
+[server-supplied culture input](compatibility/github-actions-workflow-command-parser.md#finding)
+from child locale. Unobserved live Invariant remains unobserved even if
+`en-US` is observed. Missing deployment attestation alone no longer blocks
+reference-data acquisition or the research recommendation.
+
+Within the reference, native selection, effective mappings/settings and the
+probe-to-normal-path argument remain necessary per culture. Acquisition-target
+identification permits acquiring data; it is not proof of the acquired data's
+contents or of the full parser property. Follow the scope decision's work order
+and evidence-insufficient No-Go rule if required reference inputs cannot be
+obtained. Ordinary unfinished analysis remains incomplete. Never replace a
+missing reference premise with a deployment assumption.
 
 The following are completion checks for proposing Unicode acceptance, not
 claims that the current research gate has satisfied them. All are required;
@@ -407,11 +404,11 @@ failure/unknown in a prerequisite is not a successful empty result.
 
 | Obligation | Required closure evidence | Current gap / evidence owner |
 | --- | --- | --- |
-| Effective consumer inputs | Bind the executed package and native implementation, settings, effective tailoring/root mappings and relevant normalization/break properties to the consumer path on every row/culture; archive hashes and reproducible acquisition/validation steps. Justify any source-to-binary inference explicitly. | Package identity and native observations are partial evidence; the separately opened local root is not the cached collator's proven effective data. See [package identity limits](compatibility/runner-package-runtime.md#identity-chain) and [acquisition research](compatibility/github-actions-workflow-command-parser.md#mapping-data-acquisition-feasibility-local-research). |
+| Effective consumer inputs | Bind the executed package and native implementation, settings, effective tailoring/root mappings and relevant normalization/break properties to the reference configuration's normal consumer path on every row/culture; archive hashes and reproducible acquisition/validation steps. Justify source-to-binary and probe-to-normal-path inferences explicitly. Deployment identity is a separate applicability condition. | Package identity and native observations are partial evidence; the separately opened local root is not the cached collator's proven effective data. See [package identity limits](compatibility/runner-package-runtime.md#identity-chain) and [acquisition research](compatibility/github-actions-workflow-command-parser.md#mapping-data-acquisition-feasibility-local-research). |
 | Full data prerequisites | Check the positive leading-weight condition and complete reachable dispatch/rank premises against those effective inputs, including base/tailoring resolution and supplementary summaries; all unsupported references or exhausted bounds stay unverified. | Existing readers are root-only and model 78.1; they do not cover the entire target matrix. See [structural graph research](compatibility/github-actions-workflow-command-parser.md#single-root-structural-graph-experiment). |
 | Header, iterator and search composition | Close the fixed-header/prefix and intended-delimiter argument, incoming iterator state, colon FCD/context handling, retained first raw half, offset/termination conditions and external end boundary for arbitrary permitted wire suffixes, at the effective settings. Address resource assumptions separately from mathematical termination. | Existing conditional arguments leave premises open. See [source obligations](compatibility/github-actions-workflow-command-parser.md#remaining-source-argument) and [delimiter entry step](compatibility/github-actions-workflow-command-parser.md#delimiter-mapping-and-conditional-entry-state-step). |
-| Independent execution and hosted connection | Run fresh package parser/Worker effects and live hosted boundary checks; retain exact identities and negative controls, and justify how the observed live consumer relates to the explicit-culture proof scope. Archive retrievable evidence beyond transient local files. | Package and live hosted measurements are distinct; finite cases do not establish arbitrary-suffix safety or an unobserved live culture. See [published runtime checks](#published-runner-runtime-evidence) and [live hosted checks](#live-hosted-stdout-boundary-experiment). |
-| Adoption and updates | Review the resulting predicate/table across all target combinations, reproducible generation, lookup cost, fail-before-output behavior, documented consumer prerequisites, treatment of unknown/updated environments and security response; explicitly reconcile design invariant 16 concerning locale-sensitive protocol delimiters and update authoritative contracts before implementation. | No table or changed contract is authorized. [Continuing checks](#continuing-compatibility-checks) detect some drift but do not automatically certify a new environment; framing and release decisions remain separate. |
+| Independent execution and hosted interoperability | Exercise reference package prefilter/parser/Worker effects, retain identities and negative controls, and continue obtaining and retaining hosted boundary checks as interoperability/regression evidence for their recorded configurations, separately from reference results. Hosted checks neither close nor replace reference proof obligations. New hosted runs support only their recorded configuration, not an unavailable historical image. Preserve retrievable evidence and apply the scope decision's acquisition rule when the reference cannot be reproduced. | Package and live hosted measurements are distinct; finite cases do not establish arbitrary-suffix safety or an unobserved live culture. See [published runtime checks](#published-runner-runtime-evidence) and [live hosted checks](#live-hosted-stdout-boundary-experiment). |
+| Adoption and updates | Review the candidate predicate across all target combinations, reproducible generation, lookup cost, fail-before-output verification plan, deployment prerequisites, unknown/updated environments and security response. Record the proposed invariant 16 reconciliation in the framing decision; change normative contracts only in a separately approved coordinated adoption change. | The [approved research scope](decisions/github-actions-unicode-scope.md) authorizes a recommendation and research artifacts, not a product table or changed acceptance contract. [Continuing checks](#continuing-compatibility-checks) do not automatically certify a new environment; framing and release decisions remain separate. |
 
 For closure, preserve the necessary redacted reports, source/run identities,
 hashes and reproduction instructions in repository-versioned evidence before
@@ -445,24 +442,24 @@ under that model is not a new guarantee against them. Ordinary trusted
 dependencies and startup configuration still require analysis; trust does not
 mean that the intended backend was selected.
 
-The allowed source/configuration claim has the following form:
-**if this identified Worker compares under culture C, its parser's comparison
-path uses the implementation/settings characterized by the same-image package
-probe under C**, for C independently equal to Invariant and `en-US`. This is a
-conditional connection, not a claim that a single live job executed under both
-cultures. Observed startup names and the actual server-supplied culture input must separately be
-carried through the documented culture-default/execution-context path; an
-unobserved culture is never relabelled measured. Effective mappings for each
-culture still need their own acquisition argument, even if shared runtime code
-selects them.
+The reference source/configuration claim has the following form:
+**under the enumerated startup inputs and comparison culture C, the reference
+package's normal consumer path uses the implementation/settings characterized
+by its probe under C**, independently for Invariant and `en-US`. Account for
+package-defined culture defaults, execution-context propagation and caches in
+that normal path. This is not a claim that a live job ran under both cultures
+or used those inputs. Actual server inputs and live propagation are separately
+recorded applicability conditions. Effective mappings for each reference
+culture still require their own acquisition argument.
 
 The source route's acquisition-target checklist is below. Completing it is
-necessary but not sufficient for consumer-linkage closure: the effective-data
-binding required above and in the Effective consumer inputs row is subsequent
-work, under the scope decision's ordering.
+necessary but not sufficient for reference-correctness closure: the effective-
+data binding in the Effective consumer inputs row is subsequent work under the
+scope decision's ordering. The 2026-10-05 revision removes live-deployment
+absence attestation, not these reference-package checks.
 
 1. State the official-package/source correspondence inference, loader resolution
-   and trusted-run file-continuity assumptions explicitly. File
+   and reference-run file-continuity assumptions explicitly. File
    matches can support, but do not independently prove, these inferences. Resolve
    ordinary dependency behaviour rather than demand defence against hostile
    instrumentation outside the threat model.
@@ -471,25 +468,36 @@ work, under the scope decision's ordering.
    scan of the managed assemblies resolved by the hash-matched `deps.json`,
    targeting the member/search families in the
    [parser source note](compatibility/github-actions-workflow-command-parser.md#processing-culture-connection-still-to-establish), is a bounded
-   next check. A change without a direct reference remains a recorded residual
-   under the trusted-Runner assumption, not proof that reflection is impossible.
+   next check. Absence of direct references is not proof that reflection is
+   impossible. Unresolved effects of package dependencies on the normal
+   reference path keep that obligation open until justified by source/path
+   analysis; they cannot become deployment assumptions merely because the
+   Runner is trusted.
 3. Resolve each applicable startup-selection input (invariant/NLS mode, app-local
    ICU and version selection, predefined-culture restrictions, and relevant
-   loader/data configuration), by observation plus
+   loader/data configuration) within the reference, by observation plus
    fixed-source reasoning or an explicit justified configuration inference.
    An input may be irrelevant once the resolved outcome is established; its
-   raw value is not inherently required. No unknown is classified as absent.
+   raw value is not inherently required. For deployment-supplied inputs,
+   enumerate reference values grounded in corresponding recorded observations
+   or package defaults and justify their effects. Record the actual live value
+   independently as an applicability condition; it may remain unobserved.
+   Do not relabel a live unknown as absent or presume an unknown package-defined
+   outcome is the intended one.
 4. Identify the resolved native instance and locale-to-collator selection route
    that each explicit culture's acquisition plan must target, and connect this
-   route to the same-image package observation. This identifies the justified
-   acquisition target, not a completed consumer link. Acquiring/binding the
+   route to the reference package observation. This identifies the justified
+   acquisition target, not completed reference correctness. Acquiring/binding the
    actual mappings and normalization/break inputs follows under the Effective
    consumer inputs row; it is not a prerequisite for identifying the target.
    Module names and equal break-rule hashes alone cannot identify that route.
 
-No loaded-memory measurement is a mandatory additional fifth item. If any named input remains unobtainable after
-bounded source analysis, apply the accepted stop rule instead of extending the
-collector or weakening the matrix without direction.
+No loaded-memory measurement or proof that deployment-added hooks/sidecars are
+absent is a mandatory additional item. If a necessary reference input remains
+unobtainable after source analysis and justified alternatives, apply the scope
+decision's evidence-insufficient recommendation rule. Do not weaken the matrix
+or presume the content of missing reference data. An unobserved live input
+alone does not require extending the collector or stopping reference analysis.
 
 #### Package environment transport control
 
@@ -547,7 +555,8 @@ architectures without claiming to execute those architectures locally.
 Its reported scope is selected names in MemberRef tables of the active
 dependency target's managed runtime assets. Require complete enumeration and
 hash agreement with the corresponding package manifest before using the
-inventory. A successful inventory is not a successful consumer-linkage gate.
+inventory. A successful inventory neither closes reference correctness nor
+establishes deployment applicability.
 No absence-of-mutation claim follows just from missing references. The helper
 README owns its invocation, inventory exclusions and supported metadata
 shape/limits; excluded routes remain separate source obligations.

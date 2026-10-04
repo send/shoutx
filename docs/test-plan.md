@@ -392,8 +392,12 @@ observed live state. It may not relabel an unobserved culture as measured.
 If only one culture's link is established, record that partial result and keep
 the other combination incomplete. No ability to set live Worker culture is
 assumed or required as the only possible proof method.
-If matching live evidence or this link is unavailable, the feasibility
-obligation is incomplete and the decision's
+Acquisition-target identification is not the completed per-culture consumer
+link required above; its relation to subsequent work follows the
+[scope decision's work order](decisions/github-actions-unicode-scope.md#consequences-and-verification-requirements).
+Feasibility remains incomplete until the effective mappings/settings are bound
+to the consumer. If matching live evidence, the acquisition-target connection,
+or subsequent effective-data binding is unavailable, the decision's
 [stop rule](decisions/github-actions-unicode-scope.md#consequences-and-verification-requirements)
 applies; the checklist must not proceed as though the missing row passed.
 
@@ -430,7 +434,7 @@ still requires the separate
 [release](release.md) gates. Existing other-culture regressions are retained,
 not expanded into additional support obligations by this checklist.
 
-#### Source/configuration linkage closure
+#### Source/configuration acquisition-target checks
 
 Limits of a collector's measurements are not an extra demand for memory dumps
 or an exhaustive reflection proof.
@@ -452,7 +456,10 @@ unobserved culture is never relabelled measured. Effective mappings for each
 culture still need their own acquisition argument, even if shared runtime code
 selects them.
 
-The finite closure checklist for this source route is:
+The source route's acquisition-target checklist is below. Completing it is
+necessary but not sufficient for consumer-linkage closure: the effective-data
+binding required above and in the Effective consumer inputs row is subsequent
+work, under the scope decision's ordering.
 
 1. State the official-package/source correspondence inference, loader resolution
    and trusted-run file-continuity assumptions explicitly. File
@@ -474,10 +481,10 @@ The finite closure checklist for this source route is:
    raw value is not inherently required. No unknown is classified as absent.
 4. Identify the resolved native instance and locale-to-collator selection route
    that each explicit culture's acquisition plan must target, and connect this
-   route to the same-image package observation. This closes the linkage gate,
-   not the effective-data obligation. Acquiring/binding the actual mappings and
-   normalization/break inputs follows that gate under the test plan's Effective
-   consumer inputs row; it is not a prerequisite for identifying the route.
+   route to the same-image package observation. This identifies the justified
+   acquisition target, not a completed consumer link. Acquiring/binding the
+   actual mappings and normalization/break inputs follows under the Effective
+   consumer inputs row; it is not a prerequisite for identifying the target.
    Module names and equal break-rule hashes alone cannot identify that route.
 
 No loaded-memory measurement is a mandatory additional fifth item. If any named input remains unobtainable after

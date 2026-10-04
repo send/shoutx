@@ -126,7 +126,7 @@ consumer-state obligations. The producer policy and corpus are unchanged.
    the live consumer to each explicit culture's implementation/settings,
    including the server-supplied culture input. This is currently unverified
    for **both cultures on every row**, including the observed startup names.
-3. For rows with a defensible connection, evaluate acquisition of native
+3. For each row/culture with a justified acquisition-target connection, evaluate acquisition of native
    identities, effective root/tailoring, normalization/break inputs and format
    support. No costly mapping expansion is justified by the package counts.
 4. Add any subsequent observation to the durable record and independently
@@ -196,7 +196,8 @@ controls follow the
 Its first hosted result is recorded below. This does not require debug
 logging or reading process environments. A source/configuration argument for
 transfer to later execution and to the other culture remains a separate step;
-no native-data expansion is justified until that prerequisite is addressed.
+the scope decision's [acquisition-target work order](../decisions/github-actions-unicode-scope.md#consequences-and-verification-requirements)
+governs any subsequent native-data acquisition.
 
 To reproduce the recorded comparison, download run 37180154098 into a new
 directory. Each `hosted-worker-input-SELECTOR-RID/hosted-worker-evidence.json`
@@ -273,7 +274,7 @@ The collector and limits are specified in the
 [test plan](../test-plan.md#hosted-worker-module-metadata-feasibility-observation).
 Such metadata does not by itself prove active backend,
 effective root/tailoring or processing-thread culture. Costly mapping expansion
-remains gated on a defensible consumer connection.
+remains gated on the acquisition-target connection defined by the scope decision.
 
 The proposed macOS route uses the text-file metadata returned by `lsof`, not
 `vmmap` on the live Worker. In Apple's published
@@ -376,9 +377,12 @@ Reproduce by downloading run 37184265280 into a fresh directory. Pair
 `evidence.json`, `package-bin-sha256.json`, `probe.json`, and the
 `hosted-boundary-evidence/package-matched/SELECTOR.json` report. Check the six
 original byte digests for each row before comparing fields (Windows CRLF is
-significant). For each package culture and common/international role, require
-an observed hash and a same-name Worker module with the same observed hash;
-null hashes are not matches. Recheck run/attempt/job metadata through the API.
+significant). For each Linux/Windows culture and common/international role,
+verify equality of the observed package hash and the same-name observed Worker
+module hash. For macOS, reproduce the reported unknown: both roles have unavailable
+status and null hash, and the selected Worker modules contain CoreCLR only.
+This reproduces the unavailable result; null hashes are not matches.
+Recheck run/attempt/job metadata through the API.
 
 ### What these alternatives can and cannot close
 
@@ -414,7 +418,9 @@ Worker, collecting memory/full environments, removing macOS or accepting only
 the observed startup culture are not silent fallbacks.
 
 Effective-root/tailoring and normalization/break data acquisition on these
-four generations remains gated by that consumer connection for each culture.
+four generations remains gated by identifying and justifying the acquisition
+target for each culture, following the scope decision's work order. None of
+those target connections has yet been completed here.
 The current 78.1 reader has not been applied to 70.1, 74.2, 76.1 or 72.1 here.
 The module/file experiment neither proves those formats accessible nor proves
 them inaccessible. This audit is still incomplete; no positive feasibility,
@@ -422,8 +428,8 @@ Unicode acceptance or release conclusion follows from the successful CI run.
 
 ### Source/configuration linkage assessment
 
-The [test plan](../test-plan.md#sourceconfiguration-linkage-closure) owns the
-conditional per-culture claim and its four closure checks. None is discharged
+The [test plan](../test-plan.md#sourceconfiguration-acquisition-target-checks) owns the
+conditional per-culture claim and its four acquisition-target checks. None is discharged
 by this run's module observation. The nine-file matches support only the disk
 identity component; loader/source correspondence, dependency behaviour,
 startup selection and native/locale route remain incomplete. The next bounded
@@ -455,7 +461,12 @@ read, raw memory access or behavioural corpus change is part of this report.
 
 ## Reproduction of this inventory
 
-For the current observation, use `gh run download 37177815281 --repo
+For the latest module observation (run 37184265280), use the six-report
+[module-result procedure above](#hosted-module-metadata-result), including the
+explicit macOS unavailable result. The following procedure describes the older
+baseline inventory, not the current module report.
+
+For that baseline inventory, use `gh run download 37177815281 --repo
 send/shoutx --dir NEW_DIRECTORY`. Compare each selector's
 `hosted-boundary-evidence/package-matched/SELECTOR.json` with its
 `runner-package-evidence-SELECTOR-RID/runner-package-evidence/evidence.json`

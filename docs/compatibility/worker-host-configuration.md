@@ -14,6 +14,11 @@ attest all deployed startup inputs. The source/package findings remain useful
 for the reference path; additional deployment configuration is now an explicit
 applicability condition. No previously unobserved input becomes observed.
 
+The later [reference/probe correspondence](reference-worker-correspondence.md)
+uses the original package reports and traces to identify the SDK-to-hostpolicy
+handoff and initialization properties. It does not backfill live Worker state
+or close the native selection and command-path obligations below.
+
 ## Fixed sources and existing observations
 
 Inspected on 2026-10-04: Runner commit

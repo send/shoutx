@@ -1279,11 +1279,28 @@ before collecting only the JSON report. It must react to changes in its pinned
 reference projection as well as collector/test/workflow changes. Before retaining
 a result, verify the run/repository and reviewed source-head/tested-merge
 association, candidate status, expected digest and reference-projection hash.
+The latter hashes raw checkout bytes: distinguish the source LF and Windows
+CRLF forms using the retained inventory digests and verify the conversion
+explicitly. Do not interpret a raw line-ending difference as a different
+reference DLL or silently discard it.
 A PR result may be retained after reviewing its source commit and tested merge;
 manual dispatch is needed to collect from reviewed `main` because the dedicated
 workflow has no push trigger. A fork artifact's name alone is never authority.
 Preserve useful selected metadata before the artifact expires.
 Never upload the vendor DLL or infer reference correctness from a locator.
+
+Also run `python -B tests/runner-package/test_pe_prefix_digest.py` in both
+locations. Comparison tests must independently construct the expected hashed
+fixture bytes, detect mutations in included headers/gaps/sections, tolerate
+only the explicitly excluded field/certificate mutations, and reject malformed
+directory counts, header/section overlaps, nonterminal or misaligned certificate
+tables and invalid length-prefixed entries. Include multiple rounded entries.
+Collector tests must prove the whole-file mismatch skips the comparison and
+that comparison failure preserves matched locator metadata without leaking
+exception text. Helper and helper-test changes must trigger the dedicated job.
+Native observations and candidate comparison results belong in the linked
+reference inventory; test success alone establishes neither file equivalence
+nor signature or consumer behavior.
 
 #### Hosted Worker module-metadata feasibility observation
 

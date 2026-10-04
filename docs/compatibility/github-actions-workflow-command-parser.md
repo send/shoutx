@@ -66,6 +66,42 @@ back to Invariant when a default locale cannot be obtained. A name alone
 does not identify which route was taken. The observation's backend remains
 unknown, independently of its culture-name field.
 
+### Processing-culture connection still to establish
+
+In fixed .NET 8.0.30
+[`CultureInfo.CurrentCulture`](https://github.com/dotnet/runtime/blob/a83db3e0eb2defb6220e15dae2f1a0462fdbf99f/src/libraries/System.Private.CoreLib/src/System/Globalization/CultureInfo.cs),
+the getter selects a thread override, default thread culture, cached user
+default or initialization of that default, in order. Its setter uses an
+`AsyncLocal` callback to update the thread field. These source paths provide
+a route for reasoning about culture propagation, not observation that no
+override or cache reset occurred in a particular Worker.
+
+The pinned Runner's
+[`ScriptHandler`](https://github.com/actions/runner/blob/397b032cbf865e9c3ddfab89d533ec19325e1273/src/Runner.Worker/Handlers/ScriptHandler.cs)
+connects `OutputManager.OnDataReceived` through
+[`DefaultStepHost`](https://github.com/actions/runner/blob/397b032cbf865e9c3ddfab89d533ec19325e1273/src/Runner.Worker/Handlers/StepHost.cs)
+and the Common process invoker to
+[`Runner.Sdk.ProcessInvoker`](https://github.com/actions/runner/blob/397b032cbf865e9c3ddfab89d533ec19325e1273/src/Runner.Sdk/ProcessInvoker.cs).
+The latter calls `ProcessOutput` from its asynchronous execution loop and
+invokes the handlers synchronously there. Thus a complete connection needs
+the execution context and relevant SDK implementation as well as the Worker
+assembly. A source search for direct culture assignments/cache resets did not
+find another such operation in Worker/Common/Runner.Sdk/Sdk; that is not an
+exhaustive dependency/reflection/instrumentation argument. The search used
+`CurrentCulture`, `DefaultThreadCurrentCulture`, `SetDefaultCulture`,
+`ClearCachedData`, `SetCurrentCulture` and `SuppressFlow` in non-test C# files
+under those four source directories at the fixed commit. Runtime/package
+correspondence is recorded in the [package identity note](runner-package-runtime.md#corresponding-net-source),
+not established by this source search.
+
+The fixed
+[`GlobalizationMode`](https://github.com/dotnet/runtime/blob/a83db3e0eb2defb6220e15dae2f1a0462fdbf99f/src/libraries/System.Private.CoreLib/src/System/Globalization/GlobalizationMode.cs)
+also consumes AppContext and environment configuration. The
+[package probe's sanitized environment](runner-package-runtime.md#reproduction-and-retained-evidence)
+does not identify the live Worker's startup environment. Startup names,
+named file equality and mapped module presence leave active backend,
+effective native inputs and transfer to the other culture as separate gaps.
+
 For diagnostic job correlation, pinned
 [`ExecutionContext`](https://github.com/actions/runner/blob/397b032cbf865e9c3ddfab89d533ec19325e1273/src/Runner.Worker/ExecutionContext.cs)
 initializes `github.job` from `system.github.job`, then overlays the supplied

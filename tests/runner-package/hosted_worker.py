@@ -181,6 +181,7 @@ def observe(expected):
     projected = at_stage("diagnostic-read", observe_logs, binary_dir.parent / "_diag", expected)
     # File identities are deliberately named onDisk, never loaded-module attestation.
     names = [executable.name, "Runner.Worker.dll", "Runner.Common.dll",
+             "Runner.Sdk.dll", "Sdk.dll",
              "System.Private.CoreLib.dll", "Runner.Worker.runtimeconfig.json", "Runner.Worker.deps.json"]
     names.append({"Linux": "libcoreclr.so", "Darwin": "libcoreclr.dylib", "Windows": "coreclr.dll"}[platform.system()])
     digests, disk_status = {}, "observed"

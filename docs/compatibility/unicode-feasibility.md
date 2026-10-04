@@ -118,12 +118,13 @@ PR #74 added the existing live corpus to the package jobs; the same-job
 observations above close the initial missing-row inventory, but not the
 consumer-state obligations. The producer policy and corpus are unchanged.
 
-1. Review the retained same-job evidence projection and its source identities.
-   It covers all four rows without treating setup logs alone as boundary tests.
+1. Preserve each subsequent same-job observation with source identities.
+   Baseline and process-start availability are now recorded on all four rows;
+   live module/configuration observations are the next unverified acquisition.
 2. Evaluate the source/configuration or direct-observation path connecting
    the live consumer to each explicit culture's implementation/settings,
    including the server-supplied culture input. This is currently unverified
-   for **both cultures on every row**, including the two image-matched rows.
+   for **both cultures on every row**, including the observed startup names.
 3. For rows with a defensible connection, evaluate acquisition of native
    identities, effective root/tailoring, normalization/break inputs and format
    support. No costly mapping expansion is justified by the package counts.
@@ -191,7 +192,7 @@ The next narrow observation uses the source route for the earlier `Culture:`
 line described in the parser note. The added extraction and its negative
 controls follow the
 [test plan](../test-plan.md#hosted-worker-startup-input-feasibility-observation).
-It has not yet run hosted. This does not require debug
+Its first hosted result is recorded below. This does not require debug
 logging or reading process environments. A source/configuration argument for
 transfer to later execution and to the other culture remains a separate step;
 no native-data expansion is justified until that prerequisite is addressed.
@@ -214,6 +215,96 @@ before extraction, then hash the seven named `bin/` files and compare with
 `extract_bin` and the manifest in `scripts/test-runner-package.py`.
 This route depends on continued availability of those exact archive bytes;
 it reproduces package identities, not the expired live process or diagnostics.
+
+### Process-start culture observation
+
+Successful [run 37181563090](https://github.com/send/shoutx/actions/runs/37181563090),
+attempt 1, ran the schema-v2 observer at source head
+`4452bd90d06525b15f51a313197aa48b00fbba4f`, tested merge
+`eafeab08b56450778a875055372f039e56011090`.
+The [retained record](evidence/hosted-worker-37181563090.json) preserves all
+four observer and matched live reports, selected package/native observations,
+both sides of the named file comparison, API job metadata and 20 source-report
+hashes. It uses the same author-selected projection and trusted-ephemeral-job
+limitations as the preceding record; it is not a signed attestation.
+
+| Selector | Actions job ID | Observed process-start Culture name | Job culture input | Package ICU, both explicit cultures |
+| --- | --- | --- | --- | --- |
+| ubuntu-22.04 | 111375026211 | Empty string | Absent | 70.1.0.0 |
+| ubuntu-24.04 | 111375026251 | Empty string | Absent | 74.2.0.0 |
+| macos-15 | 111375026184 | `en-US` | Absent | 76.1.0.0 |
+| windows-latest | 111375026167 | `en-US` | Absent | 72.1.0.4 |
+
+All four `startupCultureStatus` fields are `observed`; every
+`cultureInputStatus` is `absent`. The empty Linux names are observations of
+`CurrentCulture.Name`, not measurements of ICU-backed Invariant comparison.
+The parser note's [default-locale/backend caveat](github-actions-workflow-command-parser.md#culture-diagnostic-observation-route)
+still applies. The en-US startup names do not measure the later processing
+thread or transfer to Invariant. Both cultures remain unverified for consumer
+linkage on every row.
+
+The same-job package probes passed under both explicit cultures and retained
+the same eight collator attributes as the earlier inventory, matched cached
+search collators and external break iterators. Those facts describe the probe,
+not the live Worker. All seven named on-disk Worker/runtime files again match
+the package manifest. All four live reports passed with Runner 2.337.0,
+eight masks and 30 annotations; verifier job 111376371285 succeeded. The
+reported images, run, tested SHA and architectures match the corresponding
+package and observer identities. Neither successful effects nor matching
+on-disk identities fill the native-state gap.
+An API recheck of this run's macOS job found 31 annotations, including one
+GitHub service notice about ARM64 queue capacity in addition to the bounded
+corpus. Its whole-response digest therefore differs from rows without that
+notice; this is not inferred from the earlier run's notification.
+
+Reproduction follows the preceding procedure with run 37181563090. Also retain
+and hash each package `probe.json`; the projection selects only explicit
+cultures, ICU identity and bounded native-setting fields, not mapping/context
+payloads. The original Windows reports use CRLF bytes. The public archive
+route rechecks package digests after artifact expiry, not live state.
+
+### Next consumer-linkage obligation
+
+The next consumer-linkage obligation is identifying relevant runtime/native
+modules and configuration in the Worker, separately from its child probe.
+Read-only module metadata is a possible acquisition route, not yet hosted
+evidence. The new collector and limits are specified in the
+[test plan](../test-plan.md#hosted-worker-module-metadata-feasibility-observation).
+It has synthetic tests but no target-row result yet. Such metadata would still not by itself prove active backend,
+effective root/tailoring or processing-thread culture. Costly mapping expansion
+remains gated on a defensible consumer connection.
+
+The proposed macOS route uses the text-file metadata returned by `lsof`, not
+`vmmap` on the live Worker. In Apple's published
+[`process_text`](https://github.com/apple-oss-distributions/lsof/blob/7a8a1b2a3c0f35c30a5fcd0927f31d441c3e5255/lsof/dialects/darwin/libproc/dproc.c)
+this route queries `proc_pidinfo` region/vnode metadata. This is a source-route
+inference, not attestation of the hosted utility's build. A local self-process
+smoke returned no system ICU text-file entry after explicitly loading ICU;
+shared-cache omission is therefore a real availability concern, not proof
+that ICU is absent. The prior local `vmmap` smoke could see its system ICU
+mapping, but its potential target interaction was not established, so it is
+not enabled against a live Worker. Neither smoke closes a hosted row.
+
+On Windows, the documented `Process.Modules` API and inspected fixed .NET
+[`module enumeration`](https://github.com/dotnet/runtime/blob/a83db3e0eb2defb6220e15dae2f1a0462fdbf99f/src/libraries/System.Diagnostics.Process/src/System/Diagnostics/ProcessManager.Win32.cs)
+use VM-read/query rights to obtain loader metadata. The collection does not
+retain those internal structures. On Linux, the
+[`maps` interface](https://man7.org/linux/man-pages/man5/proc_pid_maps.5.html)
+is also access-controlled and has ambiguous pathname/deleted markers.
+All platforms retain the distinction between an observed module/file and
+proof that comparisons use it. System ICU presence, particularly on macOS,
+is not discriminating evidence of the .NET globalization mode.
+
+The package probe now records separate bounded on-disk hashes for its selected
+ICU common/international paths, so future Worker-side observations can be
+compared rather than relying on equal path strings. Historical projections
+do not have those hashes. ICU data-library and globalization-shim hashes have
+no package-probe counterpart in this experiment; effective-data identity remains
+unverified even when common/international hashes match.
+A separately mapped globalization shim is recorded
+when found, without assuming it is the binding used by CoreLib or that it
+must be mapped separately. Shared-cache-only files and inaccessible paths
+remain explicitly unverified.
 
 ## Reproduction of this inventory
 

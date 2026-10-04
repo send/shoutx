@@ -1260,6 +1260,31 @@ marker that preceding workload output could forge. These checks are observation
 sanity checks, not authentication of a log writable by the job user.
 Review [the audit](compatibility/unicode-feasibility.md) for per-row conclusions.
 
+#### Windows ICU acquisition locator
+
+The research-only `windows_icu_metadata.py` collector obtains acquisition
+metadata, not live consumer-linkage evidence. Its purpose, report semantics
+and interpretation limits are recorded in the
+[reference input inventory](compatibility/unicode-reference-inputs.md#bounded-windows-acquisition-locator).
+Synthetic tests must cover exact reference-hash gating, preserved matches when
+PE parsing fails, PE field/layout bounds and exact-fit cases, leading-zero key
+formatting, input-size limits, ambiguous reference records, fixed failure
+reasons, identity allowlisting, native directory return validation and exclusive
+report creation with empty stdout. Neither fixture success nor a workflow's
+green status establishes a match or the native API's actual behavior.
+
+Run `python -B tests/runner-package/test_windows_icu_metadata.py` locally and in
+the runner-package CI step. The dedicated Windows workflow also runs the tests
+before collecting only the JSON report. It must react to changes in its pinned
+reference projection as well as collector/test/workflow changes. Before retaining
+a result, verify the run/repository and reviewed source-head/tested-merge
+association, candidate status, expected digest and reference-projection hash.
+A PR result may be retained after reviewing its source commit and tested merge;
+manual dispatch is needed to collect from reviewed `main` because the dedicated
+workflow has no push trigger. A fork artifact's name alone is never authority.
+Preserve useful selected metadata before the artifact expires.
+Never upload the vendor DLL or infer reference correctness from a locator.
+
 #### Hosted Worker module-metadata feasibility observation
 
 `tests/runner-package/hosted_modules.py` separately follows its own ancestor

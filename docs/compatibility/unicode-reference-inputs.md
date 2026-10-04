@@ -165,6 +165,15 @@ absence of a release tag is a failed candidate-source route, not evidence that
 the Windows binary cannot be obtained. The probe's build prefix alone also
 does not select a complete servicing revision.
 
+On 2026-10-05, Microsoft's
+[KB5122871 file list](https://download.microsoft.com/download/51e3300c-cf32-4412-91f0-6efb374fc00e/5122871.csv)
+was inspected. It explicitly lists an `icu.dll` 72.1.0.4 entry of 2,765,824
+bytes with the exact recorded SHA-256 above, not merely a size/version match.
+This identifies a concrete official-update acquisition candidate independently
+of the probe's incomplete build string. The locally downloaded CSV SHA-256 is
+`d47dad23f334d5374a63c9824aef6e4bc0e9d47428ef20b4d68fceea688944bf`.
+The list identifies a candidate package; it is not recovery of the DLL bytes.
+
 A remaining alternative is exact-file recovery from an official Windows
 distribution or Microsoft's symbol store, followed by comparison with the
 recorded SHA-256. Symbol-store keys would first need to be recovered from a
@@ -175,6 +184,55 @@ describes binary as well as symbol retrieval. The release-list check alone
 does not exhaust that route. A newly available hosted DLL is also only an
 acquisition candidate until its hash matches; it cannot silently replace the
 fixed reference.
+
+### Bounded Windows acquisition locator
+
+The research-only `windows-icu-metadata.yml` workflow tests and runs
+`tests/runner-package/windows_icu_metadata.py`. It addresses the missing PE
+lookup keys above; it is **not** a new live consumer-linkage gate. A current
+Windows job is merely a candidate source, not a replacement for the fixed
+image. The expected hash is read from this note's retained module projection,
+whose file hash is included in the report.
+
+The collector uses the native
+[GetSystemDirectoryW](https://learn.microsoft.com/en-us/windows/win32/api/sysinfoapi/nf-sysinfoapi-getsystemdirectoryw)
+directory and reads `icu.dll` as its only vendor input, with an 8-MiB cap,
+without loading it. The dated KB5122871 observation above places the reference
+file below this cap. The 64-MiB
+image-size ceiling is a defensive parser bound, not an established reference
+image size; exceeding it produces a distinct unavailable-key reason.
+Only an exact reference-hash match permits emission of bounded x64 PE
+`TimeDateStamp` and `SizeOfImage` fields and a candidate symbol-store key.
+The field layout follows the [PE specification](https://learn.microsoft.com/en-us/windows/win32/debug/pe-format);
+Microsoft documents executable lookup by timestamp and image size in
+[Using SymStore](https://learn.microsoft.com/en-us/windows/win32/debug/using-symstore).
+The key uses eight lowercase hexadecimal timestamp digits (including leading
+zeros) followed by unpadded lowercase image-size digits, matching Microsoft's
+[PerfView implementation](https://github.com/microsoft/perfview/blob/0b57f2120291cd6701401aa215dda213cf3a7715/src/TraceEvent/Symbols/SymbolReader.cs).
+This is a candidate spelling, not a promise about every store's case policy;
+the numeric fields are retained so a store-specific spelling can be rebuilt.
+The timestamp is a lookup field, not an asserted build date. This is not a
+general-purpose PE validator or an Authenticode check.
+
+The artifact contains only hashes, lengths, selected numeric PE fields and
+allowlisted run/image identifiers; no DLL bytes, raw paths, full environment,
+exception text or mapping tables are uploaded. `candidate-mismatch` omits PE
+keys but publishes the current candidate's SHA-256 and size. `unavailable`
+records a fixed reason for platform/API, file access or input-size failure.
+`reference-hash-match-pe-unavailable` preserves the matching digest/size with a
+fixed PE-failure reason and no key. No arbitrary exception message is retained.
+Successful workflow execution means a report was recorded, not that inspection
+or matching succeeded.
+Even `reference-hash-match` does not establish loaded identity, effective ICU
+data or normal reference-path correctness. Any symbol-store download must be
+hashed again before use: a lookup key is not a cryptographic file identity.
+
+The report distinguishes source-head SHA from tested merge SHA and includes
+allowlisted event, repository and job key (`GITHUB_JOB`), not numeric Actions
+job ID. The latter is associated using the Actions API. Artifact retention is
+seven days. The [test plan](../test-plan.md#windows-icu-acquisition-locator)
+owns trigger, coverage and retention-verification requirements. A hosted result
+is still pending; this implementation does not close the Windows acquisition gap.
 
 ### macOS
 

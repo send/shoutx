@@ -411,6 +411,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python -B tests/runner-package/test_structural_graph.py
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python -B tests/runner-package/test_windows_icu_metadata.py
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python scripts/test-runner-package.py --output target/runner-package-evidence
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Test environment transport controls independently

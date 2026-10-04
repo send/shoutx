@@ -1,9 +1,9 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "kind": "selected-package-probe-host-handoff-observation",
   "sourceRunId": 37184265280,
   "identityOwner": "docs/compatibility/evidence/hosted-worker-modules-37184265280.json",
-  "scope": "Probe trace properties only; not live Worker properties or normal-path equivalence. Same-author projection; raw logs excluded.",
+  "scope": "Probe initialization properties and lexical base/deps relationships to the harness-checked CoreCLR trace path; not live Worker properties, filesystem identity or normal-path equivalence. Same-author projection; raw logs excluded.",
   "rows": [
     {
       "selector": "ubuntu-22.04",
@@ -36,7 +36,12 @@
       "startupHooksPropertyPresent": false,
       "hostFxrPathPropertyPresent": false,
       "probingDirectoriesEmpty": true,
-      "frameworkDepsFileEmpty": true
+      "frameworkDepsFileEmpty": true,
+      "applicationBase": {
+        "pathsAbsolute": true,
+        "matchesCoreclrDirectory": true,
+        "depsIsSingleWorkerInBase": true
+      }
     },
     {
       "selector": "ubuntu-24.04",
@@ -69,7 +74,12 @@
       "startupHooksPropertyPresent": false,
       "hostFxrPathPropertyPresent": false,
       "probingDirectoriesEmpty": true,
-      "frameworkDepsFileEmpty": true
+      "frameworkDepsFileEmpty": true,
+      "applicationBase": {
+        "pathsAbsolute": true,
+        "matchesCoreclrDirectory": true,
+        "depsIsSingleWorkerInBase": true
+      }
     },
     {
       "selector": "macos-15",
@@ -102,7 +112,12 @@
       "startupHooksPropertyPresent": false,
       "hostFxrPathPropertyPresent": false,
       "probingDirectoriesEmpty": true,
-      "frameworkDepsFileEmpty": true
+      "frameworkDepsFileEmpty": true,
+      "applicationBase": {
+        "pathsAbsolute": true,
+        "matchesCoreclrDirectory": true,
+        "depsIsSingleWorkerInBase": true
+      }
     },
     {
       "selector": "windows-latest",
@@ -135,7 +150,12 @@
       "startupHooksPropertyPresent": false,
       "hostFxrPathPropertyPresent": false,
       "probingDirectoriesEmpty": true,
-      "frameworkDepsFileEmpty": true
+      "frameworkDepsFileEmpty": true,
+      "applicationBase": {
+        "pathsAbsolute": true,
+        "matchesCoreclrDirectory": true,
+        "depsIsSingleWorkerInBase": true
+      }
     }
   ]
 }

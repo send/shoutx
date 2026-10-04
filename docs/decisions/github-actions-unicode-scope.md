@@ -13,6 +13,15 @@ for historical releases. The existing investigation has conditional iterator
 arguments and local data-graph results, but those are not yet a guarantee for
 the actual consumer. More samples alone will not discharge those conditions.
 
+On 2026-10-05 the maintainer approved the research direction summarized here and directed
+its activation. That direction replaces the previous live-deployment linkage gate
+with a reference-configuration proof and explicit deployment preconditions.
+It does not approve a product guarantee, Unicode acceptance change, or release.
+The former gate led the investigation through live startup hooks, sidecars and
+loader state; inability to attest those deployment details alone is no longer
+a reason to stop this research. Their observations and unknowns remain evidence,
+not newly verified facts.
+
 ## Decision drivers
 
 - Establish explicit completion criteria instead of indefinitely accumulating
@@ -61,43 +70,83 @@ enforce those prerequisites from the child process.
 Scope selection does not establish that an unmodified hosted Worker uses one
 of these cultures or the inspected cached search object. Explicit-culture
 package probes and live hosted effects are separate evidence. Their connection
-must be justified, not inferred from the child locale or a passing corpus.
+is an explicit applicability condition, not inferred from the child locale or
+a passing corpus. The proposed conditional guarantee and the operational
+definition of its reference configuration live in the
+[framing proposal](github-actions-stdout-framing.md#proposed-reference-configuration-boundary).
 
 ## Consequences and verification requirements
 
-This section owns the work order and stop rule. The first milestone is a
-feasibility pass across every target row/culture. First check whether live
-hosted evidence exists with the baseline Runner and matching resolved image;
-an unavailable baseline or missing row is an early gap, not a reason to start
-expensive format analysis. For available rows, under the ordering below,
-identify the actual ICU
-generation and effective root/tailoring relationship, determine whether its
-formats and required inputs can be inspected, and establish the package-to-live
-consumer link required by the test plan. The existing 78.1 root reader is not
-assumed usable unchanged for the other generations.
-For a source/configuration connection, distinguish acquisition-target
-identification from completed consumer linkage. First identify and justify the
-live implementation/native selection route and the acquisition target for each
-culture. This permits bounded acquisition of the corresponding effective data;
-it does not establish that data's identity or complete the feasibility pass.
-Complete the consumer connection with the acquired effective mappings/settings
-before proceeding to the full prerequisite/iterator proof. If even the
-acquisition-target connection is unavailable, stop before format/data expansion.
-This ordering avoids requiring already-acquired data merely to identify what
-to acquire, while preserving the final per-culture linkage requirement.
-Then consolidate the remaining header/search/iterator argument and check its
-data premises.
-Only after the [completion criteria](../test-plan.md#unicode-adoption-completion-criteria)
-are met should a coordinated acceptance-table and command-contract change be
-proposed. Each additional experiment should identify the unresolved obligation
-it closes or the counterexample it tests, rather than increase a case count.
-If a required input or consumer link cannot be established, stop expansion
-work and report the evidence and exact gap for maintainer direction: justify
-an alternative argument, explicitly revise the scope, or retain the restricted
-research surface. This rule applies at any stage, including live-hosted
-linkage in the first feasibility pass. Do not substitute local data, drop a
-matrix row or replace a missing premise with finite samples. Scope revisions
-require maintainer direction.
+### Superseded 2026-10-04 gate (historical)
+
+The former work order required matched live observations, then a justified
+live acquisition-target route, then effective-data binding to each live
+consumer/culture before full proof work. Missing linkage stopped expansion
+pending maintainer direction: an alternative argument, explicit scope revision
+or retention of the restricted surface. The
+[original text at 33760a6](https://github.com/send/shoutx/blob/33760a697f9d0b388c56060aae3892e35233807e/docs/decisions/github-actions-unicode-scope.md#consequences-and-verification-requirements)
+preserves that gate; it is not the current rule.
+
+### Current work order and stop rule
+
+This section owns the research work order and stop rule. The 2026-10-05
+direction supersedes the previous requirement to complete live Worker linkage
+before acquiring reference data. First inventory the fixed reference inputs
+and the existing observations for every row/culture. Identify the reference
+package's normal startup and native selection path, the effective ICU
+generation, root/tailoring relationship and acquisition target. Then acquire
+and validate the corresponding data and discharge the header/search/iterator
+premises. Identifying an acquisition target does not establish its contents.
+The existing 78.1 root reader is not assumed usable for other generations.
+
+The changes to research gates are limited to:
+
+- Replace mandatory per-row/per-culture live consumer linkage with explicit
+  deployment applicability conditions and separately labelled observations.
+- Remove only the live-deployment connection and absence-attestation parts of
+  acquisition checks. Keep package startup, loader, culture and effective-data
+  identification within the reference configuration as proof obligations.
+- Bind effective-input evidence to the reference execution path rather than
+  requiring attestation of the deployed Worker.
+- Use hosted effects as interoperability and regression evidence, not as proof
+  of arbitrary-suffix safety or complete deployment identity.
+
+Full data prerequisites, header/iterator/search composition, reproducible
+generation, updates, performance and fail-before-output obligations remain.
+The [test plan](../test-plan.md#unicode-adoption-completion-criteria) owns their
+verification criteria. Reference correctness cannot be reclassified as a
+deployment assumption. No unknown observation becomes a passing result.
+
+Maintain a claim inventory with required evidence, existing evidence, remaining
+work and a closure condition. Each additional experiment must close an identified
+gap or test a counterexample. Do not repeat equivalent experiments without new
+evidence; an alternative method must explain which failed premise it avoids.
+Finite samples cannot replace an arbitrary-suffix argument.
+
+If a recorded image cannot be rerun, seek other inputs whose identity can be
+justified from recorded versions, hashes and acquisition provenance. State the
+inference and its limits. If necessary evidence cannot be obtained using the
+available sources and methods, record attempts, the exact missing premise and
+what would unlock it. This supports an evidence-insufficient **No-Go adoption
+recommendation**, not a finding that the configuration is unsafe. Rebasing the
+matrix is a separate maintainer decision, not an automatic fallback. Do not
+drop a row or silently substitute unrelated local data.
+
+Go requires every necessary reference-correctness obligation to be closed for
+both cultures on all four rows. The agent records a recommendation; the
+maintainer decides adoption. A counterexample or justified evidence-insufficient
+No-Go can conclude this research with the restricted feature retained. Ordinary
+unfinished analysis remains undecided and incomplete, not No-Go by convenience.
+Unavailable review, authentication or publication facilities are execution
+blockers rather than evidence about parser safety. Scope changes or additional
+assumptions beyond this direction require maintainer approval.
+
+The outcome is a reviewed implementation recommendation, not an acceptance
+change. Preserve evidence and residual risks in the
+[feasibility audit](../compatibility/unicode-feasibility.md), with per-row
+observed, unobserved and known-mismatch conditions. Record a general Unicode
+predicate candidate, composition with existing ASCII rules, generation/update
+and performance plans, and implementation tasks or the specific No-Go basis.
 
 The [stdout framing decision](github-actions-stdout-framing.md) remains
 Proposed. This record narrows its research target, not its security objectives.
@@ -108,7 +157,8 @@ design/command and release-policy review described by that decision.
 
 ## Reconsideration conditions
 
-Revisit the scope if the required evidence cannot be obtained, a target
+Consider a separate scope revision after the evidence-insufficient recommendation
+described above if required evidence cannot be obtained. Also reconsider if a target
 configuration violates the proposed predicate, GitHub changes its parser or
 runtime, or the maintainer requests other environments. Do not broaden the
 scope automatically when another configuration happens to pass finite tests.

@@ -5,6 +5,12 @@ change accepted input, the deferred `th-TH` issue, or stdout release eligibility
 The [workflow-command note](github-actions-workflow-command-parser.md#ascii-boundary-allowlist-derivation)
 owns the ASCII fast-path argument; this note connects it to a concrete package.
 
+The [2026-10-05 scope revision](../decisions/github-actions-unicode-scope.md#consequences-and-verification-requirements)
+uses these package observations as reference evidence, with normal-path and
+effective-data obligations still open. Live-deployment identity is a separate
+applicability condition, not a required attestation. Historical linkage gaps
+below remain unknown rather than becoming passing reference checks.
+
 ## Research baseline selection
 
 On 2026-10-04 the official GitHub API `repos/actions/runner/releases/latest`

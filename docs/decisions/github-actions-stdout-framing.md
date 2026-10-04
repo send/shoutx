@@ -102,6 +102,56 @@ are not yet accepted. A deliberately narrower support proposal must explicitly
 address excluded/unknown environments and the deferred `th-TH` failure; a
 two-culture test pass alone cannot authorize it.
 
+### Proposed reference-configuration boundary
+
+The maintainer's [2026-10-05 research direction](github-actions-unicode-scope.md)
+authorizes investigating the following conditional guarantee, not adopting it.
+The current product contract and design invariant 16 remain unchanged.
+
+A reference configuration consists of the hash-identified official Runner
+package (including its host, runtimeconfig, deps and runtime), recorded OS and
+dependencies, enumerated startup inputs, and comparison culture. Startup-input
+values must be grounded in corresponding recorded observations or package
+defaults, with provenance; "default" alone is not an identity. Its normal
+output prefilter, parser and command-extension path are the subject of proof.
+Package-defined globalization mode, ICU selection, AppContext settings and
+loader behavior remain inside that subject. Differences between an explicit-
+culture probe harness and the normal path must be justified, not assumed away.
+
+The candidate guarantee is recognition of exactly the intended V2 command,
+with the original decoded value and typed properties and the intended mask
+registration or annotation processing. It excludes non-recognition that logs
+the command as ordinary text and reinterpretation through another command or
+fallback parser. It does not promise prevention of every transformed-secret
+disclosure, external-service availability, downstream-parser safety or recovery
+from I/O failure after writing begins. Validation, encoding and resource checks
+must finish before output begins.
+
+Application to a deployment is conditional on its consumer using the same
+implementation, settings, data and culture as the reference. Shoutx
+cannot detect or enforce that condition, and producer success is not evidence
+of consumer acceptance. Proving absence of deployment-added startup hooks,
+sidecars, environment overrides or replacements is outside the candidate
+guarantee's proof subject.
+Reference mappings, contractions, normalization/break data, search settings and
+iterator behavior are proof obligations, not trusted assumptions. Applicability
+recording and handling of mismatches follow the scope decision; a known mismatch
+does not satisfy this candidate guarantee's conditions.
+
+Excluded environments retain their known risks, including the deferred `th-TH`
+mask-registration failure and possible value disclosure. Do not assume users
+can select or observe Worker culture. A historical snapshot is not a guarantee
+for today's moving hosted-image label. The scope decision fixes the research
+matrix; release validity, updates and response policy remain separate decisions.
+
+For future coordinated adoption only, a proposed replacement for invariant 16
+would preserve the prohibition on inferring consumer culture from the producer
+and the distinction between producer success and consumer acceptance. It would
+permit a destination using locale-sensitive delimiters only under explicitly
+named, proven consumer conditions, documenting non-enforcement and consequences
+outside those conditions. This is a proposal, not a present exception to that
+invariant. No-Go leaves the invariant and restricted product surface intact.
+
 ### Runner compatibility findings and open policy
 
 This subsection records constraints discovered while evaluating a self-hosted

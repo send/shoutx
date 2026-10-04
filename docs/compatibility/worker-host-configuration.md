@@ -7,6 +7,13 @@ check 3. The [test plan](../test-plan.md#sourceconfiguration-acquisition-target-
 owns the conditional claim and the [scope decision](../decisions/github-actions-unicode-scope.md#consequences-and-verification-requirements)
 owns the work order and stop rule.
 
+Research-status update, 2026-10-05: the maintainer approved the scope decision's
+research direction; the boundary remains a proposal. The live-deployment gap and request for
+direction at the end of this note are historical, not a current instruction to
+attest all deployed startup inputs. The source/package findings remain useful
+for the reference path; additional deployment configuration is now an explicit
+applicability condition. No previously unobserved input becomes observed.
+
 ## Fixed sources and existing observations
 
 Inspected on 2026-10-04: Runner commit
@@ -228,15 +235,17 @@ path and default package layout narrow the possibilities but do not establish
 the remaining premises. Neither a lack of textual setter hits nor more passing
 Unicode samples resolves them.
 
-The remaining gap is submitted for maintainer direction under the
+Historical disposition (before the 2026-10-05 revision): the remaining gap
+was submitted for maintainer direction under the
 [existing stop rule](../decisions/github-actions-unicode-scope.md#consequences-and-verification-requirements),
-whose options are not redefined here. A justified deployment/configuration
-argument or a bounded observation of named inputs/outcomes are candidate
-alternative evidence routes to evaluate under that direction, not permission
-to extend the collector automatically. No scope revision is proposed.
+whose superseded version is preserved in that decision. At that time, a justified
+deployment/configuration argument or a bounded observation of named inputs/outcomes
+were candidate alternative routes, not permission to extend the collector
+automatically. No scope revision was proposed in that source assessment.
 A sidecar-presence or host-file check would
 address only those particular inputs; it would not establish all historical
 startup-hook behaviour or complete consumer linkage. No such new observation
 is implemented here. Native/locale selection and effective data also remain
 open. Both cultures on all four rows remain unverified; this is not a negative
-proof of Unicode feasibility, an adoption verdict, or Goal completion.
+proof of Unicode feasibility, an adoption verdict, or research completion.
+Current work follows the [claim inventory](unicode-feasibility.md#claim-inventory).

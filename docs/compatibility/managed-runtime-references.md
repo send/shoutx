@@ -1,11 +1,18 @@
 # Published Runner managed reference inventory
 
-Status: partial source-analysis evidence, not consumer linkage closure.
+Status: partial source-analysis evidence, not reference-correctness closure or
+proof of deployment applicability.
 
 This supports the [feasibility audit](unicode-feasibility.md) and the test plan's
 [acquisition-target checks](../test-plan.md#sourceconfiguration-acquisition-target-checks).
 It narrows package dependency inspection; it does not change a culture/OS
 verdict, CLI acceptance or release eligibility.
+
+Under the [2026-10-05 scope revision](../decisions/github-actions-unicode-scope.md#consequences-and-verification-requirements),
+this inventory supports analysis of the reference package's normal path, not
+mandatory live-deployment linkage. The observations and limitations below are
+unchanged; absence of direct references still does not prove absence of every
+possible runtime effect.
 
 ## Observation and provenance
 

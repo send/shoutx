@@ -157,6 +157,12 @@ framing does not satisfy that guarantee across cultures. The eventual
 guarantee will not authorize the annotation's content, file association, or
 severity, or promise provider retention or presentation.
 
+The [reference-boundary proposal](../decisions/github-actions-stdout-framing.md#proposed-reference-configuration-boundary)
+changes research obligations, not these input rules or guarantees. Consumer
+configuration is not detected or enforced by shoutx. Command loss or
+reinterpretation remains a residual risk; the research has not established
+a complete guarantee even within its target configurations.
+
 ## Boundary-specific threat analysis
 
 Untrusted MESSAGE, TITLE, or FILE data cannot terminate the physical command

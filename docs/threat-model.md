@@ -53,6 +53,12 @@ recognized the emitted record. The known parser behavior and compatibility
 evidence are documented in the
 [workflow-command compatibility note](compatibility/github-actions-workflow-command-parser.md).
 
+The [proposed reference-boundary research](decisions/github-actions-stdout-framing.md#proposed-reference-configuration-boundary)
+does not change this product contract. It separates evidence about a reference
+parser from unobservable deployment conditions. Known excluded-culture failures,
+including failed mask registration and possible disclosure, remain residual
+risks; neither producer success nor a narrower research scope removes them.
+
 GitHub creates distinct environment-file paths while running a step or action.
 The runner reads these files after processing the producer.
 `$GITHUB_OUTPUT`, `$GITHUB_ENV`, `$GITHUB_PATH`, and `$GITHUB_STATE` are

@@ -50,6 +50,12 @@ This is a bounded research mitigation, not a complete framing guarantee; the
 known `th-TH` ASCII failure remains unresolved and is deferred by the
 [framing decision](../decisions/github-actions-stdout-framing.md).
 
+The [reference-boundary proposal](../decisions/github-actions-stdout-framing.md#proposed-reference-configuration-boundary)
+changes research obligations, not these input rules or guarantees. Shoutx does
+not detect or enforce the consumer's culture/configuration; failed recognition
+can leave the mask unregistered and expose the emitted value. That residual
+risk is not resolved by restricting the research scope.
+
 Successful output is exactly:
 
 ```text

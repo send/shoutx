@@ -7,6 +7,67 @@ and [completion criteria](../test-plan.md#unicode-adoption-completion-criteria).
 It does not change CLI acceptance. Observations below were inspected on
 2026-10-04; unknown premises remain unknown, not passing checks.
 
+## Reference-boundary audit after the 2026-10-05 direction
+
+The maintainer's [scope revision](../decisions/github-actions-unicode-scope.md#consequences-and-verification-requirements)
+supersedes the live-linkage work order used by the historical observations below.
+It changes the research gate, not those observations. The old live-linkage
+verdicts remain unverified; they are now deployment-applicability conditions,
+not standalone blockers for reference-data acquisition. The
+[proposed reference boundary](../decisions/github-actions-stdout-framing.md#proposed-reference-configuration-boundary)
+defines what must still be validated. There is no Go/No-Go recommendation yet.
+
+### Claim inventory
+
+The identifiers track work, not product guarantees. Closure evidence is governed
+by the [test plan](../test-plan.md#unicode-adoption-completion-criteria).
+Each new experiment must name the claim it addresses; removing the live gate
+does not close a reference proof obligation.
+
+| ID | Required claim/evidence | Existing evidence and gap | Next work / closure condition | State |
+| --- | --- | --- | --- | --- |
+| R1 | Identify four fixed reference configurations and both cultures | Historical images, package ICU generations and managed settings are recorded below; native paths are not hashes or complete input identities | Inventory package/runtime/native/data identities and startup inputs with provenance; obtain missing reference inputs or document failed acquisition routes; complete the row-by-condition applicability table and eight-way reference claim statuses | Unproved |
+| R2 | Probe characterizes normal reference prefilter/parser/extension path | Package invocation, managed scans and host-source analysis exist; harness uses an SDK host and explicit cultures | Audit harness differences against package host/runtimeconfig/deps, normal culture/cache propagation and native selection; bind reference path to R1 without live attestation | Unproved |
+| R3 | Effective data satisfies positive-predicate prerequisites | Local 78.1 root readers/graph checks do not establish 70.1, 74.2, 76.1 or 72.1 effective data | Obtain R1/R2 targets, validate generation-specific readers and complete base/tailoring, normalization/break and reachable mapping premises per row/culture | Unproved |
+| R4 | Fixed headers and predicate preserve intended delimiter for arbitrary permitted suffixes | Conditional header/iterator/search arguments leave premises open | Bind premises to R2/R3; close incoming-state, context/FCD, retained-half, offset/end/termination obligations and compose with existing ASCII rules | Unproved |
+| R5 | Independent execution agrees with claimed reference behavior | Historical package/hosted finite corpora passed; live cultures remain unobserved | Exercise characterized reference path in both explicit cultures with negative controls, exact properties/effects and recorded identities; retain hosted observations separately | Unproved (partial evidence) |
+| R6 | Candidate adoption is implementable and maintainable | No adopted cross-matrix predicate/table exists | Specify reproducible generation, updates, complexity/performance and pre-output failure tests; prepare invariant 16/contract proposals without changing current product | Unproved |
+
+### Deployment applicability inventory
+
+This is an initial aggregate, not the required completed row-by-condition
+deliverable. R1 must produce that table using the later observations below,
+distinguishing observed process-start names and absent job variables from
+unobserved processing-thread cultures/settings, and on-disk hashes from loaded
+identity. It must retain row-specific native evidence (including the missing
+macOS ICU module observation), record known mismatches separately, and label
+an unrelated macOS 26 run as a different configuration. The eight-way reference
+claim statuses are also still to be evaluated, not inferred from this summary.
+
+The historical per-culture table below is retained unchanged. For each of its
+eight rows, these distinctions apply; none closes R1–R6 by itself.
+
+| Condition | Recorded status | Consequence |
+| --- | --- | --- |
+| Runner/image association | Observed on four rows in run 37177815281 | Identifies historical jobs, not every deployed byte |
+| Explicit probe cultures and ICU/settings | Observed for both package-probe cultures | Reference evidence, not measurement of live consumer |
+| Live processing culture and effective settings for each target culture | Unobserved / linkage unverified in all eight rows | Applicability condition, not a claim either culture was measured live |
+| Absence of deployment-added configuration or binary/data substitutions | Not established | No attestation claim or requirement to extend collectors merely to prove absence |
+| Future image/version equality | Not established by moving selectors | Updated runs describe their own configurations |
+
+Do not infer a known mismatch from an unobserved value. If a mismatch is later
+established, record it and do not claim applicability. Other-culture failures
+remain residual risks, not evidence that all target configurations fail.
+Disposition of unavailable reference evidence and unfinished work follows the
+scope decision, not a new rule in this evidence note.
+
+## Historical observations and pre-revision work order
+
+The remaining sections preserve observations and conclusions under the earlier
+live-linkage gate. References to a "next" linkage obligation or maintainer
+direction describe that earlier state, not the current work order. Use the
+claim inventory above and scope decision for further work.
+
 ## Same-job observations after PR #74
 
 The successful [run 37177815281](https://github.com/send/shoutx/actions/runs/37177815281)
@@ -113,6 +174,9 @@ or live Worker settings. The 78.1 local root reader has not been validated
 against these four generations.
 
 ## Remaining feasibility work
+
+Historical work list under the superseded gate; current tasks are in the
+[claim inventory](#claim-inventory).
 
 PR #74 added the existing live corpus to the package jobs; the same-job
 observations above close the initial missing-row inventory, but not the
@@ -267,6 +331,9 @@ route rechecks package digests after artifact expiry, not live state.
 
 ### Next consumer-linkage obligation
 
+Historical next step under the superseded gate; use the current
+[claim inventory](#claim-inventory), not this linkage-first ordering.
+
 The next consumer-linkage obligation is identifying relevant runtime/native
 modules and configuration in the Worker, separately from its child probe.
 Read-only module metadata supplies the limited hosted evidence below.
@@ -385,6 +452,9 @@ This reproduces the unavailable result; null hashes are not matches.
 Recheck run/attempt/job metadata through the API.
 
 ### What these alternatives can and cannot close
+
+Historical assessment under the superseded gate; current work follows the
+[claim inventory](#claim-inventory), not this linkage-first ordering.
 
 The feasibility table's eight consumer-linkage verdicts remain unverified;
 the module experiment does not promote either culture to verified. The exact

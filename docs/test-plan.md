@@ -1329,6 +1329,17 @@ synthetic tests establish collector behavior, not vendor resource semantics;
 native observations belong in the reference inventory and do not close its
 effective-data obligations.
 
+The selected resource follow-up adds
+`python -B tests/runner-package/test_icu_resource_probe.py` in both CI locations.
+Test table/table32 traversal, empty versus missing values, fixed output keys,
+header/index/region/key/string bounds and member limits. The
+[documented unsupported forms](compatibility/unicode-reference-inputs.md#windows-package-result-and-selected-resource-follow-up)
+must yield their closed unavailable category rather than absence.
+Package integration tests must cover `en_US` selection, storage identity
+preservation on resource failure, and resource-cap refusal. Retain only the
+fixed field projection; do not export resource strings, trees or binaries.
+This does not exercise native fallback or prove the effective collation choice.
+
 #### Hosted Worker module-metadata feasibility observation
 
 `tests/runner-package/hosted_modules.py` separately follows its own ancestor

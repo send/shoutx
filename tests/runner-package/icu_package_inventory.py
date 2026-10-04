@@ -6,7 +6,9 @@ headers and padding. The final entry has no next-offset length in this format.
 import hashlib
 import struct
 
-SELECTED = ("coll/en.res", "coll/root.res", "coll/ucadata.icu", "nfc.nrm",
+import icu_resource_probe
+
+SELECTED = ("coll/en.res", "coll/en_US.res", "coll/root.res", "coll/ucadata.icu", "nfc.nrm",
             "nfkc.nrm", "brkitr/root.res", "brkitr/char.brk")
 MAX_ENTRIES = 100000
 NAME_CAP = 1024
@@ -69,6 +71,11 @@ def inventory(data, prefix):
                         "size": item_end - item_start,
                         "sha256": hashlib.sha256(data[item_start:item_end]).hexdigest(),
                         **item_header}
+        if suffix in ("coll/en.res", "coll/en_US.res", "coll/root.res"):
+            rows[suffix]["resource"] = (
+                icu_resource_probe.project_resource(data[item_start:item_end])
+                if item_end - item_start <= icu_resource_probe.MEMBER_CAP
+                else {"status": "unavailable", "reason": "limit"})
     if not prefix_count:
         raise ValueError("prefix-mismatch")
     return {"packageHeader": h, "entryCount": count, "prefixNameCount": prefix_count,

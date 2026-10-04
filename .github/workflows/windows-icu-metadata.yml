@@ -13,6 +13,8 @@ on:
       - 'tests/runner-package/test_icu_data_candidate.py'
       - 'tests/runner-package/icu_package_inventory.py'
       - 'tests/runner-package/test_icu_package_inventory.py'
+      - 'tests/runner-package/icu_resource_probe.py'
+      - 'tests/runner-package/test_icu_resource_probe.py'
       - 'docs/compatibility/evidence/hosted-worker-modules-37184265280.json'
 
 permissions:
@@ -39,6 +41,8 @@ jobs:
           python -B tests/runner-package/test_icu_data_candidate.py
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python -B tests/runner-package/test_icu_package_inventory.py
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python -B tests/runner-package/test_icu_resource_probe.py
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Inspect candidate without loading vendor code
         run: python -B tests/runner-package/windows_icu_metadata.py --output target/windows-icu-locator.json

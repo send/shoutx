@@ -2,6 +2,7 @@
 
 This observes diagnostic process-start culture, job culture input and on-disk
 files, not processing-thread state or loaded native mappings. Unknowns stay unknown.
+Separately records presence only of named keys in this observer's environment.
 """
 import argparse
 import hashlib
@@ -19,6 +20,23 @@ STARTUP_CULTURE = re.compile(
     r"^\[\d{4}-\d\d-\d\d \d\d:\d\d:\d\dZ INFO Worker\] Culture: ([^\r\n]*)\r?$", re.M)
 FILE_CAP = 16 * 1024 * 1024
 TOTAL_CAP = 64 * 1024 * 1024
+CONFIGURATION_KEYS = (
+    "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT",
+    "DOTNET_SYSTEM_GLOBALIZATION_USENLS",
+    "DOTNET_SYSTEM_GLOBALIZATION_APPLOCALICU",
+    "DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY",
+    "CLR_ICU_VERSION_OVERRIDE",
+    "ICU_DATA",
+)
+
+
+def child_configuration_presence(environment):
+    """Query membership only; never compare or emit values/unrelated keys.
+
+    os.environ may fetch a value internally to implement membership.
+    """
+    return {name: "defined" if name in environment else "absent"
+            for name in CONFIGURATION_KEYS}
 
 
 class Unavailable(Exception):
@@ -205,8 +223,16 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
-    report = {"schemaVersion": 2, "status": "unavailable",
-              "scope": "diagnostic process-start culture, job culture input and on-disk identities; not processing-thread/native-state proof"}
+    report = {"schemaVersion": 3, "status": "unavailable",
+              "scope": "diagnostic process-start culture, job culture input, on-disk identities and separate child configuration presence; not processing-thread/native-state proof",
+              "childConfigurationPresenceStatus": "unavailable",
+              "childConfigurationPresence": None}
+    try:
+        presence = child_configuration_presence(os.environ)
+        report.update(childConfigurationPresence=presence,
+                      childConfigurationPresenceStatus="observed-child-environment")
+    except Exception:
+        pass  # Keep independent unavailable status; never publish exception/value.
     try:
         report["identity"] = identity(os.environ)
         report.update(observe(report["identity"]))

@@ -3,6 +3,8 @@ import io
 import json
 import os
 from pathlib import Path
+import subprocess
+import sys
 import tempfile
 from types import SimpleNamespace
 import unittest
@@ -37,6 +39,113 @@ def log(message):
 
 
 class HostedWorkerTests(unittest.TestCase):
+    def test_child_presence_queries_only_fixed_keys(self):
+        keys = (
+            "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "DOTNET_SYSTEM_GLOBALIZATION_USENLS",
+            "DOTNET_SYSTEM_GLOBALIZATION_APPLOCALICU",
+            "DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY",
+            "CLR_ICU_VERSION_OVERRIDE", "ICU_DATA",
+        )
+        self.assertEqual(probe.CONFIGURATION_KEYS, keys)
+        class MembershipOnly:
+            def __init__(self): self.queries = []
+            def __contains__(self, key):
+                self.queries.append(key)
+                return key == "ICU_DATA"
+            def __getitem__(self, key): raise AssertionError("value read")
+            def __iter__(self): raise AssertionError("key enumeration")
+        environment = MembershipOnly()
+        actual = probe.child_configuration_presence(environment)
+        self.assertEqual(environment.queries, list(keys))
+        self.assertEqual(actual, {key: "defined" if key == "ICU_DATA" else "absent" for key in keys})
+        for key in keys:
+            for value in ("", SECRET, "1", "0", "::warning::synthetic"):
+                result = probe.child_configuration_presence({key: value, "UNRELATED": SECRET})
+                self.assertEqual(result[key], "defined")
+                self.assertNotIn(SECRET, json.dumps(result))
+                self.assertNotIn("UNRELATED", result)
+
+    def test_child_presence_failure_is_independent(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "report.json"
+            with patch.dict(os.environ, EXPECTED, clear=True), \
+                    patch.object(probe.sys, "argv", ["probe", "--output", str(path)]), \
+                    patch.object(probe, "child_configuration_presence", side_effect=OSError(SECRET)), \
+                    patch.object(probe, "observe", return_value={"status": "observed-job-culture-input"}), \
+                    patch.object(probe.sys, "stdout", new_callable=io.StringIO) as stdout, \
+                    patch.object(probe.sys, "stderr", new_callable=io.StringIO) as stderr:
+                self.assertEqual(probe.main(), 0)
+                result = json.loads(path.read_text())
+                self.assertEqual(result["status"], "observed-job-culture-input")
+                self.assertEqual(result["childConfigurationPresenceStatus"], "unavailable")
+                self.assertIsNone(result["childConfigurationPresence"])
+                self.assertNotIn(SECRET, json.dumps(result) + stdout.getvalue() + stderr.getvalue())
+
+    def test_isolated_python_loads_projection_without_site(self):
+        code = (
+            "import json, os, runpy, sys; "
+            "p = runpy.run_path(sys.argv[1]); "
+            "print(json.dumps({'presence': p['child_configuration_presence'](os.environ), "
+            "'isolated': sys.flags.isolated, 'noSite': sys.flags.no_site}))"
+        )
+        environment = dict(os.environ)
+        for key in probe.CONFIGURATION_KEYS:
+            environment.pop(key, None)
+        environment["ICU_DATA"] = SECRET
+        result = subprocess.run([sys.executable, "-I", "-S", "-c", code,
+                                 str(Path(probe.__file__).resolve())],
+                                env=environment, capture_output=True, text=True, timeout=30)
+        self.assertEqual(result.returncode, 0)
+        self.assertEqual(result.stderr, "")
+        self.assertNotIn(SECRET, result.stdout)
+        report = json.loads(result.stdout)
+        self.assertEqual(report["isolated"], 1)
+        self.assertEqual(report["noSite"], 1)
+        self.assertEqual(report["presence"], {
+            key: "defined" if key == "ICU_DATA" else "absent" for key in probe.CONFIGURATION_KEYS})
+
+    def test_workflow_isolated_script_shape_and_cli_output(self):
+        root = Path(__file__).resolve().parents[2]
+        workflow = (root / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+        self.assertEqual(workflow.count("        id: worker_observation\n"), 1)
+        step = workflow.split("        id: worker_observation\n", 1)[1].split("\n      - name:", 1)[0] + "\n"
+        script_lines = [
+            "import runpy", "import sys",
+            'sys.argv = ["hosted_worker.py", "--output", "target/hosted-worker-evidence.json"]',
+            'runpy.run_path("tests/runner-package/hosted_worker.py", run_name="__main__")',
+        ]
+        self.assertIn("        shell: python -I -S {0}\n", step)
+        self.assertIn("        run: |\n" + "".join("          " + line + "\n" for line in script_lines), step)
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary) / "report.json"
+            script = Path(temporary) / "wrapper.py"
+            contents = "\n".join(script_lines).replace('"target/hosted-worker-evidence.json"', repr(str(output)))
+            script.write_bytes(contents.replace("\n", "\r\n").encode("utf-8"))
+            environment = dict(os.environ)
+            environment.pop("GITHUB_RUN_ID", None)  # Fail identity before any real ancestry/log inspection.
+            environment["ICU_DATA"] = SECRET
+            command = [sys.executable, "-I", "-S", str(script)]
+            result = subprocess.run(command, cwd=root, env=environment, capture_output=True, timeout=30)
+            self.assertEqual((result.returncode, result.stdout, result.stderr), (0, b"", b""))
+            report = json.loads(output.read_text())
+            self.assertEqual(report["status"], "unavailable")
+            self.assertEqual(report["reason"], "missing-or-invalid-identity")
+            self.assertNotIn("identity", report)
+            self.assertEqual(report["childConfigurationPresence"]["ICU_DATA"], "defined")
+            self.assertNotIn(SECRET, output.read_text())
+            previous = output.read_bytes()
+            again = subprocess.run(command, cwd=root, env=environment, capture_output=True, timeout=30)
+            self.assertEqual(again.returncode, 1)
+            self.assertEqual(again.stdout, b"")
+            self.assertEqual(again.stderr, ("Could not write hosted Worker observation." + os.linesep).encode())
+            self.assertEqual(output.read_bytes(), previous)
+
+    def test_actual_environment_key_case(self):
+        with patch.dict(os.environ, {"icu_data": SECRET}, clear=True):
+            result = probe.child_configuration_presence(os.environ)
+            self.assertEqual(result["ICU_DATA"], "defined" if os.name == "nt" else "absent")
+            self.assertNotIn(SECRET, json.dumps(result))
+
     def project(self, message):
         with tempfile.TemporaryDirectory() as temporary:
             path = Path(temporary)
@@ -180,6 +289,8 @@ class HostedWorkerTests(unittest.TestCase):
                 self.assertEqual(probe.main(), 0)
                 report = path.read_text()
                 self.assertEqual(json.loads(report)["status"], "unavailable")
+                self.assertEqual(json.loads(report)["childConfigurationPresenceStatus"], "observed-child-environment")
+                self.assertEqual(set(json.loads(report)["childConfigurationPresence"].values()), {"absent"})
                 self.assertNotIn(SECRET, report + stdout.getvalue() + stderr.getvalue())
                 self.assertEqual(probe.main(), 1)
                 self.assertEqual(path.read_text(), report)
@@ -218,7 +329,7 @@ class HostedWorkerTests(unittest.TestCase):
                         patch.object(probe.sys, "argv", ["probe", "--output", str(output)]):
                     self.assertEqual(probe.main(), 0)
                 result = json.loads(output.read_text())
-                self.assertEqual(result["schemaVersion"], 2)
+                self.assertEqual(result["schemaVersion"], 3)
                 self.assertEqual(result["startupCulture"], "en-US")
                 self.assertEqual(result["startupCultureStatus"], "observed")
                 self.assertEqual(result["cultureInputStatus"], "absent")

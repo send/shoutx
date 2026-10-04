@@ -13,6 +13,40 @@ static class CollationProbe
     static void Require(bool value, string rule) { if (!value) throw new ProbeFailure(rule); }
     static void Check(int error) => Require(error <= 0, "ICU observation API failed");
     static string Hash(byte[] bytes) => Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
+    static object DiskIdentity(string path)
+    {
+        string? name = null;
+        try
+        {
+            name = Path.GetFileName(path);
+            var before = new FileInfo(path);
+            long size = before.Length;
+            var modified = before.LastWriteTimeUtc;
+            if (size <= 0 || size > 128 * 1024 * 1024)
+                return new { name, status = "unsupported-file-size", sha256 = (string?)null };
+            using var stream = File.OpenRead(path);
+            using var digest = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+            byte[] buffer = new byte[1024 * 1024];
+            long count = 0;
+            int length;
+            while ((length = stream.Read(buffer)) != 0)
+            {
+                count += length;
+                if (count > 128 * 1024 * 1024)
+                    return new { name, status = "unsupported-file-size", sha256 = (string?)null };
+                digest.AppendData(buffer, 0, length);
+            }
+            before.Refresh();
+            if (count != size || before.Length != size || before.LastWriteTimeUtc != modified)
+                return new { name, status = "file-changed", sha256 = (string?)null };
+            return new { name, status = "observed", sha256 = Convert.ToHexString(digest.GetHashAndReset()).ToLowerInvariant() };
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException
+            or System.Security.SecurityException or NotSupportedException or ArgumentException)
+        {
+            return new { name, status = "unavailable", sha256 = (string?)null };
+        }
+    }
     static byte[] Resource(string name)
     {
         using var stream = typeof(CollationProbe).Assembly.GetManifestResourceStream(name)
@@ -524,6 +558,7 @@ static class CollationProbe
                 Require(common != IntPtr.Zero && international != IntPtr.Zero, "loaded ICU handle unavailable");
                 result["commonLibrary"] = commonPath;
                 result["internationalLibrary"] = internationalPath;
+                result["onDiskLibraries"] = new { common = DiskIdentity(commonPath), international = DiskIdentity(internationalPath) };
                 result["symbolSuffix"] = suffix;
                 byte[] version = new byte[4];
                 Bind<Version>(common, "u_getVersion")(version);

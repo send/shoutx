@@ -108,6 +108,19 @@ pass the preceding finite suites but no longer passes the complete harness.
 Native inspection uses the pinned runtime's private layout after prior suites
 finish; it does not run inside an unmodified hosted Worker. Missing exports or
 native faults are observation failures, not evidence that an input is unsafe.
+The native observation also records bounded SHA-256 identities of readable
+on-disk files at its selected ICU common/international paths. Missing files,
+oversized files or size/mtime changes leave a fixed status and null hash;
+expected file/path/access failures are auxiliary unavailable observations,
+not changes to the native behavioral pass gate. Fatal runtime/resource failures
+are not suppressed. Size/mtime checks use the pathname before and after reading;
+they do not exclude an equal-size/mtime replacement race or attest the file's
+mapped identity. Empty files are unsupported here (the metadata collector can
+hash an empty regular file); hashes and statuses must be compared explicitly.
+It is not a hash of loaded memory or effective mapping data. Shared-cache-only
+images can remain unavailable. These fields provide a counterpart for the
+[hosted metadata experiment](../test-plan.md#hosted-worker-module-metadata-feasibility-observation),
+not proof that a live Worker uses the same backend or data.
 
 The historical runs cited below predate the Unicode candidate extension;
 their passing results do not include that research suite or the later Unicode

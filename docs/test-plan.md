@@ -1069,7 +1069,9 @@ including exception text. The observer's offline test is a prerequisite for
 the live emit; collection with an unavailable result is not a test failure.
 The observer retains job identity, a timeline job GUID, ancestor Worker PID and SHA-256
 of explicitly named on-disk Worker/parser/runtime files, not their bytes or
-diagnostic contents. The separate `hosted-worker-input-OS-RID` artifact contains
+diagnostic contents. The current list also includes `Runner.Sdk.dll` and
+`Sdk.dll`, whose source participates in the output-processing chain; historical
+seven-file observations do not cover them. The separate `hosted-worker-input-OS-RID` artifact contains
 only the JSON projection, for 30 days. Unexpected errors are reported through
 fixed codes, not captured messages or tracebacks. Offline synthetic tests check
 matching, ambiguity, limits, sensitive-field suppression and no-overwrite.
@@ -1094,6 +1096,65 @@ Multiple message markers in a file are rejected, rather than selecting a later
 marker that preceding workload output could forge. These checks are observation
 sanity checks, not authentication of a log writable by the job user.
 Review [the audit](compatibility/unicode-feasibility.md) for per-row conclusions.
+
+#### Hosted Worker module-metadata feasibility observation
+
+`tests/runner-package/hosted_modules.py` separately follows its own ancestor
+chain to locate Worker and projects module metadata: `/proc/PID/maps`
+on Linux, `lsof -nP -a -p PID -d txt -Fn` text-file records on macOS, or
+`Process.Modules` through PowerShell on Windows. It requests no dump, stack
+data, environment listing or injection. Underlying APIs may read target
+loader structures: Windows module enumeration uses process VM-read rights.
+That acquisition mechanism is distinct from the strictly limited output.
+Windows filters module names before returning paths to Python and rejects
+UNC/device-prefix paths; a drive-letter path is not proof of local storage.
+Linux accepts coreclr, the globalization shim and numbered ICU
+common/international/data filenames; macOS selects only the known Worker-bin
+CoreCLR/shim and system ICU paths. Windows accepts CoreCLR, optional shim and
+combined/split ICU names. Nonselected metadata is
+discarded, not published. Unknown/custom names cannot establish absence of ICU.
+
+The report contains selected basenames, fixed statuses, ancestor PID and
+SHA-256 of readable regular on-disk files, never raw maps, addresses, full paths
+or library bytes. Mapped-deleted files are not reopened; missing disk files
+(including shared-cache-only images) retain null hashes. Each file is capped
+at 128 MiB and checked for size/mtime changes during hashing. Linux additionally
+compares the maps device/inode with the opened file's identity. This does not
+hash mapped memory or authenticate file contents against later writes.
+A mismatch is unavailable identity evidence, not proof of a file replacement;
+the filesystem's identity reporting may also prevent a match. macOS exact-path
+selection can miss symlink-resolved paths, which likewise remain unknown.
+File-specific failures preserve other mappings with a fixed failure status.
+Metadata larger
+than 4 MiB is rejected; native command capture precedes this size check and
+has a 30-second timeout. Both streams are captured in memory and discarded;
+errors are reduced to fixed codes. Ancestry is rechecked after collection.
+These checks do not authenticate against a job user modifying files or processes.
+
+`observed-module-metadata` means at least one selected mapping was observed,
+not that every relevant module was found. Read each `modules` entry and its
+independent `onDiskStatus`; `selectedClasses` distinguishes observed from
+not-observed classes without claiming absence. Empty/ambiguous selected results, denied access,
+timeouts and unsupported formats are unavailable, not passing evidence.
+The report keeps `activeBackend` and `effectiveData` null and
+`loadedBytesAttested` false. File equality would identify on-disk bytes at the
+observed paths, not prove mapped bytes are unchanged, native symbol binding,
+effective root/tailoring, settings or processing-thread culture.
+
+The four package jobs run the observer after startup-input collection and
+before the live emit, with no new job permissions and a two-minute step limit.
+A separate
+`hosted-worker-modules-OS-RID` artifact retains only its JSON for 30 days.
+Exit 0 means collection completed, including explicitly unavailable results;
+offline tests and artifact/write failures still fail CI.
+The outer step timeout also fails the package job and may prevent later live
+emission; it is an operational safety bound, not an unavailable JSON result.
+No evidence is claimed when collection/upload cannot complete.
+Synthetic tests cover
+selection, duplicate/deleted paths, bounds, errors, transport PID, UNC/device-path
+rejection, no raw-path disclosure, ancestry changes and no overwrite. The
+[feasibility audit](compatibility/unicode-feasibility.md) owns actual availability
+and conclusions; a configured collector is not evidence that it ran successfully.
 
 ### Continuing compatibility checks
 

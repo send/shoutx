@@ -194,6 +194,7 @@ class HostedWorkerTests(unittest.TestCase):
             log_path = diag / "Worker_20261004-050000-utc.log"
             log_path.write_bytes(log(fixture()).replace("\n", "\r\n").encode())
             names = ("Runner.Worker", "Runner.Worker.dll", "Runner.Common.dll", "System.Private.CoreLib.dll",
+                     "Runner.Sdk.dll", "Sdk.dll",
                      "Runner.Worker.runtimeconfig.json", "Runner.Worker.deps.json", "libcoreclr.so")
             for name in names: (binary / name).write_bytes(b"synthetic")
             with patch.object(probe, "worker_ancestor", return_value=(10, binary / "Runner.Worker")), \

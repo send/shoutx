@@ -46,6 +46,32 @@ class TrieTests(unittest.TestCase):
     def test_linear_branch(self):
         self.assertEqual(self.entries([1, 97, 0x8001, 98, 0x8002]), {(97,): 1, (98,): 2})
 
+    def test_supplementary_key_with_intermediate_value(self):
+        # Two stored UTF-16 units precede a value and a further matching unit.
+        units = [0x31, 0xd83d, 0xde00, 0x70, ord('x'), 0x8007]
+        self.assertEqual(self.entries(units),
+                         {(0xd83d, 0xde00): 0, (0xd83d, 0xde00, ord('x')): 7})
+
+    def test_supplementary_pair_crosses_branch_edge(self):
+        # The lead-unit branch edge jumps past the last edge to a trail-unit match.
+        units = [1, 0xd83d, 2, ord('x'), 0x8001, 0x30, 0xde00, 0x8007]
+        self.assertEqual(self.entries(units), {(0xd83d, 0xde00): 7, (ord('x'),): 1})
+
+    def test_multiunit_intermediate_values_before_branch(self):
+        for prefix, value in [([0x4041, 9], 9), ([0x7fc1, 0x8000, 1], 0x80000001)]:
+            with self.subTest(prefix=prefix):
+                self.assertEqual(self.entries(prefix + [ord('a'), 0x8002, ord('b'), 0x8003]),
+                                 {(): value, (ord('a'),): 2, (ord('b'),): 3})
+
+    def test_high_bit_returned_value_is_not_a_valid_bounded_jump(self):
+        self.assertEqual(self.entries([0xffff, 0x8000, 0]), {(): 0x80000000})
+        # Same 32-bit pattern without the final bit is a branch jump, not a value.
+        with self.assertRaisesRegex(reader.Unverified, 'reference outside section'):
+            self.entries([1, ord('a'), 0x7fff, 0x8000, 0, ord('b'), 0x8001])
+        # A long-branch delta uses a different lead encoding but the same bound.
+        with self.assertRaisesRegex(reader.Unverified, 'reference outside section'):
+            self.entries([5, 100, 0xffff, 0x8000, 0])
+
     def test_branch_jump(self):
         # First edge jumps over the last edge's key+value.
         self.assertEqual(self.entries([1, 97, 2, 98, 0x8002, 0x8001]), {(97,): 1, (98,): 2})

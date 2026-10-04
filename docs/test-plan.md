@@ -994,6 +994,12 @@ green CI does not verify the retained upstream equality or substitution claims.
 Source text equality is not vendor binding or proof of
 the reader's complete input profile; keep those conclusions separate.
 
+The [context matching coverage argument](compatibility/unicode-context-matching-evidence.md)
+separates conservative value coverage from input-consumption and whole-iterator
+claims. `test_mapping_inventory.py` includes a supplementary-unit key with an
+intermediate value and high-bit value-versus-jump regressions. These are
+synthetic decoder checks, not native execution or a universal proof.
+
 The full-scalar structural graph experiment is separate from the leading-weight
 classification below:
 

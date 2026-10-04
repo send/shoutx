@@ -48,7 +48,7 @@ class SourceComparisonTests(unittest.TestCase):
             result = subprocess.run(command, capture_output=True, text=True, check=False)
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertEqual(result.stderr, '')
-            self.assertEqual(result.stdout.count('normalizedIdentical True'), 7)
+            self.assertEqual(result.stdout.count('normalizedIdentical True'), len(comparison.DEPENDENCY_PAIRS))
             function_lines = [line for line in result.stdout.splitlines() if line.startswith('utrie2.cpp ')][:-1]
             self.assertEqual(len({line.split()[3] for line in function_lines}), 5)
             self.assertEqual(len({line.split()[5] for line in function_lines}), 1)

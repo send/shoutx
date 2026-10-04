@@ -90,6 +90,9 @@ DEPENDENCY_PAIRS = {
         ('(int32_t)(skipDelta(pos)-uchars_)', 'static_cast<int32_t>(skipDelta(pos) - uchars_)'),
         ('(int32_t)(pos-uchars_)', 'static_cast<int32_t>(pos - uchars_)'),
     ],
+    'ucharstrie.cpp': [
+        ('UBool isFinal=(UBool)(node>>15);', 'UBool isFinal = static_cast<UBool>(node >> 15);'),
+    ],
 }
 
 

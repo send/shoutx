@@ -339,6 +339,14 @@ jobs:
             throw "Expected .NET SDK 8.0.424, got $(dotnet --version)"
           }
       - run: rustup toolchain install stable --profile minimal
+      - name: Test offline managed reference inventory
+        shell: pwsh
+        working-directory: target/runner-oracle/actions-runner/src
+        run: |
+          $PSNativeCommandUseErrorActionPreference = $true
+          dotnet build "$env:GITHUB_WORKSPACE/tests/runner-package/managed-references/ManagedReferences.csproj" --nologo
+          dotnet run --project "$env:GITHUB_WORKSPACE/tests/runner-package/managed-references/tests/Tests.csproj"
+          python -B "$env:GITHUB_WORKSPACE/tests/runner-package/managed-references/tests/test_cli.py" "$env:GITHUB_WORKSPACE/tests/runner-package/managed-references/bin/Debug/net8.0/ManagedReferences.dll"
       - name: Generate and validate shared corpus
         shell: pwsh
         run: |

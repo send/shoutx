@@ -491,6 +491,31 @@ No loaded-memory measurement is a mandatory additional fifth item. If any named 
 bounded source analysis, apply the accepted stop rule instead of extending the
 collector or weakening the matrix without direction.
 
+#### Offline dependency member-reference inventory
+
+The [research helper](../tests/runner-package/managed-references/README.md)
+provides a bounded package-side check for the source/configuration
+acquisition-target investigation. Run it only against an immutable flat `bin/`
+extraction verified using the pinned archive identities and existing package
+harness. It uses the SDK's PE metadata reader, not the target runtime, and must
+not load or execute inspected assemblies. This can inspect other package
+architectures without claiming to execute those architectures locally.
+
+Its reported scope is selected names in MemberRef tables of the active
+dependency target's managed runtime assets. Require complete enumeration and
+hash agreement with the corresponding package manifest before using the
+inventory. A successful inventory is not a successful consumer-linkage gate.
+No absence-of-mutation claim follows just from missing references. The helper
+README owns its invocation, inventory exclusions and supported metadata
+shape/limits; excluded routes remain separate source obligations.
+
+CI runs synthetic metadata fixtures and CLI success/failure-projection tests in all
+four runner-differential rows with the pinned SDK. These tests need no vendor
+data or parent-process access. Actual archive scans and associated source
+interpretations belong in the compatibility evidence, separately from the
+fixture results. Retain the report, input archive/deps/file identities and
+scanner source identities; never publish inspected binary payloads.
+
 ### V2 Unicode data-start research
 
 The package probe additionally evaluates a candidate, not a production input

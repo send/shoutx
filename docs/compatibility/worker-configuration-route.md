@@ -204,8 +204,9 @@ Mapping this run to the test plan's
 - **Unclosed portions of checks 3–4 in this run:** transfer through the actual
   launch path, including removal/filtering beyond the inspected paths and the
   observer reporting an inherited empty-valued entry as `defined` on each
-  platform. The current fixtures do not execute that whole .NET-to-Python
-  empty-entry path. Relevant managed-cache/startup timing, AppContext
+  platform. The fixtures at that run did not execute the .NET-to-Python
+  empty-entry path; the subsequent control below tests its SDK-to-Python suffix.
+  Relevant managed-cache/startup timing, AppContext
   effective settings, and each platform's native/locale selection outcome
   also remain unclosed.
   Native getenv and ICU data selection are not established by this child view.
@@ -215,6 +216,14 @@ the scope decision's [ordering and stop rule](../decisions/github-actions-unicod
 not a new completion gate in this note.
 This input-focused assessment does not discharge check 2's separate
 culture/execution-context obligations.
+
+The subsequent [package transport control](../test-plan.md#package-environment-transport-control)
+targets one remaining gap: execution of the published SDK invoker through
+the pinned runtime's environment serializer to the isolated Python observer.
+It introduces absent/empty/null/text controls without modifying parent
+globalization selectors. This is not yet a retained four-row result and does
+not extend what run 37190267207 measured. Earlier Runner launch stages, native
+environment and startup/cache timing remain separate source obligations.
 
 ## Reproduction and retention
 

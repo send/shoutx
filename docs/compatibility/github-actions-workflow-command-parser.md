@@ -49,6 +49,13 @@ Any diagnostic projection needs trustworthy job/process correlation and
 strict output selection; startup information alone does not establish later
 thread state, effective native inputs or transfer to an unobserved culture.
 
+For diagnostic job correlation, pinned
+[`ExecutionContext`](https://github.com/actions/runner/blob/397b032cbf865e9c3ddfab89d533ec19325e1273/src/Runner.Worker/ExecutionContext.cs)
+initializes `github.job` from `system.github.job`, then overlays the supplied
+`github` context. `message.JobName` is a timeline reference, not an established
+source of `GITHUB_JOB`. The observer follows the resolved context rather than
+assuming those two names match.
+
 ## Parser fallback and impact
 
 Before parsing, `OutputManager` uses culture-sensitive searches for either

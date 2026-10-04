@@ -416,10 +416,25 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
+      - name: Build research binary for package-matched hosted observations
+        shell: pwsh
+        run: |
+          $env:CARGO_TARGET_DIR = 'target/hosted-research'
+          cargo +stable build --locked --features unstable-github-actions-stdout
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Exercise package-matched hosted boundaries
+        shell: bash
+        env:
+          UNSTABLE_BINARY: ${{ github.workspace }}/target/hosted-research/debug/shoutx${{ matrix.os == 'windows-latest' && '.exe' || '' }}
+        run: python -B tests/workflow-smoke/hosted_boundaries.py emit
+      - name: Mark package-matched hosted sequence complete
+        shell: bash
+        run: python -B tests/workflow-smoke/hosted_boundaries.py finish
+
   hosted-annotations:
-    needs: [changes, test]
+    needs: [changes, test, runner-differential]
     if: ${{ always() }}
-    timeout-minutes: 10
+    timeout-minutes: 30
     runs-on: ubuntu-latest
     permissions:
       actions: read
@@ -550,6 +565,21 @@ jobs:
             fi
 
           done
+      - name: Verify package-matched hosted observations
+        id: research_boundaries
+        if: ${{ always() && needs.changes.outputs.run_ci == 'true' }}
+        shell: bash
+        run: |
+          command -v jq
+          python -B tests/workflow-smoke/test_research_boundaries.py
+          bash .github/scripts/verify-research-boundaries.sh
+      - name: Summarize package-matched verification outcome
+        if: ${{ always() && needs.changes.outputs.run_ci == 'true' }}
+        shell: bash
+        env:
+          RESEARCH_OUTCOME: ${{ steps.research_boundaries.outcome }}
+        run: |
+          echo "Package-matched boundary verification outcome (four rows): $RESEARCH_OUTCOME" >> "$GITHUB_STEP_SUMMARY"
       - name: Summarize hosted Runner compatibility
         if: ${{ always() && needs.changes.outputs.run_ci == 'true' }}
         run: python -B tests/workflow-smoke/hosted_boundaries.py summary --evidence "$RUNNER_TEMP/hosted-boundary-evidence"

@@ -31,6 +31,24 @@ contains no Thai or non-ASCII data. The relevant variable is locale-sensitive
 protocol parsing whose result can depend on culture, collation backend, and
 collation-data version.
 
+### Culture diagnostic observation route
+
+The 2026-10-04 [feasibility audit](unicode-feasibility.md) inspected the local
+Runner checkout at pinned commit `397b032cbf865e9c3ddfab89d533ec19325e1273`.
+[`Worker.SetCulture`](https://github.com/actions/runner/blob/397b032cbf865e9c3ddfab89d533ec19325e1273/src/Runner.Worker/Worker.cs)
+consumes the job's culture before starting `JobRunner`.
+[`HostContext.SetDefaultCulture`](https://github.com/actions/runner/blob/397b032cbf865e9c3ddfab89d533ec19325e1273/src/Runner.Common/HostContext.cs)
+sets both default thread cultures and emits a verbose trace of the name.
+This establishes a source route, not a hosted job's actual input.
+The release default is Info in
+[`TraceSetting`](https://github.com/actions/runner/blob/397b032cbf865e9c3ddfab89d533ec19325e1273/src/Runner.Common/TraceSetting.cs),
+so a missing verbose line does not establish absence of a culture setting.
+Worker also logs the job message at Info after initialization. That message
+may contain sensitive data and must not be copied into public evidence.
+Any diagnostic projection needs trustworthy job/process correlation and
+strict output selection; startup information alone does not establish later
+thread state, effective native inputs or transfer to an unobserved culture.
+
 ## Parser fallback and impact
 
 Before parsing, `OutputManager` uses culture-sensitive searches for either

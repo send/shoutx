@@ -358,7 +358,7 @@ Explicit Invariant Culture does not enable globalization-invariant mode.
 Local research results cannot substitute for a missing row. Do not infer
 live Worker culture from these explicitly configured probes or child locale.
 
-The existing live experiment has a **different** matrix: `ubuntu-latest`,
+The ordinary live experiment has a **different** matrix: `ubuntu-latest`,
 `macos-latest` and `windows-latest`. In particular it has no explicit Ubuntu
 22.04 row, and `macos-latest` is not a binding to macOS 15. For closure, each
 target row needs corresponding live evidence from the same resolved
@@ -369,8 +369,10 @@ the same CI source run. A cross-run comparison requires the same recorded
 identities and an explicit check for intervening relevant runtime/data changes;
 run proximity or identical labels are not sufficient.
 A mismatched version/image is evidence only for that observed combination;
-it does not close the baseline row. Obtaining missing matching live runs or
-explicitly revising the target is future work, not a CI change made here.
+it does not close the baseline row. The additional package-matched experiment
+described under [package-matched observations](#package-matched-feasibility-observations) addresses
+selector coverage; only inspected successful runs, not its configuration,
+supply the missing observations.
 
 The initial feasibility pass must also establish how the live Worker fits the
 explicit-culture proof scope. Acceptable evidence is a direct observation of
@@ -991,6 +993,42 @@ evidence; require all three reports and the successful verifier job. Only
 synthetic canaries are used; reports do not contain full job logs or raw mask
 values. This finite matrix neither expands accepted input nor resolves the
 deferred `th-TH` issue nor changes stdout release eligibility.
+
+#### Package-matched feasibility observations
+
+The [feasibility audit](compatibility/unicode-feasibility.md) also emits the existing bounded hosted
+corpus in each of the four `runner-differential` jobs, after the package probe.
+The hosted verifier waits for those jobs and checks their completed logs and
+paginated annotations with the same offline-tested verifier. Its reports are
+retained under `package-matched/` in `hosted-boundary-evidence`, with each source
+job ID and attempt. This places package and live observations in the same job;
+it does not assert binary equality, Worker culture/backend, or equality of
+the package's sanitized environment and the Worker's startup environment.
+The preceding three-report, 33-annotation and ordinary-test-sentinel rules
+describe the ordinary `test` jobs. Each package-matched job instead emits 30
+corpus annotations and its own final sentinel, with no dogfood annotations.
+All four additional reports and the successful hosted verifier are required;
+passing individual reports in a failed/partial run are not a passing matrix.
+Once the verifier script starts, one failed row does not suppress collection
+of other rows; it writes per-row passed/failed reports and any failure fails
+the verifier at the end. A missing report (including prerequisite failure or
+timeout before collection/upload) is incomplete evidence, never a pass.
+
+Both variants use Bash and the same Python producer source, with separately
+built native binaries from the same source and feature set.
+The package-matched variant follows SDK setup, source-oracle and package-probe
+steps, so its live Worker's masks, command state and any registered problem
+matchers are not fresh. No reset of
+that state is claimed. Whole-log leak/identity checks and exact block/API checks
+still apply, including interference from preceding steps. A failed emit fails
+the package job too. The 30-minute package-job budget includes the extra build
+and emit; inspect actual timing before treating it as adequate headroom.
+The hosted verifier's 30-minute budget now covers both sets of observations.
+
+The existing three-OS summary remains a summary of the ordinary test jobs,
+not an aggregate of these additional reports. A separate summary line reports
+the four-row verifier step's outcome. Missing observations fail the hosted
+verification job. No new Unicode inputs are accepted.
 
 ### Continuing compatibility checks
 

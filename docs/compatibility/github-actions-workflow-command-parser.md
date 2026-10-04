@@ -1001,6 +1001,56 @@ consumer matrix gate, an acceptance generator or a runtime performance test.
 See the [verification procedure](../test-plan.md#offline-root-mapping-graph-research)
 for limits and exit-status semantics.
 
+#### Delimiter mapping and conditional entry-state step
+
+The full graph report also records `delimiterMappingEvidence`, only after all
+scalar roots complete. It checks U+003A's initial mapping and every stored key
+in the context tries visited by that walk, not merely the leading-weight
+candidate inventory. Prefix keys are stored in reverse order, but whether a
+key contains the colon UTF-16 unit does not depend on that order. Counts are
+per entry in each distinct cached context trie, not per scalar, dispatch
+argument, reconstructed context string or native `USet` member. Defaults have
+no key and are not counted. Context values are mappings, not text.
+
+On 2026-10-04, the same local payload identified above had colon CE32
+`0x07360505`. From the simple CE32 representation and the source conversion,
+its first raw half equals that value and its second half is zero by
+construction; these are derived values, not independent native measurements.
+None of 1,151 entries across the 77 visited context tries had a key containing
+colon. The exact difference from the earlier 1,153 reconstructed strings is
+**unreconciled**. The enumerations use different units (stored-trie entries
+versus strings including the owning scalar and prefix/suffix position), but
+that alone does not explain the two-item difference. The counts must not be
+treated as mutually corroborating coverage. The new observation was made by
+the offline decoder, not a fresh native cross-check.
+
+This supplies evidence for a small **conditional** step in the entry-state
+argument. Assume the normal, non-FCD UTF-16 iterator is immediately before the
+first intended colon, moving forward, with no pending `otherHalf_`, no unread
+buffered CEs, no active skipped-mark replay and `numCpFwd < 0`. Assume its
+effective colon mapping is the observed simple mapping, no error occurs and
+the guarded processed-CE settings (including non-ignorable alternate handling)
+retain that raw element. Under the inspected
+78.1 [`nextCE`](https://github.com/unicode-org/icu/blob/release-78.1/icu4c/source/i18n/collationiterator.h#L117-L134)
+simple branch, one code unit is consumed and one CE is returned; the buffer
+index reaches its length without entering contextual dispatch. The
+[`next`](https://github.com/unicode-org/icu/blob/release-78.1/icu4c/source/i18n/coleitr.cpp#L103-L138)
+conversion has no second half to save. Repeating for the second colon leaves
+the physical position at `d`, with no unread delimiter CE or continuation.
+The following call can therefore begin at `d` under those entry assumptions.
+
+The report deliberately keeps `delimiterEntryStateProven: false`. Absence
+from stored context keys is not by itself proof that an earlier mapping cannot
+consume or skip a colon: that requires the relevant canonical-combining/FCD
+properties and the contiguous/discontiguous matching rules, as well as the
+whole-header entry argument. It also does not establish the search cursor's
+actual state after resets or lookahead, processed-weight uniqueness of the
+intended delimiter, external break acceptance, effective tailoring/root
+identity or the code loaded by the consumer. Non-simple colon mappings are
+reported without inferring a raw-half result, even when some could satisfy a
+more general rule. The static observations neither prove nor refute consumer
+safety; they close no adoption gate on their own.
+
 ### Mapping-data acquisition feasibility (local research)
 
 A 2026-10-03 local macOS 26.6.2 (25G83) ARM64 experiment used the Runner-package CoreLib

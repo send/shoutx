@@ -418,7 +418,7 @@ reopen the file between hashing and parsing. This prevents mixing two reads,
 but does not make the original read an atomic filesystem snapshot. A mismatch
 retains candidate metadata and reports `candidate-hash-mismatch`; an unsupported
 layout reports a closed reason without partial inventory or exception text.
-No names under the assumed prefix yields `prefix-mismatch`, not seven absent
+No names under the assumed prefix yields `prefix-mismatch`, not all absent
 members. A successful inventory includes the bounded `prefixNameCount`.
 If it is less than `entryCount`, absent selected names can also reflect members
 under a different prefix; the count alone does not resolve that ambiguity.
@@ -433,11 +433,11 @@ including unselected entries. Exact four-byte format version and strictly
 increasing offsets are collector constraints, not claims about ICU's full
 accepted format range. Name storage may overlap; it is not fully validated.
 The count is capped at 100,000, name storage at 1,024 bytes per name, and input
-at 64 MiB. Only these seven fixed suffixes are projected:
-`coll/en.res`, `coll/root.res`, `coll/ucadata.icu`, `nfc.nrm`, `nfkc.nrm`,
+at 64 MiB. Eight fixed suffixes are projected (the first version omitted `en_US`):
+`coll/en.res`, `coll/en_US.res`, `coll/root.res`, `coll/ucadata.icu`, `nfc.nrm`, `nfkc.nrm`,
 `brkitr/root.res`, and `brkitr/char.brk`. No full name table, member payload bytes or
-mapping table is returned. Windows inspection assumes `icudt72l`, pending
-the hosted structure observation; the helper
+mapping table is returned. Windows inspection uses `icudt72l`, confirmed in
+the structure observation below; the helper
 also permits the other three fixed research generations for local inspection.
 
 Selected non-final entries report offset from the start of the supplied package
@@ -452,7 +452,126 @@ normalization, for example, may be compiled into the native library.
 Unselected member payloads are not validated. This is neither a complete ICU
 validator nor a collator/mapping decoder. Header or storage-hash agreement
 does not establish semantics, fallback selection, or native acceptance.
-The Windows structure observation is pending; R2/R3 remain open.
+R1–R4 remain open; the follow-up below records the remaining obligations.
+
+#### Windows package result and selected resource follow-up
+
+[Run 37227207324](https://github.com/send/shoutx/actions/runs/37227207324),
+attempt 1, job 111509235154, succeeded with source head
+`8b97b3246c0139f2e56c810cc57b64c17c31707f` on the same fixed image.
+The tested merge `aa3d661bc42f6b9208826b01886aaf5fee3c9f1d` has API-verified
+parents `45baca6e2bf1f2964c52703a772ef61007c8d557` and that head.
+The metadata-only JSON raw SHA-256 is
+`5f508d09f36ef2df5b7f0c957de47ba0f2ab2f3795c11f6f4f72ebb6135656d1`.
+The DLL and data-file identities match the preceding observation.
+`entryCount` and `prefixNameCount` both equal **4,512**. The package has a
+144-byte CmnD-v1 header. Selected storage observations were:
+
+| Member suffix | File offset | Storage bytes | SHA-256 |
+| --- | ---: | ---: | --- |
+| `coll/en.res` | 4443344 | 80 | `ee066818c0bfc2e92c9f4486f3087c3669b998786b0363a04467136d80c00d8b` |
+| `coll/root.res` | 5518464 | 302032 | `a46fbd7d6627bb20670c58a02fec0e90c1fd01cf0d7c483b2c9ed0fac31668e5` |
+| `coll/ucadata.icu` | 6085376 | 572656 | `16396c0d5ca673cb0cdf63f91b7aa8d8e1eafafe7dbc77360a177bd75aca1c5c` |
+| `nfkc.nrm` | 19852992 | 55120 | `a685cc08f4b43a2201caa43b9a5a23402df8be06f014310e2f5a0eb94c98ebe7` |
+| `brkitr/root.res` | 3591888 | 656 | `0ce8dcad47084e4915490c13dbc39eeb11bbb43f7a29e3391c93226846976d19` |
+| `brkitr/char.brk` | 641216 | 13776 | `446460cfac65b5340c15ef7bd01fa583df95073254d58364c9c15131d59ffd8e` |
+
+`nfc.nrm` was absent under that exact name. `en_US` was not selected by this
+collector version and therefore has **no observation**, not an absent result.
+The resources have ResB-v2 headers, collation root UCol-v5, normalization
+Nrm2-v4, and character break Brk-v6. Member headers are 32 bytes except the
+character-break header (144 bytes).
+
+Local comparison with the recovered Ubuntu 74.2 data found exact storage-hash
+matches for `en.res`, `ucadata.icu`, `nfkc.nrm` and `char.brk`. Under SHA-256
+collision resistance, these selected byte ranges can share offline analysis.
+Both `root.res` files differ; whole-package identity, effective selection and
+complete collator equivalence do not follow. In particular, the Windows DLL's
+72.1 label must not select a stock upstream data package by version alone.
+
+To test that alternative explicitly, the official
+[ICU 72.1 little-endian data ZIP](https://github.com/unicode-org/icu/releases/download/release-72-1/icu4c-72_1-data-bin-l.zip)
+was read locally without loading code. ZIP SHA-256:
+`1bc02487cbeaec3fc2d0dc941e8b243e7d35cd79899a201df88dc9ec9667a162`;
+its 31,251,968-byte `icudt72l.dat` has SHA-256
+`d201aaa64229f5d2f418d1934c971fb281ce282e10858be889489f9402d45fe8`.
+It has 3,920 entries. Only `en.res` and `char.brk` among the observed storage
+ranges match Windows; the other four do not. This is a rejected substitution,
+not a missing-data claim. No vendor bytes were published.
+
+The next collector adds the exact `coll/en_US.res` name and a bounded
+`resource` projection for `en`, `en_US` and `root`. The interpretation uses
+[`uresdata.h`](https://github.com/unicode-org/icu/blob/ff3514f257ea10afe7e710e9f946f68d256704b1/icu4c/source/common/uresdata.h)
+and [`uresdata.cpp`](https://github.com/unicode-org/icu/blob/ff3514f257ea10afe7e710e9f946f68d256704b1/icu4c/source/common/uresdata.cpp).
+This commit is the upstream `release-72-1` tag, selected as the 72.1 format and
+loader reference, not because a version proves Microsoft's source identity.
+Its file blobs were matched to the inspected source. The selected keys follow
+[`ucol_res.cpp`](https://github.com/unicode-org/icu/blob/ff3514f257ea10afe7e710e9f946f68d256704b1/icu4c/source/i18n/ucol_res.cpp):
+the loader performs parent/fallback-resolving lookups for `collations` and
+`default`. If `ures_openNoDefault` or the `collations` lookup returns
+`U_MISSING_RESOURCE_ERROR`, the loader returns the root entry; this is not a
+test of a single file's existence. An absent, empty or overlong default becomes
+`standard`. If the fallback-resolved type resource's
+actual locale is root and its type is `standard`, it returns the root collator
+before reading a tailoring binary. Per-file presence fields below are not
+loader-visible results. This is upstream
+source guidance for the research, **not** established Microsoft binary/source
+correspondence or a proved en-US/root fallback path. Explicit parent/alias
+resources (`%%Parent`, `%%ALIAS`), `coll/res_index.res`, and their relevance to
+the selected route remain unobserved/unproved; they are not assumed absent.
+
+The projection accepts only little-endian ResB-v2 with seven indexes and no
+pool dependency, bounded to 4 MiB. It checks key/16-bit-unit/bundle regions,
+table/table32 bounds and sorted printable-ASCII keys. It traverses only the
+root table and `collations` table, with at most 4,096 entries per table and
+256 bytes per key including NUL. Short implicit String-v2 values have a 64-unit
+scan cap including NUL. Type-0 resource word zero is also recognized as an
+empty string, matching the pinned generator's
+[`StringBaseResource`](https://github.com/unicode-org/icu/blob/ff3514f257ea10afe7e710e9f946f68d256704b1/icu4c/source/tools/genrb/reslist.cpp).
+These are collector constraints, not ICU's complete accepted format.
+It reports resource flags, root type and whether its offset is zero, presence of `collations`,
+`default`, and `standard`, the default's equality to the fixed token
+`standard`, and the standard resource's type. It publishes no key list,
+string value, tailoring binary, or resource tree. Missing and empty defaults
+are distinct. `rootOffsetZero` identifies the offset-zero empty-table encoding;
+it is not a general emptiness test for a nonzero-offset table with count zero.
+An alias type can be reported but is never resolved.
+Unselected resource handles and the contents of `standard` are not validated;
+this is selected-path metadata, not validation of the whole resource bundle.
+Pools, aliases on traversed paths, other containers and length-prefixed
+strings are unsupported, not equivalent to missing values. Resource failure
+retains package storage metadata but returns an allowlisted reason:
+`format-version`, `pool-or-index-layout`, `container-type`, `string-encoding`,
+`limit`, or `layout`. The last covers malformed bounds and unexpected parse
+errors and an unterminated key within the key-cap window (including key-cap
+overflow); it does not classify native acceptance. `format-version` includes
+a non-ResB format identifier. The member-size cap shares
+one definition between caller and parser and reports `limit` in either place.
+Final package entries with unknown storage length are not parsed.
+The additive `resource` field keeps schema version 1; older observations omit it.
+
+Exploratory local inspection of the recovered 70.1/74.2/76.1 candidates found
+empty `coll/en.res` and `coll/en_US.res` tables without the no-fallback flag, and root default
+`standard`. This identifies selected fields, not locale fallback, absence of
+other sources, or native use. The Windows resource observation is pending.
+R1/R2 still require the fixed reference's effective route; R3/R4 still require
+mapping/normalization/break prerequisites and arbitrary-suffix composition.
+
+For that local observation, use the full-file identities and acquisition paths
+recorded in this inventory. The new `en_US` 80-byte storage regions have SHA-256
+`ee066818c0bfc2e92c9f4486f3087c3669b998786b0363a04467136d80c00d8b`,
+at file offsets 4,183,296 (70.1), 4,352,752 (74.2), and 4,810,672 (76.1).
+The first two include the ELF package's 8,192-byte base offset. Their decoded
+root handle is type 2 with offset zero, not inferred from the size alone.
+The `en` and `root` offsets, sizes and storage hashes are already in the
+[Ubuntu member table](#ubuntu-embedded-data-location-experiment) and
+[macOS data inventory](#macos); use those rows for their checks.
+Reproduce the selected-field check without loading vendor code, supplying both
+the full-file and selected storage hashes:
+
+```sh
+PYTHONPATH=tests/runner-package python3 -B -c 'import hashlib,sys; from pathlib import Path; from icu_resource_probe import project_resource; b=Path(sys.argv[1]).read_bytes(); assert hashlib.sha256(b).hexdigest()==sys.argv[2]; p,n=map(int,sys.argv[3:5]); member=b[p:p+n]; assert len(member)==n and hashlib.sha256(member).hexdigest()==sys.argv[5]; r=project_resource(member); assert r["status"]=="observed-selected-fields"; print(r)' FILE EXPECTED_FULL_SHA256 OFFSET SIZE EXPECTED_STORAGE_SHA256
+```
 
 ### macOS
 

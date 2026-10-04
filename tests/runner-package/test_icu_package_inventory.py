@@ -2,6 +2,7 @@ import hashlib
 import struct
 import unittest
 from unittest.mock import patch
+from test_icu_resource_probe import fixture as resource_fixture
 
 import icu_package_inventory as probe
 
@@ -33,7 +34,8 @@ class PackageTests(unittest.TestCase):
         self.assertEqual(set(r), {"packageHeader", "entryCount", "prefixNameCount", "members"})
         self.assertEqual(set(r["members"]), set(probe.SELECTED))
         member = r["members"]["coll/en.res"]
-        self.assertEqual(set(member), {"status", "offset", "size", "sha256", "headerSize", "formatHex", "formatVersion", "dataVersion"})
+        self.assertEqual(set(member), {"status", "offset", "size", "sha256", "headerSize", "formatHex", "formatVersion", "dataVersion", "resource"})
+        self.assertEqual(member["resource"], {"status": "unavailable", "reason": "pool-or-index-layout"})
         self.assertEqual(member["offset"], 256)
         self.assertEqual(member["size"], 80)
         self.assertEqual(member["headerSize"], 32)
@@ -132,6 +134,36 @@ class PackageTests(unittest.TestCase):
             struct.pack_into("<" + kind, data, offset, value)
             with self.subTest(offset=offset, value=value), self.assertRaises(ValueError):
                 probe.inventory(data, "icudt72l")
+
+    def test_resource_projection_and_en_us_selection(self):
+        data = fixture()
+        member = resource_fixture()
+        data[256:336] = member
+        delta = len(member) - 80
+        struct.pack_into("<I", data, 160, 192 + delta)
+        struct.pack_into("<I", data, 168, 272 + delta)
+        # Use unused name-table space without shifting offsets.
+        name = b"icudt72l/coll/en_US.res\0"
+        data[230:230 + len(name)] = name
+        struct.pack_into("<I", data, 148, 86)
+        result = probe.inventory(data, "icudt72l")
+        row = result["members"]["coll/en_US.res"]
+        self.assertEqual(row["resource"]["status"], "observed-selected-fields")
+        self.assertTrue(row["resource"]["defaultIsStandard"])
+        self.assertEqual(row["sha256"], hashlib.sha256(member).hexdigest())
+        self.assertEqual(result["members"]["coll/en.res"], {"status": "absent"})
+        with patch.object(probe.icu_resource_probe, "MEMBER_CAP", len(member) - 1):
+            limited = probe.inventory(data, "icudt72l")["members"]["coll/en_US.res"]
+            self.assertEqual(limited["resource"], {"status": "unavailable", "reason": "limit"})
+            self.assertEqual(limited["sha256"], row["sha256"])
+
+    def test_final_resource_not_parsed(self):
+        data = fixture().replace(b"icudt72l/coll", b"icudt70l/coll")
+        name = b"icudt72l/coll/root.res\0"
+        data[216:216 + len(name)] = name
+        with patch.object(probe.icu_resource_probe, "project_resource", side_effect=AssertionError("must not parse")):
+            row = probe.inventory(data, "icudt72l")["members"]["coll/root.res"]
+        self.assertEqual(row, {"status": "last-entry-length-unknown", "offset": 416})
 
     def test_cap(self):
         data = fixture()

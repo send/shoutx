@@ -114,8 +114,35 @@ offsets, and check all bounds/order properties above. Offsets are relative to
 the TOC immediately after the header. Locate the exact
 `icudt70l/coll/ucadata.icu` or `icudt74l/coll/ucadata.icu` name; compute its
 storage length from the successor, and compare its SHA-256 with the input
-inventory. A reusable checked inspector and fixture tests remain to be added;
-the observations currently come from a local fixed-input inspection.
+inventory. The offline inspector reuses the existing bounded package inventory:
+
+```sh
+python3 -B tests/runner-package/icu_elf_package.py libicudata.so.70.1 \
+  --sha256 SHA256_FROM_INPUT_INVENTORY \
+  --symbol-va 0x2000 --symbol-size 29466000 --prefix icudt70l
+```
+
+Replace `SHA256_FROM_INPUT_INVENTORY` with the full-library hash for
+`libicudata.so.70.1` in the [input inventory](unicode-reference-inputs.md).
+For 74.2 use its full-library hash from the same inventory, symbol size
+30782896 and prefix `icudt74l`. The hash and symbol coordinates are explicit
+caller inputs: independently verify them using the inventory and exported
+symbol table, rather than treating a successful invocation with arbitrary
+arguments as identity evidence. The inspector requires one unambiguous
+file-backed `PT_LOAD` mapping of the entire supplied span, ELF64 little-endian
+x86-64 shared-object metadata, and the existing package parser's bounded
+header/TOC checks. It does not interpret dynamic symbols itself.
+
+`package.members` offsets are relative to the supplied package, not to the ELF
+file or the TOC. Add `symbolFileOffset` (8192 in both references) to obtain the
+file offsets in the table above. Compare count, member storage size and hash
+with the retained observations; exit 0 only means inspection completed.
+The output contains selected metadata/hashes, not vendor payloads or a full
+name table. Rejected arguments, reads, identities and layouts exit nonzero
+without stdout. The 64 MiB file cap accommodates both recovered data libraries;
+it is a research resource limit, not a universal ELF size bound. This wrapper
+does not reproduce the disassembly or prove loader behavior. Fixture coverage
+is specified in the [test plan](../test-plan.md).
 
 Remaining composition includes normal symbol resolution and dependency
 selection, initialization/registration ownership, directory/access-mode

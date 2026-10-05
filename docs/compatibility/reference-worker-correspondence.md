@@ -397,6 +397,37 @@ owns the feature's consequences. Do not infer a normal server input from the
 fixture setting or promote fresh fixture state to arbitrary prior workflow
 state. These differences remain part of the reference-path analysis.
 
+### Job inputs and the distinction between consumption and effects
+
+The pinned
+[`ExecutionContext.InitializeJob`](https://github.com/actions/runner/blob/397b032cbf865e9c3ddfab89d533ec19325e1273/src/Runner.Worker/ExecutionContext.cs#L924-L947)
+constructs `Global.Variables` from `message.Variables`. Its intervening
+`SetDebugUsingVars` helper only fills the two absent debug variables from the
+vars context; it does not supply the enhanced-annotations flag.
+[`Variables`](https://github.com/actions/runner/blob/397b032cbf865e9c3ddfab89d533ec19325e1273/src/Runner.Worker/Variables.cs)
+copies nonblank names into an ordinal-ignore-case dictionary. `GetBoolean`
+uses `bool.TryParse` and returns null for missing or unparseable values.
+Together with the manager's `?? false`, this identifies the feature's job-input
+route and disabled fallback, not a package default of enabled or an observation
+of a historical hosted job's flag. WorkerProbe supplies `true` in its synthetic
+job request and passes that request through the actual `InitializeJob` method.
+
+There are two separate success gates. In the pinned
+[`OutputManager`](https://github.com/actions/runner/blob/397b032cbf865e9c3ddfab89d533ec19325e1273/src/Runner.Worker/Handlers/OutputManager.cs#L77-L98),
+a nonempty line passing the culture-sensitive command prefilter is handed
+unchanged to the manager. A true manager result returns before marker stripping,
+problem matchers and ordinary output. This conditional control-flow fact does
+not prove the prefilter result or successful OutputManager construction.
+Moreover, the manager catches extension exceptions, reports errors, sets
+`CommandResult = Failed`, and can still return true. Thus consumption without
+fallback is not evidence of successful mask registration or annotation effects.
+WorkerProbe's `Send` additionally requires a null `CommandResult` and no
+unexpected service calls; the individual cases assert effects separately.
+Those finite controls do not establish exception-free processing for every
+permitted value. The reference proof must retain both recognition and effects
+obligations, including the existing resource/failure scope, rather than equating
+the manager's Boolean with the proposed guarantee.
+
 | Difference | Evidence established here / already retained | Required continuation |
 | --- | --- | --- |
 | SDK muxer/hostfxr versus package apphost | Distinct versions and host modes explicitly identified; probe reports the 8.0.30 hostpolicy banner before its initialization bag, and normal package route is source-assessed | Bind hostpolicy path/bytes and relevant resolved assets/settings on normal reference route; do not substitute the SDK launcher source for the package launcher |

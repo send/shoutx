@@ -98,6 +98,59 @@ members. Thus this format/lookup correspondence identifies the same spans
 used by the existing root-payload analyses. It does not yet prove that the
 normal reference execution selects this descriptor.
 
+## Selected-member acceptance and payload handoff
+
+The following additional static observations concern the same hash-matched
+libraries, not a new execution experiment. Common-library addresses are used
+unless the table explicitly says international library.
+
+| Operation | ICU 70.1 | ICU 74.2 |
+| --- | --- | --- |
+| Root acceptance callback, international library | `113b30`–`113b6f` | `130f20`–`130f5f` |
+| Member acceptance call | `154388`, inline member checks | `16ac1d` → helper `10bae0` |
+| Descriptor initialization | `f99e0` | `110880` |
+| Descriptor copy | `f9a10` | `1108b0` |
+| Descriptor allocation | `fa3a0` | `1127e0` |
+| Store selected member length | `1543c1` | `16ad75` |
+| `udata_getMemory` | `fede0` | `113630` |
+| `udata_getLength` | `fee20` | `113670` |
+
+Both root callbacks require `UDataInfo.size >= 20`, little-endian/ASCII
+fields, the four-byte `UCol` format and format major version 5. On success
+they optionally copy the four data-version bytes into the supplied context;
+they do not compare the member name or type. The member-opening path checks
+the `DA 27` magic and supplies **member header plus 4** as the callback's
+information pointer. Thus the callback offsets refer to `UDataInfo`, not
+to the start of the member header. The recovered root members satisfy those
+field tests; acceptance alone is not validation of the collation payload.
+
+The inspected descriptor initializer clears 56 bytes and sets the signed
+length field at offset `0x30` to `-1`. Allocation requests 56 bytes, reports
+status 7 on allocation failure, and initializes successful allocations with
+the ownership flag at `0x18` set. Copying preserves the destination ownership
+flag while copying the remaining descriptor fields. This describes the
+callers of the allocation wrapper, not a proof of its implementation or hooks.
+
+On the successful member path, the header pointer is stored at descriptor
+offset `0x08`, and the TOC lookup's returned storage length at `0x30`.
+The inspected success epilogues return that descriptor without rewriting
+either field. `udata_getMemory` returns header plus decoded header size;
+`udata_getLength` returns stored length minus header size, or `-1` for a null
+descriptor or negative stored length. For these recovered members the header
+size is 32 bytes. The resulting length includes the member's trailing storage
+padding; it is not an independently derived logical collation-data length.
+
+The international-library call bindings are also checked through relocations:
+70.1 PLT `eac50` / GOT `32c680` names `udata_getMemory_70`, and `eacc0` /
+`32c6b8` names `udata_getLength_70`; the 74.2 counterparts are `f0df0` /
+`34ae10` and `f0a80` / `34ac58`. The root loader passes those results to its
+reader with a null base argument. This connects the recovered member span to
+the headerless reader input on the inspected successful path. It does not
+prove the reader's complete semantics, alternative/error paths, earlier
+singleton provenance, or that normal reference initialization selects this
+package. Those remain reference-correctness obligations, not deployment
+assumptions.
+
 ## Reproduction and remaining scope
 
 Recover and hash-check the six libraries using the input inventory. A host
@@ -146,7 +199,7 @@ is specified in the [test plan](../test-plan.md).
 
 Remaining composition includes normal symbol resolution and dependency
 selection, initialization/registration ownership, directory/access-mode
-selection, the string helpers and acceptance/reader dependencies. This note
+selection, the string helpers and remaining reader dependencies. This note
 does not prove full native/source equivalence, resource fallback, arbitrary
 suffix safety, or the other operating-system rows. None of those missing
 reference-correctness claims is moved into a deployment assumption.

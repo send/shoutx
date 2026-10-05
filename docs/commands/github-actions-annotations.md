@@ -90,10 +90,11 @@ an empty property. A leading `=` is rejected because the runner's
 empty-entry-removing split would discard it or the complete property. NUL is
 rejected. A final Unicode-whitespace scalar other than CR/LF is also rejected
 for both fields, retaining the earlier trailing-whitespace diagnostic.
-The runner trims the complete encoded property region before splitting it, so
-accepting such a suffix would make preservation depend on whether another
-property follows it. CR and LF remain accepted because they are escaped before
-this runner trim. Internal spaces and non-leading equals signs are preserved.
+The runner trims the complete encoded property region before splitting it.
+Retain the uniform trailing-whitespace restriction rather than making acceptance
+depend on a following property or the Unicode-only structural terminator.
+CR and LF remain accepted because they are escaped before this runner trim.
+Internal spaces and non-leading equals signs are preserved.
 Each field is limited to 1 MiB before encoding.
 
 FILE is annotation metadata, not path authorization or an existence check.
@@ -284,8 +285,13 @@ to the pinned runner parser and assert one recognized command with the selected
 fixed severity, exact decoded message, and exact decoded properties. Assert
 there is no physical CR or LF before the final LF, embedded `::` does not end
 data, commas cannot add metadata, and non-leading equals signs remain property
-data. Reject U+200B, U+00AD, and U+FEFF anywhere in a property or at the
-message boundary; preserve them in the message after an allowed first scalar.
+data. Preserve U+200B, U+00AD, and U+FEFF in TITLE/FILE, including alone and at
+either field edge. Assert the final structural comma for Unicode metadata and
+that it creates no additional decoded property. Cover final TITLE and final
+FILE without numeric metadata, as well as properties followed by typed fields.
+These scalars remain rejected at the message boundary by the data-start policy;
+preserve them in the message after an allowed first scalar. Verify that ASCII
+metadata does not acquire the Unicode-only terminator.
 
 Use the actual pinned `WarningCommandExtension`, `ErrorCommandExtension`, and
 `NoticeCommandExtension` with `ExecutionContext.AddIssue`. Verify issue type,
@@ -310,8 +316,8 @@ conversion helper.
 Suspend workflow-command processing and prove all three encoded commands are
 treated as ordinary output and create no issue. Resume and prove normal
 processing. Hosted Linux, macOS, and Windows checks emit all three severities
-with delimiter-heavy multiline data, Unicode message tails, and ASCII title
-and file data,
+with delimiter-heavy multiline data, Unicode message starts and tails, and
+Unicode TITLE/FILE data alongside the existing ASCII smoke cases,
 then inspect the completed run through the GitHub API for exact decoded text in
 annotations and logs. POSIX shells and Git Bash additionally capture the native
 LF-terminated bytes. PowerShell is an unredirected stdout path: it decodes

@@ -748,7 +748,7 @@ Current producer-policy checks still run first for both cultures. The Worker fix
 retains synthetic host services, log storage and server queues: it does not
 start a live hosted worker or upload annotations to GitHub.
 
-These generated research wires bypass shoutx's deliberately narrower ASCII
+These generated research wires bypass the then-current, narrower ASCII
 guard. They test consumer effects, not producer acceptance or producer-to-worker
 round trips for these new values. The separate producer-generated worker corpus
 still covers only the current producer policy. No arbitrary-length sequence
@@ -768,7 +768,7 @@ python3 scripts/generate-unicode-candidate.py --source-dir /path/to/ucd-files --
 The research-only Rust test `tests/unicode_candidate_lookup.rs` checks a
 first-scalar binary search against all scalar memberships in the candidate
 table, unioned with the existing ASCII/CR/LF rule. It is not called by the CLI.
-Its ignored release-mode microbenchmark compares the current ASCII predicate
+Its ignored release-mode microbenchmark compares the former ASCII predicate
 and the proposed lookup on 16-byte, 4096-byte and 1-MiB inputs, with ASCII,
 Japanese, emoji and rejected combining-mark starts:
 

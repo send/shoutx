@@ -165,7 +165,7 @@ static class WorkerProbe
         }
     }
 
-    // Research wires intentionally bypass shoutx's current ASCII guard. Keep this
+    // Research wires intentionally bypass shoutx's acceptance guard. Keep this
     // separate from the producer-generated, current-policy worker corpus below.
     public static object RunUnicode(string tracePath, string expectedCulture)
     {

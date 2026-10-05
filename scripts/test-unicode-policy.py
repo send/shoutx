@@ -86,11 +86,12 @@ def main():
                 raise ValueError("loaded identity mismatch")
             cultures = observation["results"]
             if ([c["culture"] for c in cultures] != ["", "en-US"]
-                    or any(c["cases"] != 72 or c["startCases"] != 4422088 for c in cultures)):
+                    or any(c["cases"] != 72 or c["startCases"] != 4422088
+                           or c["headerCases"] != 1112063 for c in cultures)):
                 raise ValueError("incomplete coverage")
             report["probe"] = observation
             report["exitCode"] = exit_code
-            passed = all(not c["failures"] and c["startFailures"] == 0 for c in cultures)
+            passed = all(not c["failures"] and c["startFailures"] == 0 and c["headerFailures"] == 0 for c in cultures)
             if (exit_code == 0) != passed:
                 raise ValueError("inconsistent probe exit")
             report["status"] = "passed" if passed else "candidate-mismatch"

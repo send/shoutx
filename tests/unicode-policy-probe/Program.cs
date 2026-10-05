@@ -54,9 +54,24 @@ foreach (var culture in new[] { "", "en-US" })
             startCases++;
         }
     }
-    anyFailure |= failures.Count != 0 || startFailures != 0;
+    long headerCases = 0, headerFailures = 0;
+    for (int cp = 1; cp <= 0x10ffff; cp++)
+    {
+        if (cp is >= 0xd800 and <= 0xdfff) continue;
+        string scalar = char.ConvertFromUtf32(cp);
+        string value = "X" + scalar + scalar + "X";
+        string wire = "::warning title=" + Escape(value) + ",file=" + Escape(value)
+            + ",line=1::A literal::tail";
+        bool ok = ActionCommand.TryParseV2(wire, commands, out var parsed);
+        if (!ok || parsed.Command != "warning" || parsed.Data != "A literal::tail"
+            || parsed.Properties.Count != 3 || parsed.Properties.GetValueOrDefault("title") != value
+            || parsed.Properties.GetValueOrDefault("file") != value || parsed.Properties.GetValueOrDefault("line") != "1")
+            headerFailures++;
+        headerCases++;
+    }
+    anyFailure |= failures.Count != 0 || startFailures != 0 || headerFailures != 0;
     results.Add(new { culture, sortVersion = CultureInfo.CurrentCulture.CompareInfo.Version.FullVersion,
-        cases, failures, startCases, startFailures });
+        cases, failures, startCases, startFailures, headerCases, headerFailures });
 }
 var icuGetter = typeof(object).Assembly.GetType("Interop+Globalization")?.GetMethod(
     "GetICUVersion", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public

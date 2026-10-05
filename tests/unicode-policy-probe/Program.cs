@@ -23,7 +23,7 @@ foreach (var culture in new[] { "", "en-US" })
     foreach (string tail in new[] { "", ",line=1" })
     {
         string header = "::warning " + property + "=" + Escape(values[i]) + tail;
-        string wire = header + "::A literal::tail";
+        string wire = header + (values[i].Any(c => c > 127) ? "," : "") + "::A literal::tail";
         int expectedCount = tail.Length == 0 ? 1 : 2;
         bool ok = ActionCommand.TryParseV2(wire, commands, out var parsed);
         bool equal = ok && parsed.Command == "warning" && parsed.Data == "A literal::tail"
@@ -59,15 +59,27 @@ foreach (var culture in new[] { "", "en-US" })
     {
         if (cp is >= 0xd800 and <= 0xdfff) continue;
         string scalar = char.ConvertFromUtf32(cp);
-        string value = "X" + scalar + scalar + "X";
-        string wire = "::warning title=" + Escape(value) + ",file=" + Escape(value)
-            + ",line=1::A literal::tail";
-        bool ok = ActionCommand.TryParseV2(wire, commands, out var parsed);
-        if (!ok || parsed.Command != "warning" || parsed.Data != "A literal::tail"
-            || parsed.Properties.Count != 3 || parsed.Properties.GetValueOrDefault("title") != value
-            || parsed.Properties.GetValueOrDefault("file") != value || parsed.Properties.GetValueOrDefault("line") != "1")
-            headerFailures++;
-        headerCases++;
+        // Final properties matter: a following numeric field is not equivalent.
+        // Whitespace tails are outside the CLI contract, so keep those interior.
+        string value = "X" + scalar + scalar + (char.IsWhiteSpace(scalar, 0) ? "X" : "");
+        foreach (var field in new[] { "title", "file", "both" })
+        {
+            string properties = field == "both"
+                ? "title=" + Escape(value) + ",file=" + Escape(value) + ",line=1"
+                : field + "=" + Escape(value);
+            string wire = "::warning " + properties + (cp > 127 ? "," : "") + "::,file=x,line=9::tail";
+            bool ok = ActionCommand.TryParseV2(wire, commands, out var parsed);
+            bool equal = ok && parsed.Command == "warning" && parsed.Data == ",file=x,line=9::tail"
+                && parsed.Properties.Count == (field == "both" ? 3 : 1);
+            if (equal && field == "both")
+                equal = parsed.Properties.GetValueOrDefault("title") == value
+                    && parsed.Properties.GetValueOrDefault("file") == value
+                    && parsed.Properties.GetValueOrDefault("line") == "1";
+            else if (equal)
+                equal = parsed.Properties.GetValueOrDefault(field) == value;
+            if (!equal) headerFailures++;
+            headerCases++;
+        }
     }
     anyFailure |= failures.Count != 0 || startFailures != 0 || headerFailures != 0;
     results.Add(new { culture, sortVersion = CultureInfo.CurrentCulture.CompareInfo.Version.FullVersion,

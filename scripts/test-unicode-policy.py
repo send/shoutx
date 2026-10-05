@@ -87,7 +87,7 @@ def main():
             cultures = observation["results"]
             if ([c["culture"] for c in cultures] != ["", "en-US"]
                     or any(c["cases"] != 72 or c["startCases"] != 4422088
-                           or c["headerCases"] != 1112063 for c in cultures)):
+                           or c["headerCases"] != 3336189 for c in cultures)):
                 raise ValueError("incomplete coverage")
             report["probe"] = observation
             report["exitCode"] = exit_code

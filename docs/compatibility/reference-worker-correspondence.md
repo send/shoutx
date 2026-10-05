@@ -428,6 +428,57 @@ permitted value. The reference proof must retain both recognition and effects
 obligations, including the existing resource/failure scope, rather than equating
 the manager's Boolean with the proposed guarantee.
 
+### Initial command state is not initial job state
+
+For the pinned ordinary Script route,
+[`ActionRunner`](https://github.com/actions/runner/blob/397b032cbf865e9c3ddfab89d533ec19325e1273/src/Runner.Worker/ActionRunner.cs#L260-L278)
+calls the handler factory, prepares the handler and runs it.
+[`HandlerFactory`](https://github.com/actions/runner/blob/397b032cbf865e9c3ddfab89d533ec19325e1273/src/Runner.Worker/Handlers/HandlerFactory.cs#L168-L172)
+creates an `IScriptHandler` with `CreateService`, and
+[`Handler.Initialize`](https://github.com/actions/runner/blob/397b032cbf865e9c3ddfab89d533ec19325e1273/src/Runner.Worker/Handlers/Handler.cs#L169-L173)
+creates its command manager the same way. HostContext's `CreateService`
+constructs and initializes a new instance; this is not its cached `GetService`
+path. The manager's field initializers set processing active and its stop token
+to null. This accounts for the fixture's initial command state on successful
+handler initialization, not the state at an arbitrary later output line.
+[`ScriptHandler`](https://github.com/actions/runner/blob/397b032cbf865e9c3ddfab89d533ec19325e1273/src/Runner.Worker/Handlers/ScriptHandler.cs#L332-L336)
+passes the same manager to stdout and stderr OutputManagers. Earlier commands
+on either stream can therefore affect subsequent processing. Do not infer
+fresh state per stream or per shoutx invocation from fresh handler construction.
+
+Fresh command state also does not mean an empty secret masker. Before running
+the job, pinned
+[`Worker`](https://github.com/actions/runner/blob/397b032cbf865e9c3ddfab89d533ec19325e1273/src/Runner.Worker/Worker.cs)
+registers selected secret variables, regex hints and endpoint authorization
+values with the HostContext masker. These are job inputs, not a constant empty
+package default. They do not pre-mask the line passed by OutputManager to the
+command parser. After decoding, however, `ExecutionContext.AddIssue` masks the
+message before its length/retention processing, and `Write` masks log text.
+The [annotation contract](../commands/github-actions-annotations.md#boundary-specific-threat-analysis)
+owns those limitations. Exact message/log assertions from a fresh fixture
+cannot be transferred unchanged to arbitrary existing masks.
+
+In pinned
+[`SecretMasker.AddValue`](https://github.com/actions/runner/blob/397b032cbf865e9c3ddfab89d533ec19325e1273/src/Sdk/DTLogging/Logging/SecretMasker.cs),
+a nonempty value already in the original-value set returns early; otherwise
+the method computes encoder variants and inserts the original and variants
+before raising `NewSecretAdded`. `ValueSecret` equality and substring matching
+are ordinal. Existing different values are not used to rewrite the new value,
+and successful insertion does not remove earlier registrations. This bounded
+set-update argument does not prove all encoder calls or notifications succeed.
+
+The normal Linux Worker can subscribe to `NewSecretAdded` when its
+[`VSockSecretNotifier`](https://github.com/actions/runner/blob/397b032cbf865e9c3ddfab89d533ec19325e1273/src/Runner.Common/VSockSecretNotifier.cs)
+starts successfully. Startup reads `GITHUB_ACTIONS_RUNNER_VSOCK_CID_PORT`;
+the subscriber serializes and enqueues notifications synchronously, while
+socket transmission runs separately. The fixture does not run this Worker
+startup. Registration precedes the callback, but a synchronous callback failure
+can still interrupt the extension before later split-value registrations.
+Do not assume callback absence from fresh fixture state or infer it from a
+successful command-manager Boolean. This identifies an additional normal-path
+input/failure distinction; it is not a requirement to attest sidecar absence
+in deployments, nor a claim that notification delivery is guaranteed.
+
 | Difference | Evidence established here / already retained | Required continuation |
 | --- | --- | --- |
 | SDK muxer/hostfxr versus package apphost | Distinct versions and host modes explicitly identified; probe reports the 8.0.30 hostpolicy banner before its initialization bag, and normal package route is source-assessed | Bind hostpolicy path/bytes and relevant resolved assets/settings on normal reference route; do not substitute the SDK launcher source for the package launcher |

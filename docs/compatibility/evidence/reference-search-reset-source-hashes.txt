@@ -1,5 +1,13 @@
 # SHA-256; fixed official source pins are listed in ../reference-search-reset.md.
 # ICU entries: generation / source-relative path. No vendor data or binaries.
+09d5194ddc7348950f12288b5464ccc7b718a1d35e2ea1a3af7e985e95037e49  70-1/icu4c/source/i18n/utf16collationiterator.h
+09d5194ddc7348950f12288b5464ccc7b718a1d35e2ea1a3af7e985e95037e49  72-1/icu4c/source/i18n/utf16collationiterator.h
+f4b6e624b5e2eb64ae138fe3769e80bc806b243c89a217d42b0dd629ff10dc2b  74-2/icu4c/source/i18n/utf16collationiterator.h
+f4b6e624b5e2eb64ae138fe3769e80bc806b243c89a217d42b0dd629ff10dc2b  76-1/icu4c/source/i18n/utf16collationiterator.h
+cd1d275af5790f99311c5b874313fbecb0e37a762f3ad4b89b393f42f63f5d03  70-1/icu4c/source/i18n/collationfcd.h
+ab31d9d13ef16bfed2bfbcc0c0d8f29cf750c24baba954d86c73577f0a362ddf  72-1/icu4c/source/i18n/collationfcd.h
+ab31d9d13ef16bfed2bfbcc0c0d8f29cf750c24baba954d86c73577f0a362ddf  74-2/icu4c/source/i18n/collationfcd.h
+40cd41a4aaf61003a34a6a23b468bd053837a8ed103e3def51f262ef1ee5975f  76-1/icu4c/source/i18n/collationfcd.h
 1960cf5aa8038235ff3cb4d5321bdd3fd096a8e288259b0028d6bbcd665add09  70-1/icu4c/source/i18n/usearch.cpp
 79904c797ee26b22bbc0b7ab0953ad16fe55b3c0285e39f6f4592b2b1d8874e9  70-1/icu4c/source/i18n/ucoleitr.cpp
 74d00caaf9e520660dfebf680a911722b5cdfc60af499abcd25b40a83c656676  70-1/icu4c/source/i18n/coleitr.cpp

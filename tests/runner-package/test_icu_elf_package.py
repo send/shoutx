@@ -1,5 +1,6 @@
 import hashlib
 import json
+import os
 from pathlib import Path
 import struct
 import subprocess
@@ -118,7 +119,7 @@ class ElfTests(unittest.TestCase):
                 else:
                     self.assertEqual(result.returncode, 1)
                     self.assertEqual(result.stdout, b'')
-                    self.assertEqual(result.stderr, b'unverified: elf-format\n')
+                    self.assertEqual(result.stderr, b'unverified: elf-format' + os.linesep.encode('ascii'))
 
     def test_cli_missing_file_and_arguments(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -130,7 +131,7 @@ class ElfTests(unittest.TestCase):
                 result = subprocess.run(command + arguments, capture_output=True)
                 self.assertEqual(result.returncode, 1)
                 self.assertEqual(result.stdout, b'')
-                self.assertEqual(result.stderr, b'unverified: ' + reason + b'\n')
+                self.assertEqual(result.stderr, b'unverified: ' + reason + os.linesep.encode('ascii'))
 
 
 if __name__ == '__main__':

@@ -141,6 +141,35 @@ fn cases() -> Vec<MaskCase> {
             });
         }
     }
+    for (index, first) in [
+        "日本語",
+        "😀",
+        "é",
+        "العربية",
+        "हिन्दी",
+        "Ελληνικά",
+        "עברית",
+        "ภาษาไทย",
+        "한국어",
+        "𐐀",
+        "\u{02b0}",
+        "\u{16fe0}",
+        "\u{10ffff}",
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let value = format!("{first}\u{0301}-secret::tail ##[warning]literal");
+        cases.push(MaskCase {
+            id: format!("unicode-start-{index}"),
+            command: encode(
+                &shoutx::github_actions::encode_mask(value.as_bytes().to_vec()).unwrap(),
+            ),
+            value: encode(value.as_bytes()),
+            masked: vec![encode(value.as_bytes())],
+            unmasked: vec![encode(b"public")],
+        });
+    }
     cases
 }
 

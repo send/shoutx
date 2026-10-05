@@ -9,6 +9,8 @@ mod random;
 mod record;
 #[cfg(feature = "unstable-github-actions-stdout")]
 mod stdout_guard;
+#[cfg(feature = "unstable-github-actions-stdout")]
+mod stdout_start_table;
 
 use std::ffi::OsStr;
 

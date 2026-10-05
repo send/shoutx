@@ -91,6 +91,14 @@ No reusable context encoder is currently planned for v1.0. The former
     Producer success is not evidence that a separate consumer accepted the
     record.
 
+These are product requirements, not a mandate to prove dependency internals.
+The [stdout threat inventory](threat-model.md#stdout-mask-and-annotation-responsibility)
+distinguishes concrete security paths from functional behavior and deployment
+conditions. Invariant 16 remains a constraint on adopting a destination guarantee;
+it is not a requirement to certify every culture before developing the isolated
+stdout feature. A scoped compatibility proposal must reconcile that invariant
+explicitly before claiming adoption, rather than silently weakening it.
+
 The current GitHub Actions stdout parser investigation and the limits of its
 cross-platform evidence are recorded in
 [the workflow-command compatibility note](compatibility/github-actions-workflow-command-parser.md).

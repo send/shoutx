@@ -56,15 +56,6 @@ fn text_property(value: &OsStr) -> Result<&[u8], ShoutxError> {
             "annotation property ends with whitespace",
         ));
     }
-    if !value
-        .iter()
-        .copied()
-        .all(super::stdout_guard::is_allowed_boundary_byte)
-    {
-        return Err(ShoutxError::failure(
-            "annotation property is outside the ASCII header policy",
-        ));
-    }
     Ok(value)
 }
 
@@ -136,9 +127,9 @@ pub fn encode(request: AnnotationRequest, mut message: Vec<u8>) -> Result<Vec<u8
             "annotation message is empty or whitespace only",
         ));
     }
-    if !super::stdout_guard::has_allowed_data_prefix(&message) {
+    if !super::stdout_guard::has_allowed_data_prefix(message_text) {
         return Err(ShoutxError::failure(
-            "annotation message is outside the ASCII boundary policy",
+            "annotation message is outside the Unicode boundary policy",
         ));
     }
     if message_text.encode_utf16().count() > MESSAGE_UTF16_LIMIT {
@@ -213,6 +204,11 @@ pub fn encode(request: AnnotationRequest, mut message: Vec<u8>) -> Result<Vec<u8
         }),
     ];
     let present = properties.iter().flatten().count();
+    // A trailing empty property is discarded by the pinned Runner's ordinal
+    // comma split. Anchor newly accepted Unicode headers before the V2
+    // separator without adding anything to a decoded property value.
+    let terminate_properties =
+        title.is_some_and(|value| !value.is_ascii()) || file.is_some_and(|value| !value.is_ascii());
     let severity = match request.severity {
         AnnotationSeverity::Notice => b"notice".as_slice(),
         AnnotationSeverity::Warning => b"warning".as_slice(),
@@ -255,6 +251,9 @@ pub fn encode(request: AnnotationRequest, mut message: Vec<u8>) -> Result<Vec<u8
                 property.value,
                 matches!(property.kind, PropertyKind::Text),
             );
+        }
+        if terminate_properties {
+            output.push(b',');
         }
     }
     output.extend_from_slice(b"::");

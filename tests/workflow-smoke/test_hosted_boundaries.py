@@ -42,12 +42,12 @@ class HostedTests(unittest.TestCase):
         self.assertTrue(report["runnerMatchesPin"])
         other = self.verify(self.fixture().replace("'2.337.0'", "'9.9.9'"))
         self.assertFalse(other["runnerMatchesPin"])
-        self.assertEqual(probe.STARTS, ("A", ":", "%", " ", "-", "'", "#", "0"))
+        self.assertEqual(probe.STARTS, ("A", ":", "Ω", "ع", "ह", "日", "😀", "𐐀"))
         items = probe.annotations()
         self.assertEqual(items[0], {
-            "annotation_level": "notice", "title": "shoutx-boundary-notice-00 :: %,=ASCII",
+            "annotation_level": "notice", "title": "shoutx-boundary-notice-00 :: %,=Ωع😀",
             "message": "A\u0301\u200d👍🏻日本語 %0A shoutx-boundary-notice-00\n##[warning]shoutx-boundary-notice-00 ::error::data",
-            "path": "src/hosted-boundary,percent%25-ASCII.rs", "start_line": 1,
+            "path": "src/hosted-boundary,percent%25-Ωع😀.rs", "start_line": 1,
             "end_line": 1, "start_column": 1, "end_column": 2})
         for severity in ("notice", "warning", "failure"):
             group = [item for item in items if item["annotation_level"] == severity]

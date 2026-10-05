@@ -24,6 +24,7 @@ jobs:
         with:
           persist-credentials: false
       - run: scripts/verify-stable-docs.sh
+      - run: python3 -B scripts/generate-stdout-start-table.py --check
       - name: Test CI event scope
         run: python3 -B tests/workflow-smoke/test_ci_scope.py
 

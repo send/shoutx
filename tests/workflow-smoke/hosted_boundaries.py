@@ -10,7 +10,7 @@ import secrets
 import subprocess
 import sys
 
-STARTS = ("A", ":", "%", " ", "-", "'", "#", "0")
+STARTS = ("A", ":", "Ω", "ع", "ह", "日", "😀", "𐐀")
 FIELDS = ("annotation_level", "title", "message", "path", "start_line",
           "end_line", "start_column", "end_column")
 BEGIN = "SHOUTX_HOSTED_BOUNDARIES_BEGIN"
@@ -26,10 +26,10 @@ def annotations():
             tag = f"shoutx-boundary-{command}-{index:02}"
             result.append({
                 "annotation_level": "failure" if command == "error" else command,
-                "title": f"{tag} :: %,=ASCII",
+                "title": f"{tag} :: %,=Ωع😀",
                 "message": (start + "\u0301\u200d\U0001f44d\U0001f3fb日本語 %0A " + tag
                             + "\n##[warning]" + tag + " ::error::data"),
-                "path": "src/hosted-boundary,percent%25-ASCII.rs",
+                "path": "src/hosted-boundary,percent%25-Ωع😀.rs",
                 "start_line": index + 1, "end_line": index + 1,
                 "start_column": 1, "end_column": 2,
             })

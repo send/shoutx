@@ -263,7 +263,12 @@ public sealed class ShoutxDifferentialL0
 
                 var separator = line.IndexOf("::", 2, StringComparison.Ordinal);
                 Assert.Equal(separator, line.IndexOf("::", 2));
-                Assert.All(line.AsSpan(0, separator + 3).ToArray(), character => Assert.InRange(character, ' ', '~'));
+                Assert.DoesNotContain('\r', line);
+                Assert.DoesNotContain('\n', line);
+                Assert.True(ActionCommand.TryParseV2(line,
+                    new HashSet<string>(StringComparer.OrdinalIgnoreCase) { item.Severity }, out var parsed));
+                Assert.Equal(item.Severity, parsed.Command);
+                Assert.Equal(Decode(item.Message), parsed.Data);
                 using var outputManager = new OutputManager(context.Object, manager);
                 outputManager.OnDataReceived(null, new ProcessDataReceivedEventArgs(line));
                 context.Verify(value => value.Write(null, It.IsAny<string>()), Times.Never);
@@ -599,7 +604,8 @@ public sealed class ShoutxDifferentialL0
                 var line = Encoding.UTF8.GetString(bytes, 0, bytes.Length - 1);
 
                 Assert.Equal(10, line.IndexOf("::", 2));
-                Assert.InRange(line[12], ' ', '~');
+                Assert.DoesNotContain('\r', line);
+                Assert.DoesNotContain('\n', line);
                 Assert.True(ActionCommand.TryParseV2(line,
                     new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "add-mask" }, out var parsed));
                 Assert.Equal("add-mask", parsed.Command);

@@ -1,7 +1,7 @@
 # Candidate integration probe
 
-This is an implementation experiment, not a new CLI acceptance policy. The
-producer remains unchanged. The candidate recombines the retained full-scalar
+This probe checks the data set used by the isolated stdout implementation.
+Command specifications, not this probe, own CLI acceptance. The set recombines the retained full-scalar
 leading-mapping and grapheme-boundary evidence from the compatibility notes.
 It is not a list of selected languages or a list of observed failures to strip.
 
@@ -20,7 +20,17 @@ existing hosted targets; a moving image label is not a historical snapshot.
 
 Each start is tested with two suffixes for mask and warning. Separate cases
 check exact Unicode TITLE/FILE values, with and without neighboring typed
-metadata. Output contains only aggregate mismatches, not failing input details.
+metadata. A separate sweep repeats every non-NUL scalar at the end of TITLE
+alone, FILE alone, and both properties followed by a numeric field. Whitespace
+scalars remain interior because the CLI rejects whitespace-final properties.
+The probe uses the command specification's structural comma for Unicode
+properties. Output contains only aggregate mismatches, not failing input details.
 These are parser checks, not actual Worker effects or a proof over all suffixes.
-No acquired vendor data is shipped with shoutx. Final implementation needs its
-own reproducible table-generation contract and producer/Worker verification.
+No acquired vendor libraries are shipped with shoutx. Run
+`python3 scripts/generate-stdout-start-table.py --check` to verify that the
+embedded Rust intervals match this set; this checks representation, not the
+consumer's safety. Producer fixtures and the Runner oracle separately check
+actual emitted commands and Worker effects.
+
+The retained Unicode/ICU-derived observations are attributed to Unicode, Inc.;
+see the repository's [Unicode copyright and permission notice](../runner-package/UNICODE-LICENSE.txt).

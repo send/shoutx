@@ -1,13 +1,21 @@
-name: Unicode policy candidate
+name: Unicode policy integration
 
 on:
-  push:
-    branches: [feat/unicode-stdout-policy]
+  pull_request:
     paths:
       - '.gitattributes'
       - '.github/workflows/unicode-policy.yml'
       - 'tests/unicode-policy-probe/**'
       - 'scripts/test-unicode-policy.py'
+      - 'src/github_actions/**'
+  push:
+    branches: [main]
+    paths:
+      - '.gitattributes'
+      - '.github/workflows/unicode-policy.yml'
+      - 'tests/unicode-policy-probe/**'
+      - 'scripts/test-unicode-policy.py'
+      - 'src/github_actions/**'
 
 permissions:
   contents: read

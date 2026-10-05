@@ -47,5 +47,7 @@ Current cross-repository decisions:
 
 GitHub Actions stdout research scope:
 
+- [`stdout-unicode-acceptance.md`](stdout-unicode-acceptance.md) — original-value
+  input expansion for the isolated feature, including separate property framing.
 - [`github-actions-unicode-scope.md`](github-actions-unicode-scope.md) — bounded
   consumer target for Unicode adoption research; not framing/release approval.

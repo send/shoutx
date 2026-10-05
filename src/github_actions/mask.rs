@@ -21,9 +21,9 @@ pub fn encode(mut value: Vec<u8>) -> Result<Vec<u8>, ShoutxError> {
             "mask value is empty or whitespace only",
         ));
     }
-    if !super::stdout_guard::has_allowed_data_prefix(&value) {
+    if !super::stdout_guard::has_allowed_data_prefix(text) {
         return Err(ShoutxError::failure(
-            "mask value is outside the ASCII boundary policy",
+            "mask value is outside the Unicode boundary policy",
         ));
     }
 

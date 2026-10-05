@@ -1,0 +1,31 @@
+# SHA-256; fixed official source pins are listed in ../reference-search-reset.md.
+# ICU entries: generation / source-relative path. No vendor data or binaries.
+1960cf5aa8038235ff3cb4d5321bdd3fd096a8e288259b0028d6bbcd665add09  70-1/icu4c/source/i18n/usearch.cpp
+79904c797ee26b22bbc0b7ab0953ad16fe55b3c0285e39f6f4592b2b1d8874e9  70-1/icu4c/source/i18n/ucoleitr.cpp
+74d00caaf9e520660dfebf680a911722b5cdfc60af499abcd25b40a83c656676  70-1/icu4c/source/i18n/coleitr.cpp
+324a4291979093f6b3351cb3ee19650684ba3b1b24bdac0571d2e731120005c1  70-1/icu4c/source/common/ubrk.cpp
+1c8e71f9b8d6700b465b74b8826e0bf42dea50531ae3f2a6dd36c6c9a9fd1b5c  70-1/icu4c/source/common/rbbi.cpp
+bb9dc7b7c2b6cd269da34cdb2fe5d19fe93e972abe428a277a299ae7e4523f9e  70-1/icu4c/source/common/rbbi_cache.cpp
+deaadf9b86779595af05dcfc26f0eac9fc9d054f70ba64d50ab3b6acc6bc7302  70-1/icu4c/source/common/rbbi_cache.h
+adddc193a345233bfaa020bc1740edf77bf5979aaa0d8342bcc5c1a8fc2c7d9d  72-1/icu4c/source/i18n/usearch.cpp
+602e82448044b071c4a820c7bb954e2f67a3d3e8538f9dc285459ddd818cf583  72-1/icu4c/source/i18n/ucoleitr.cpp
+b0cb8144edca84190ccb1ba0b4a727d3fbacceae7d564b4d2aa14873dd55b38d  72-1/icu4c/source/i18n/coleitr.cpp
+abf1a659b0666878837044aeb8169e643d9a03baf2ddfdbef8dd5f44f611b7dd  72-1/icu4c/source/common/ubrk.cpp
+e19183c3e0d77d9174b80914bb79465dc3967f10ea83f6ef3455d778704eca14  72-1/icu4c/source/common/rbbi.cpp
+bce912cecd1e1af0c6c215b2cfdb49e9f100c7672850f4e15f6489bd8d0154ec  72-1/icu4c/source/common/rbbi_cache.cpp
+deaadf9b86779595af05dcfc26f0eac9fc9d054f70ba64d50ab3b6acc6bc7302  72-1/icu4c/source/common/rbbi_cache.h
+b810d01764da81494e0c3ee1a4892195459f095697f81074ca3baaaed59766e0  74-2/icu4c/source/i18n/usearch.cpp
+3d1e7d3eea0e82df465b9275a606815eb37deedb4c3a401e2d022d6480bbfe9b  74-2/icu4c/source/i18n/ucoleitr.cpp
+13414b0d3366c04dc881577e8417af87fdc5e161e95f6517da23a0d2c3254719  74-2/icu4c/source/i18n/coleitr.cpp
+a912f0afaf44b5847e932548f7f42e10a1468b8d0b60df781d347f3d51a276bb  74-2/icu4c/source/common/ubrk.cpp
+c1313ee44d09e2349e6c8f72970b99741a16414175025af2a655c8a868766fe9  74-2/icu4c/source/common/rbbi.cpp
+30e38abac972c45b467685590833547a13df986f100acf89bdebc2c354bcbbd2  74-2/icu4c/source/common/rbbi_cache.cpp
+deaadf9b86779595af05dcfc26f0eac9fc9d054f70ba64d50ab3b6acc6bc7302  74-2/icu4c/source/common/rbbi_cache.h
+5b78da104453f6b1af3f62b2034e047f73b0cbbf10cd1f996bd2222ade79bef6  76-1/icu4c/source/i18n/usearch.cpp
+f0de419dd6101c61b95aae480c227b3973d7010a590d565845ce1305e133ca8d  76-1/icu4c/source/i18n/ucoleitr.cpp
+d289553880e2a9444e1651b555ed0f995ca5b37e2d892ebf1318400105c2f054  76-1/icu4c/source/i18n/coleitr.cpp
+9004923f5c24e7fd70b192f842eb7653313ec33c4e461e7e658093752f0ba321  76-1/icu4c/source/common/ubrk.cpp
+2f7f74a05020b59789c2340735452aa3fe535d5b54e21845087bd3a98c832640  76-1/icu4c/source/common/rbbi.cpp
+2dbb8d13fff4c9763a37573a471a6c994777ad38c1653bb88b4fe253bcf9c35f  76-1/icu4c/source/common/rbbi_cache.cpp
+deaadf9b86779595af05dcfc26f0eac9fc9d054f70ba64d50ab3b6acc6bc7302  76-1/icu4c/source/common/rbbi_cache.h
+f5dfcc47f48dca80ccaa487149317a5df8f652267ccb6f07b241db816b02ff76  dotnet-a83db3e0/src/native/libs/System.Globalization.Native/pal_collation.c

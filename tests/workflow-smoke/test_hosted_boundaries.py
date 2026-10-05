@@ -198,7 +198,7 @@ class HostedTests(unittest.TestCase):
             options = ["--title", item["title"], "--file", file, "--line", str(item["start_line"]),
                        "--end-line", str(item["end_line"]), "--column", "1", "--end-column", "2"]
             header = ("title=" + prop_escape(item["title"]) + ",file=" + prop_escape(file)
-                      + f",line={item['start_line']},endLine={item['end_line']},col=1,endColumn=2")
+                      + f",line={item['start_line']},endLine={item['end_line']},col=1,endColumn=2,")
             cases.append((["github-actions:" + command, *options], item["message"],
                           "::" + command + " " + header + "::" + data_escape(item["message"]) + "\n"))
         for args, value, expected in cases:

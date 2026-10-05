@@ -1382,6 +1382,17 @@ synthetic tests establish collector behavior, not vendor resource semantics;
 native observations belong in the reference inventory and do not close its
 effective-data obligations.
 
+The offline Linux ELF wrapper additionally runs
+`python -B tests/runner-package/test_icu_elf_package.py` in the runner-package
+CI matrix. Use synthetic ELF/package bytes, never a host vendor file. Cover
+nonidentity VA/file-offset mapping, hash-before-parse rejection, ELF target and
+program-table bounds, truncated and zero-fill-only spans, ambiguous overlapping
+load segments, resource limits, and rejection of an invalid unselected TOC
+entry through the shared inventory. CLI failure tests must assert nonzero exit
+and empty stdout, including under optimized Python where assertions disappear.
+Supplied symbol coordinates are not independently discovered symbols; these
+tests do not prove symbol resolution or native data selection.
+
 The selected resource follow-up adds
 `python -B tests/runner-package/test_icu_resource_probe.py` in both CI locations.
 Test table/table32 traversal, empty versus missing values, fixed output keys,

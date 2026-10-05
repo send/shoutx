@@ -10,7 +10,13 @@ This note follows the native cache below the
 
 The .NET pin is
 [`a83db3e0eb2defb6220e15dae2f1a0462fdbf99f`](https://github.com/dotnet/runtime/blob/a83db3e0eb2defb6220e15dae2f1a0462fdbf99f/src/native/libs/System.Globalization.Native/pal_collation.c),
-specifically `pal_collation.c`. Upstream ICU generation references are:
+covering `pal_collation.c` and the managed coordinate path's `String.cs`,
+`String.Searching.cs`, `CompareInfo.cs` and `CompareInfo.Icu.cs`. The
+[culture-source inventory](evidence/reference-culture-source-hashes.txt) owns
+the two CompareInfo file hashes; the manifest below adds the two String files.
+Runner's caller is `src/Runner.Common/ActionCommand.cs` at
+[`397b032cbf865e9c3ddfab89d533ec19325e1273`](https://github.com/actions/runner/blob/397b032cbf865e9c3ddfab89d533ec19325e1273/src/Runner.Common/ActionCommand.cs),
+also hashed below. Upstream ICU generation references are:
 
 - [70.1](https://github.com/unicode-org/icu/tree/a56dde820dc35665a66f2e9ee8ba58e75049b668/icu4c/source)
 - [72.1](https://github.com/unicode-org/icu/tree/ff3514f257ea10afe7e710e9f946f68d256704b1/icu4c/source)

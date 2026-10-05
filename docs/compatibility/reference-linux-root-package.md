@@ -118,11 +118,13 @@ inventory. The offline inspector reuses the existing bounded package inventory:
 
 ```sh
 python3 -B tests/runner-package/icu_elf_package.py libicudata.so.70.1 \
-  --sha256 c1404396288e178c8db2f30203cb8150e4d2c14cacee9a2883e0092f45399cc8 \
+  --sha256 SHA256_FROM_INPUT_INVENTORY \
   --symbol-va 0x2000 --symbol-size 29466000 --prefix icudt70l
 ```
 
-For 74.2 use its full-library hash from the input inventory, symbol size
+Replace `SHA256_FROM_INPUT_INVENTORY` with the full-library hash for
+`libicudata.so.70.1` in the [input inventory](unicode-reference-inputs.md).
+For 74.2 use its full-library hash from the same inventory, symbol size
 30782896 and prefix `icudt74l`. The hash and symbol coordinates are explicit
 caller inputs: independently verify them using the inventory and exported
 symbol table, rather than treating a successful invocation with arbitrary

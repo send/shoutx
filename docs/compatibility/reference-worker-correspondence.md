@@ -354,6 +354,49 @@ annotations, supplies a synthetic repository/workspace and starts with fresh
 state. Unexpected service calls fail the probe. Those are named test inputs,
 not a measurement of arbitrary preceding workflow state.
 
+### Registration and successful V2 parsing
+
+At the pinned Runner commit
+`397b032cbf865e9c3ddfab89d533ec19325e1273`,
+[`HostContext`](https://github.com/actions/runner/blob/397b032cbf865e9c3ddfab89d533ec19325e1273/src/Runner.Common/HostContext.cs#L103-L113)
+registers the same eleven value encoders, in the same order, as the fixture.
+This is registration-list correspondence, not a proof about all encoder
+implementations, prior mask registrations or native dependencies.
+
+The normal
+[`ExtensionManager`](https://github.com/actions/runner/blob/397b032cbf865e9c3ddfab89d533ec19325e1273/src/Runner.Common/ExtensionManager.cs)
+lists all four target extension types alongside the other command extensions.
+Its `Add` helper resolves the assembly-qualified type with `throwOnError`,
+constructs it, checks the result, calls `Initialize`, then appends it. It does
+not catch failures in those operations. On successful registry creation,
+[`ActionCommandManager`](https://github.com/actions/runner/blob/397b032cbf865e9c3ddfab89d533ec19325e1273/src/Runner.Worker/ActionCommandManager.cs)
+records commands in an ordinal-ignore-case set and dispatch dictionary.
+This source chain does not independently establish CLR assembly resolution.
+
+In
+[`TryParseV2`](https://github.com/actions/runner/blob/397b032cbf865e9c3ddfab89d533ec19325e1273/src/Runner.Common/ActionCommand.cs),
+the prefix, separator and command name are derived before consulting the
+registered set. The set is used only for `Contains(commandName)`, not to choose
+between candidate names. Conditional on the intended separator/name already
+being established, that name being present in both sets with the same comparer,
+and the parse completing without exception, additional unrelated registered
+names do not change the returned command, properties or data. The manager's
+short-circuit expression then does not invoke the legacy parser. This is a
+source argument about successful V2 parsing, not a finite-test generalization.
+
+It does not transfer malformed-input results from the reduced fixture to the
+full registry: a false V2 result, including an exception caught inside the
+parser, permits the legacy attempt. The arbitrary-suffix framing and resource
+arguments must still establish the premises above. Nor does successful parsing
+alone establish dispatch/effects: stopped-command state and the enhanced-
+annotation feature gate remain relevant. The fixture explicitly enables that
+feature; the normal helper reads the job variable and defaults to false when
+it has no value. The existing
+[annotation compatibility limitation](../commands/github-actions-annotations.md#boundary-specific-threat-analysis)
+owns the feature's consequences. Do not infer a normal server input from the
+fixture setting or promote fresh fixture state to arbitrary prior workflow
+state. These differences remain part of the reference-path analysis.
+
 | Difference | Evidence established here / already retained | Required continuation |
 | --- | --- | --- |
 | SDK muxer/hostfxr versus package apphost | Distinct versions and host modes explicitly identified; probe reports the 8.0.30 hostpolicy banner before its initialization bag, and normal package route is source-assessed | Bind hostpolicy path/bytes and relevant resolved assets/settings on normal reference route; do not substitute the SDK launcher source for the package launcher |

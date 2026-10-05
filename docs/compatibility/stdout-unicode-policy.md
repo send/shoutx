@@ -61,8 +61,9 @@ The local pinned source-built Runner oracle completed all 64 tests, including
 generated Unicode producer records, final-property cases with transparent
 suffixes, mask registration and subsequent redaction, and annotation Worker
 effects. This finite local result does not extend the full candidate table's
-applicability to the local ICU78.1 environment. Final PR-hosted producer checks
-and independent review remain pending. The current
+applicability to the local ICU78.1 environment. PR-hosted producer checks are
+separate latest-head evidence and are not certified by these historical runs.
+The current
 producer contract tests pass under both stable and feature-enabled builds,
 including exact output and all-scalar lookup agreement with the source set.
 
@@ -93,3 +94,13 @@ Both were built with `--release --locked --features unstable-github-actions-stdo
 These workloads compare inputs accepted by both versions, hence have ASCII
 starts. They measure end-to-end regression, not isolated non-ASCII lookup
 latency, throughput under load, or a cross-platform timing guarantee.
+
+## Independent implementation review
+
+Read-only GPT-6 Sol review of implementation commit
+`f9372e8e83b492be84f86350afdc889bbb1c7d46` and its test-harness commits found no
+blocking findings. It checked AP1–AP5 controls, specification consistency and
+the finite parser/Worker evidence, including final TITLE/FILE framing and exact
+mask registration. The only housekeeping note was to keep local Python cache
+files out of the PR; they were not committed. This review does not replace
+latest-head CI/Codex convergence or establish universal consumer compatibility.

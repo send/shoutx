@@ -216,7 +216,6 @@ fn empty_whitespace_nul_and_invalid_text_fail_before_stdout() {
         "\u{0903}message",
         "\u{20dd}message",
         "\u{3099}message",
-        "\u{02b0}message",
         "\u{ff9e},file=/etc/passwd,line=3::tail",
         "\u{ff9f},file=/etc/passwd,line=3::tail",
     ] {
@@ -233,11 +232,15 @@ fn all_severities_reject_legacy_fallback_payloads_without_output() {
         "github-actions:error",
     ] {
         for prefix in [
+            '\u{0640}',
+            '\u{07fa}',
+            '\u{180a}',
+            '\u{1cd3}',
+            '\u{fe73}',
             '\u{0301}',
             '\u{034f}',
             '\u{0903}',
             '\u{20dd}',
-            '\u{02b0}',
             '\u{ff9e}',
             '\u{ff9f}',
             '\u{e0100}',
@@ -249,7 +252,6 @@ fn all_severities_reject_legacy_fallback_payloads_without_output() {
             '\u{1f3fe}',
             '\u{1f3ff}',
             '\u{1d165}',
-            '\u{16fe0}',
         ] {
             let value = format!("{prefix}private ##[warning]fallback");
             for output in [
@@ -258,7 +260,7 @@ fn all_severities_reject_legacy_fallback_payloads_without_output() {
             ] {
                 assert_eq!(
                     output.stderr,
-                    b"error: annotation message is outside the ASCII boundary policy\n"
+                    b"error: annotation message is outside the Unicode boundary policy\n"
                 );
             }
         }
@@ -285,7 +287,7 @@ fn transparent_leaders_cannot_hide_a_sensitive_message_prefix() {
             ] {
                 assert_eq!(
                     output.stderr,
-                    b"error: annotation message is outside the ASCII boundary policy\n"
+                    b"error: annotation message is outside the Unicode boundary policy\n"
                 );
             }
         }
@@ -293,7 +295,7 @@ fn transparent_leaders_cannot_hide_a_sensitive_message_prefix() {
 }
 
 #[test]
-fn ascii_boundary_and_whole_header_allowlists_are_exact() {
+fn ascii_data_policy_is_preserved_and_metadata_has_its_own_grammar() {
     for severity in ["notice", "warning", "error"] {
         let command = format!("github-actions:{severity}");
         for first in 1u8..=127 {
@@ -316,29 +318,19 @@ fn ascii_boundary_and_whole_header_allowlists_are_exact() {
                 ] {
                     assert_eq!(
                         output.stderr,
-                        b"error: annotation message is outside the ASCII boundary policy\n"
+                        b"error: annotation message is outside the Unicode boundary policy\n"
                     );
                 }
             }
         }
-        for value in [
-            "日本語",
-            "😀",
-            "é",
-            "\u{200b}",
-            "\u{00ad}",
-            "\u{feff}",
-            "\u{200d}",
-            "\u{e007f}",
-            "\u{10ffff}",
-        ] {
+        for value in ["\u{200b}", "\u{00ad}", "\u{feff}", "\u{200d}", "\u{e007f}"] {
             for output in [
                 failure(&[&command, value], None, 1),
                 failure(&[&command], Some(value.as_bytes()), 1),
             ] {
                 assert_eq!(
                     output.stderr,
-                    b"error: annotation message is outside the ASCII boundary policy\n"
+                    b"error: annotation message is outside the Unicode boundary policy\n"
                 );
             }
         }
@@ -358,43 +350,84 @@ fn ascii_boundary_and_whole_header_allowlists_are_exact() {
             '\u{00ad}',
             '\u{feff}',
         ]) {
-            // Exercise internal bytes as well as a bad last byte. A final ASCII
-            // byte must not hide a disallowed scalar earlier in the header.
+            // Header values have their own grammar, not the data-start table.
             let value = format!("a{scalar}z");
-            if scalar.is_ascii() && ((' '..='~').contains(&scalar) || matches!(scalar, '\r' | '\n'))
-            {
-                for value in [value, format!("{scalar}az"), format!("az{scalar}")] {
-                    if value.starts_with('=') || value.ends_with(' ') {
-                        continue; // Separate existing property validation tests cover these.
-                    }
+            for value in [value, format!("{scalar}az"), format!("az{scalar}")] {
+                if value.starts_with('=') {
+                    continue; // Separate property validation tests cover this.
+                }
+                if value.ends_with(|ch: char| ch.is_whitespace() && !matches!(ch, '\r' | '\n')) {
+                    let output = failure(
+                        &["github-actions:warning", &option, &value, "message"],
+                        None,
+                        1,
+                    );
+                    assert_eq!(
+                        output.stderr,
+                        b"error: annotation property ends with whitespace\n"
+                    );
+                } else {
                     let encoded = value
                         .replace('%', "%25")
                         .replace('\r', "%0D")
                         .replace('\n', "%0A")
                         .replace(':', "%3A")
                         .replace(',', "%2C");
-                    let expected = format!("::warning {field}={encoded}::message\n");
+                    let terminator = if value.is_ascii() { "" } else { "," };
+                    let expected = format!("::warning {field}={encoded}{terminator}::message\n");
                     success(
                         &["github-actions:warning", &option, &value, "message"],
                         None,
                         expected.as_bytes(),
                     );
                 }
-            } else {
-                for value in [format!("{scalar}az"), value, format!("az{scalar}")] {
-                    let output = failure(
-                        &["github-actions:warning", &option, &value, "message"],
-                        None,
-                        1,
-                    );
-                    let expected = if value.ends_with(char::is_whitespace) {
-                        "error: annotation property ends with whitespace\n"
-                    } else {
-                        "error: annotation property is outside the ASCII header policy\n"
-                    };
-                    assert_eq!(output.stderr, expected.as_bytes());
-                }
             }
+        }
+    }
+}
+
+#[test]
+fn unicode_starts_and_properties_preserve_original_values() {
+    for severity in ["notice", "warning", "error"] {
+        let command = format!("github-actions:{severity}");
+        for first in [
+            "日本語",
+            "😀",
+            "é",
+            "العربية",
+            "हिन्दी",
+            "Ελληνικά",
+            "עברית",
+            "ภาษาไทย",
+            "한국어",
+            "𐐀",
+            "\u{02b0}",
+            "\u{16fe0}",
+            "\u{10ffff}",
+        ] {
+            let value = format!("{first}\u{0301}%0A\r\nfile=x::tail ##[warning]literal");
+            let encoded = value
+                .replace('%', "%25")
+                .replace('\r', "%0D")
+                .replace('\n', "%0A");
+            let expected = format!("::{severity}::{encoded}\n");
+            success(&[&command, &value], None, expected.as_bytes());
+            success(&[&command], Some(value.as_bytes()), expected.as_bytes());
+            let property = value
+                .replace('%', "%25")
+                .replace('\r', "%0D")
+                .replace('\n', "%0A")
+                .replace(':', "%3A")
+                .replace(',', "%2C");
+            let expected =
+                format!("::{severity} title={property},file={property},line=1,::{encoded}\n");
+            success(
+                &[
+                    &command, "--title", &value, "--file", &value, "--line", "1", &value,
+                ],
+                None,
+                expected.as_bytes(),
+            );
         }
     }
 }
@@ -414,6 +447,15 @@ fn text_properties_are_encoded_in_fixed_order() {
         b"::warning title=title%3A%3Aa=b,file=a%2Cb%3Ac%250A%0D%0A=x::message\n",
     );
     for option in ["--title", "--file"] {
+        for value in ["\u{200b}", "\u{00ad}", "\u{feff}"] {
+            let field = option.trim_start_matches("--");
+            let expected = format!("::notice {field}={value},::message\n");
+            success(
+                &["github-actions:notice", option, value, "message"],
+                None,
+                expected.as_bytes(),
+            );
+        }
         for value in ["", "=", "=x", "==x", "space ", "tab\t", "nbsp\u{00a0}"] {
             let output = failure(
                 &["github-actions:notice", option, value, "message"],
@@ -451,7 +493,9 @@ fn text_properties_are_encoded_in_fixed_order() {
             '\u{11f02}',
         ] {
             let value = format!("prepend{suffix}");
-            failure(
+            let field = option.trim_start_matches("--");
+            let expected = format!("::notice {field}={value},::,file=x,line=3::tail\n");
+            success(
                 &[
                     "github-actions:notice",
                     option,
@@ -459,7 +503,7 @@ fn text_properties_are_encoded_in_fixed_order() {
                     ",file=x,line=3::tail",
                 ],
                 None,
-                1,
+                expected.as_bytes(),
             );
         }
         success(

@@ -147,11 +147,15 @@ fn empty_and_unicode_whitespace_only_values_are_rejected() {
 #[test]
 fn separator_sensitive_prefixes_fail_without_disclosing_or_changing_the_value() {
     for prefix in [
+        '\u{0640}',
+        '\u{07fa}',
+        '\u{180a}',
+        '\u{1cd3}',
+        '\u{fe73}',
         '\u{0301}',
         '\u{034f}',
         '\u{0903}',
         '\u{20dd}',
-        '\u{02b0}',
         '\u{ff9e}',
         '\u{ff9f}',
         '\u{e0100}',
@@ -163,7 +167,6 @@ fn separator_sensitive_prefixes_fail_without_disclosing_or_changing_the_value() 
         '\u{1f3fe}',
         '\u{1f3ff}',
         '\u{1d165}',
-        '\u{16fe0}',
     ] {
         for suffix in [
             "",
@@ -179,7 +182,7 @@ fn separator_sensitive_prefixes_fail_without_disclosing_or_changing_the_value() 
                 ] {
                     assert_eq!(
                         output.stderr,
-                        b"error: mask value is outside the ASCII boundary policy\n"
+                        b"error: mask value is outside the Unicode boundary policy\n"
                     );
                 }
             }
@@ -217,7 +220,7 @@ fn transparent_leaders_cannot_hide_a_sensitive_prefix() {
         ] {
             assert_eq!(
                 output.stderr,
-                b"error: mask value is outside the ASCII boundary policy\n"
+                b"error: mask value is outside the Unicode boundary policy\n"
             );
         }
     }
@@ -253,27 +256,53 @@ fn ascii_boundary_allowlist_is_exact_and_preserves_the_unicode_tail() {
             ] {
                 assert_eq!(
                     output.stderr,
-                    b"error: mask value is outside the ASCII boundary policy\n"
+                    b"error: mask value is outside the Unicode boundary policy\n"
                 );
             }
         }
     }
-    for value in [
-        "秘密",
-        "😀",
-        "é",
-        "\u{200b}",
-        "\u{200d}",
-        "\u{e007f}",
-        "\u{10ffff}",
-    ] {
+    for value in ["\u{200b}", "\u{200d}", "\u{e007f}"] {
         for output in [
             failure(&["github-actions:mask", value], None, 1),
             failure(&["github-actions:mask"], Some(value.as_bytes()), 1),
         ] {
             assert_eq!(
                 output.stderr,
-                b"error: mask value is outside the ASCII boundary policy\n"
+                b"error: mask value is outside the Unicode boundary policy\n"
+            );
+        }
+    }
+}
+
+#[test]
+fn unicode_starts_preserve_original_values_and_protocol_looking_tails() {
+    for first in [
+        "秘密",
+        "😀",
+        "é",
+        "العربية",
+        "हिन्दी",
+        "Ελληνικά",
+        "עברית",
+        "ภาษาไทย",
+        "한국어",
+        "𐐀",
+        "\u{02b0}",
+        "\u{16fe0}",
+        "\u{10ffff}",
+    ] {
+        for tail in ["", "\u{0301}private::tail ##[warning]literal", "%0A\r\nx"] {
+            let value = format!("{first}{tail}");
+            let encoded = value
+                .replace('%', "%25")
+                .replace('\r', "%0D")
+                .replace('\n', "%0A");
+            let expected = format!("::add-mask::{encoded}\n");
+            success(&["github-actions:mask", &value], None, expected.as_bytes());
+            success(
+                &["github-actions:mask"],
+                Some(value.as_bytes()),
+                expected.as_bytes(),
             );
         }
     }

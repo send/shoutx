@@ -56,19 +56,21 @@ not convert it to an uploaded annotation. Here and below, Unicode whitespace
 means the .NET 8 `Char.IsWhiteSpace` set, equivalent for accepted UTF-8 input to
 the Unicode `White_Space` property.
 
-The shared **ASCII data-boundary allowlist**, also used by mask, permits a
-semantic value only when its first scalar is U+0020--U+007E, CR, or LF.
-The latter two are permitted because encoding turns them into an ASCII `%`
-prefix. Thus the first encoded data byte is always U+0020--U+007E. No leading
-characters are skipped. Every subsequent scalar remains strict UTF-8 data,
-subject to the other validation and size rules. Do not prepend padding or
-change rejected values. A disallowed prefix fails with status 1, empty stdout,
-and the fixed diagnostic `annotation message is outside the ASCII boundary policy`.
+The shared **Unicode data-boundary policy**, also used by mask, requires the
+first semantic scalar to belong to the versioned range set in
+`tests/unicode-policy-probe/start-candidate.json`. The executable embeds a
+generated representation of that set, not a runtime-loaded file. Existing
+U+0020--U+007E, CR and LF starts remain accepted. CR/LF become ASCII escapes.
+No leading character is skipped, normalized or replaced. Later scalars remain
+strict UTF-8 data subject to the other validation and size rules. A disallowed
+start fails with status 1, empty stdout, and the fixed diagnostic
+`annotation message is outside the Unicode boundary policy`.
 
-This is a narrow research contract, not a complete cross-culture defense.
-The [compatibility note](../compatibility/github-actions-workflow-command-parser.md#ascii-boundary-allowlist-derivation)
-derives its encoded-boundary invariant from the inspected .NET implementation
-and records the limits. The `th-TH` ASCII failure remains deferred.
+The [integration evidence](../compatibility/stdout-unicode-policy.md) names the
+characterized en-US/Invariant configurations and known contrary newer-runtime
+observation. The policy does not guarantee arbitrary cultures or versions;
+shoutx cannot detect the separate consumer's configuration. The `th-TH` failure
+remains deferred. The feature remains excluded from official binaries.
 
 The semantic message is limited to 4,096 UTF-16 code units, matching the pinned
 runner's `ExecutionContext.AddIssue` limit. This prevents ordinary input from
@@ -79,20 +81,20 @@ runner applies secret masking before its length check, and replacement with
 
 ### Metadata
 
-TITLE and FILE are optional strict UTF-8 text fields restricted to scalars
-U+0020--U+007E, CR, and LF throughout the entire field, not just at its ends.
-After the existing validation below, characters outside this allowlist fail
-before output with the fixed diagnostic
-`annotation property is outside the ASCII header policy`.
+TITLE and FILE are optional strict UTF-8 text fields. They do not use the
+message-start table: every non-NUL scalar is data, subject to the structural
+validation below and the separate property escaping rules. No padding,
+normalization, stripping or replacement is performed.
 An explicitly supplied empty value is an input error because the workflow-command parser would omit
 an empty property. A leading `=` is rejected because the runner's
 empty-entry-removing split would discard it or the complete property. NUL is
 rejected. A final Unicode-whitespace scalar other than CR/LF is also rejected
 for both fields, retaining the earlier trailing-whitespace diagnostic.
-The runner trims the complete encoded property region before splitting it, so
-accepting such a suffix would make preservation depend on whether another
-property follows it. CR and LF remain accepted because they are escaped before
-this runner trim. Internal spaces and non-leading equals signs are preserved.
+The runner trims the complete encoded property region before splitting it.
+Retain the uniform trailing-whitespace restriction rather than making acceptance
+depend on a following property or the Unicode-only structural terminator.
+CR and LF remain accepted because they are escaped before this runner trim.
+Internal spaces and non-leading equals signs are preserved.
 Each field is limited to 1 MiB before encoding.
 
 FILE is annotation metadata, not path authorization or an existence check.
@@ -131,6 +133,12 @@ The successful line is:
 When properties are present, one ASCII space separates SEVERITY from the first
 property. Properties are emitted in the fixed order `title`, `file`, `line`,
 `endLine`, `col`, `endColumn`, separated by commas, with absent fields omitted.
+If TITLE or FILE contains non-ASCII data, append one final comma to the property
+region before `::`. This is a structural empty property entry, which the pinned
+Runner discards, not part of either value. It separates Unicode property tails
+from the V2 delimiter without changing decoded data. Previously accepted ASCII
+headers keep their existing bytes. The trailing-whitespace rejection above is
+retained uniformly; the extra delimiter does not introduce a normalization mode.
 With no properties there is no space before the second `::`.
 
 Message data replaces `%`, CR, and LF with `%25`, `%0D`, and `%0A`.
@@ -165,14 +173,13 @@ a complete guarantee even within its target configurations.
 
 ## Boundary-specific threat analysis
 
-Untrusted MESSAGE, TITLE, or FILE data cannot terminate the physical command
-line. When the runner recognizes the intended V2 separator, the distinct
-encoders prevent data from adding a property or changing severity. The current
-framing does not establish that precondition across cultures, and legacy
-fallback can select an attacker-shaped registered workflow command from value
-data. A moved V2 separator can also promote later message text into annotation
-properties. Severity is selected by the command name; there is no raw command
-name or arbitrary-property input.
+The [stdout threat inventory](../threat-model.md#stdout-mask-and-annotation-responsibility)
+owns attack paths AP1–AP3/AP5 and the distinction between injection and functional
+failure. The encoding and typed-command controls are specified above. Broadening
+the message or metadata domain requires assessing those controls for the changed
+inputs; it does not require establishing every culture's parser behavior.
+The following are command-specific effects and limitations, not additional
+requirements to certify Runner internals.
 
 Attacker-controlled content can still mislead readers, associate a diagnostic
 with an unrelated file, create alert fatigue, or consume provider limits. The
@@ -278,8 +285,13 @@ to the pinned runner parser and assert one recognized command with the selected
 fixed severity, exact decoded message, and exact decoded properties. Assert
 there is no physical CR or LF before the final LF, embedded `::` does not end
 data, commas cannot add metadata, and non-leading equals signs remain property
-data. Reject U+200B, U+00AD, and U+FEFF anywhere in a property or at the
-message boundary; preserve them in the message after an allowed first scalar.
+data. Preserve U+200B, U+00AD, and U+FEFF in TITLE/FILE, including alone and at
+either field edge. Assert the final structural comma for Unicode metadata and
+that it creates no additional decoded property. Cover final TITLE and final
+FILE without numeric metadata, as well as properties followed by typed fields.
+These scalars remain rejected at the message boundary by the data-start policy;
+preserve them in the message after an allowed first scalar. Verify that ASCII
+metadata does not acquire the Unicode-only terminator.
 
 Use the actual pinned `WarningCommandExtension`, `ErrorCommandExtension`, and
 `NoticeCommandExtension` with `ExecutionContext.AddIssue`. Verify issue type,
@@ -304,8 +316,8 @@ conversion helper.
 Suspend workflow-command processing and prove all three encoded commands are
 treated as ordinary output and create no issue. Resume and prove normal
 processing. Hosted Linux, macOS, and Windows checks emit all three severities
-with delimiter-heavy multiline data, Unicode message tails, and ASCII title
-and file data,
+with delimiter-heavy multiline data, Unicode message starts and tails, and
+Unicode TITLE/FILE data alongside the existing ASCII smoke cases,
 then inspect the completed run through the GitHub API for exact decoded text in
 annotations and logs. POSIX shells and Git Bash additionally capture the native
 LF-terminated bytes. PowerShell is an unredirected stdout path: it decodes

@@ -7,7 +7,8 @@ Shared compatibility gates derived from this model are maintained in the
 [CLI contract test plan](test-plan.md); boundary-specific analyses and cases
 are colocated in the command specifications linked below.
 
-Revision status: implemented writer baseline.
+Revision status: implemented writer baseline; stdout responsibility and attack
+classification clarified on 2026-10-06. No input-policy or release change.
 
 ## Security objective
 
@@ -191,6 +192,65 @@ an unsupported control channel from being mistaken for a protected one.
 
 ## Protected and specified boundaries
 
+### Stdout mask and annotation responsibility
+
+This section owns the stdout attack inventory and its classification. Command
+specifications own accepted inputs, encoding and command-specific consumer
+limitations; compatibility records own observations and their version identities.
+
+The attacker controls values and text metadata, not the selected shoutx command,
+workflow configuration or installation. The protected assets are the integrity
+of the requested Runner operation and its fields and, for mask, delivery of the
+original secret to registration without disclosure caused by misframing.
+Annotation content is intentionally logged; annotation is not a secret channel.
+Choosing misleading content or an over-broad mask remains caller authorization,
+not a structural injection that shoutx promises to prevent.
+
+An in-scope security finding must connect attacker-controlled input through
+shoutx output and consumer interpretation to a protected asset. Unexpected
+Unicode behavior or an unfinished dependency proof is not itself such a finding.
+Faithful decoding remains a product correctness requirement: distinguishing a
+functional failure from an attack does not make that failure acceptable behavior.
+
+| Path | Boundary crossing and harm | Current control / remaining implementation question |
+| --- | --- | --- |
+| AP1: physical-line injection | Value CR/LF produces additional workflow commands | Existing percent-first CR/LF encoding and one-line construction block this route under the documented transport. Retain those controls. |
+| AP2: fallback command selection | Intended V2 recognition fails and value text becomes a different registered workflow command | Existing parser regressions establish the route; their demonstrated starts are rejected today. A broader acceptance policy must address newly accepted inputs, not claim current rejection protects them. |
+| AP3: message-to-property promotion | A shifted V2 separator promotes message data into annotation header fields | Assess the proposed message boundary against the existing parser evidence. Ordinary display differences are not this path. |
+| AP4: mask misregistration or disclosure | Misframing leaves the original secret unregistered, registers a different value, or exposes the command as ordinary log text | Preserve the original registration value and address known parsing failures within the proposed applicability conditions. A different registered string is not protection of the original. Consumer state and excluded configurations retain the limitations below. |
+| AP5: metadata injection | TITLE/FILE data escapes its field or changes other properties, including typed fields | Existing property escaping and typed-field validation are controls. Unicode header expansion needs its own header-boundary assessment, not an inference from message tests. |
+
+AP2–AP4 reuse the
+[parser and fallback evidence](compatibility/github-actions-workflow-command-parser.md#parser-fallback-and-impact).
+The inventory identifies relevant routes, not an assertion that today's accepted
+inputs exploit each route, nor a completed safety argument for broader inputs.
+Size exhaustion and diagnostic disclosure retain the shared producer controls;
+they do not authorize auditing consumer allocation internals.
+
+Annotation nonarrival, truncation, masking or location translation without a
+protected-boundary violation is a functional or applicability issue, not command
+injection. For mask, failed recognition can instead have direct confidentiality
+impact (AP4). Tests must distinguish parser fidelity from downstream effects.
+
+The workflow must deliver input as data and preserve output transport, and
+workflow-command processing must be active. Required annotation features and
+consumer configuration are deployment conditions, not state shoutx can inspect
+or enforce. The command specifications retain their concrete limitations.
+The next acceptance change targets recorded GitHub-hosted configurations under
+en-US and Invariant, not every culture or historical/future version. This is a
+development scope, not a newly established compatibility or release guarantee.
+Known excluded-environment failures, including deferred th-TH behavior, remain
+disclosed limitations rather than new investigation tasks.
+
+Shoutx relies on Runner/.NET/ICU providing their specified behavior; it does not
+certify those implementations. Reuse relevant observations and assess concrete
+harm that affects the proposed output, but do not require complete character-set
+or dependency-internal proofs. A known harmful route is not dismissed merely
+because its cause is in a dependency. Controls are chosen against such routes,
+with their effectiveness and product/maintenance cost made explicit.
+Original-value preservation and explicit-loss rules remain owned by the
+[design invariants](design.md#security-invariants); no sanitizer is adopted here.
+
 ### Command-specific analyses
 
 Detailed boundary analyses are colocated with their command specifications:
@@ -226,11 +286,10 @@ decision documents:
 | Invalid UTF-8 or NUL | Yes | Reject before output begins |
 | Memory exhaustion through large input | Yes | Enforce a documented hard input limit |
 | Secret exposure through diagnostics | Yes | Do not reproduce input values in diagnostics |
-| Additional workflow commands through mask data | Yes | Current V2 escaping prevents physical-line injection but not culture-sensitive fallback selecting an attacker-shaped registered workflow command, or ordinary logging of an unrecognized line that exposes the mask value immediately; the framing guarantee remains unresolved |
-| Stdout command loss or reinterpretation through locale-sensitive delimiter search | Yes | Treat the framing guarantee as unresolved; the proposed decision record owns the resolution and required evidence |
+| Stdout data interpreted as another command or property | Yes | [AP1–AP3 and AP5](#stdout-mask-and-annotation-responsibility); assess a proposed acceptance change against concrete boundary crossings |
+| Mask misregistration or disclosure caused by misframing | Yes | [AP4](#stdout-mask-and-annotation-responsibility), within documented consumer preconditions; not comprehensive confidentiality |
 | False mask success for empty or whitespace-only data | Yes | Reject before stdout because the runner would not register it |
-| Additional workflow commands or properties through annotation data | Yes | Current V2 encoders prevent physical-line injection but do not make separator search culture-independent; the framing guarantee remains unresolved |
-| Ordinary annotation truncation or metadata repair | Yes | Enforce the pinned runner's input message limit and conservative location invariants before stdout |
+| Ordinary annotation truncation or metadata repair | Functional contract | Keep the command specification's message limit and location validation; not itself a demonstrated security boundary crossing |
 | Mask-induced annotation transformation or truncation | No | Runner secret masking occurs after decoding; document that it can change and expand the message |
 | Misleading or excessive attacker-selected annotations | No | Caller authorizes content and severity; shoutx protects only command structure |
 | Disclosure before mask registration or through process tracing | No | Deliver secrets as data, disable tracing, and register before other output |

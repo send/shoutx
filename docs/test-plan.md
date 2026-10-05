@@ -333,7 +333,33 @@ remain outside this package suite, with broader policies covered by the
 source-built oracle and live hosted checks. Neither suite changes stdout
 release eligibility or the deferred `th-TH` decision.
 
-### Unicode adoption completion criteria
+### Isolated Unicode implementation verification
+
+The current original-value expansion is specified by the
+[annotation](commands/github-actions-annotations.md) and
+[mask](commands/github-actions-mask.md) contracts. Its
+[decision record](decisions/stdout-unicode-acceptance.md) supersedes the earlier
+research work order for this implementation; the historical investigation below
+is retained evidence, not a requirement to certify dependency internals.
+
+Verify exact producer bytes and empty stdout on rejection, exhaustive static
+lookup agreement with the checked-in membership input, pinned parser round
+trips, and actual Worker masking/annotation effects. Metadata tests must include
+final TITLE and final FILE, not only a property followed by numeric fields.
+The Unicode-property terminator must preserve values and must not create an
+extra decoded property. Preserve old ASCII output bytes and consumer-state
+negative controls. Run the four-OS Invariant/en-US integration matrix and record
+its runtime identities; finite integration is not arbitrary-input proof.
+
+Use `python3 scripts/generate-stdout-start-table.py --check` to verify the
+generated representation. Acceptance-set changes require explicit review of
+membership and its evidence; renderer success alone is not evidence of safety.
+Compare release-mode CLI performance with the recorded, predeclared method in
+[the evidence note](compatibility/stdout-unicode-policy.md#producer-performance).
+Normal stable/unstable Cargo and Runner oracle gates remain required. Neither
+completion here nor any old investigation section enables stable distribution.
+
+### Unicode adoption completion criteria (historical research plan)
 
 The [research-scope decision](decisions/github-actions-unicode-scope.md) fixes
 the initial target; it does not expand CLI acceptance or release eligibility.
@@ -722,7 +748,7 @@ Current producer-policy checks still run first for both cultures. The Worker fix
 retains synthetic host services, log storage and server queues: it does not
 start a live hosted worker or upload annotations to GitHub.
 
-These generated research wires bypass shoutx's deliberately narrower ASCII
+These generated research wires bypass the then-current, narrower ASCII
 guard. They test consumer effects, not producer acceptance or producer-to-worker
 round trips for these new values. The separate producer-generated worker corpus
 still covers only the current producer policy. No arbitrary-length sequence
@@ -742,7 +768,7 @@ python3 scripts/generate-unicode-candidate.py --source-dir /path/to/ucd-files --
 The research-only Rust test `tests/unicode_candidate_lookup.rs` checks a
 first-scalar binary search against all scalar memberships in the candidate
 table, unioned with the existing ASCII/CR/LF rule. It is not called by the CLI.
-Its ignored release-mode microbenchmark compares the current ASCII predicate
+Its ignored release-mode microbenchmark compares the former ASCII predicate
 and the proposed lookup on 16-byte, 4096-byte and 1-MiB inputs, with ASCII,
 Japanese, emoji and rejected combining-mark starts:
 
@@ -1190,12 +1216,12 @@ Runner. Binary stdin receives UTF-8 bytes; this is not additional shell argv or
 pipeline-transcoding coverage. Separate offline tests capture and compare
 exact producer bytes before testing consumer effects.
 
-The bounded corpus uses eight ASCII starts (`A`, `:`, `%`, space, `-`, apostrophe,
-`#`, `0`) followed immediately by a combining mark and hostile Unicode/command-
+The bounded corpus uses eight starts (two ASCII starts plus Greek, Arabic,
+Devanagari, CJK, emoji and supplementary letters) followed immediately by a combining mark and hostile Unicode/command-
 looking tails. Annotation cases additionally start with CR and LF; all three
 severities exercise Unicode, literal escape-looking text, a decoded newline,
 legacy-looking warning syntax and V2-looking error syntax as data. Compare
-exact title, workspace-relative file, severity, message, line and column fields
+exact Unicode title, workspace-relative Unicode file, severity, message, line and column fields
 from the completed job's paginated annotations API, including multiplicity.
 The dedicated step emits ten annotations per severity, at the pinned Runner's
 per-step retention cap; existing smoke annotations run in other steps. This is

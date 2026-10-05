@@ -374,6 +374,143 @@ fn cases() -> Vec<AnnotationCase> {
             }
         }
     }
+    // Metadata boundaries are independent of the data-start policy. Exercise
+    // marks, ignorables and prepend characters at actual field edges, not just
+    // inside an ASCII wrapper. Cover both final text properties and a following
+    // typed field; the latter alone cannot exercise the final-property boundary.
+    for (index, scalar) in [
+        '\u{0301}',
+        '\u{200b}',
+        '\u{0640}',
+        '\u{0600}',
+        '\u{0605}',
+        '\u{06dd}',
+        '\u{070f}',
+        '\u{0890}',
+        '\u{0891}',
+        '\u{08e2}',
+        '\u{0d4e}',
+        '\u{110bd}',
+        '\u{110cd}',
+        '\u{111c2}',
+        '\u{111c3}',
+        '\u{1193f}',
+        '\u{11941}',
+        '\u{11a3a}',
+        '\u{11a84}',
+        '\u{11a89}',
+        '\u{11d46}',
+        '\u{11f02}',
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let title = format!("{scalar}title{scalar}");
+        let file = format!("{scalar}file.rs{scalar}");
+        let message = ",file=x,line=9::tail";
+        for field in ["title", "file"] {
+            for tail in ["", "\u{200d}\u{034f}"] {
+                let value = format!("{scalar}value{scalar}{tail}");
+                let expected = properties(&[(field, &value)]);
+                cases.push(AnnotationCase {
+                    id: format!("unicode-final-{field}-{index}-{}", tail.len()),
+                    command: encode(
+                        &shoutx::github_actions::encode_annotation(
+                            request(
+                                AnnotationSeverity::Warning,
+                                (field == "title").then_some(value.as_str()),
+                                (field == "file").then_some(value.as_str()),
+                                None,
+                                None,
+                                None,
+                                None,
+                            ),
+                            message.as_bytes().to_vec(),
+                        )
+                        .unwrap(),
+                    ),
+                    severity: "warning",
+                    message: encode(message.as_bytes()),
+                    properties: expected.clone(),
+                    windows_properties: expected,
+                });
+            }
+        }
+        let expected = properties(&[("title", &title), ("file", &file), ("line", "3")]);
+        cases.push(AnnotationCase {
+            id: format!("unicode-property-edges-{index}"),
+            command: encode(
+                &shoutx::github_actions::encode_annotation(
+                    request(
+                        AnnotationSeverity::Warning,
+                        Some(&title),
+                        Some(&file),
+                        Some("3"),
+                        None,
+                        None,
+                        None,
+                    ),
+                    message.as_bytes().to_vec(),
+                )
+                .unwrap(),
+            ),
+            severity: "warning",
+            message: encode(message.as_bytes()),
+            properties: expected.clone(),
+            windows_properties: expected,
+        });
+    }
+    for (index, first) in [
+        "日本語",
+        "😀",
+        "é",
+        "العربية",
+        "हिन्दी",
+        "Ελληνικά",
+        "עברית",
+        "ภาษาไทย",
+        "한국어",
+        "𐐀",
+        "\u{02b0}",
+        "\u{16fe0}",
+        "\u{10ffff}",
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        for (name, severity) in [
+            ("notice", AnnotationSeverity::Notice),
+            ("warning", AnnotationSeverity::Warning),
+            ("error", AnnotationSeverity::Error),
+        ] {
+            let message = format!("{first}\u{0301}-message::tail ##[warning]literal");
+            let title = format!("{first}\u{0301},title:%25");
+            let file = "日本語_العربية_😀.rs";
+            let expected = properties(&[("title", &title), ("file", file), ("line", "1")]);
+            cases.push(AnnotationCase {
+                id: format!("unicode-start-{name}-{index}"),
+                command: encode(
+                    &shoutx::github_actions::encode_annotation(
+                        request(
+                            severity,
+                            Some(&title),
+                            Some(file),
+                            Some("1"),
+                            None,
+                            None,
+                            None,
+                        ),
+                        message.as_bytes().to_vec(),
+                    )
+                    .unwrap(),
+                ),
+                severity: name,
+                message: encode(message.as_bytes()),
+                properties: expected.clone(),
+                windows_properties: expected,
+            });
+        }
+    }
     cases
 }
 

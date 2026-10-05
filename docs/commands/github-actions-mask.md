@@ -38,10 +38,10 @@ report success without registering a mask. The whitespace classification is
 the .NET 8 `Char.IsWhiteSpace` set, equivalent here to the Unicode
 `White_Space` property. U+FEFF and U+200B are not whitespace under that rule.
 
-After producer framing, apply the shared ASCII data-boundary allowlist
+After producer framing, apply the shared Unicode data-boundary policy
 defined in the [annotation input policy](github-actions-annotations.md#command-line-grammar-and-input).
 Reject a value outside the allowlist with status 1, empty stdout, and the fixed
-diagnostic `mask value is outside the ASCII boundary policy`. The
+diagnostic `mask value is outside the Unicode boundary policy`. The
 [compatibility note](../compatibility/github-actions-workflow-command-parser.md)
 records the observed delimiter failure and fallback. Do not delete, normalize,
 or replace any scalar: registering a changed string would not faithfully mask
@@ -135,15 +135,13 @@ do not generalize it into a raw workflow-command API.
 
 ### Runner behavior and limitations
 
-The intended security property is structural integrity of one stdout
-`add-mask` workflow command and faithful registration of its decoded value by
-the supported runner while command processing is active. After consuming at
-most one final producer-framing boundary, shoutx preserves the remaining value
-and escapes `%`, CR, and LF so attacker-controlled data cannot terminate the
-physical line. The current V2 framing does not prevent culture-sensitive parse
-failure and legacy fallback from selecting an attacker-shaped registered
-workflow command from value data; an unrecognized line is logged as ordinary
-output and can expose the value immediately without registering a mask.
+The [stdout threat inventory](../threat-model.md#stdout-mask-and-annotation-responsibility)
+owns attack paths AP1/AP2/AP4. The contract above owns original-value registration
+and encoding. Unlike annotation nonarrival alone, mask misrecognition can expose
+the secret; successful registration of a changed string is not an adequate
+substitute. Assess acceptance changes against those concrete paths within their
+documented applicability conditions, not a requirement to certify every culture
+or Runner dependency. The following are command-specific effects and limitations.
 
 Mask registration is itself an integrity-sensitive operation, not authorization
 to let untrusted input choose arbitrary masks. An attacker-selected value can

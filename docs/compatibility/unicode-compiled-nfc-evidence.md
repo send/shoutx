@@ -230,6 +230,76 @@ The first returns the aggregate's implementation pointer; the second returns
 its compose member. This is a static factory-path correspondence. It is not a
 claim that every collation or search operation has been traced to that factory.
 
+## Conditional ASCII starter gate
+
+The identified headers permit one narrow deduction without decoding their
+whole normalization tries. In each of 70.1, 72.1, 74.2 and 76.1,
+`IX_MIN_DECOMP_NO_CP` is index 8 and that index contains `0xc0`.
+[`Normalizer2Impl::init`](https://github.com/unicode-org/icu/blob/2d029329c82c7792b985024b2bdab5fc7278fbc8/icu4c/source/common/normalizer2impl.cpp#L430-L434)
+copies it into `minDecompNoCP`. The
+[`getFCD16`](https://github.com/unicode-org/icu/blob/2d029329c82c7792b985024b2bdab5fc7278fbc8/icu4c/source/common/normalizer2impl.h#L304-L316)
+fast path returns zero whenever `c < minDecompNoCP`, before consulting the
+small-FCD array or normalization trie. The enum, assignment and branch were
+inspected at all four fixed source commits from the input table. The initializer
+casts to `UChar` in 70/72 and `char16_t` in 74/76; `0xc0` fits either type.
+Thus an object initialized from these indexes and using this implementation
+returns zero for every ASCII scalar, including U+003A. This is conditional
+source/data reasoning, not an observation of the reference collator's getter.
+The candidate binary/initializer evidence above retains its existing limits.
+
+To reproduce the numeric premise from the repository root, repeat this for
+each of the four headers and its SHA-256 from the input table. It uses the
+existing bounded numeric-array parser, does not execute the header, and prints
+only the selected threshold:
+
+```sh
+python3 -I -B - HEADER EXPECTED_SHA256 <<'PY'
+import hashlib, runpy, struct, sys
+from pathlib import Path
+helper = runpy.run_path('scripts/inspect-compiled-nfc.py')
+if len(sys.argv) != 3:
+    raise SystemExit('expected header and independent expected SHA-256')
+expected = helper['sha256'](sys.argv[2])
+with helper['open_regular'](Path(sys.argv[1])) as stream:
+    raw = stream.read(helper['SOURCE_CAP'] + 1)
+if len(raw) > helper['SOURCE_CAP'] or hashlib.sha256(raw).hexdigest() != expected:
+    raise SystemExit('source size or identity mismatch')
+_, arrays = helper['arrays'](raw)
+threshold = struct.unpack_from('<i', arrays['indexes'], 8 * 4)[0]
+if threshold != 0xc0:
+    raise SystemExit('threshold differs; deduction not established')
+print('minDecompNoCP =', threshold)
+PY
+```
+
+This recipe returned 192 on all four identified headers on 2026-10-05. It does
+not mechanically verify the C++ enum, initializer or getter; those are the
+separate inspected source premises above.
+
+The result connects to a specific contraction gate. `CollationData::getFCD16`
+delegates to its NFC implementation. In
+[`nextCE32FromContraction` and `nextCE32FromDiscontiguousContraction`](https://github.com/unicode-org/icu/blob/2d029329c82c7792b985024b2bdab5fc7278fbc8/icu4c/source/i18n/collationiterator.cpp#L490-L691),
+the former only enters discontiguous matching for a mismatch scalar with FCD
+greater than `0xff`. The latter rejects a starter in its second lookahead and
+rewinds both reads. In its main loop, a newly read scalar with FCD at most
+`0xff` breaks the loop before the next match/skip iteration, and the subsequent
+`backwardNumSkipped(sinceMatch)` undoes reads since the last match.
+Consequently, under the stated NFC premise and valid successful bookkeeping,
+a colon is not added by these skip transitions. It can be read temporarily;
+this is not a claim that the cursor never crosses it.
+
+The two function bodies agree across the four source versions after the
+already documented null/Boolean/character-type spelling changes; 76 additionally
+uses explicit `static_cast` for the two returned trie values and two byte
+combining-class conversions. This is a bounded source comparison, not native
+binary equivalence. Combine this gate with, rather than replace, the
+[context-key coverage argument](unicode-context-matching-evidence.md): key
+absence alone does not establish the gate's NFC premise. Nor does the gate
+alone exclude a contiguous key containing colon, prove nested dispatch or
+FCD-buffer behavior, establish termination, or locate the intended delimiter
+in the complete header. Effective data/code binding and the surrounding
+iterator/search composition remain open.
+
 ## Remaining validation
 
 Retain these inputs as bounded metadata; do not publish vendor arrays or full

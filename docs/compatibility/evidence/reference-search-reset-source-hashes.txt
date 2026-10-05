@@ -1,4 +1,8 @@
 # SHA-256; fixed official source pins are listed in ../reference-search-reset.md.
+# Additional coordinate-path inputs; CompareInfo hashes are owned by reference-culture-source-hashes.txt.
+0b90d6b47d6330753e855af18818b97d42007f32c6ee4b793faffc0029f069f4  dotnet/runtime/src/libraries/System.Private.CoreLib/src/System/String.cs
+49ee52518952e16b89adee3d6c9346ae6c74be268730f0497eb14b340b49d56c  dotnet/runtime/src/libraries/System.Private.CoreLib/src/System/String.Searching.cs
+784304fdbdca657e974625b300abefc82576ce5567e2e0e1450a6514e9a33a4b  actions/runner/src/Runner.Common/ActionCommand.cs
 # ICU entries: generation / source-relative path. No vendor data or binaries.
 09d5194ddc7348950f12288b5464ccc7b718a1d35e2ea1a3af7e985e95037e49  70-1/icu4c/source/i18n/utf16collationiterator.h
 09d5194ddc7348950f12288b5464ccc7b718a1d35e2ea1a3af7e985e95037e49  72-1/icu4c/source/i18n/utf16collationiterator.h

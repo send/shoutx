@@ -10,7 +10,13 @@ This note follows the native cache below the
 
 The .NET pin is
 [`a83db3e0eb2defb6220e15dae2f1a0462fdbf99f`](https://github.com/dotnet/runtime/blob/a83db3e0eb2defb6220e15dae2f1a0462fdbf99f/src/native/libs/System.Globalization.Native/pal_collation.c),
-specifically `pal_collation.c`. Upstream ICU generation references are:
+covering `pal_collation.c` and the managed coordinate path's `String.cs`,
+`String.Searching.cs`, `CompareInfo.cs` and `CompareInfo.Icu.cs`. The
+[culture-source inventory](evidence/reference-culture-source-hashes.txt) owns
+the two CompareInfo file hashes; the manifest below adds the two String files.
+Runner's caller is `src/Runner.Common/ActionCommand.cs` at
+[`397b032cbf865e9c3ddfab89d533ec19325e1273`](https://github.com/actions/runner/blob/397b032cbf865e9c3ddfab89d533ec19325e1273/src/Runner.Common/ActionCommand.cs),
+also hashed below. Upstream ICU generation references are:
 
 - [70.1](https://github.com/unicode-org/icu/tree/a56dde820dc35665a66f2e9ee8ba58e75049b668/icu4c/source)
 - [72.1](https://github.com/unicode-org/icu/tree/ff3514f257ea10afe7e710e9f946f68d256704b1/icu4c/source)
@@ -123,6 +129,47 @@ byte-identical in 70/72 and in 74/76; their cross-pair differences are type and
 null spellings. The FCD guard headers differ only in a deleted private
 constructor declaration and explicit integer-cast spellings. This remains
 upstream source evidence, not vendor compiled-code attestation.
+
+## Header offsets and caller coordinates
+
+Under the preceding fresh-entry and printable-ASCII mapping premises, the
+one-unit/one-CE result also gives a bounded offset result. For header unit `j`
+in the searched text, `CollationElementIterator::getOffset` uses the underlying
+iterator's offset, not its reverse-offset buffer: direction is zero/positive
+at entry and becomes 2 on the first forward call. The non-FCD offset is
+`pos - start`; the FCD forward-checking offset is `pos - rawStart`. Before and
+after the unit's CE these are therefore `j` and `j + 1`.
+
+`UCollationPCE::nextProcessed` records these offsets immediately before and
+after `next`. The checked header CE's nonzero primary survives the assumed
+non-shifted processing, so this call does not skip it as ignorable and move
+on to later text. `CEIBuffer::get` stores the returned low/high pair unchanged.
+Thus each such header unit has a nonempty, single-unit interval in search
+coordinates, including each intended colon. The getter and processed-fetch
+bodies agree across the four source pins after type/null/boolean spelling
+changes; 76 additionally uses equivalent explicit integer-cast spellings.
+This does not prove the search's boundary checks or its next suffix fetch.
+
+Those coordinates are relative to the **searched slice**, not the original
+Runner message. At the fixed .NET pin,
+[`String.IndexOf`](https://github.com/dotnet/runtime/blob/a83db3e0eb2defb6220e15dae2f1a0462fdbf99f/src/libraries/System.Private.CoreLib/src/System/String.Searching.cs#L238-L266)
+routes the start-index overload through CurrentCulture comparison.
+[`CompareInfo.IndexOf`](https://github.com/dotnet/runtime/blob/a83db3e0eb2defb6220e15dae2f1a0462fdbf99f/src/libraries/System.Private.CoreLib/src/System/Globalization/CompareInfo.cs#L906-L937)
+obtains a span starting at that index and adds the index back only to a
+nonnegative result. `String.TryGetSpan` bounds-checks and constructs that
+span from `_firstChar + startIndex` with the requested count. The ICU branch
+receives that span; even the ASCII helper's native fallback passes the full
+span pointer/length, not its current scan cursor. Native `IndexOf` returns
+`usearch_first`'s result without another coordinate translation.
+
+Runner's V2 parser searches for `::` starting at 2 in its `TrimStart` result.
+If ICU successfully returns the intended delimiter start `j` in the slice,
+the managed result is `j + 2`, and Runner starts data at `j + 4` in that
+trimmed message. This is conditional coordinate correspondence, not proof
+that the intended match succeeds, that trimming preserves arbitrary input,
+or that every call takes the native path. The
+[existing ASCII fast-path argument](github-actions-workflow-command-parser.md#ascii-boundary-allowlist-derivation)
+and remaining suffix/search/effective-binding obligations still apply.
 
 ## Break-iterator state
 

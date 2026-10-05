@@ -447,6 +447,15 @@ fn text_properties_are_encoded_in_fixed_order() {
         b"::warning title=title%3A%3Aa=b,file=a%2Cb%3Ac%250A%0D%0A=x::message\n",
     );
     for option in ["--title", "--file"] {
+        for value in ["\u{200b}", "\u{00ad}", "\u{feff}"] {
+            let field = option.trim_start_matches("--");
+            let expected = format!("::notice {field}={value},::message\n");
+            success(
+                &["github-actions:notice", option, value, "message"],
+                None,
+                expected.as_bytes(),
+            );
+        }
         for value in ["", "=", "=x", "==x", "space ", "tab\t", "nbsp\u{00a0}"] {
             let output = failure(
                 &["github-actions:notice", option, value, "message"],

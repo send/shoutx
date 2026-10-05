@@ -259,6 +259,85 @@ Do not run Python with assertions disabled. This is an offline research
 recipe, not a product input validator. It preserves the reader's original
 scope/false proof flags, and exit 0 establishes only a complete modeled walk.
 
+### Printable-ASCII header subcase
+
+A separate bounded check on 2026-10-05 inspected all 95 scalars U+0020–U+007E
+in each of the three hash-identified payloads above. Each had 85 simple CE32
+mappings and ten digit-tag mappings; every digit's non-numeric child was
+simple. Every resolved mapping had a nonzero primary and zero second raw
+half, and the colon primary differed from that of every other scalar in this
+alphabet. These are aggregate payload observations, not an acceptance table
+or evidence that a reference collator selects this root without tailoring.
+
+To reproduce this additional check, retain the full-file/member/header/payload
+identity checks in the preceding recipe, and replace its graph import and
+reporting tail (starting at `spec = ...`) with the following. Keep assertions
+enabled. The numeric-off restriction is also checked by `RootMappings`:
+
+```python
+import collections, runpy
+helper = runpy.run_path('scripts/inspect-icu-mappings.py')
+root = helper['RootMappings'](payload)
+tags, primaries = collections.Counter(), {}
+for cp in range(0x20, 0x7f):
+    value = root.initial(cp)
+    tag = -1 if value & 255 < 0xc0 else value & 15
+    tags[tag] += 1
+    assert tag in (-1, 10)
+    if tag == 10:
+        assert (value >> 8) & 15 <= 9
+        value = helper['at'](root.ce32s, value >> 13)
+    assert value & 255 < 0xc0
+    ce = helper['direct_ce'](value)
+    p, lower = ce >> 32, ce & 0xffffffff
+    first = helper['first_half'](ce)
+    second = ((p << 16) | ((lower >> 8) & 0xff00) | (lower & 0x3f)) & 0xffffffff
+    assert first != 0 and second == 0
+    primaries[cp] = first >> 16
+assert all(primaries.values())
+assert all(v != primaries[0x3a] for c, v in primaries.items() if c != 0x3a)
+print('printable ASCII mapping tags:', dict(tags))
+print('nonzero primaries, zero second halves, unique colon primary: PASS')
+```
+
+This supplies premises for a restricted source induction, not the whole
+delimiter proof. Assume the effective mappings are those checked, numeric
+collation is off, iteration is forward over explicitly bounded UTF-16 using
+the non-FCD iterator, status/resource operations succeed, and there is no
+pending `otherHalf_`, unread CE or skipped replay at entry. Retain the existing
+`numCpFwd < 0` premise. For each next printable ASCII unit:
+
+1. [`UTF16CollationIterator::handleNextCE32`](https://github.com/unicode-org/icu/blob/2d029329c82c7792b985024b2bdab5fc7278fbc8/icu4c/source/i18n/utf16collationiterator.cpp#L58-L67)
+   consumes one unit and returns its mapping without lookahead.
+2. [`CollationIterator::nextCE`](https://github.com/unicode-org/icu/blob/2d029329c82c7792b985024b2bdab5fc7278fbc8/icu4c/source/i18n/collationiterator.h#L129-L171)
+   returns one simple CE directly. For a digit,
+   `nextCEFromCE32` removes the provisional buffer slot, the numeric-off branch
+   selects the checked simple child without text movement, and the common
+   append path adds one CE; that CE is returned and consumed.
+3. [`CollationElementIterator::next`](https://github.com/unicode-org/icu/blob/2d029329c82c7792b985024b2bdab5fc7278fbc8/icu4c/source/i18n/coleitr.cpp#L99-L138)
+   has no second half to retain. On the following call,
+   `clearCEsIfNoneRemaining` clears the consumed slot. Thus the same premises
+   hold at the next unit, without consulting any later data scalar.
+
+The existing generation comparison covers the `.cpp` paths; the newly inspected
+inline `nextCE` bodies are identical in 70/72/74, and 76 differs only in three
+equivalent explicit integer-cast spellings. This is source correspondence,
+not compiled-code attestation. At non-shifted processed-CE settings, the
+inspected `UCollationPCE::processCE` retains each nonzero primary. With default
+element comparison, the checked alphabet therefore cannot produce colon's
+primary from a different header character. This does not establish other
+search settings by itself.
+
+The subcase can cover a printable-ASCII command/property prefix ending in the
+intended delimiter, of any length within the existing resource bounds. It does
+not prove the search's actual entry state or boundary acceptance, the separate
+`StartsWith` path, or what happens when search fetches beyond that delimiter.
+It also does not expand property acceptance or constrain general Unicode data
+to ASCII. Effective base/tailoring and code binding, the arbitrary-data suffix,
+end-boundary and full search-composition obligations remain open. The
+[ASCII starter gate](unicode-compiled-nfc-evidence.md#conditional-ascii-starter-gate)
+is additional conditional context evidence, not a substitute for these premises.
+
 ### Offset arithmetic follow-up
 
 The original structural walk checked an offset tag's scalar and CE-array

@@ -7,6 +7,8 @@ on:
       - '.github/workflows/unicode-policy.yml'
       - 'tests/unicode-policy-probe/**'
       - 'scripts/test-unicode-policy.py'
+      - 'scripts/test-runner-package.py'
+      - 'tests/runner-package/pins.json'
       - 'src/github_actions/**'
   push:
     branches: [main]
@@ -15,6 +17,8 @@ on:
       - '.github/workflows/unicode-policy.yml'
       - 'tests/unicode-policy-probe/**'
       - 'scripts/test-unicode-policy.py'
+      - 'scripts/test-runner-package.py'
+      - 'tests/runner-package/pins.json'
       - 'src/github_actions/**'
 
 permissions:

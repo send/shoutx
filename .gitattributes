@@ -1,2 +1,3 @@
 tests/fixtures/stable-help.txt text eol=lf
 tests/runner-package/unicode-candidate.json text eol=lf
+tests/unicode-policy-probe/start-candidate.json text eol=lf

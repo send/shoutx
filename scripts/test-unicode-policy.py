@@ -36,16 +36,19 @@ def main():
               "imageOS": os.environ.get("ImageOS"), "imageVersion": os.environ.get("ImageVersion"),
               "githubSha": os.environ.get("GITHUB_SHA"), "githubRunId": os.environ.get("GITHUB_RUN_ID")}
     try:
+        report["phase"] = "candidate-identity"
         package.verify(CANDIDATE, CANDIDATE_SHA)
         if rid not in pins["packages"]:
             raise ValueError("unsupported platform")
         with tempfile.TemporaryDirectory(prefix="shoutx-unicode-policy-") as temporary:
+            report["phase"] = "sdk-selection"
             work = Path(temporary).resolve()
             (work / "global.json").write_text(json.dumps({"sdk": {"version": pins["sdkVersion"], "rollForward": "disable"}}))
             sdk = subprocess.check_output(["dotnet", "--version"], cwd=work, text=True).strip()
             if sdk != pins["sdkVersion"]:
                 raise ValueError("unexpected SDK")
             report["sdkVersion"] = sdk
+            report["phase"] = "package-acquisition"
             pin = pins["packages"][rid]
             name = f'actions-runner-{rid}-{pins["runnerVersion"]}.{pin["extension"]}'
             archive = work / name
@@ -55,11 +58,13 @@ def main():
                 package.download(f'https://github.com/actions/runner/releases/download/v{pins["runnerVersion"]}/{name}', archive, pin["size"])
             package.verify(archive, pin["sha256"], pin["size"])
             report["packageSha256"] = pin["sha256"]
+            report["phase"] = "package-extraction"
             binary = work / "bin"
             package.extract_bin(archive, binary)
             config = json.loads((binary / "Runner.Worker.runtimeconfig.json").read_text())
             if config["runtimeOptions"].get("includedFrameworks") != [{"name": "Microsoft.NETCore.App", "version": pins["runtimeVersion"]}]:
                 raise ValueError("unexpected package runtime")
+            report["phase"] = "build"
             package.run(["dotnet", "build", str(ROOT / "tests/unicode-policy-probe/Probe.csproj"),
                          "-c", "Release", "-nodeReuse:false", "-p:UseSharedCompilation=false",
                          f"-p:RunnerBin={binary}", f"-p:BaseIntermediateOutputPath={work / 'obj'}/",
@@ -67,11 +72,13 @@ def main():
             shutil.copyfile(work / "probe/Probe.dll", binary / "Probe.dll")
             env, removed = package.probe_environment(os.environ)
             report["removedEnvironmentNames"] = removed
+            report["phase"] = "execute"
             exit_code = package.run(["dotnet", "exec", "--runtimeconfig", str(binary / "Runner.Worker.runtimeconfig.json"),
                                     "--depsfile", str(binary / "Runner.Worker.deps.json"), str(binary / "Probe.dll"),
                                     str(CANDIDATE), str(evidence / "probe.json")],
                                    evidence, "execute", env, cwd=work, check=False, timeout=900)
             observation = json.loads((evidence / "probe.json").read_text())
+            report["phase"] = "verify-result"
             if (observation["candidateSha256"] != CANDIDATE_SHA
                     or observation["runtime"] != pins["runtimeVersion"]
                     or observation["runnerCommonSha256"] != package.digest(binary / "Runner.Common.dll")

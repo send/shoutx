@@ -4,6 +4,7 @@ on:
   push:
     branches: [feat/unicode-stdout-policy]
     paths:
+      - '.gitattributes'
       - '.github/workflows/unicode-policy.yml'
       - 'tests/unicode-policy-probe/**'
       - 'scripts/test-unicode-policy.py'

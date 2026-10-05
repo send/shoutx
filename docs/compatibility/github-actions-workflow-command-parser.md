@@ -6,6 +6,15 @@ a decision to use either supported wire syntax. Normative behavior remains in
 the command specifications, framing choices remain in decision records, and
 release eligibility remains in the release policy.
 
+The ASCII-policy derivation and Unicode investigation below are historical
+evidence, not the current acceptance policy. The subsequent isolated-feature
+expansion, including Unicode metadata framing, is recorded in
+[the implementation evidence](stdout-unicode-policy.md); accepted inputs are
+owned by the [annotation](../commands/github-actions-annotations.md) and
+[mask](../commands/github-actions-mask.md) contracts. Old investigation limits
+and unfinished internal arguments are retained for reference, not inherited as
+completion gates for that implementation.
+
 The [2026-10-05 research scope revision](../decisions/github-actions-unicode-scope.md#consequences-and-verification-requirements)
 separates reference-configuration proof from deployment applicability. Source
 arguments and historical live-linkage gaps below retain their evidence limits;
@@ -188,7 +197,7 @@ that every rejected scalar reproduces the U+0301 failure.
 Additional local Invariant Culture / `en-US` probes found U+0E33, U+0EB3,
 and all five U+1F3FB--U+1F3FF scalars fail V2 parsing despite being outside
 the category set. The oracle includes these as raw fallback counterexamples;
-the current ASCII boundary policy also rejects them at the boundary.
+the then-current ASCII boundary policy also rejected them at the boundary.
 This input-dependent issue with Thai/Lao characters is distinct from the
 deferred `th-TH` culture failure for ordinary ASCII input.
 Sequences U+200D U+0301, U+200C U+0E33, and U+E0020 U+1F3FB also fail
@@ -217,7 +226,7 @@ That expansion also exposed a separate portability assumption in an existing
 test. An assertion expecting U+11F02 to move the V2 separator passed on the
 newer environments but failed on Ubuntu 22.04, where the runner decoded the
 earlier separator instead. The scalar was removed from the shared portable
-runner-oracle assertions; the ASCII header policy now rejects it. The
+runner-oracle assertions; the ASCII header policy at that time rejected it. The
 failed [PR #42 CI run][u11f02-run] is evidence that a
 Unicode category or scalar denylist cannot stand in for the destination parser:
 the same runner source and .NET SDK can behave differently across platform
@@ -229,12 +238,13 @@ show that a Unicode scalar or category restriction can repair V2 framing.
 
 ## ASCII boundary allowlist derivation
 
-The narrow producer policy is specified in the
-[annotation contract](../commands/github-actions-annotations.md#command-line-grammar-and-input)
-and shared by mask. It restricts the complete encoded header and the first
-encoded data character to printable ASCII. It does not restrict subsequent
-Unicode data. This deliberately rejects Japanese/emoji message starts and
-non-ASCII TITLE/FILE values instead of changing their meaning.
+The former narrow producer policy, shared by mask and annotation, restricted
+the complete encoded header and the first encoded data character to printable
+ASCII. It did not restrict subsequent Unicode data. That policy rejected
+non-ASCII message starts and TITLE/FILE values instead of changing their meaning.
+The [current annotation contract](../commands/github-actions-annotations.md#command-line-grammar-and-input)
+has replaced those acceptance restrictions; the argument below describes the
+earlier implementation only.
 
 This is a sufficient-condition argument for an inspected implementation, not
 a guarantee made by the public Runner or .NET API. In the
@@ -280,7 +290,7 @@ exhaustive over Unicode sequences, backends, or runtime versions.
 
 ## V2 Unicode data-start investigation
 
-The interim ASCII policy is a sufficient condition only within the inspected
+The earlier interim ASCII policy was a sufficient condition only within the inspected
 ICU implementation and culture scope above, not a necessary condition for all
 observed V2 successes. Preliminary local probes used runtime-dependent
 Unicode category and segmentation tables, which cannot be assumed identical
@@ -300,8 +310,9 @@ the [test plan](../test-plan.md#v2-unicode-data-start-research).
 This is a V2-only research direction. ICU search includes collation-element
 and normalization checks as well as character boundaries; a local passing
 table or fixed-length corpus does not prove arbitrary sequences or future
-collation data. Neither the CLI's ASCII boundary policy nor metadata acceptance
-is changed. Legacy framing is excluded from this investigation by maintainer
+collation data. That investigation did not itself change the CLI's then-current
+ASCII boundary policy or metadata acceptance. The subsequent implementation is
+documented separately above. Legacy framing was excluded from this investigation by maintainer
 direction; the earlier proposed framing record is not an adoption decision.
 
 ### Remaining source argument
@@ -520,7 +531,7 @@ initial scalar:
 
 Here the suffix universe is the wire-encoded image of arbitrary non-NUL
 Unicode-scalar sequences following that scalar, subject to the destination's
-other validation and size rules, but not its current ASCII-first restriction.
+other validation and size rules, but not the then-current ASCII-first restriction.
 Percent, CR and LF undergo the existing data escaping; literal later `::`
 sequences remain in scope. Strict UTF-8 input excludes unpaired surrogates on
 the supported UTF-8 consumer-decoding path; see the

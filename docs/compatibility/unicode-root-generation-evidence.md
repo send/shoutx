@@ -445,6 +445,51 @@ exit only means inspection completed, not that the observations match.
 independent proof of it. The table is the retained expected observation;
 no second, independently maintained JSON baseline is required.
 
+## Root-provider selection source boundary
+
+The four fixed 70.1/72.1/74.2/76.1 sources above were also inspected at
+`icu4c/source/i18n/collationroot.cpp`; their identities and the additional
+files below are retained in the
+[root-provider source manifest](evidence/icu-root-provider-source-hashes.txt).
+This connects the named root provider to a data-opening request, not to a
+particular selected package or live mapping.
+
+In 70.1, `CollationRoot::load` constructs a tailoring without a base and opens
+`U_ICUDATA_NAME U_TREE_SEPARATOR_STRING "coll"`, type `icu`, name `ucadata`,
+using `udata_openChoice` with `CollationDataReader::isAcceptable`. On success
+it passes the selected payload and reported length to `CollationDataReader::read`
+with a null base, then publishes the root cache entry. Both root getters use
+the same `initOnce` state. This package-name request alone does not identify
+which bytes ICU's data search selects.
+
+**72.1 adds a real branch, not just spelling changes.** Its loader accepts an
+optional file path. The ordinary `getRootCacheEntry` and `getRoot` initializer
+calls pass a null path, selecting the `udata_openChoice` route. But
+`forceLoadFromFile` invokes that same initializer state with a supplied path.
+`loadFromFile` maps that file and checks the data-header magic and reader's
+acceptability predicate. It is not the ordinary package-search route.
+The 72.1-to-74.2 file diff changes null spellings; 74.2-to-76.1 removes redundant
+`static` inside the unnamed namespace and changes initializer spacing.
+The file-path branch remains in both later generations.
+
+In all three later pins, the internal `collationroot.h` declares
+`forceLoadFromFile`, and `tools/genrb/genrb.cpp` calls it when the parsed
+`--ucadata` option occurs, under the collation-enabled build branch. This is
+a concrete resource-generation-tool call site, not a discovered Runner
+workflow-input route. It is also not a proof that no other caller or vendor
+modification can invoke the exported C++ method. A current ordinary getter's
+null argument does not by itself establish the provenance of an already
+initialized singleton.
+
+The [culture/cache note](reference-culture-cache.md) identifies the ordinary
+collator construction route, and the
+[resource inventory](unicode-reference-inputs.md#conditional-resource-fallback-path)
+records a conditional `en_US` parent chain. To combine these with the recovered
+root payloads still requires the reference initialization/ownership argument,
+the selected data package and vendor implementation binding. No deployment
+attestation or new arbitrary-environment guarantee is inferred. This source
+bridge neither promotes a payload graph to effective data nor closes R1–R4.
+
 ## Remaining work
 
 Finish reader-format/dependency validation before promoting these exploratory

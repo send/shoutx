@@ -75,6 +75,55 @@ skips the positive-offset unsafe-character backup, calls `resetToOffset(0)`
 and clears `otherHalf_` again. Allocation failures and the full underlying
 iterator semantics are not proved away by these success-path observations.
 
+## Fresh forward entry and the FCD ASCII fast path
+
+The successful `CollationElementIterator::setText` path above constructs a new
+iterator, not a copy of the previous one. In `utf16collationiterator.h`, both
+the UTF-16 constructor and the FCD subclass reach
+`CollationIterator(data, numeric)`. That base constructor initializes
+`cesIndex` to zero, `skipped` to null and `numCpFwd` to -1; the `CEBuffer`
+constructor initializes its length to zero. The FCD constructor additionally
+sets `checkDir` to 1. Thus the old iterator's backward-forward limit and
+skipped replay are not inherited on this successful replacement path.
+
+This distinction matters: `CollationIterator::reset` alone clears the CE
+buffer/index and skipped replay, but does **not** assign `numCpFwd`. The
+zero-offset reset does not need to repair that field after fresh construction.
+The UTF-16 reset positions the cursor at the start; the FCD reset also restores
+the raw range and `checkDir == 1`. These facts are not a claim that an arbitrary
+reset repairs every possible incoming state, or that allocation/error paths
+can be ignored.
+
+For the FCD path, the fixed
+[`CollationFCD::hasTccc`](https://github.com/unicode-org/icu/blob/2d029329c82c7792b985024b2bdab5fc7278fbc8/icu4c/source/i18n/collationfcd.h#L71-L81)
+first tests `c >= 0xc0`. Every printable ASCII unit fails that test, without
+accessing its index/bit tables. In
+[`FCDUTF16CollationIterator::handleNextCE32`](https://github.com/unicode-org/icu/blob/2d029329c82c7792b985024b2bdab5fc7278fbc8/icu4c/source/i18n/utf16collationiterator.cpp#L210-L241),
+forward-checking entry reads one unit; both the next-unit test and
+`nextSegment` are inside the `hasTccc` branch. For ASCII that branch is not
+entered, the trie lookup is for that unit, and `checkDir` remains positive.
+This argument depends on the source guard, not on interpreting the separate
+normalization-data threshold as proof about this fast-path table.
+
+Consequently, under the other mapping, numeric-off, bounded-text and successful
+operation premises of the
+[printable-ASCII header subcase](unicode-root-generation-evidence.md#printable-ascii-header-subcase),
+its one-unit/one-CE induction also applies to a freshly forward-initialized FCD
+iterator. Simple mappings and non-numeric digit children do not invoke another
+text movement path. This includes processing the intended ASCII delimiter,
+but not the search's subsequent fetch from the arbitrary Unicode suffix.
+Search boundary acceptance, suffix processing and effective code/data binding
+remain separate obligations. No language restriction or product acceptance
+change follows from this header-only result.
+
+The constructors, successful `setText`, both `resetToOffset` bodies and FCD
+`handleNextCE32` were compared across the four pinned generations, with only
+`UChar`/`char16_t` and null/boolean spelling normalized. The UTF-16 headers are
+byte-identical in 70/72 and in 74/76; their cross-pair differences are type and
+null spellings. The FCD guard headers differ only in a deleted private
+constructor declaration and explicit integer-cast spellings. This remains
+upstream source evidence, not vendor compiled-code attestation.
+
 ## Break-iterator state
 
 With break iteration compiled in, `getBreakIterator` selects the supplied

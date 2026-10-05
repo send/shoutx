@@ -1,0 +1,12 @@
+# SHA-256; source pins and scope: ../unicode-root-generation-evidence.md
+# Labels are generation / fixed repository-relative source paths.
+6795fa2aedd66ba1794fe7be8f131a675bebb92252ada765af697c1700a2ca19  70-1/icu4c/source/i18n/collationroot.cpp
+1a562cd9f6fca16c6735f057e2a9adbc3ca2a2d7c2c50adf01f65be9a672e323  72-1/icu4c/source/i18n/collationroot.cpp
+8e1a1f47f140a37426edea736c2f4487922abaaa47546ecf7c40a5777ff34211  72-1/icu4c/source/i18n/collationroot.h
+e790ef06bdfb226324797c344617cd57447ff2b726552aeec338a909505e451e  72-1/icu4c/source/tools/genrb/genrb.cpp
+966f24094d0edc073b0685894d18cd246953964377c089234a85459d6fa3c078  74-2/icu4c/source/i18n/collationroot.cpp
+8e1a1f47f140a37426edea736c2f4487922abaaa47546ecf7c40a5777ff34211  74-2/icu4c/source/i18n/collationroot.h
+3803407d8d0ca27529356063f0c956b29248296305d2349d7013ab17edd3c3e8  74-2/icu4c/source/tools/genrb/genrb.cpp
+3a9c0173d50348b19cee2772de453665317929b6c8d8ae441920eac606166e29  76-1/icu4c/source/i18n/collationroot.cpp
+8e1a1f47f140a37426edea736c2f4487922abaaa47546ecf7c40a5777ff34211  76-1/icu4c/source/i18n/collationroot.h
+05d18cf0c0034e52628bfb22b8d847d9f945583e623e2c746e5fc2ab08c09b26  76-1/icu4c/source/tools/genrb/genrb.cpp

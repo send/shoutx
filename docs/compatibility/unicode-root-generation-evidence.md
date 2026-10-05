@@ -490,6 +490,11 @@ the selected data package and vendor implementation binding. No deployment
 attestation or new arbitrary-environment guarantee is inferred. This source
 bridge neither promotes a payload graph to effective data nor closes R1–R4.
 
+The [Linux compiled package note](reference-linux-root-package.md) adds
+root-request, member-name, descriptor-dispatch and recovered-TOC correspondences
+for the two hash-matched Linux generations. It keeps initialization, normal
+selection and dependent-helper obligations open.
+
 ## Remaining work
 
 Finish reader-format/dependency validation before promoting these exploratory

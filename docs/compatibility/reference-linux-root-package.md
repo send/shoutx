@@ -1,0 +1,125 @@
+# Linux root-package binding evidence
+
+Status: research in progress; does not close R1–R4 or recommend adoption.
+
+This note connects selected native instructions to the recovered Linux root
+members. The [input inventory](unicode-reference-inputs.md) owns package
+acquisition and the SHA-256 identities of `libicui18n`, `libicuuc`, and
+`libicudata`. Only its matching 70.1 and **74.2-1ubuntu3.1** files are covered;
+the earlier, nonmatching 74.2 package is not substituted. This is static
+inspection, not execution of the recovered libraries or loaded-byte attestation.
+
+## Request and member-name correspondence
+
+Addresses below are hexadecimal ELF virtual addresses before relocation, not
+file offsets. An internal address is identified by its inspected instructions
+and callers, not by the nearest exported name printed by a disassembler.
+
+| Observation | ICU 70.1 | ICU 74.2 |
+| --- | --- | --- |
+| International-library root loader | `12dde0`, size `217` | `145a70`, size `25f` |
+| Package-opening call | `12de88` | `145c67`, null file-path branch |
+| PLT / GOT for that call | `eb2f0` / `32c9d0` | `f0fa0` / `34aee8` |
+| GOT relocation target | `udata_openChoice_70` | `udata_openChoice_74` |
+| Package / type / name literals | `icudt70l-coll` / `icu` / `ucadata` | `icudt74l-coll` / `icu` / `ucadata` |
+| Common-library request implementation | `ffb00` | `116ec0` |
+| Common-package helper call | `1002bd` → `154270` | `11736f` → `16ab10` |
+| Descriptor's indirect member lookup | `154339` | `16abea` |
+
+The request implementation classifies a null package, `ICUDATA`, and the
+`icudt70l-`/`icudt74l-` or `ICUDATA-` prefixes as ICU data. The exact and prefix
+comparisons are bound through PLT relocations to `strcmp` and `strncmp`.
+For the observed `-coll` requests, the inspected calls to `StringPiece` and
+`CharString::append` construct a basename, `/coll`, `/ucadata`, and `.icu`.
+This call-sequence correspondence relies on those string helpers' contracts;
+their complete compiled implementations have not been proved here.
+
+The resulting string's pointer at frame offset `-0x80` is passed as the
+common-package helper's second argument. That helper preserves it and passes
+it as the second argument of the descriptor's indirect lookup. This connects
+the name construction to the member lookup, rather than merely finding the
+same literal in two libraries.
+
+The 74.2 loader also has a non-null file-path branch calling `loadFromFile`.
+The [root-provider source boundary](unicode-root-generation-evidence.md#root-provider-selection-source-boundary)
+explains why a current ordinary getter's null argument is not proof of an
+already initialized singleton's provenance. That initialization obligation
+remains open.
+
+## Linked descriptor and package format
+
+In the inspected empty common-package-slot path, the code loads a pointer
+whose GOT relocation names `icudt70_dat` or `icudt74_dat`. It initializes a
+descriptor, normalizes the pointer, validates the common-data header, and
+registers a copy. Registration scans ten slots under the mutex: it fills the
+first empty slot and does not replace an earlier descriptor with the same
+header pointer. This does not prove absence of earlier registrations.
+
+| Observation in common library | ICU 70.1 | ICU 74.2 |
+| --- | --- | --- |
+| Linked-data GOT reference | `1f7f38` | `209f80` |
+| Registration helper | `154190` | `16aa30` |
+| Common descriptor array | `1f9e20` | `20bf20` |
+| Common-header checker | `d60c0` | `e27d0` |
+| `CmnD` dispatch table / first target | `1e9c80` / `cea80` | `1fba20` / `dab80` |
+
+For a header with magic `DA 27`, pointer normalization retains the pointer.
+The common-header checker requires native little-endian/ASCII fields and
+format major version 1, selects the `CmnD` dispatch table, and records the TOC
+at header plus its decoded size. It has a separate `ToCP` branch; that is not
+the format of the recovered packages examined here.
+
+The `CmnD` lookup uses unsigned-byte name comparisons through NUL, checking
+endpoints and then a binary middle range with shared-prefix skipping. It
+returns TOC plus the matching entry's data offset, with length from the next
+entry's data offset (or `-1` for the last entry). This is package-name lookup,
+not the Culture-sensitive command search whose safety is the overall goal.
+Valid bounds and sorted names are data prerequisites, not checks enforced by
+that lookup routine.
+
+## Recovered-package observations
+
+For both hash-matched data libraries, the exported data symbol starts at VA
+`2000`, maps to file offset 8192, and contains a 144-byte `CmnD` header.
+Inspection of every TOC entry found strictly increasing byte-ordered names,
+strictly increasing in-bounds data offsets, and NUL-terminated names located
+after the TOC entries and before the first data member.
+
+| Observation | ICU 70.1 | ICU 74.2 |
+| --- | ---: | ---: |
+| Exported data-symbol size, bytes | 29466000 | 30782896 |
+| TOC entries | 3825 | 4083 |
+| `coll/ucadata.icu` member index, zero-based | 272 | 287 |
+| Member file offset | 5793664 | 5960464 |
+| Member storage length, including padding | 550688 | 572656 |
+
+The full selected-member storage hashes match the input inventory's recovered
+members. Thus this format/lookup correspondence identifies the same spans
+used by the existing root-payload analyses. It does not yet prove that the
+normal reference execution selects this descriptor.
+
+## Reproduction and remaining scope
+
+Recover and hash-check the six libraries using the input inventory. A host
+LLVM `llvm-objdump` supporting ELF can inspect them without executing them:
+use `-T` for exported addresses/sizes, `-R` for relocation bindings, and
+`-d --start-address=0xADDRESS --stop-address=0xEND` for the identified ranges.
+For internal routines, start on an identified instruction boundary; a
+nearest-symbol label alone is not a function identity. Map string/data VAs
+through file-backed ELF `PT_LOAD` segments, not an assumed VA=file offset.
+
+For package reproduction, map the complete exported data symbol, validate
+the header, read the TOC count and its pairs of little-endian 32-bit name/data
+offsets, and check all bounds/order properties above. Offsets are relative to
+the TOC immediately after the header. Locate the exact
+`icudt70l/coll/ucadata.icu` or `icudt74l/coll/ucadata.icu` name; compute its
+storage length from the successor, and compare its SHA-256 with the input
+inventory. A reusable checked inspector and fixture tests remain to be added;
+the observations currently come from a local fixed-input inspection.
+
+Remaining composition includes normal symbol resolution and dependency
+selection, initialization/registration ownership, directory/access-mode
+selection, the string helpers and acceptance/reader dependencies. This note
+does not prove full native/source equivalence, resource fallback, arbitrary
+suffix safety, or the other operating-system rows. None of those missing
+reference-correctness claims is moved into a deployment assumption.

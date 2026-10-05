@@ -436,6 +436,68 @@ still requires the separate
 [release](release.md) gates. Existing other-culture regressions are retained,
 not expanded into additional support obligations by this checklist.
 
+#### Unicode generation and implementation verification plan
+
+This is the prospective implementation plan for the adoption-and-updates
+obligation, not a claim that the predicate is proved or a product table exists.
+The research goal requires this plan; implementing new CLI acceptance remains
+a separate, maintainer-approved task. The existing UCD-derived candidate and
+`tests/unicode_candidate_lookup.rs` are research artifacts, not a validated
+intersection of the eight reference configurations.
+
+After the effective-data and arbitrary-suffix obligations close, specify a
+generation manifest that identifies each reference/culture, effective input
+hashes, predicate revision, generator revision and output digest. Derive the
+common positive set from all eight justified inputs. An unresolved row or
+unsupported data reference must fail verification, not silently remove that
+row or certify an empty result. Preserve the existing ASCII union only with
+its separate composition argument; do not select by language or hide failures
+through trimming or lossy normalization.
+
+For a range-table design, require canonical sorted, disjoint scalar ranges,
+scalar-valid endpoints, deterministic byte-for-byte regeneration, and exhaustive
+lookup-versus-generated-membership checks. Record reproducible commands and
+input acquisition identities under the evidence-retention rules above. A
+future generator should validate the complete result before replacing its
+output, test failure without replacement, and document its atomic-replacement
+and durability limits. The current research generator's direct file write is
+not evidence of that property. Publication of vendor data or substantial
+derived tables still requires the separate permission/license review above.
+
+An update must review changed inputs and predicates, added/removed ranges,
+and the affected proofs across the complete matrix before regenerating an
+adoption artifact. Moving CI labels or a newer Unicode version are not automatic
+approval. The proposed production representation is an embedded static table,
+not runtime JSON parsing, downloading, or consulting producer Unicode tables.
+
+If the proved rule depends only on the first scalar, a binary search of `R`
+ranges costs `O(log R)` with `O(R)` read-only table space; decoding that scalar
+from an already validated UTF-8 string examines at most four bytes. This does
+not remove whole-input validation/encoding: those retain their `O(N)` work
+for `N` input bytes. These are conditional bounds, not measured CLI results.
+If the suffix proof requires additional scanning/state, revise the algorithm
+and bounds before recommending adoption.
+
+Extend the existing warmed-lookup experiment with measurements of the eventual
+integration on each target OS/architecture. Separate process startup, input
+validation/encoding, lookup and end-to-end cost. Compare against the existing
+ASCII policy using short and maximum-size values/metadata, range edges,
+accepted and rejected starts including supplementary scalars, escape-heavy
+inputs and permitted adversarial suffixes. Record build/toolchain/configuration
+identities, repeated timing distributions and peak memory. Explain the proposed
+regression budget before using it as a pass/fail criterion; the current manual
+microbenchmark has no timing gate and cannot establish unchanged CLI performance.
+
+The eventual CLI tests must cover malformed encoding on supported input
+routes, rejected starts, invalid typed metadata, input/encoded-size limits,
+and allocation/resource failures that the implementation can handle. Use
+controlled fault injection where needed rather than unsafe resource exhaustion;
+document failures the runtime cannot catch. For each handled rejection assert
+empty stdout, exact exit status and the documented stderr policy. Check successful
+wire bytes and decoded values/properties/effects with the independently
+characterized reference path in both cultures. These finite tests complement,
+not replace, the suffix proof. Do not promise rollback after output starts.
+
 #### Source/configuration acquisition-target checks
 
 Limits of a collector's measurements are not an extra demand for memory dumps

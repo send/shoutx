@@ -1227,14 +1227,17 @@ candidate and update process. Keep observations separate rather than treating
 one suite as proof of another layer:
 
 The harnesses exist, but their orchestration does not yet meet all admission
-requirements. `unicode-policy.yml` is path-triggered only; scheduled/manual CI
-does not run it. Profile jobs currently use `windows-latest`, so identity review
-must detect a changed generation rather than crediting the alias as Windows
-2025. The current trusted default-branch completed-log verifier covers only
-the ordinary three-OS `test` jobs, not the four package-matched jobs. Candidate
-`hosted-annotations` code checks the latter's logs, which is useful integration
-evidence but is not the independent trusted publication gate. These finite
-wiring gaps belong to the next implementation increment, not new research.
+requirements. CI now calls `unicode-policy.yml` as a reusable workflow whenever
+full CI is selected, including scheduled and manual runs; its result participates
+in the required aggregate gate. Policy and package profile jobs select the named
+OS generations, including `windows-2025`. Resolved image identity still requires
+review; a selector alone is not proof of runtime compatibility.
+The trusted default-branch completed-log verifier is configured to cover the
+ordinary three-OS `test` jobs and all four package-matched jobs. Candidate
+`hosted-annotations` checks remain useful PR integration evidence, not the
+independent trusted publication gate. Source-bound publication admission consumes
+the independent completed result; a configured workflow alone is not evidence
+of a successful live run.
 
 | Layer | Required evidence and scope |
 | --- | --- |
@@ -1618,13 +1621,42 @@ and conclusions; a configured collector is not evidence that it ran successfully
 
 ### Continuing compatibility checks
 
+The independent `workflow_run` verifier checks out only the event's trusted
+default-branch `github.sha`, never the triggering source revision. Its script
+uses the completed source run's ID, attempt and SHA and an attempt-specific job
+inventory. Every required package, policy, ordinary test and aggregate result
+must be successful for that same attempt; a partial rerun reusing older successful
+jobs is not a fresh complete admission snapshot. Rerun all jobs when fresh
+admission evidence is needed. A source rerun starting during verification
+invalidates the result.
+
+The verifier reads completed logs and annotation API data, applies the retained
+effect checks, verifies profile OS generation/architecture and ordinary shell
+sentinels, then writes only bounded identity/digest/result data. It never executes
+downloaded scripts, binaries or artifacts and does not upload raw logs or values.
+The result artifact binds the source run/attempt/SHA and trusted verifier identity.
+The release gate independently rechecks the source job inventory and the trusted
+verifier workflow path, event, repository, branch, terminal result and attempt.
+It accepts only the named artifact with a single bounded `report.json` member,
+parsed in memory without extraction or execution; report job IDs and all row
+identities must match the API inventory. It rejects expired artifacts and
+rechecks source/verifier attempts before success. Retrying the verifier replaces
+its same-name transient report artifact; published release assets are unrelated
+and are never replaced.
+Documentation-only runs yield `not-exercised`, never passing admission evidence.
+Offline tests exercise missing/extra/duplicate jobs, failed/skipped/pending results,
+wrong source identity, generation/architecture mismatch, corrupt effects and a
+rerun race. Actual default-branch execution remains required before claiming
+the new verifier has been exercised.
+
 CI runs weekly on Wednesday at 03:37 UTC (12:37 JST) and can be started manually
 with `workflow_dispatch`. These events unconditionally select full CI, including
-the source/package Runner matrices and live hosted tests, even without code
+the source/package Runner matrices, the reusable Unicode-policy matrix, and
+live hosted tests, even without code
 changes. PR and push events retain their documentation-only skip behavior.
 The external completed-log mask verifier also accepts successful scheduled and
 manual CI runs, but only on `main` in this repository; it keeps read-only Actions
-permission and never checks out triggering code. Manual runs on other refs do
+permissions for Actions, Checks and Contents and never checks out triggering code. Manual runs on other refs do
 not receive that external verification.
 
 The hosted verification job always attempts a step summary when full CI was

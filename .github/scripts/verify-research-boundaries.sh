@@ -55,11 +55,11 @@ verify_row() {
 output_dir="$RUNNER_TEMP/hosted-boundary-evidence/package-matched"
 mkdir -p "$output_dir"
 failed=false
-for os in ubuntu-22.04 ubuntu-24.04 macos-15 windows-latest; do
+for os in ubuntu-22.04 ubuntu-24.04 macos-15 windows-2025; do
   case "$os" in
     ubuntu-*) rid=linux-x64; runner_os=Linux ;;
     macos-15) rid=osx-arm64; runner_os=macOS ;;
-    windows-latest) rid=win-x64; runner_os=Windows ;;
+    windows-2025) rid=win-x64; runner_os=Windows ;;
   esac
   printf '{"status":"failed"}\n' > "$output_dir/$os.json"
   if ! verify_row "$os" "$rid" "$runner_os"; then

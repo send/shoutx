@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[2]
 ROWS = [("ubuntu-22.04", "linux-x64", "Linux"),
         ("ubuntu-24.04", "linux-x64", "Linux"),
         ("macos-15", "osx-arm64", "macOS"),
-        ("windows-latest", "win-x64", "Windows")]
+        ("windows-2025", "win-x64", "Windows")]
 STUB = r'''
 import json, os, pathlib, sys
 name = pathlib.Path(sys.argv[0]).name
@@ -92,7 +92,7 @@ class ResearchOrchestrationTests(unittest.TestCase):
                                   for i in range(4)])
             expected_failed = (set() if mode == "success" else
                                {row[0] for row in ROWS} if mode in ("api", "log", "annotations", "verify") else
-                               {"windows-latest"} if mode == "missing" else {"ubuntu-22.04"})
+                               {"windows-2025"} if mode == "missing" else {"ubuntu-22.04"})
             for path in reports:
                 self.assertEqual(json.loads(path.read_text())["status"],
                                  "failed" if path.stem in expected_failed else "passed")

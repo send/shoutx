@@ -2,12 +2,13 @@ name: Verify hosted mask logs
 
 on:
   workflow_run:
-    # Keep this synchronized with the display name in ci.yml.
     workflows: [CI]
     types: [completed]
 
 permissions:
   actions: read
+  checks: read
+  contents: read
 
 jobs:
   verify:
@@ -18,132 +19,25 @@ jobs:
       github.event.workflow_run.head_branch == 'main' &&
       github.event.workflow_run.head_repository.full_name == github.repository &&
       github.event.workflow_run.conclusion == 'success'
-    timeout-minutes: 5
-    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    runs-on: ubuntu-24.04
     env:
       GH_TOKEN: ${{ github.token }}
-      SOURCE_RUN_ID: ${{ github.event.workflow_run.id }}
-      GH_REPO: ${{ github.repository }}
     steps:
-      - name: Verify completed CI log redaction
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          jobs_json="$RUNNER_TEMP/jobs.json"
-          gh api --paginate \
-            "repos/$GH_REPO/actions/runs/$SOURCE_RUN_ID/jobs?filter=latest&per_page=100" \
-            --jq '.jobs[] | [.name, .conclusion, .id] | @tsv' > "$jobs_json"
-
-          expected_jobs=(
-            'test (ubuntu-latest)'
-            'test (macos-latest)'
-            'test (windows-latest)'
-          )
-
-          # When a matrix job's job-level condition is false, GitHub does not
-          # expand the matrix. The jobs API reports one skipped parent named
-          # "test", not one skipped job for each matrix entry.
-          parent_count=$(awk -F '\t' '$1 == "test" { count += 1 } END { print count + 0 }' "$jobs_json")
-          matrix_count=$(awk -F '\t' '$1 ~ /^test \(/ { count += 1 } END { print count + 0 }' "$jobs_json")
-          if (( parent_count > 0 )); then
-            if (( parent_count != 1 || matrix_count != 0 )); then
-              echo "Hosted test jobs had an ambiguous parent/matrix shape" >&2
-              exit 1
-            fi
-            parent_conclusion=$(awk -F '\t' '$1 == "test" { print $2 }' "$jobs_json")
-            if [[ "$parent_conclusion" != skipped ]]; then
-              echo "Expected unexpanded test matrix to be skipped" >&2
-              exit 1
-            fi
-            echo "Full CI was skipped; no hosted mask logs to verify"
-            echo "## Hosted mask logs: not exercised" >> "$GITHUB_STEP_SUMMARY"
-            echo "The hosted test matrix was skipped; this run is not release-gate evidence." >> "$GITHUB_STEP_SUMMARY"
-            exit 0
-          fi
-          if (( matrix_count != ${#expected_jobs[@]} )); then
-            echo "Expected ${#expected_jobs[@]} expanded hosted test jobs, got: $matrix_count" >&2
-            exit 1
-          fi
-
-          successful=0
-          skipped=0
-          for job in "${expected_jobs[@]}"; do
-            count=$(awk -F '\t' -v name="$job" '$1 == name { count += 1 } END { print count + 0 }' "$jobs_json")
-            if (( count != 1 )); then
-              echo "Expected exactly one $job, got: $count" >&2
-              exit 1
-            fi
-            conclusion=$(awk -F '\t' -v name="$job" '$1 == name { print $2 }' "$jobs_json")
-            case "$conclusion" in
-              success) ((successful += 1)) ;;
-              skipped) ((skipped += 1)) ;;
-              *)
-                echo "Expected $job to be successful or skipped, got: ${conclusion:-missing}" >&2
-                exit 1
-                ;;
-            esac
-          done
-
-          if (( skipped == ${#expected_jobs[@]} )); then
-            echo "Full CI was skipped; no hosted mask logs to verify"
-            echo "## Hosted mask logs: not exercised" >> "$GITHUB_STEP_SUMMARY"
-            echo "All hosted test jobs were skipped; this run is not release-gate evidence." >> "$GITHUB_STEP_SUMMARY"
-            exit 0
-          fi
-          if (( successful != ${#expected_jobs[@]} )); then
-            echo "Hosted test jobs had inconsistent outcomes" >&2
-            exit 1
-          fi
-
-          combined_log="$RUNNER_TEMP/ci.log"
-          : > "$combined_log"
-          for job in "${expected_jobs[@]}"; do
-            job_id=$(awk -F '\t' -v name="$job" '$1 == name { print $3 }' "$jobs_json")
-            job_log="$RUNNER_TEMP/job-$job_id.log"
-            downloaded=false
-            for attempt in {1..6}; do
-              if curl --fail --location --silent --show-error \
-                --header "Authorization: Bearer $GH_TOKEN" \
-                --header "Accept: application/vnd.github+json" \
-                --header "X-GitHub-Api-Version: 2026-03-10" \
-                "https://api.github.com/repos/$GH_REPO/actions/jobs/$job_id/logs" \
-                > "$job_log"
-              then
-                downloaded=true
-                break
-              fi
-              echo "$job log is not ready yet (attempt $attempt of 6)"
-              sleep 10
-            done
-            if [[ "$downloaded" != true || ! -s "$job_log" ]]; then
-              echo "Could not download completed log for $job" >&2
-              exit 1
-            fi
-            cat "$job_log" >> "$combined_log"
-          done
-
-          if grep -Eq 'shoutx-mask-([[:xdigit:]]{32}|[[:xdigit:]]{8}-[[:xdigit:]]{4}-[[:xdigit:]]{4}-[[:xdigit:]]{4}-[[:xdigit:]]{12})' "$combined_log"; then
-            echo "Unmasked marker found in completed log; delete the log and investigate" >&2
-            exit 1
-          fi
-          sentinels=(
-            'SHOUTX_MASK_BASH_Linux_BEGIN***_END'
-            'SHOUTX_MASK_SH_Linux_BEGIN***_END'
-            'SHOUTX_MASK_DASH_LINUX_BEGIN***_END'
-            'SHOUTX_MASK_BASH_macOS_BEGIN***_END'
-            'SHOUTX_MASK_SH_macOS_BEGIN***_END'
-            'SHOUTX_MASK_PWSH_WINDOWS_BEGIN***_END'
-            'SHOUTX_MASK_GIT_BASH_WINDOWS_BEGIN***_END'
-          )
-          for sentinel in "${sentinels[@]}"; do
-            count=$(grep -Fc "$sentinel" "$combined_log" || true)
-            if (( count < 1 )); then
-              echo "Missing masked sentinel: $sentinel" >&2
-              exit 1
-            fi
-          done
-
-          echo "## Hosted mask logs: verified" >> "$GITHUB_STEP_SUMMARY"
-          echo "All supported OS and shell sentinels were redacted in CI run $SOURCE_RUN_ID." >> "$GITHUB_STEP_SUMMARY"
-          echo "Verified hosted mask redaction in all supported OS and shell logs"
+      # workflow_run's github.sha is the trusted default-branch revision, NOT
+      # the triggering run's head_sha. Never checkout/execute triggering code.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Verify exact completed source attempt
+        run: python3 -B scripts/verify-stdout-run.py --output "$RUNNER_TEMP/stdout-verification/report.json"
+      - name: Retain bounded source-bound verification
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: stdout-verification-${{ github.event.workflow_run.id }}-${{ github.event.workflow_run.run_attempt }}-${{ github.event.workflow_run.head_sha }}
+          path: ${{ runner.temp }}/stdout-verification/report.json
+          if-no-files-found: error
+          retention-days: 30
+          overwrite: true

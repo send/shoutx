@@ -13,14 +13,16 @@ expansion, including Unicode metadata framing, is recorded in
 owned by the [annotation](../commands/github-actions-annotations.md) and
 [mask](../commands/github-actions-mask.md) contracts. Old investigation limits
 and unfinished internal arguments are retained for reference, not inherited as
-completion gates for that implementation.
+completion gates for that implementation or its scoped productization. Current
+adoption rationale is in the [framing decision](../decisions/github-actions-stdout-framing.md),
+and applicability is owned by the [design](../design.md#stdout-adoption-contract).
 
 The [2026-10-05 research scope revision](../decisions/github-actions-unicode-scope.md#consequences-and-verification-requirements)
-separates reference-configuration proof from deployment applicability. Source
+historically separated reference-configuration proof from deployment applicability. Source
 arguments and historical live-linkage gaps below retain their evidence limits;
 they are not instructions to attest the entire deployed Worker. The
-[current claim inventory](unicode-feasibility.md#claim-inventory) tracks the
-reference obligations that remain open.
+[historical claim inventory](unicode-feasibility.md#claim-inventory) tracks
+research premises that remain unproven, not current product adoption obligations.
 
 ## Finding
 
@@ -313,7 +315,7 @@ table or fixed-length corpus does not prove arbitrary sequences or future
 collation data. That investigation did not itself change the CLI's then-current
 ASCII boundary policy or metadata acceptance. The subsequent implementation is
 documented separately above. Legacy framing was excluded from this investigation by maintainer
-direction; the earlier proposed framing record is not an adoption decision.
+direction; the framing record was still proposed at that investigation date.
 
 ### Remaining source argument
 
@@ -490,7 +492,16 @@ tertiary/non-ignorable settings. It does not by itself establish arbitrary-conte
 processed-element offsets or identify
 every iterator used by a live Worker.
 
-**Adoption checkpoint:** the evidence supports a conditional candidate, not an
+**Historical adoption checkpoint (superseded):** the following paragraph records
+the investigation's then-current proof goals and unresolved product scope. It
+is not an active implementation or adoption gate. The later
+[framing decision](../decisions/github-actions-stdout-framing.md) accepts scoped
+productization, the [design](../design.md#stdout-adoption-contract) owns its
+profile, and the [Unicode acceptance decision](../decisions/stdout-unicode-acceptance.md)
+records the implemented policy. Unfinished native premises below are retained
+as research limitations, not declared proven or required for productization.
+
+At that checkpoint, the evidence supported a conditional candidate, not an
 unconditional CLI allow-list expansion. Actual collator/search settings and
 finite CE-offset checks are now part of the package research gate; fresh results
 are required for each supported test environment, not inferred from local success.

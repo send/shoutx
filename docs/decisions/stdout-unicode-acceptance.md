@@ -1,6 +1,6 @@
 # Original-value Unicode acceptance for stdout commands
 
-Status: Proposed; implementation under verification, not a stable-distribution decision.
+Status: Accepted; implemented by PR #116, not a stable-distribution decision.
 
 ## Decision
 
@@ -53,6 +53,8 @@ contrary evidence for extending that scope. No dependency-internal proof is a
 prerequisite for the producer implementation, and no known mismatch is erased.
 
 The feature remains absent from default/official binaries. The broader framing
-and release decisions remain separate. Completing this implementation requires
-producer contract tests, actual Runner effects, performance checks and review;
-the candidate parser run alone is not completion.
+and release decisions remain separate. PR #116 completed producer contract
+tests, actual Runner effects, performance checks and review; the candidate
+parser run alone was not completion. The current adoption scope is owned by the
+[design](../design.md#stdout-adoption-contract), not by these implementation
+observations.

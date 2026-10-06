@@ -7,15 +7,15 @@ appropriate owner and replace the duplicate with a link.
 
 | Information | Authoritative source |
 | --- | --- |
-| Product boundary and accepted cross-cutting invariants | [`design.md`](design.md) |
+| Product boundary, applicability profile, and accepted cross-cutting invariants | [`design.md`](design.md) |
 | Adversary, trust assumptions, assets, and attack inventory | [`threat-model.md`](threat-model.md) |
 | Observable CLI behavior for one destination | [`commands/`](commands/) |
 | Rationale, alternatives, and reconsideration conditions | [`decisions/`](decisions/) |
 | Versioned observations about external parsers and runtimes, including minimal retained evidence projections | [`compatibility/`](compatibility/) and its [`evidence/`](compatibility/evidence/) subdirectory |
 | Shared verification policy | [`test-plan.md`](test-plan.md) |
-| Release eligibility and publication policy | [`release.md`](release.md) |
+| Release eligibility, compatibility maintenance/incident response, and publication policy | [`release.md`](release.md) |
 | Artifact contract consumed by integrations | [`release.md`](release.md) |
-| Intended implementation architecture | [`implementation-plan.md`](implementation-plan.md) |
+| Intended implementation architecture and finite next-increment handoff | [`implementation-plan.md`](implementation-plan.md) |
 | Completed implementation sequence | [`implementation-history.md`](implementation-history.md) |
 | User-facing overview and examples | [`../README.md`](../README.md) |
 

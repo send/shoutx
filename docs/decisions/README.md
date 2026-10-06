@@ -45,9 +45,12 @@ Current cross-repository decisions:
 - [`official-setup-action.md`](official-setup-action.md) — repository boundary
   and security constraints for the planned official installer action.
 
-GitHub Actions stdout research scope:
+GitHub Actions stdout adoption and research history:
+
+- [`github-actions-stdout-framing.md`](github-actions-stdout-framing.md) —
+  accepted scoped productization rationale; does not enable distribution.
 
 - [`stdout-unicode-acceptance.md`](stdout-unicode-acceptance.md) — original-value
   input expansion for the isolated feature, including separate property framing.
 - [`github-actions-unicode-scope.md`](github-actions-unicode-scope.md) — bounded
-  consumer target for Unicode adoption research; not framing/release approval.
+  historical research target and superseded proof work order.

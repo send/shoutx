@@ -85,6 +85,83 @@ metadata and workflow logs identify the tag, commit, Rust version, target, and
 runner image. Updating the development toolchain is a reviewed repository
 change; a floating `stable` toolchain is not used for release artifacts.
 
+## Stdout admission and compatibility maintenance
+
+This is the policy for the next stdout-enabled release, not a change to the
+current artifact surface. The family remains excluded until the coordinated
+[productization increment](implementation-plan.md#next-increment-stdout-productization)
+updates build, help, packaging, and verification gates. The
+[design](design.md#stdout-adoption-contract) owns applicability; the
+[test plan](test-plan.md) owns verification; the
+[compatibility record](compatibility/stdout-unicode-policy.md) owns observations.
+
+Before admission, the maintainer records a reviewed candidate snapshot: source
+SHA, Runner package/version/digest, OS generation, image identity, exposed
+runtime/backend identities, test configurations, results, and run links. Mark
+unavailable live Worker identities as unobserved; do not substitute producer
+locale or controlled-probe identities. Include the existing controlled-package
+and live-effect checks for every adopted profile row, plus producer contract
+and Unicode-policy checks. An aggregate green result with these checks skipped
+is insufficient. Use full checks on the candidate source, or the identical
+production tree when only documentation changed, before release approval.
+Refresh live evidence during release preparation; an old research snapshot is
+not a permanent release certificate. Preserve a compact durable snapshot in the
+compatibility record before transient CI artifacts expire.
+
+Admission also requires implementing the orchestration gaps identified in the
+[test plan](test-plan.md#current-stdout-adoption-verification). The current
+release workflow checks source CI but does not yet require the independent
+mask-log verifier. Before stdout publication, both eligibility and final publish
+must require successful, fully exercised policy and trusted log-verification
+results tied to the exact source CI run, attempt, and source SHA. Pending,
+failed, skipped, mismatched, or missing results must block publication; an
+unrelated green workflow or candidate-controlled log check is not sufficient.
+These are future stdout-admission gates, not claims about today's workflow.
+
+The maintainer reviews the existing scheduled and manually dispatched full CI
+and its hosted-log verification. Those checks are the current drift-detection
+mechanism, not an upstream release watcher or an uninterrupted service. Their
+schedule, current gaps, and required admission coverage are owned by the test
+plan. Until the next increment wires the policy probe and complete trusted log
+coverage, current periodic runs supply only their documented partial evidence;
+they cannot certify all stdout admission requirements. On learning of a new Runner
+version, hosted image, or relevant runtime/backend change, compare it with the
+last reviewed snapshot and run affected existing checks. A new Runner package
+requires a reviewed pin/digest update and package tests; a host change requires
+that row's policy/package and live-effect checks. A moving label changing OS
+generation does not expand the design profile.
+
+Until review finishes, mark the changed configuration **verification pending**
+in the compatibility record, with the last tested snapshot and known effects.
+Do not label an untested change as a proven vulnerability or silently present it
+as verified. Other reviewed rows remain independently usable. No new stdout
+release is admitted on pending evidence for a claimed row. Existing artifacts
+cannot detect this transition or enforce remote support status; packaged README
+and release notes must link to the current compatibility record and explain
+that limitation. No instantaneous response or compatibility window for every
+upstream version is promised.
+
+On incompatibility, the maintainer classifies the boundary and product effect
+using the threat model:
+
+- Mask non-recognition or reinterpretation can disclose a secret. Stop
+  recommending mask on the affected configuration and treat plausible exposure
+  as a confidential security incident, not a harmless display mismatch.
+- Annotation command/property reinterpretation is an integrity or injection
+  concern. Rendering discrepancies without an attack path are functional
+  compatibility defects, not automatically security vulnerabilities.
+- Withhold an affected release candidate. For a published version, communicate
+  affected scope and a safe operational alternative, then decide whether a
+  fix, explicit input rejection, or separately reviewed sanitization mode is
+  appropriate. Do not silently alter data or weaken the contract to pass a gate.
+
+Use [SECURITY.md](../SECURITY.md) for confidential reporting and disclosure.
+Unpublished attack details belong in private durable tracking, not public
+issues, CI logs, or routine external review. Public notices must provide useful
+affected-scope guidance without prematurely exposing exploit details. Corrected
+binaries require a new version under the immutable artifact policy; never
+replace old assets. Packaged instructions remain historical, not updated in place.
+
 ## Artifact contract
 
 ### Setup-action compatibility revision 1

@@ -14,7 +14,7 @@ the [GitHub releases](https://github.com/send/shoutx/releases).
 
 The stdout workflow-command family (`mask`, `notice`, `warning`, and `error`)
 is retained behind a compile-time research feature and is absent from official
-binaries. Its framing remains unresolved; see the
+binaries. Scoped productization is accepted, but not yet enabled; see the
 [stdout framing decision](docs/decisions/github-actions-stdout-framing.md).
 Environment-file writers do not pass through that parser.
 

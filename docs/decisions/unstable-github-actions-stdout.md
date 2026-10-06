@@ -7,13 +7,15 @@ Status: Accepted
 The implemented `github-actions:mask`, `github-actions:notice`,
 `github-actions:warning`, and `github-actions:error` commands depend on the
 runner's stdout workflow-command parser. The
-[stdout framing decision](github-actions-stdout-framing.md) remains Proposed
-because the consumer uses locale-sensitive parsing that shoutx cannot observe
-or make reliable from the producer process.
+[stdout framing decision](github-actions-stdout-framing.md) now accepts scoped
+productization. Isolation remains in force until the coordinated build, help,
+packaging, and release-admission changes are implemented; adopting the design
+does not change the binary surface.
 
-Keeping these commands in the default executable blocks releases of unrelated
-environment-file writers. Removing their source would discard useful parser,
-encoder, and differential-test work. The project therefore needs a boundary
+When isolation was introduced, keeping these commands in the default executable
+blocked releases of unrelated environment-file writers. Removing their source
+would discard useful parser, encoder, and differential-test work. The project
+therefore introduced a boundary
 between code retained for security research and commands shipped as supported
 user functionality.
 
@@ -22,8 +24,8 @@ code does not make the runner protocol safe or satisfy its release gates.
 
 ## Decision drivers
 
-- Official release binaries must not expose a command whose security contract
-  depends on the unresolved stdout framing decision.
+- Official release binaries must not expose a command before its adopted
+  contract and coordinated publication gates are implemented.
 - `github-actions:output`, `env`, `state`, and `path` must remain independently
   releasable.
 - Parser and encoder research must remain executable in CI without presenting
@@ -81,8 +83,9 @@ eligibility lives in [the release design](../release.md).
 
 ## Consequences
 
-- The boundary restores release eligibility for the environment-file family
-  without resolving stdout framing.
+- The boundary originally restored release eligibility for the environment-file
+  family while stdout framing was unresolved. It now remains until the accepted
+  scoped design is productized through the coordinated admission gates.
 - Contributor and CI work must deliberately choose between the supported and
   research configurations; the authoritative matrix is in the
   [test plan](../test-plan.md).
@@ -94,9 +97,10 @@ eligibility lives in [the release design](../release.md).
 
 ## Reconsideration conditions
 
-Remove the feature boundary only after the stdout framing decision becomes
-Accepted, its required runner evidence passes, the command specifications are
-updated to the accepted framing, and the release policy admits the family.
+Remove the feature boundary only through the
+[productization increment](../implementation-plan.md#next-increment-stdout-productization),
+after the current verification requirements pass and the release policy admits
+the family. Historical native-proof obligations are not additional gates.
 
 Reconsider deletion or relocation of the research code if maintaining the
 all-feature path delays stable security fixes, creates dependency risk, or

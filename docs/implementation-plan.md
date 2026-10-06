@@ -337,6 +337,55 @@ specific to the research family declare `required-features`. CI explicitly
 selects those targets and carries a feature-on sentinel so a missing feature
 cannot turn intended evidence into a successful zero-test run.
 
+## Next increment: stdout productization
+
+This is a finite implementation handoff, not authorization to publish a
+release. Follow the [stdout adoption contract](design.md#stdout-adoption-contract)
+and [release policy](release.md); do not reintroduce historical native-runtime
+proof obligations as implementation prerequisites.
+
+1. Prepare the admission verification wiring identified by the test plan:
+   make the Unicode-policy probe scheduled/manually runnable, pin profile
+   selectors to named generations rather than `windows-latest`, extend trusted
+   default-branch mask-log verification to all package-matched profile jobs,
+   and bind publication eligibility and final publish to its completed source
+   run/attempt/SHA and the policy results. Acceptance: event-routing and
+   negative-gate tests prevent incomplete or mismatched evidence from admitting
+   stdout; current partial orchestration is not mistaken for completed coverage.
+2. Promote mask and notice/warning/error together with message and TITLE/FILE
+   to the intended official command surface. Update the enumerable dispatch
+   table, feature gates, stdout-only dependency configuration, integration-test
+   selection, help, and version handling consistently. Acceptance: official
+   builds expose exactly the newly agreed allowlist; architecture-specific
+   packaging does not silently broaden the design-owned consumer profile. No test is silently lost
+   because its former research feature is absent. Existing input acceptance,
+   output bytes, diagnostics, and limits remain unchanged.
+3. Update artifact inspection, build-target separation, release smoke tests,
+   the stable-document checker, and their positive controls for the new
+   surface. Acceptance: each release target's native binary and package have
+   the intended commands and version output; malformed or unintended surfaces
+   still fail verification. Preserve the guarantees of existing file writers.
+4. Update the README, installation/release guidance, command-status notices,
+   and isolation decision together. Add usable examples referencing the
+   design-owned profile and existing mask precautions, without requiring
+   Worker-culture attestation. Acceptance: user-facing documents and packaged
+   help agree with the tested binary; no research-build instructions are
+   presented as the supported installation path.
+5. After all productization changes, run proportional local verification and
+   full candidate CI, independent review, and latest-head Codex review. Create
+   the durable compatibility snapshot from that final candidate, including
+   exact source/dependency identities and the completed external gates. Refresh
+   affected evidence and the snapshot after any review correction; an initial
+   pre-change run cannot certify the resulting binary. Acceptance: all gates
+   converge for the final candidate SHA, known mismatches remain visible, and
+   no unresolved applicable security finding remains. Publication is a separate
+   explicitly authorized task subject to main-source external verification.
+
+Do not include new encoders, decoration, expanded environment support, new
+input-policy generation, or Runner/.NET/ICU internal proofs in this increment.
+An observed failure is first classified by attack path and product effect;
+necessary behavior changes beyond this handoff return to contract review.
+
 ## CI and quality gates
 
 CI begins in the first implementation PR and expands with each supported

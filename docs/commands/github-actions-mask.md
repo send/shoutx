@@ -46,15 +46,11 @@ diagnostic `mask value is outside the Unicode boundary policy`. The
 records the observed delimiter failure and fallback. Do not delete, normalize,
 or replace any scalar: registering a changed string would not faithfully mask
 the original value. Scalars beyond the inspected prefix remain data.
-This is a bounded research mitigation, not a complete framing guarantee; the
-known `th-TH` ASCII failure remains unresolved and is deferred by the
-[framing decision](../decisions/github-actions-stdout-framing.md).
-
-The [reference-boundary proposal](../decisions/github-actions-stdout-framing.md#proposed-reference-configuration-boundary)
-changes research obligations, not these input rules or guarantees. Shoutx does
-not detect or enforce the consumer's culture/configuration; failed recognition
-can leave the mask unregistered and expose the emitted value. That residual
-risk is not resolved by restricting the research scope.
+Applicability is defined by the
+[stdout adoption contract](../design.md#stdout-adoption-contract), not by the
+allowlist alone. Shoutx does not detect or enforce consumer configuration;
+failed recognition can leave the mask unregistered and expose the value. Known
+excluded-configuration failures remain in the compatibility evidence.
 
 Successful output is exactly:
 
@@ -94,9 +90,8 @@ runner prints a masked placeholder.
 
 The intended security property is structural integrity and faithful
 registration of one accepted value while workflow-command processing is
-active. The current V2 framing does not satisfy that property across cultures.
-Even after the framing decision is resolved, the property is not a
-confidentiality guarantee. In particular:
+active, within the design profile. This is not a universal-culture or
+comprehensive confidentiality guarantee. In particular:
 
 - output produced before registration remains visible;
 - shell tracing, process inspection, audit logging, or a compromised runner

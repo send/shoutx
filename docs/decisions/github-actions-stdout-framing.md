@@ -78,7 +78,7 @@ because the defect is in a dependency would not meet this decision.
 
 The [isolation decision](unstable-github-actions-stdout.md) is superseded for
 new builds; previously published binaries are unchanged. The completed
-[implementation record](../implementation-plan.md#completed-increment-stdout-productization)
+[implementation record](../implementation-history.md#stdout-productization)
 covers build/help/package verification and user-facing documentation. Official
 admission still follows the [release policy](../release.md#stdout-admission-and-compatibility-maintenance).
 Additional stdout commands and expansion of the environment profile are not

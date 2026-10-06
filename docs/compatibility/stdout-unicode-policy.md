@@ -158,9 +158,15 @@ source/verifier rerun races. Both publication decisions use that same gate.
 passed native binary, extracted package and exact eight-command checks on all
 five distribution targets, and passed archive/checksum aggregation. Publication
 was skipped. A local negative control rejected the old four-command binary.
-GPT-6 Sol found no remaining actionable issue in the normal-surface change or
-the corrected download transport; latest-head Codex completed with a PR
-thumbs-up and no unresolved threads before merge.
+For this work, the maintainer explicitly selected GPT-6 Sol instead of Fable;
+this was an authorized review substitution, not a claim that Fable ran or was
+unavailable. GPT-6 Sol found no remaining actionable issue in the normal-surface
+change or corrected download transport. The maintainer also explicitly accepted
+a latest-head **Completed** Codex summary plus the connector bot's PR thumbs-up
+as terminal evidence for this work. The retained projection records that
+approved exception, summary status and reviewed commit, reaction identity, and
+the final zero-unresolved-thread check. The exception does not treat a running
+summary or an earlier-head review as completion, or alter the general procedure.
 
 The earlier producer benchmark below remains a dated regression observation;
 promotion did not change the measured lookup/encoding implementation, and no

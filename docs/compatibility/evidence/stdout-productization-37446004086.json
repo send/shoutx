@@ -948,8 +948,18 @@
     "headSha": "7a136a2c660a346b3a2ae7bf21bc6fd4455ca525",
     "ciRunId": 37444767738,
     "treeMatchesMainSource": true,
-    "codexSummaryId": 6013467837,
-    "codexPrThumbId": 547990794,
-    "independentReview": "GPT-6 Sol: no remaining actionable findings; full surface and focused transport review"
+    "codexCompletion": {
+      "acceptance": "Maintainer explicitly approved latest-head Completed summary plus connector bot PR thumbs-up for this work",
+      "summaryId": 6013467837,
+      "summaryStatus": "Completed",
+      "summaryReviewedCommit": "7a136a2",
+      "prThumbId": 547990794,
+      "prThumbContent": "+1",
+      "botLogin": "chatgpt-codex-connector[bot]",
+      "finalRecheckedHeadSha": "7a136a2c660a346b3a2ae7bf21bc6fd4455ca525",
+      "finalUnresolvedThreads": 0,
+      "threadPaginationComplete": true
+    },
+    "independentReview": "Maintainer explicitly selected GPT-6 Sol instead of Fable for this work: no remaining actionable findings; full surface and focused transport review"
   }
 }

@@ -7,6 +7,20 @@ the pre-split plan, not an append-only project log; future completed work belong
 in Git history, pull requests, and release notes unless it explains a lasting
 architectural constraint.
 
+## Stdout productization
+
+[PR #118](https://github.com/send/shoutx/pull/118) established source-bound
+admission before [PR #119](https://github.com/send/shoutx/pull/119) promoted the
+existing stdout writers to normal builds and aligned their tests, native
+packages and documentation. This sequence separates delivery of the producer
+from admission of its observed consumer configurations; compiling the writers
+does not itself authorize publication. The
+[productization snapshot](compatibility/stdout-unicode-policy.md#normal-build-productization-snapshot)
+retains the candidate observations and main-side external admission result.
+The finite implementation handoff completed without publishing a release.
+The [release policy](release.md#stdout-admission-and-compatibility-maintenance)
+continues to own fresh exact-source admission and release approval.
+
 ## First implementation PR
 
 The first implementation PR delivers the project foundation and complete

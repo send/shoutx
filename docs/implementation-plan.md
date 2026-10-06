@@ -331,21 +331,13 @@ complete eight-command surface. Explicit stdout integration targets and fresh
 corpus exports remain in CI; artifact tests exercise the same normal binary.
 The former isolation rationale is retained in its superseded decision record.
 
-## Completed increment: stdout productization
+## Current handoff status
 
-[PR #118](https://github.com/send/shoutx/pull/118) implemented source-bound
-admission, and [PR #119](https://github.com/send/shoutx/pull/119) promoted the
-existing stdout writers to normal builds and aligned their tests, native
-packages and documentation. The
-[productization snapshot](compatibility/stdout-unicode-policy.md#normal-build-productization-snapshot)
-retains the candidate observations and main-side external admission result.
-The finite implementation handoff is complete; this does not publish a release.
-
-The [design](design.md#stdout-adoption-contract) remains the applicability
-owner, the [test plan](test-plan.md) owns continuing verification, and the
-[release policy](release.md#stdout-admission-and-compatibility-maintenance)
-owns fresh exact-source admission and release approval. A documentation-only
-closeout does not exempt its eventual release source from that gate.
+The stdout productization implementation is complete; its sequence is recorded
+in [implementation history](implementation-history.md#stdout-productization).
+Fresh exact-source admission and release approval remain governed by the
+[release policy](release.md#stdout-admission-and-compatibility-maintenance),
+including after a documentation-only closeout.
 
 ## CI and quality gates
 

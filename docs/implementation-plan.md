@@ -344,17 +344,20 @@ release. Follow the [stdout adoption contract](design.md#stdout-adoption-contrac
 and [release policy](release.md); do not reintroduce historical native-runtime
 proof obligations as implementation prerequisites.
 
-1. Establish the release-candidate compatibility snapshot using the existing
-   producer contract, controlled Runner-package, Unicode-policy, and live
-   hosted-effect checks specified in the test plan. Record exact source and
-   dependency identities and classify any drift under the release policy.
-   Acceptance: the snapshot supports the declared profile, known mismatches
-   remain visible, and no unresolved applicable security finding remains.
+1. Prepare the admission verification wiring identified by the test plan:
+   make the Unicode-policy probe scheduled/manually runnable, pin profile
+   selectors to named generations rather than `windows-latest`, extend trusted
+   default-branch mask-log verification to all package-matched profile jobs,
+   and bind publication eligibility and final publish to its completed source
+   run/attempt/SHA and the policy results. Acceptance: event-routing and
+   negative-gate tests prevent incomplete or mismatched evidence from admitting
+   stdout; current partial orchestration is not mistaken for completed coverage.
 2. Promote mask and notice/warning/error together with message and TITLE/FILE
    to the intended official command surface. Update the enumerable dispatch
    table, feature gates, stdout-only dependency configuration, integration-test
    selection, help, and version handling consistently. Acceptance: official
-   builds expose exactly the newly agreed allowlist; no test is silently lost
+   builds expose exactly the newly agreed allowlist; architecture-specific
+   packaging does not silently broaden the design-owned consumer profile. No test is silently lost
    because its former research feature is absent. Existing input acceptance,
    output bytes, diagnostics, and limits remain unchanged.
 3. Update artifact inspection, build-target separation, release smoke tests,
@@ -368,11 +371,15 @@ proof obligations as implementation prerequisites.
    Worker-culture attestation. Acceptance: user-facing documents and packaged
    help agree with the tested binary; no research-build instructions are
    presented as the supported installation path.
-5. Run proportional local verification and the full candidate CI, independent
-   review, and latest-head Codex review before merging. Acceptance: all
-   applicable gates converge for the candidate SHA and the release evidence
-   can be followed from the recorded snapshot. Publication remains a separate
-   explicitly authorized task.
+5. After all productization changes, run proportional local verification and
+   full candidate CI, independent review, and latest-head Codex review. Create
+   the durable compatibility snapshot from that final candidate, including
+   exact source/dependency identities and the completed external gates. Refresh
+   affected evidence and the snapshot after any review correction; an initial
+   pre-change run cannot certify the resulting binary. Acceptance: all gates
+   converge for the final candidate SHA, known mismatches remain visible, and
+   no unresolved applicable security finding remains. Publication is a separate
+   explicitly authorized task subject to main-source external verification.
 
 Do not include new encoders, decoration, expanded environment support, new
 input-policy generation, or Runner/.NET/ICU internal proofs in this increment.

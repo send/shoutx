@@ -90,6 +90,11 @@ passed eight mask and 30 annotation cases on each row. It observed Runner
 2.337.0 and the same four image identities, but explicitly recorded live
 `workerCulture` and `workerGlobalizationBackend` as null. Mask results include
 external job-log checking; annotation results use the API-visible effects.
+Here "external" means reading the completed producer job from a separate CI
+job. That verifier executes the candidate revision; it is not the independent
+default-branch publication gate. The latter currently covers only ordinary
+moving-label jobs. The [test plan](../test-plan.md#current-stdout-adoption-verification)
+records this orchestration gap, which must be closed before stdout admission.
 
 The ordinary moving-label smoke verifier also passed on Ubuntu 24.04,
 Windows 2025 and macOS 26. Its macOS image was `20260907.0351.1`, distinct from

@@ -108,10 +108,23 @@ Refresh live evidence during release preparation; an old research snapshot is
 not a permanent release certificate. Preserve a compact durable snapshot in the
 compatibility record before transient CI artifacts expire.
 
+Admission also requires implementing the orchestration gaps identified in the
+[test plan](test-plan.md#current-stdout-adoption-verification). The current
+release workflow checks source CI but does not yet require the independent
+mask-log verifier. Before stdout publication, both eligibility and final publish
+must require successful, fully exercised policy and trusted log-verification
+results tied to the exact source CI run, attempt, and source SHA. Pending,
+failed, skipped, mismatched, or missing results must block publication; an
+unrelated green workflow or candidate-controlled log check is not sufficient.
+These are future stdout-admission gates, not claims about today's workflow.
+
 The maintainer reviews the existing scheduled and manually dispatched full CI
 and its hosted-log verification. Those checks are the current drift-detection
 mechanism, not an upstream release watcher or an uninterrupted service. Their
-schedule and coverage are owned by the test plan. On learning of a new Runner
+schedule, current gaps, and required admission coverage are owned by the test
+plan. Until the next increment wires the policy probe and complete trusted log
+coverage, current periodic runs supply only their documented partial evidence;
+they cannot certify all stdout admission requirements. On learning of a new Runner
 version, hosted image, or relevant runtime/backend change, compare it with the
 last reviewed snapshot and run affected existing checks. A new Runner package
 requires a reviewed pin/digest update and package tests; a host change requires

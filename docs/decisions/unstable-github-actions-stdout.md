@@ -83,8 +83,9 @@ eligibility lives in [the release design](../release.md).
 
 ## Consequences
 
-- The boundary restores release eligibility for the environment-file family
-  without resolving stdout framing.
+- The boundary originally restored release eligibility for the environment-file
+  family while stdout framing was unresolved. It now remains until the accepted
+  scoped design is productized through the coordinated admission gates.
 - Contributor and CI work must deliberately choose between the supported and
   research configurations; the authoritative matrix is in the
   [test plan](../test-plan.md).

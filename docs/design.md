@@ -142,6 +142,14 @@ custom globalization configurations, other cultures, and other OS generations
 are not initially covered by the adoption profile. This is a compatibility
 scope, not a claim that every excluded environment is unsafe.
 
+The executable's availability is distinct from consumer compatibility. The
+same CLI surface may be packaged for other architectures to keep invocation
+and byte-level producer behavior consistent; that does not add their native
+Runner environments to this profile. Neither installing such an artifact nor
+successfully invoking a command certifies its consumer. Unsupported deployment
+is not prevented by target-specific compilation, just as an x64 binary cannot
+distinguish a standard hosted Worker from an arbitrary self-hosted one.
+
 The [compatibility record](compatibility/stdout-unicode-policy.md) owns observed
 versions, coverage, and known mismatches. A passing finite hosted smoke test
 does not override a known broader incompatibility on a different configuration.

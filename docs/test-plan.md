@@ -1221,10 +1221,20 @@ iterator offsets, and other supported OS releases remain separate obligations.
 
 ### Current stdout adoption verification
 
-Apply these existing checks to the profile owned by
+For stdout admission, apply these checks to the profile owned by
 [design](design.md#stdout-adoption-contract), using the release policy's
 candidate and update process. Keep observations separate rather than treating
 one suite as proof of another layer:
+
+The harnesses exist, but their orchestration does not yet meet all admission
+requirements. `unicode-policy.yml` is path-triggered only; scheduled/manual CI
+does not run it. Profile jobs currently use `windows-latest`, so identity review
+must detect a changed generation rather than crediting the alias as Windows
+2025. The current trusted default-branch completed-log verifier covers only
+the ordinary three-OS `test` jobs, not the four package-matched jobs. Candidate
+`hosted-annotations` code checks the latter's logs, which is useful integration
+evidence but is not the independent trusted publication gate. These finite
+wiring gaps belong to the next implementation increment, not new research.
 
 | Layer | Required evidence and scope |
 | --- | --- |
@@ -1233,6 +1243,14 @@ one suite as proof of another layer:
 | Policy compatibility | Existing four-row Unicode-policy probe with data-start, final-field header, and metadata checks; preserve known excluded-configuration mismatches |
 | Live effects | Package-matched hosted experiment for each profile row, API annotation verification and external masked-log verification; record live Runner/image identities and leave hidden Worker fields unobserved |
 | Regression cost | Reuse the recorded performance baseline for unchanged code; rerun the existing paired benchmark if policy lookup or record construction changes |
+
+Before official admission, the policy probe must be runnable on schedule and
+manual request, profile selectors must stay on the named generations (including
+Windows 2025), and the trusted completed-log verifier must cover every profile
+row. Verify event routing and negative cases: wrong source SHA/run/attempt,
+skipped or missing rows, pending/failed verifier, and generation mismatch must
+not produce release-eligible evidence. The release policy owns the publication
+gate; this section owns its verification coverage.
 
 Retain stopped-command and feature-state negative controls. A successful
 producer, parser, or API annotation query alone cannot establish mask secrecy;

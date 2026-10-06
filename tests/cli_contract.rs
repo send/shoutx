@@ -142,24 +142,12 @@ fn help_version_and_grammar_contract() {
 #[test]
 fn configured_command_table_is_the_complete_expected_surface() {
     if let Ok(expected) = std::env::var("SHOUTX_EXPECT_SURFACE") {
-        let actual = if cfg!(feature = "unstable-github-actions-stdout") {
-            "unstable"
-        } else {
-            "stable"
-        };
+        let actual = "stable";
         assert_eq!(
             actual, expected,
             "compiled surface does not match expectation"
         );
     }
-    #[cfg(not(feature = "unstable-github-actions-stdout"))]
-    const EXPECTED: &[&str] = &[
-        "github-actions:output",
-        "github-actions:env",
-        "github-actions:state",
-        "github-actions:path",
-    ];
-    #[cfg(feature = "unstable-github-actions-stdout")]
     const EXPECTED: &[&str] = &[
         "github-actions:output",
         "github-actions:env",
@@ -174,14 +162,13 @@ fn configured_command_table_is_the_complete_expected_surface() {
     assert_eq!(shoutx::cli::command_names().collect::<Vec<_>>(), EXPECTED);
 }
 
-#[cfg(not(feature = "unstable-github-actions-stdout"))]
 #[test]
-fn unstable_stdout_commands_are_ordinary_unknown_commands() {
+fn unsupported_commands_are_ordinary_unknown_commands() {
     for args in [
-        ["github-actions:mask", "fixed-mask-value"].as_slice(),
-        ["github-actions:notice", "fixed notice"].as_slice(),
-        ["github-actions:warning", "fixed warning"].as_slice(),
-        ["github-actions:error", "fixed error"].as_slice(),
+        ["github-actions:add-mask", "fixed-mask-value"].as_slice(),
+        ["github-actions:debug", "fixed notice"].as_slice(),
+        ["github-actions:group", "fixed warning"].as_slice(),
+        ["github-actions:stop-commands", "fixed error"].as_slice(),
     ] {
         let output = run(args, None);
         assert_eq!(output.status.code(), Some(2));
@@ -190,26 +177,12 @@ fn unstable_stdout_commands_are_ordinary_unknown_commands() {
     }
 }
 
-#[cfg(not(feature = "unstable-github-actions-stdout"))]
 #[test]
 fn stable_help_and_version_are_exact() {
     assert_eq!(shoutx::HELP, include_str!("fixtures/stable-help.txt"));
     assert_eq!(
         shoutx::version_output(),
         format!("shoutx {}\n", shoutx::VERSION)
-    );
-}
-
-#[cfg(feature = "unstable-github-actions-stdout")]
-#[test]
-fn unstable_feature_identity_is_explicit() {
-    assert!(shoutx::HELP.contains("Unstable GitHub Actions stdout research commands:"));
-    assert_eq!(
-        shoutx::version_output(),
-        format!(
-            "shoutx {} (unstable-github-actions-stdout)\n",
-            shoutx::VERSION
-        )
     );
 }
 

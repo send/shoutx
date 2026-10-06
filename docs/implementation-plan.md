@@ -324,20 +324,18 @@ contracts and lasting command-specific implementation constraints live under
 
 ## Current implementation increment
 
-The stdout workflow-command implementations are isolated behind the exact
-opt-in Cargo feature `unstable-github-actions-stdout`. The default feature set
-is empty. The command table, action variants, modules, and stdout-only
-dependency are compiled out of stable-surface builds. Default and feature-on
-CI use separate target directories, and feature-on version output identifies
-the research configuration.
-
-The parser dispatches only through one enumerable command table. The release
-configuration asserts its complete stable allowlist, and integration targets
-specific to the research family declare `required-features`. CI explicitly
-selects those targets and carries a feature-on sentinel so a missing feature
-cannot turn intended evidence into a successful zero-test run.
+The stdout writers are compiled into the normal executable without a feature
+opt-in. Their encoders and input policies are unchanged by promotion. The parser
+still dispatches through one enumerable command table, now checked against the
+complete eight-command surface. Explicit stdout integration targets and fresh
+corpus exports remain in CI; artifact tests exercise the same normal binary.
+The former isolation rationale is retained in its superseded decision record.
 
 ## Next increment: stdout productization
+
+Implementation is in progress against the finite handoff below. It remains
+open until final-candidate verification, evidence, review and main-side external
+admission checks complete; code promotion alone does not finish the increment.
 
 This is a finite implementation handoff, not authorization to publish a
 release. Follow the [stdout adoption contract](design.md#stdout-adoption-contract)

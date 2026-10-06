@@ -51,7 +51,7 @@ def write_line(value):
 
 
 def emit():
-    binary = os.environ["UNSTABLE_BINARY"]
+    binary = os.environ["STABLE_BINARY"]
     identity = {name: os.environ.get(name) for name in
                 ("GITHUB_RUN_ID", "GITHUB_RUN_ATTEMPT", "GITHUB_SHA", "RUNNER_OS",
                  "RUNNER_ARCH", "ImageOS", "ImageVersion", "SHOUTX_SOURCE_HEAD")}

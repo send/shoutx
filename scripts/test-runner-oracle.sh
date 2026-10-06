@@ -79,11 +79,11 @@ SHOUTX_PATH_CORPUS_PATH="$path_corpus" \
   CARGO_TARGET_DIR=target/oracle-stable \
   cargo test --no-default-features --test path_runner_fixture export_path_corpus -- --ignored
 SHOUTX_MASK_CORPUS_PATH="$mask_corpus" \
-  CARGO_TARGET_DIR=target/oracle-unstable \
-  cargo test --features unstable-github-actions-stdout --test mask_runner_fixture export_mask_corpus -- --ignored
+  CARGO_TARGET_DIR=target/oracle-stable \
+  cargo test --no-default-features --test mask_runner_fixture export_mask_corpus -- --ignored
 SHOUTX_ANNOTATION_CORPUS_PATH="$annotation_corpus" \
-  CARGO_TARGET_DIR=target/oracle-unstable \
-  cargo test --features unstable-github-actions-stdout --test annotation_runner_fixture export_annotation_corpus -- --ignored
+  CARGO_TARGET_DIR=target/oracle-stable \
+  cargo test --no-default-features --test annotation_runner_fixture export_annotation_corpus -- --ignored
 for generated in "$corpus" "$path_corpus" "$mask_corpus" "$annotation_corpus"; do
   if [ ! -s "$generated" ]; then
     echo "error: expected freshly generated corpus: $generated" >&2

@@ -3,7 +3,6 @@ set -eu
 
 binary=$1
 shell_under_test=${2:-sh}
-surface=${3:-stable}
 tmp=$(mktemp -d "${TMPDIR:-/tmp}/shoutx-smoke.XXXXXX")
 trap 'rm -rf "$tmp"' EXIT HUP INT TERM
 
@@ -38,7 +37,6 @@ printf '%s\n' "$path_value" | "$binary" github-actions:path >>"$tmp/path"
 printf '%s\n' "$path_value" >"$tmp/expected-path"
 cmp "$tmp/expected-path" "$tmp/path"
 
-if [ "$surface" = unstable ]; then
   printf 'mask%%value\r\n' | "$binary" github-actions:mask >"$tmp/mask"
   printf '%s\n' '::add-mask::mask%25value' >"$tmp/expected-mask"
   cmp "$tmp/expected-mask" "$tmp/mask"
@@ -51,10 +49,6 @@ if [ "$surface" = unstable ]; then
   printf '%s\n' '::warning title=title%25value,file=src/a%2Cb%3Ac.rs,line=5,endLine=5,col=1,endColumn=9::first%0A日本語' \
     >"$tmp/expected-annotation"
   cmp "$tmp/expected-annotation" "$tmp/annotation"
-elif [ "$surface" != stable ]; then
-  echo "error: expected stable or unstable smoke surface" >&2
-  exit 1
-fi
 
 if "$binary" github-actions:path 'bad"path' >"$tmp/rejected-path"; then
   echo "error: unsafe path was accepted" >&2

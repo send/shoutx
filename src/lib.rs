@@ -16,30 +16,17 @@ macro_rules! stable_help {
     };
 }
 
-pub const STABLE_HELP: &str = stable_help!();
-
-#[cfg(not(feature = "unstable-github-actions-stdout"))]
-pub const HELP: &str = STABLE_HELP;
-
-#[cfg(feature = "unstable-github-actions-stdout")]
 pub const HELP: &str = concat!(
     stable_help!(),
-    "\nUnstable GitHub Actions stdout research commands:\n",
+    "\nGitHub Actions stdout commands:\n",
     "  shoutx github-actions:mask   [VALUE]\n",
     "  shoutx github-actions:notice  [--title TITLE] [--file FILE] [--line N] [--end-line N] [--column N] [--end-column N] [MESSAGE]\n",
     "  shoutx github-actions:warning [--title TITLE] [--file FILE] [--line N] [--end-line N] [--column N] [--end-column N] [MESSAGE]\n",
     "  shoutx github-actions:error   [--title TITLE] [--file FILE] [--line N] [--end-line N] [--column N] [--end-column N] [MESSAGE]\n",
-    "\nThese commands depend on an unresolved runner framing decision and are not release eligible.\n",
 );
 
-#[cfg(not(feature = "unstable-github-actions-stdout"))]
 pub fn version_output() -> String {
     format!("shoutx {VERSION}\n")
-}
-
-#[cfg(feature = "unstable-github-actions-stdout")]
-pub fn version_output() -> String {
-    format!("shoutx {VERSION} (unstable-github-actions-stdout)\n")
 }
 
 pub fn prepare(args: Vec<OsString>) -> Result<cli::Action, ShoutxError> {

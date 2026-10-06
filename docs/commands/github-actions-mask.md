@@ -6,13 +6,11 @@ remains in [`test-plan.md`](../test-plan.md). The Contract section is normative
 for this command; contradictions with the cross-cutting documents must be
 resolved.
 
-The command is available only in source builds that explicitly enable
-`unstable-github-actions-stdout`. It is absent from default and official release
-binaries, and enabling it does not make the contract release eligible. The
-isolation is defined by the [accepted decision](../decisions/unstable-github-actions-stdout.md),
-while external parser evidence is maintained in the
+The command is included in the normal executable under the
+[stdout adoption profile](../design.md#stdout-adoption-contract).
+Previously published binaries are unchanged; publication follows the
+[release policy](../release.md). External parser evidence is maintained in the
 [workflow-command compatibility note](../compatibility/github-actions-workflow-command-parser.md).
-The contract below records research behavior rather than a stable CLI promise.
 
 ## Contract
 
@@ -149,8 +147,8 @@ only of Unicode whitespace before output begins. The last two cases are
 necessary because the runner warns and performs no registration for
 `String.IsNullOrWhiteSpace` data. A successful shoutx status must not imply a
 mask was installed when the runner would deterministically reject it.
-The prefix validation specified above is an additional, bounded research
-mitigation; it is not a complete control for locale-sensitive parsing.
+The prefix validation specified above is a bounded control within the adoption
+profile; it does not certify every locale-sensitive parser configuration.
 
 The runner registers the exact decoded value and also every trimmed, nonempty
 item produced by splitting it on CR and LF. This applies even without a line

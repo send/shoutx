@@ -7,3 +7,9 @@ Usage:
   shoutx github-actions:path   [VALUE]
   shoutx --help
   shoutx --version
+
+GitHub Actions stdout commands:
+  shoutx github-actions:mask   [VALUE]
+  shoutx github-actions:notice  [--title TITLE] [--file FILE] [--line N] [--end-line N] [--column N] [--end-column N] [MESSAGE]
+  shoutx github-actions:warning [--title TITLE] [--file FILE] [--line N] [--end-line N] [--column N] [--end-column N] [MESSAGE]
+  shoutx github-actions:error   [--title TITLE] [--file FILE] [--line N] [--end-line N] [--column N] [--end-column N] [MESSAGE]

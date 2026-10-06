@@ -20,10 +20,13 @@ LIMIT = 1024 * 1024
 
 
 def request(repo, suffix, *, pages=False, binary=False):
+    if binary:
+        require(not pages)
+        return verifier.download(repo, suffix)
     args = ["gh", "api"] + (["--paginate", "--slurp"] if pages else [])
     result = subprocess.run(args + [f"repos/{repo}/{suffix}"], capture_output=True, timeout=90)
     require(result.returncode == 0)
-    return result.stdout if binary else json.loads(result.stdout)
+    return json.loads(result.stdout)
 
 
 def read_report(archive):

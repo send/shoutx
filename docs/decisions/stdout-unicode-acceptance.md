@@ -4,7 +4,7 @@ Status: Accepted; implemented by PR #116, not a stable-distribution decision.
 
 ## Decision
 
-Expand the isolated stdout feature using V2 framing, without adding
+PR #116 expanded the then-isolated stdout feature using V2 framing, without adding
 decoration, normalization or lossy sanitization. The command specifications own
 the acceptance rules; the threat model owns AP1–AP5. This record owns rationale.
 
@@ -52,8 +52,9 @@ Runner/ICU compatibility. The current local ICU78.1 data-start mismatch remains
 contrary evidence for extending that scope. No dependency-internal proof is a
 prerequisite for the producer implementation, and no known mismatch is erased.
 
-The feature remains absent from default/official binaries. The broader framing
-and release decisions remain separate. PR #116 completed producer contract
+Distribution was isolated when this decision was implemented. Its later
+promotion is governed by the [framing decision](github-actions-stdout-framing.md)
+and [release policy](../release.md), not this acceptance decision. PR #116 completed producer contract
 tests, actual Runner effects, performance checks and review; the candidate
 parser run alone was not completion. The current adoption scope is owned by the
 [design](../design.md#stdout-adoption-contract), not by these implementation

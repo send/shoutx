@@ -59,10 +59,10 @@ jobs:
         run: |
           features=$(cargo metadata --format-version 1 --no-deps --locked |
             jq -c '.packages[] | select(.name == "shoutx") | .features')
-          test "$features" = '{"default":[],"unstable-github-actions-stdout":[]}'
+          test "$features" = '{"default":[]}'
           cargo tree --locked --no-default-features -e normal > target/stable-tree.txt
-          cargo tree --locked --features unstable-github-actions-stdout -e normal > target/unstable-tree.txt
-          diff -u target/stable-tree.txt target/unstable-tree.txt
+          cargo tree --locked -e normal > target/default-tree.txt
+          diff -u target/stable-tree.txt target/default-tree.txt
       - name: Verify stdout publication gate failures
         run: python3 -B tests/workflow-smoke/test_stdout_release.py
       - name: Verify release archive validator
@@ -209,17 +209,13 @@ jobs:
         run: |
           CARGO_TARGET_DIR=target/release-stable cargo +"$TOOLCHAIN" build \
             --release --locked --no-default-features --target "$TARGET"
-          CARGO_TARGET_DIR=target/release-unstable cargo +"$TOOLCHAIN" build \
-            --release --locked --features unstable-github-actions-stdout --target "$TARGET"
-      - name: Verify stable and unstable artifact identities
+      - name: Verify official artifact identity and command surface
         shell: bash
         run: |
           suffix=
           if [[ "$RUNNER_OS" == Windows ]]; then suffix=.exe; fi
           stable="target/release-stable/$TARGET/release/shoutx$suffix"
-          unstable="target/release-unstable/$TARGET/release/shoutx$suffix"
           test "$($stable --version)" = "shoutx $VERSION"
-          test "$($unstable --version)" = "shoutx $VERSION (unstable-github-actions-stdout)"
           SHOUTX_EXPECT_SURFACE=stable CARGO_TARGET_DIR=target/release-stable \
             cargo +"$TOOLCHAIN" test --release --locked --no-default-features \
               --target "$TARGET" --test cli_contract
@@ -227,13 +223,9 @@ jobs:
             SHOUTX_EXPECT_SURFACE=stable \
             CARGO_TARGET_DIR=target/verifier-stable \
             cargo +"$TOOLCHAIN" test --locked --no-default-features --test stable_surface
-          SHOUTX_VERIFY_BINARY="$unstable" SHOUTX_VERIFY_REQUIRE_EXTERNAL=1 \
-            SHOUTX_EXPECT_SURFACE=unstable \
-            CARGO_TARGET_DIR=target/verifier-unstable \
-            cargo +"$TOOLCHAIN" test --locked --features unstable-github-actions-stdout --test stable_surface
           cargo tree --locked --no-default-features --target "$TARGET" -e normal > target/stable-target-tree.txt
-          cargo tree --locked --features unstable-github-actions-stdout --target "$TARGET" -e normal > target/unstable-target-tree.txt
-          diff -u target/stable-target-tree.txt target/unstable-target-tree.txt
+          cargo tree --locked --target "$TARGET" -e normal > target/default-target-tree.txt
+          diff -u target/stable-target-tree.txt target/default-target-tree.txt
       - name: Package and verify POSIX archive
         if: runner.os != 'Windows'
         shell: bash

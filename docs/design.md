@@ -37,8 +37,7 @@ shoutx github-actions:state  [--first-line | --join-lines | --join-lines-with ST
 shoutx github-actions:path   [VALUE]
 ```
 
-The stdout workflow-command implementations are retained for research behind
-the opt-in Cargo feature `unstable-github-actions-stdout`:
+The same executable also provides stdout workflow-command writers:
 
 ```text
 shoutx github-actions:mask    [VALUE]
@@ -47,9 +46,9 @@ shoutx github-actions:warning [ANNOTATION OPTIONS] [MESSAGE]
 shoutx github-actions:error   [ANNOTATION OPTIONS] [MESSAGE]
 ```
 
-The feature is absent from the default set and from official release binaries.
-Feature-enabled help labels this family unstable, and its version output carries
-the feature name. This research surface is not a compatibility guarantee.
+All eight commands are included in default and `--no-default-features` builds.
+The former research feature is removed. Stdout consumer compatibility is scoped
+by the adoption contract below; binary availability does not broaden it.
 
 No reusable context encoder is currently planned for v1.0. The former
 `shell:arg` candidate is deferred after boundary review.
@@ -103,16 +102,16 @@ protection obligations to the caller nor requires proof of dependency internals.
 The current GitHub Actions stdout parser investigation and the limits of its
 cross-platform evidence are recorded in
 [the workflow-command compatibility note](compatibility/github-actions-workflow-command-parser.md).
-The compile-time-isolated stdout family remains pre-release. The
-[framing decision](decisions/github-actions-stdout-framing.md) governs adoption;
-it does not itself change the distributed command surface.
+The [framing decision](decisions/github-actions-stdout-framing.md) explains
+adoption, and the release policy governs publication of the implemented surface.
 
 ## Stdout adoption contract
 
 This section defines the scope for productizing the existing mask and
 notice/warning/error implementations, including message, TITLE, and FILE. It
-does not enable them in official binaries. Their observable input and encoding
-rules remain solely in the command specifications.
+defines their consumer compatibility, not whether a particular release contains
+them. Their observable input and encoding rules remain solely in the command
+specifications. Previously published binaries are unchanged.
 
 Shoutx owns validation, context-specific escaping, command/property framing,
 bounded resource use, value-free diagnostics, and rejection before output.
@@ -212,8 +211,7 @@ After `NAME`, the same tokens are values rather than options.
 
 An official stable binary writes exactly `shoutx VERSION` followed by LF for
 `--version`, where `VERSION` is its Cargo package version. It writes no stderr
-and exits 0. Feature-enabled research builds append a feature label and are not
-official release artifacts.
+and exits 0. There is no research-feature suffix.
 
 Encoded output is written to stdout and diagnostics to stderr. This preserves
 normal Unix composition and keeps destination selection visible in the calling

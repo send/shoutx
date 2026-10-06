@@ -78,7 +78,6 @@ fn run() -> Result<(), ShoutxError> {
             };
             output(&shoutx::github_actions::encode_path(value, target_os)?)
         }
-        #[cfg(feature = "unstable-github-actions-stdout")]
         Action::Mask(request) => {
             let value = if let Some(value) = request.value.as_ref() {
                 shoutx::cli::os_bytes(value)?.to_vec()
@@ -94,7 +93,6 @@ fn run() -> Result<(), ShoutxError> {
             };
             output(&shoutx::github_actions::encode_mask(value)?)
         }
-        #[cfg(feature = "unstable-github-actions-stdout")]
         Action::Annotate(request) => {
             let message = if let Some(message) = request.message.as_ref() {
                 shoutx::cli::os_bytes(message)?.to_vec()

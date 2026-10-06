@@ -59,13 +59,11 @@ pub struct PathRequest {
     pub value: Option<OsString>,
 }
 
-#[cfg(feature = "unstable-github-actions-stdout")]
 #[derive(Debug)]
 pub struct MaskRequest {
     pub value: Option<OsString>,
 }
 
-#[cfg(feature = "unstable-github-actions-stdout")]
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum AnnotationSeverity {
     Notice,
@@ -73,7 +71,6 @@ pub enum AnnotationSeverity {
     Error,
 }
 
-#[cfg(feature = "unstable-github-actions-stdout")]
 #[derive(Debug)]
 pub struct AnnotationRequest {
     pub severity: AnnotationSeverity,
@@ -92,9 +89,7 @@ pub enum Action {
     Version,
     Write(WriteRequest),
     WritePath(PathRequest),
-    #[cfg(feature = "unstable-github-actions-stdout")]
     Mask(MaskRequest),
-    #[cfg(feature = "unstable-github-actions-stdout")]
     Annotate(AnnotationRequest),
 }
 
@@ -104,13 +99,9 @@ enum Command {
     Env,
     State,
     Path,
-    #[cfg(feature = "unstable-github-actions-stdout")]
     Mask,
-    #[cfg(feature = "unstable-github-actions-stdout")]
     Notice,
-    #[cfg(feature = "unstable-github-actions-stdout")]
     Warning,
-    #[cfg(feature = "unstable-github-actions-stdout")]
     Error,
 }
 
@@ -119,13 +110,9 @@ const COMMANDS: &[(&str, Command)] = &[
     ("github-actions:env", Command::Env),
     ("github-actions:state", Command::State),
     ("github-actions:path", Command::Path),
-    #[cfg(feature = "unstable-github-actions-stdout")]
     ("github-actions:mask", Command::Mask),
-    #[cfg(feature = "unstable-github-actions-stdout")]
     ("github-actions:notice", Command::Notice),
-    #[cfg(feature = "unstable-github-actions-stdout")]
     ("github-actions:warning", Command::Warning),
-    #[cfg(feature = "unstable-github-actions-stdout")]
     ("github-actions:error", Command::Error),
 ];
 
@@ -160,13 +147,9 @@ pub fn parse(args: Vec<OsString>) -> Result<Action, ShoutxError> {
         Command::Env => Destination::Env,
         Command::State => Destination::State,
         Command::Path => return parse_path(it.collect()),
-        #[cfg(feature = "unstable-github-actions-stdout")]
         Command::Mask => return parse_mask(it.collect()),
-        #[cfg(feature = "unstable-github-actions-stdout")]
         Command::Notice => return parse_annotation(AnnotationSeverity::Notice, it.collect()),
-        #[cfg(feature = "unstable-github-actions-stdout")]
         Command::Warning => return parse_annotation(AnnotationSeverity::Warning, it.collect()),
-        #[cfg(feature = "unstable-github-actions-stdout")]
         Command::Error => return parse_annotation(AnnotationSeverity::Error, it.collect()),
     };
 
@@ -263,7 +246,6 @@ pub fn parse(args: Vec<OsString>) -> Result<Action, ShoutxError> {
     }))
 }
 
-#[cfg(feature = "unstable-github-actions-stdout")]
 fn parse_annotation(
     severity: AnnotationSeverity,
     tokens: Vec<OsString>,
@@ -330,7 +312,6 @@ fn parse_annotation(
     Ok(Action::Annotate(request))
 }
 
-#[cfg(feature = "unstable-github-actions-stdout")]
 fn parse_mask(tokens: Vec<OsString>) -> Result<Action, ShoutxError> {
     let mut options = true;
     let mut value = None;

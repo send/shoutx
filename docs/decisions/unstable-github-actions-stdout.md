@@ -1,6 +1,27 @@
 # Unstable GitHub Actions stdout command isolation
 
-Status: Accepted
+Status: Superseded by coordinated stdout productization.
+
+## Productization outcome
+
+The [accepted framing decision](github-actions-stdout-framing.md) is implemented
+by promoting the existing stdout commands to the normal executable. The former
+`unstable-github-actions-stdout` Cargo feature is removed, not retained as a
+runtime switch or a second supported surface. Input acceptance, encoded bytes,
+diagnostics and limits are unchanged. Consumer applicability remains owned by
+[design](../design.md#stdout-adoption-contract), independently of which native
+binary is installed.
+
+Artifact verification now checks the complete official command surface and
+rejects malformed or unintended behavior; the former absent-command marker
+scan is no longer an appropriate release test. The
+[test plan](../test-plan.md#executable-configurations) owns the replacement
+coverage. Publication still requires the source-bound external gates in the
+[release policy](../release.md). Building the commands does not itself authorize
+a release.
+
+The rest of this record preserves the rationale and constraints of the former
+isolation phase, not current build requirements.
 
 ## Context
 

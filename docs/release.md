@@ -64,14 +64,14 @@ tag and assets become immutable at publication.
 Official binaries are built with `--no-default-features`. The release workflow
 asserts that Cargo's default feature set is empty and applies the stable-surface
 source, dependency, and packaged-artifact gates defined by the
-[test plan](test-plan.md) to every native target. Feature-enabled controls used
-by those gates are never copied into `dist` or uploaded.
+[test plan](test-plan.md) to every native target. Default and no-default-feature
+builds expose the same eight-command surface and use the same dependencies.
 
 The release workflow reruns the stable contract suite and `cargo deny
 --all-features --locked` itself. A successful aggregate CI result whose relevant
 jobs were skipped is therefore not sufficient release evidence. Detailed shared
-checks are maintained in the [test plan](test-plan.md); rationale for
-compile-time isolation is in the
+checks are maintained in the [test plan](test-plan.md); the superseded
+compile-time isolation is recorded in the
 [stdout isolation decision](decisions/unstable-github-actions-stdout.md).
 
 A version with a prerelease component, such as `0.1.0-rc.1`, is published as a
@@ -87,10 +87,8 @@ change; a floating `stable` toolchain is not used for release artifacts.
 
 ## Stdout admission and compatibility maintenance
 
-This is the policy for the next stdout-enabled release, not a change to the
-current artifact surface. The family remains excluded until the coordinated
-[productization increment](implementation-plan.md#next-increment-stdout-productization)
-updates build, help, packaging, and verification gates. The
+This is the policy for publishing the implemented stdout-enabled surface.
+Previously published artifacts remain unchanged. The
 [design](design.md#stdout-adoption-contract) owns applicability; the
 [test plan](test-plan.md) owns verification; the
 [compatibility record](compatibility/stdout-unicode-policy.md) owns observations.
@@ -329,8 +327,8 @@ a real release:
   paths (which rejects case variants), member types, duplicates, and disallowed
   metadata overrides;
 - execution of each packaged binary on its native build runner;
-- stable-surface verification of each extracted executable with a separate
-  feature-enabled marker-scan control;
+- complete command-surface verification of each extracted executable, with
+  negative controls for incorrect status, output bytes and diagnostics;
 - checksum-manifest verification after workflow-artifact transfer;
 - least-privilege job permissions and full action-SHA pinning;
 - a safe dry run that exercises aggregation without creating a release; and

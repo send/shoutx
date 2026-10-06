@@ -3,8 +3,8 @@
 Prevent injection at CI workflow output boundaries.
 
 `shoutx` safely writes untrusted values from shell-driven workflows to
-destination-specific formats and protocols. The supported release surface
-targets GitHub Actions environment files. Generic context encoders are deferred
+destination-specific formats and protocols. The current source supports GitHub
+Actions environment files and scoped stdout workflow commands. Generic context encoders are deferred
 until a concrete destination and safe consumption contract justify one.
 
 Status: early implementation. The `github-actions:output`,
@@ -12,11 +12,11 @@ Status: early implementation. The `github-actions:output`,
 are supported. Native binaries, checksums, and provenance are available from
 the [GitHub releases](https://github.com/send/shoutx/releases).
 
-The stdout workflow-command family (`mask`, `notice`, `warning`, and `error`)
-is retained behind a compile-time research feature and is absent from official
-binaries. Scoped productization is accepted, but not yet enabled; see the
-[stdout framing decision](docs/decisions/github-actions-stdout-framing.md).
-Environment-file writers do not pass through that parser.
+The current source also includes `mask`, `notice`, `warning`, and `error` in
+normal builds, within the [stdout consumer profile](docs/design.md#stdout-adoption-contract).
+These additions have not yet been published; the pinned `0.3.0-rc.1` release
+below contains only the environment-file writers. Environment-file writers do
+not pass through the stdout command parser.
 
 The native-binary packaging and publication contract is specified in the
 [release design](docs/release.md).
@@ -136,6 +136,12 @@ Usage:
   shoutx github-actions:path   [VALUE]
   shoutx --help
   shoutx --version
+
+GitHub Actions stdout commands:
+  shoutx github-actions:mask   [VALUE]
+  shoutx github-actions:notice  [--title TITLE] [--file FILE] [--line N] [--end-line N] [--column N] [--end-column N] [MESSAGE]
+  shoutx github-actions:warning [--title TITLE] [--file FILE] [--line N] [--end-line N] [--column N] [--end-column N] [MESSAGE]
+  shoutx github-actions:error   [--title TITLE] [--file FILE] [--line N] [--end-line N] [--column N] [--end-column N] [MESSAGE]
 ```
 <!-- stable-command-surface:end -->
 
@@ -145,6 +151,8 @@ Usage:
 | `github-actions:env` | One `$GITHUB_ENV` record | Internal boundaries rejected by default; explicit normalization |
 | `github-actions:path` | One `$GITHUB_PATH` record | One final boundary consumed; others rejected |
 | `github-actions:state` | One `$GITHUB_STATE` record | Internal boundaries rejected by default; explicit normalization |
+| `github-actions:mask` | One runner mask-registration command | One final boundary consumed; remaining boundaries encoded |
+| `github-actions:notice`, `warning`, `error` | One runner annotation command | One final boundary consumed; remaining boundaries encoded |
 
 Namespaced commands identify the interpretation context, not merely a data
 type. Provider-specific writers use the `PROVIDER:DESTINATION` form. Reusable
@@ -192,17 +200,49 @@ because the runner would treat it differently at the beginning of the file.
 The command provides record framing, not path authorization. An
 attacker-controlled directory could still hijack later command lookup.
 
-The repository retains experimental stdout workflow-command implementations
-for parser research and differential testing. They are compile-time excluded
-from normal and official builds and are not a supported CLI surface. Contributor
-details live in the corresponding pre-release command specifications and the
-[isolation decision](docs/decisions/unstable-github-actions-stdout.md).
-
-The commands write encoded records to stdout. The caller deliberately chooses
+Environment-file commands write encoded records to stdout. The caller deliberately chooses
 the destination file with shell redirection; `shoutx` does not discover or
 modify environment files implicitly. Redirect writer output to the intended
 environment file; unredirected multiline value lines could otherwise be
 interpreted as stdout workflow commands by the runner.
+
+### Mask and annotations
+
+The following examples require a build from the current source, not the older
+release pinned in the installation example. Build normally with
+`cargo build --release --locked`; no feature opt-in is required. Consumer
+compatibility is limited to the [named hosted profile](docs/design.md#stdout-adoption-contract);
+installing a binary on another architecture does not expand that scope.
+
+Stdout commands stay connected to the Runner log stream; do not redirect them
+to an environment file. Supply values as data, keep command processing active,
+and propagate failures:
+
+```yaml
+- name: Register a mask before using the value
+  shell: bash
+  env:
+    TOKEN: ${{ secrets.SERVICE_TOKEN }}
+  run: |
+    set -euo pipefail
+    set +x
+    printf '%s' "$TOKEN" | shoutx github-actions:mask
+- name: Report a diagnostic
+  shell: bash
+  env:
+    MESSAGE: ${{ steps.check.outputs.message }}
+    TITLE: ${{ steps.check.outputs.title }}
+  run: |
+    shoutx github-actions:warning --title "$TITLE" -- "$MESSAGE"
+```
+
+Masking affects subsequent Runner output, not earlier logs, process inspection,
+or tracing. Do not log a value rejected by `mask`; failure means no registration
+was requested. An annotation is intentionally logged, so it is not a secret
+channel. `error` creates an annotation but does not fail the step by itself.
+See the [mask contract and precautions](docs/commands/github-actions-mask.md)
+and [annotation contract](docs/commands/github-actions-annotations.md) for input
+limits, accepted Unicode boundaries, metadata and consumer limitations.
 
 ## Context encoders
 

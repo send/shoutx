@@ -112,7 +112,7 @@ dependencies = [
 
 [[package]]
 name = "shoutx"
-version = "0.3.0-rc.1"
+version = "0.3.0"
 dependencies = [
  "base64",
  "getrandom",

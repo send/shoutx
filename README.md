@@ -12,11 +12,13 @@ Status: early implementation. The `github-actions:output`,
 are supported. Native binaries, checksums, and provenance are available from
 the [GitHub releases](https://github.com/send/shoutx/releases).
 
-The current source also includes `mask`, `notice`, `warning`, and `error` in
+Version 0.3.0 also includes `mask`, `notice`, `warning`, and `error` in
 normal builds, within the [stdout consumer profile](docs/design.md#stdout-adoption-contract).
-These additions have not yet been published; the pinned `0.3.0-rc.1` release
-below contains only the environment-file writers. Environment-file writers do
-not pass through the stdout command parser.
+The earlier `0.3.0-rc.1` release contains only the environment-file writers.
+Environment-file writers do not pass through the stdout command parser.
+See the [current compatibility record](https://github.com/send/shoutx/blob/main/docs/compatibility/stdout-unicode-policy.md)
+before adopting stdout commands; packaged instructions cannot detect later
+Runner or hosted-image changes.
 
 The native-binary packaging and publication contract is specified in the
 [release design](docs/release.md).
@@ -30,21 +32,22 @@ compatibility evidence, and release policy each have one authoritative home.
 
 For GitHub Actions, use the official
 [`send/setup-shoutx`](https://github.com/send/setup-shoutx) action. This example
-pins the action commit, CLI version, and checksum manifest independently:
+pins the action commit and CLI version:
 
 ```yaml
 - uses: send/setup-shoutx@eb61a2361c6c0e0d37ab9cca1c50e998b4a94c24 # v0.1.0
   with:
-    shoutx-version: '0.3.0-rc.1'
-    checksums-sha256: b280ecb4122b02c0961638c0eb84bae6932af55193c3ea9ae2aa2b02ef8afa99
+    shoutx-version: '0.3.0'
     github-token: ${{ github.token }}
 - run: shoutx --version
 ```
 
 Run setup before untrusted steps and grant the job only the permissions it
-needs (`contents: read` is sufficient for installation). The CLI version above
-is an explicitly selected prerelease. See the action repository for supported
-runners, inputs, and verification limits.
+needs (`contents: read` is sufficient for installation). For an additional
+independent manifest pin, supply the optional `checksums-sha256` input with a
+trusted SHA-256 digest of this version's `SHA256SUMS`; the rc.1 digest is not
+valid for 0.3.0. See the action repository for supported runners, inputs, and
+verification limits.
 
 Download the archive for your platform and `SHA256SUMS` from the
 [latest GitHub release](https://github.com/send/shoutx/releases/latest). Verify
@@ -208,8 +211,7 @@ interpreted as stdout workflow commands by the runner.
 
 ### Mask and annotations
 
-The following examples require a build from the current source, not the older
-release pinned in the installation example. Build normally with
+The following examples require version 0.3.0 or a build from this source with
 `cargo build --release --locked`; no feature opt-in is required. Consumer
 compatibility is limited to the [named hosted profile](docs/design.md#stdout-adoption-contract);
 installing a binary on another architecture does not expand that scope.

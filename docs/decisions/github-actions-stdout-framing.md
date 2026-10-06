@@ -1,6 +1,6 @@
 # GitHub Actions stdout workflow-command framing
 
-Status: Accepted for coordinated productization; distribution remains isolated.
+Status: Accepted; implemented in the normal command surface, publication gated.
 
 ## Context
 
@@ -18,7 +18,8 @@ under the [design-owned adoption contract](../design.md#stdout-adoption-contract
 This includes mask, notice/warning/error, message, TITLE, and FILE; it is not a
 language-specific subset. The command specifications remain the sole authority
 for accepted inputs, encoding, rejection, and limits. This decision does not
-enable the commands in official binaries or authorize a release.
+authorize a release; normal-build inclusion is implemented by the coordinated
+productization change.
 
 The former universal delimiter constraint is replaced explicitly in design
 invariant 16. Dependency correctness is trusted within a named compatibility
@@ -75,8 +76,8 @@ because the defect is in a dependency would not meet this decision.
 
 ## Consequences
 
-The [isolation decision](unstable-github-actions-stdout.md) continues to govern
-today's binaries. The finite
+The [isolation decision](unstable-github-actions-stdout.md) is superseded for
+new builds; previously published binaries are unchanged. The finite
 [implementation handoff](../implementation-plan.md#next-increment-stdout-productization)
 must align build/help/package verification and user-facing documentation before
 official admission under the [release policy](../release.md#stdout-admission-and-compatibility-maintenance).

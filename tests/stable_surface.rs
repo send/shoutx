@@ -3,13 +3,6 @@ use std::{
     process::{Command, Output, Stdio},
 };
 
-const UNSTABLE_MARKERS: [&[u8]; 4] = [
-    b"github-actions:mask",
-    b"github-actions:notice",
-    b"github-actions:warning",
-    b"github-actions:error",
-];
-
 fn binary() -> PathBuf {
     match std::env::var_os("SHOUTX_VERIFY_BINARY") {
         Some(path) => PathBuf::from(path),
@@ -20,24 +13,10 @@ fn binary() -> PathBuf {
     }
 }
 
-#[test]
-fn surface_verifier_sentinel() {
-    if let Ok(expected) = std::env::var("SHOUTX_EXPECT_SURFACE") {
-        let actual = if cfg!(feature = "unstable-github-actions-stdout") {
-            "unstable"
-        } else {
-            "stable"
-        };
-        assert_eq!(
-            actual, expected,
-            "compiled surface does not match expectation"
-        );
-    }
-}
-
 fn run(args: &[&str]) -> Output {
     Command::new(binary())
         .args(args)
+        .env_remove("RUNNER_OS")
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
@@ -45,92 +24,176 @@ fn run(args: &[&str]) -> Output {
         .expect("failed to execute the binary under verification")
 }
 
-fn require_bytes(label: &str, actual: &[u8], expected: &[u8]) {
+fn matches_result(
+    status: Option<i32>,
+    stdout: &[u8],
+    stderr: &[u8],
+    expected_status: i32,
+    expected_stdout: &[u8],
+    expected_stderr: &[u8],
+) -> bool {
+    status == Some(expected_status) && stdout == expected_stdout && stderr == expected_stderr
+}
+
+fn verify(args: &[&str], status: i32, stdout: &[u8], stderr: &[u8]) {
+    let actual = run(args);
     assert!(
-        actual == expected,
-        "{label} mismatch (actual length {}, expected length {})",
-        actual.len(),
-        expected.len()
+        matches_result(
+            actual.status.code(),
+            &actual.stdout,
+            &actual.stderr,
+            status,
+            stdout,
+            stderr
+        ),
+        "artifact result mismatch (stdout length {}, stderr length {})",
+        actual.stdout.len(),
+        actual.stderr.len()
     );
 }
 
-fn contains(haystack: &[u8], needle: &[u8]) -> bool {
-    haystack
-        .windows(needle.len())
-        .any(|window| window == needle)
-}
-
-#[cfg(not(feature = "unstable-github-actions-stdout"))]
 #[test]
-fn packaged_binary_has_only_the_stable_surface() {
-    let help = run(&["--help"]);
-    assert_eq!(help.status.code(), Some(0));
-    require_bytes(
-        "help stdout",
-        &help.stdout,
+fn surface_verifier_sentinel() {
+    if let Ok(expected) = std::env::var("SHOUTX_EXPECT_SURFACE") {
+        assert_eq!(expected, "stable", "only the official surface is supported");
+    }
+}
+
+#[test]
+fn packaged_binary_has_exact_help_and_version() {
+    verify(
+        &["--help"],
+        0,
         include_bytes!("fixtures/stable-help.txt"),
+        b"",
     );
-    require_bytes("help stderr", &help.stderr, b"");
-
-    let version = run(&["--version"]);
-    assert_eq!(version.status.code(), Some(0));
-    require_bytes(
-        "version stdout",
-        &version.stdout,
+    verify(
+        &["--version"],
+        0,
         format!("shoutx {}\n", shoutx::VERSION).as_bytes(),
+        b"",
     );
-    require_bytes("version stderr", &version.stderr, b"");
+}
 
-    for args in [
-        ["github-actions:mask", "fixed-mask-value"].as_slice(),
-        ["github-actions:mask", "--help"].as_slice(),
-        ["github-actions:mask", "--version"].as_slice(),
-        ["github-actions:notice", "fixed notice"].as_slice(),
-        ["github-actions:warning", "fixed warning"].as_slice(),
-        ["github-actions:error", "fixed error"].as_slice(),
+#[test]
+fn packaged_binary_exposes_all_eight_writers() {
+    for command in [
+        "github-actions:output",
+        "github-actions:env",
+        "github-actions:state",
     ] {
-        let output = run(args);
-        assert_eq!(output.status.code(), Some(2));
-        require_bytes("unknown-command stdout", &output.stdout, b"");
-        require_bytes(
-            "unknown-command stderr",
-            &output.stderr,
+        verify(
+            &[command, "NAME", "fixed-value"],
+            0,
+            b"NAME=fixed-value\n",
+            b"",
+        );
+    }
+    if cfg!(windows) {
+        verify(
+            &["github-actions:path", "C:\\fixed"],
+            0,
+            b"C:\\fixed\n",
+            b"",
+        );
+    } else {
+        verify(&["github-actions:path", "/fixed"], 0, b"/fixed\n", b"");
+    }
+    verify(
+        &["github-actions:mask", "\u{03b1}%\nvalue"],
+        0,
+        "::add-mask::\u{03b1}%25%0Avalue\n".as_bytes(),
+        b"",
+    );
+    for severity in ["notice", "warning", "error"] {
+        let command = format!("github-actions:{severity}");
+        verify(
+            &[
+                &command,
+                "--title",
+                "\u{200b}",
+                "--file",
+                "\u{03b1}.rs",
+                "--line",
+                "001",
+                "\u{1f600}%\nvalue",
+            ],
+            0,
+            format!("::{severity} title=\u{200b},file=\u{03b1}.rs,line=1,::\u{1f600}%25%0Avalue\n")
+                .as_bytes(),
+            b"",
+        );
+    }
+}
+
+#[test]
+fn packaged_binary_rejects_invalid_and_unintended_surface() {
+    for command in [
+        "github-actions:add-mask",
+        "github-actions:debug",
+        "github-actions:group",
+        "github-actions:stop-commands",
+        "github-actions:raw",
+    ] {
+        verify(
+            &[command, "fixed-value"],
+            2,
+            b"",
             b"error: unknown command\n",
         );
     }
-
-    let bytes = std::fs::read(binary()).expect("failed to read the binary under verification");
-    for marker in UNSTABLE_MARKERS {
-        assert!(
-            !contains(&bytes, marker),
-            "stable binary contains an unstable marker of length {}",
-            marker.len()
+    verify(
+        &["github-actions:mask", "\u{200b}value"],
+        1,
+        b"",
+        b"error: mask value is outside the Unicode boundary policy\n",
+    );
+    for command in [
+        "github-actions:notice",
+        "github-actions:warning",
+        "github-actions:error",
+    ] {
+        verify(
+            &[command, "\u{200b}value"],
+            1,
+            b"",
+            b"error: annotation message is outside the Unicode boundary policy\n",
         );
     }
 }
 
-#[cfg(feature = "unstable-github-actions-stdout")]
 #[test]
-fn unstable_binary_is_an_explicit_marker_scan_control() {
-    let version = run(&["--version"]);
-    assert_eq!(version.status.code(), Some(0));
-    require_bytes(
-        "unstable version stdout",
-        &version.stdout,
-        format!(
-            "shoutx {} (unstable-github-actions-stdout)\n",
-            shoutx::VERSION
-        )
-        .as_bytes(),
-    );
-    require_bytes("unstable version stderr", &version.stderr, b"");
-
-    let bytes = std::fs::read(binary()).expect("failed to read the binary under verification");
-    for marker in UNSTABLE_MARKERS {
-        assert!(
-            contains(&bytes, marker),
-            "unstable control binary lacks a marker of length {}",
-            marker.len()
-        );
+fn result_checker_rejects_corrupt_status_bytes_and_diagnostics() {
+    let expected = b"::notice::fixed\n";
+    assert!(matches_result(Some(0), expected, b"", 0, expected, b""));
+    for (status, stdout, stderr) in [
+        (Some(1), expected.as_slice(), b"".as_slice()),
+        (None, expected.as_slice(), b"".as_slice()),
+        (Some(0), b"".as_slice(), b"".as_slice()),
+        (Some(0), b"::warning::fixed\n".as_slice(), b"".as_slice()),
+        (Some(0), b"::notice::fixed\r\n".as_slice(), b"".as_slice()),
+        (
+            Some(0),
+            expected.as_slice(),
+            b"unexpected diagnostic".as_slice(),
+        ),
+    ] {
+        assert!(!matches_result(status, stdout, stderr, 0, expected, b""));
     }
+    assert!(!matches_result(
+        Some(1),
+        b"leak",
+        b"error\n",
+        1,
+        b"",
+        b"error\n"
+    ));
+    assert!(!matches_result(
+        Some(2),
+        b"",
+        b"error\n",
+        1,
+        b"",
+        b"error\n"
+    ));
 }

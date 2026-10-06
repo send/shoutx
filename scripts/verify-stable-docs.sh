@@ -50,6 +50,10 @@ stable = {
     "github-actions:env",
     "github-actions:state",
     "github-actions:path",
+    "github-actions:mask",
+    "github-actions:notice",
+    "github-actions:warning",
+    "github-actions:error",
 }
 if not stable.issubset(commands):
     raise SystemExit("README code blocks do not demonstrate every stable command")

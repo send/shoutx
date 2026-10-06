@@ -72,15 +72,13 @@ baseline is:
 cargo fmt --all -- --check
 CARGO_TARGET_DIR=target/stable cargo test --all-targets --no-default-features
 CARGO_TARGET_DIR=target/stable cargo clippy --all-targets --no-default-features -- -D warnings
-CARGO_TARGET_DIR=target/unstable cargo test --all-targets --features unstable-github-actions-stdout
-CARGO_TARGET_DIR=target/unstable cargo clippy --all-targets --features unstable-github-actions-stdout -- -D warnings
 scripts/verify-stable-docs.sh
 ```
 
-The default and official binary surface excludes GitHub Actions stdout workflow
-commands. Do not run stable and unstable builds through the same Cargo target
-directory or invoke `mask` and annotation commands without the exact
-`unstable-github-actions-stdout` feature.
+Default and official builds expose all eight commands. There is no stdout
+research feature. Preserve explicit mask/annotation test targets and fresh
+nonempty exported corpora when changing test orchestration; a zero-test run is
+not evidence. Consumer compatibility remains limited to the design-owned profile.
 
 Changes affecting GitHub Actions record parsing or compatibility also require:
 

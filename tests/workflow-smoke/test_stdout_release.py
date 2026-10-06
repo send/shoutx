@@ -3,6 +3,7 @@ import copy
 import importlib.util
 import io
 import json
+from types import SimpleNamespace
 from pathlib import Path
 import unittest
 from unittest.mock import patch
@@ -22,6 +23,18 @@ gate = load("gate", ROOT / "scripts/check-stdout-release.py")
 fixtures = load("fixtures", Path(__file__).with_name("test_stdout_run.py"))
 SHA = fixtures.SHA
 REPO = fixtures.REPO
+
+
+class TransportTests(unittest.TestCase):
+    def test_archive_bytes_are_captured_without_terminal_filtering(self):
+        payload = b"PK\x03\x04\x1b"
+        with patch.object(gate.subprocess, "run", return_value=SimpleNamespace(returncode=0, stdout=payload)) as run:
+            self.assertEqual(gate.request(REPO, "actions/artifacts/123/zip", binary=True), payload)
+            self.assertIn("--allow-escape-sequences", run.call_args.args[0])
+            self.assertTrue(run.call_args.kwargs["capture_output"])
+        with patch.object(gate.subprocess, "run", return_value=SimpleNamespace(returncode=1, stdout=b"")):
+            with self.assertRaises(ValueError):
+                gate.request(REPO, "actions/artifacts/123/zip", binary=True)
 
 
 def archive(report, name="report.json"):

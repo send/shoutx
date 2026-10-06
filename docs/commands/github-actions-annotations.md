@@ -7,14 +7,11 @@ policy remains in [`test-plan.md`](../test-plan.md). The Contract section is
 normative for these commands; contradictions with the cross-cutting documents
 must be resolved.
 
-The commands are available only in source builds that explicitly enable
-`unstable-github-actions-stdout`. They are absent from default and official
-release binaries, and enabling them does not make the contract release
-eligible. The isolation is defined by the
-[accepted decision](../decisions/unstable-github-actions-stdout.md), while
-external parser evidence is maintained in the
+The commands are included in the normal executable under the
+[stdout adoption profile](../design.md#stdout-adoption-contract).
+Previously published binaries are unchanged; publication follows the
+[release policy](../release.md). External parser evidence is maintained in the
 [workflow-command compatibility note](../compatibility/github-actions-workflow-command-parser.md).
-The contract below records research behavior rather than a stable CLI promise.
 
 ## Contract
 
@@ -70,7 +67,7 @@ The [integration evidence](../compatibility/stdout-unicode-policy.md) names the
 characterized en-US/Invariant configurations and known contrary newer-runtime
 observation. The policy does not guarantee arbitrary cultures or versions;
 shoutx cannot detect the separate consumer's configuration. The `th-TH` failure
-remains deferred. The feature remains excluded from official binaries.
+remains deferred.
 
 The semantic message is limited to 4,096 UTF-16 code units, matching the pinned
 runner's `ExecutionContext.AddIssue` limit. This prevents ordinary input from
@@ -165,8 +162,7 @@ annotation command while workflow-command processing is active, within the
 does not authorize content, file association, or severity, or promise provider
 retention or presentation. Consumer configuration is not detected or enforced
 by shoutx; known excluded-configuration failures remain documented, not fixed
-by this scope choice. The official binary surface is unchanged until the
-coordinated productization increment is complete.
+by this scope choice.
 
 ## Boundary-specific threat analysis
 
@@ -345,11 +341,9 @@ repair, message truncation, timeline capacity, path translation, feature-flag
 handling, embedded-context forwarding, secret masking, and stopped-command
 state are destination behavior.
 
-Feature-enabled help exposes the commands as one explicitly unstable family.
-Default help and the packaged README do not advertise their invocation syntax.
-The accepted framing decision does not enable distribution: the three
-severities ship together only after the shared contract, oracle, hosted, and
-release-admission gates pass.
+Default help and the packaged README expose all three commands. The three
+severities ship together, subject to the shared contract, oracle, hosted, and
+release-admission gates.
 
 ## References
 

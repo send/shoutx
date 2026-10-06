@@ -3,6 +3,7 @@ import copy
 import importlib.util
 import json
 import os
+from types import SimpleNamespace
 from pathlib import Path
 import unittest
 from unittest.mock import patch
@@ -13,6 +14,18 @@ verifier = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(verifier)
 SHA = "a" * 40
 REPO = "send/shoutx"
+
+
+class TransportTests(unittest.TestCase):
+    def test_log_escape_sequences_are_captured_as_data(self):
+        payload = b"\x1b[36mtrusted shell setup\x1b[0m\n"
+        with patch.object(verifier.subprocess, "run", return_value=SimpleNamespace(returncode=0, stdout=payload)) as run:
+            self.assertEqual(verifier.api(REPO, "actions/jobs/123/logs", raw=True), payload.decode())
+            self.assertIn("--allow-escape-sequences", run.call_args.args[0])
+            self.assertTrue(run.call_args.kwargs["capture_output"])
+        with patch.object(verifier.subprocess, "run", return_value=SimpleNamespace(returncode=1, stdout=b"")):
+            with self.assertRaises(ValueError):
+                verifier.api(REPO, "actions/jobs/123/logs", raw=True)
 
 
 def source():

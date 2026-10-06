@@ -86,6 +86,9 @@ def profile_identity(report, label):
 
 def api(repo, suffix, *, pages=False, raw=False):
     args = ["gh", "api"]
+    # Job logs contain ANSI sequences. Capture them as data, never terminal output.
+    if raw:
+        args += ["--allow-escape-sequences"]
     if pages:
         args += ["--paginate", "--slurp"]
     result = subprocess.run(args + [f"repos/{repo}/{suffix}"], capture_output=True, timeout=90)

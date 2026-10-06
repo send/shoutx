@@ -21,6 +21,9 @@ LIMIT = 1024 * 1024
 
 def request(repo, suffix, *, pages=False, binary=False):
     args = ["gh", "api"] + (["--paginate", "--slurp"] if pages else [])
+    # ZIP bytes are captured in memory, never rendered or executed.
+    if binary:
+        args += ["--allow-escape-sequences"]
     result = subprocess.run(args + [f"repos/{repo}/{suffix}"], capture_output=True, timeout=90)
     require(result.returncode == 0)
     return result.stdout if binary else json.loads(result.stdout)

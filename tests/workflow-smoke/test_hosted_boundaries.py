@@ -182,11 +182,11 @@ class HostedTests(unittest.TestCase):
             self.assertFalse(probe.summarize(directory, context)[1])
 
     def test_real_producer_wire_bytes(self):
-        if not os.environ.get("UNSTABLE_BINARY"):
+        if not os.environ.get("STABLE_BINARY"):
             if os.environ.get("GITHUB_ACTIONS"):
-                self.fail("CI requires the research binary for wire checks")
-            self.skipTest("requires built research binary")
-        binary = str(Path(os.environ["UNSTABLE_BINARY"]).resolve())
+                self.fail("CI requires the official binary for wire checks")
+            self.skipTest("requires built official binary")
+        binary = str(Path(os.environ["STABLE_BINARY"]).resolve())
         data_escape = lambda value: value.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
         prop_escape = lambda value: data_escape(value).replace(":", "%3A").replace(",", "%2C")
         cases = []

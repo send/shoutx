@@ -1,6 +1,5 @@
 param(
-    [Parameter(Mandatory = $true)][string]$Binary,
-    [switch]$UnstableStdout
+    [Parameter(Mandatory = $true)][string]$Binary
 )
 
 $ErrorActionPreference = 'Stop'
@@ -72,7 +71,6 @@ try {
         throw "PowerShell changed path stdout bytes"
     }
 
-    if ($UnstableStdout) {
         $maskOutput = Join-Path $root 'mask'
         & pwsh -NoProfile -Command `
             '[Console]::OpenStandardOutput().Write([Text.Encoding]::UTF8.GetBytes("mask%value`r`n"))' |
@@ -94,7 +92,6 @@ try {
         if (-not [Linq.Enumerable]::SequenceEqual([byte[]](Get-Content -AsByteStream -Raw $annotationOutput), $expectedAnnotation)) {
             throw "PowerShell changed annotation stdout bytes"
         }
-    }
 
     & $Binary github-actions:path 'C:\bad;path' > (Join-Path $root 'rejected-path')
     if ($LASTEXITCODE -ne 1 -or (Get-Item (Join-Path $root 'rejected-path')).Length -ne 0) {

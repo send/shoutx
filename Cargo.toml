@@ -9,7 +9,6 @@ repository = "https://github.com/send/shoutx"
 
 [features]
 default = []
-unstable-github-actions-stdout = []
 
 [dependencies]
 getrandom = "0.4.3"
@@ -21,19 +20,15 @@ serde_json = "1.0.145"
 
 [[test]]
 name = "annotation_contract"
-required-features = ["unstable-github-actions-stdout"]
 
 [[test]]
 name = "annotation_runner_fixture"
-required-features = ["unstable-github-actions-stdout"]
 
 [[test]]
 name = "mask_contract"
-required-features = ["unstable-github-actions-stdout"]
 
 [[test]]
 name = "mask_runner_fixture"
-required-features = ["unstable-github-actions-stdout"]
 
 [profile.release]
 overflow-checks = true

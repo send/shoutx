@@ -568,7 +568,7 @@ def main():
                 env = os.environ.copy()
                 env["CARGO_TARGET_DIR"] = str(work / "cargo")
                 env[f"SHOUTX_{kind.upper()}_CORPUS_PATH"] = str(evidence / f"{kind}-corpus.json")
-                run(["cargo", "test", "--locked", "--features", "unstable-github-actions-stdout",
+                run(["cargo", "test", "--locked", "--no-default-features",
                      "--test", f"{kind}_runner_fixture", f"export_{kind}_corpus", "--", "--ignored"],
                     evidence, f"generate-{kind}", env)
             run(["dotnet", "build", str(ROOT / "tests/runner-package/Probe.csproj"), "-c", "Release",

@@ -182,8 +182,8 @@ Other recognized boundaries are deferred, candidates, or out of scope:
 | Boundary | Status | Primary concern |
 | --- | --- | --- |
 | `$GITHUB_STEP_SUMMARY` | Out of scope | GitHub-rendered Markdown has no runner command-file record structure to inject into; rendered HTML is sanitized, while content integrity remains the producer's responsibility |
-| stdout `add-mask` workflow command | Productization accepted; still isolated and absent from releases | Register one faithfully decoded value for subsequent runner log masking |
-| stdout annotation workflow commands | Productization accepted; still isolated and absent from releases | Emit one faithfully decoded notice, warning, or error with validated location metadata |
+| stdout `add-mask` workflow command | Implemented within the design-owned profile; publication separately gated | Register one faithfully decoded value for subsequent runner log masking |
+| stdout annotation workflow commands | Implemented within the design-owned profile; publication separately gated | Emit one faithfully decoded notice, warning, or error with validated location metadata |
 | other stdout workflow commands | Deferred | Lines such as `::stop-commands::` and `::group::` are runner control messages |
 | `$GITHUB_ARTIFACTS` | Deferred; 2026-09-28 hosted-runner gate failed | One file or OCI declaration per line |
 | `$GITHUB_ARTIFACTS_LIST` | Out of scope | Runner-managed, read-only JSON input |
@@ -238,7 +238,7 @@ workflow-command processing must be active. Required annotation features and
 consumer configuration are deployment conditions, not state shoutx can inspect
 or enforce. The command specifications retain their concrete limitations.
 The [design](design.md#stdout-adoption-contract) owns the adoption profile;
-command implementations remain isolated until productization is complete.
+release policy separately governs publication of the implementations.
 Known excluded-environment failures, including deferred th-TH behavior, remain
 disclosed limitations rather than new investigation tasks.
 
@@ -381,11 +381,11 @@ GitHub stdout workflow command.
 Environment-file writer stdout must be redirected to the selected environment
 file. In particular, an unredirected multiline value can place
 attacker-controlled lines on the runner command channel, which is outside the
-environment-file encoding guarantee. Feature-enabled stdout workflow-command
-writers are the deliberate research exception: mask and annotation commands
+environment-file encoding guarantee. Stdout workflow-command
+writers deliberately use a different destination: mask and annotation commands
 emit one encoded runner command and must remain connected to the runner log
 stream rather than being redirected to an environment file. They are
-compile-time absent from supported binaries.
+included in normal builds within the design-owned consumer profile.
 
 Shell redirection is outside the output guarantee. `>` may create or truncate a
 destination before `shoutx` validates input. The documented GitHub Actions usage

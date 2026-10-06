@@ -39,41 +39,35 @@ The [CodeQL workflow](../.github/workflows/codeql.yml) analyzes Rust and GitHub
 Actions with the security-extended query suite on pull requests, main updates,
 and a weekly schedule. It runs independently of the CI change detector so
 scheduled queries can inspect unchanged code. Rust uses CodeQL's supported
-`none` build mode, not a replacement stable/research Cargo build matrix.
+`none` build mode, not a replacement for Cargo build and execution tests.
 CodeQL supplements Clippy, dependency checks, and the contract tests; a clean
 scan does not prove output framing, empty-stdout failure behavior, or runner
 compatibility. Required CI and release gates remain unchanged.
 
 ### Executable configurations
 
-The stable configuration uses `--no-default-features`; the Cargo default
-feature set must remain empty. Its complete command table is exactly `output`,
-`env`, `state`, and `path`. Stable help is byte-equal to the reviewed LF golden,
-and the four stdout research names must produce the ordinary unknown-command
-diagnostic, status 2, and empty stdout with otherwise successful arguments.
+Default and `--no-default-features` builds expose the same complete command
+table: `output`, `env`, `state`, `path`, `mask`, `notice`, `warning`, and `error`.
+Cargo's only feature entry is an empty `default` set. The former research feature
+and test `required-features` are removed. CI and release builds run all contract
+tests, including mask and annotation, without a feature opt-in. Focused stdout
+and corpus jobs explicitly select their four named targets; fresh nonempty
+exported corpora remain required. A missing target or empty export must fail,
+not silently turn intended coverage into a zero-test success.
 
-The research configuration uses the exact feature
-`unstable-github-actions-stdout`. It runs the mask and annotation contract,
-corpus, hosted, and runner differential suites and identifies itself in help
-and version output. Stable and research builds use separate Cargo target
-directories. Every research CI group explicitly selects its feature and has a
-feature-on sentinel. Focused corpus and oracle jobs explicitly select test
-targets whose `required-features` fail when the feature is missing, then remove
-old corpus files and require fresh non-empty outputs. Implicit Cargo target
-selection alone is not treated as evidence because it may skip a target.
-
-Source-configuration tests check the complete command table; compile-time
-exhaustive dispatch proves that omitted action variants cannot reach an
-implementation. The artifact verifier independently checks exact help and
-version, successful-form negative invocations, and enumerated binary markers.
-Marker scans use a same-target, same-profile feature-enabled binary as a
-positive control. The marker set is the four unstable command names. Protocol
-prefixes are not evidence because compiler optimization need not retain their
-source constants as contiguous bytes. Dependency graphs are checked separately
-for both feature configurations. The artifact verifier never prints or uploads
-captured stdout, stderr, help, or version bytes on failure; its reports contain
-only lengths. Release packaging reruns that verifier against every extracted
-native executable.
+Source-configuration tests check the exact enumerable command table and
+exhaustive dispatch. The independently specified LF help golden and version
+bytes must match each native artifact. The artifact verifier executes all eight
+writers, including Unicode mask/message/metadata cases, and checks exact stdout,
+stderr and status. It also checks unsupported commands and rejected input with
+empty stdout. Negative controls corrupt status, output bytes and diagnostics
+to verify the result checker rejects them. Binary marker absence is no longer
+a relevant control after promotion. Default and no-default-feature dependency
+graphs must match, and release gates check the exact feature table.
+The verifier never prints captured bytes on failure; its diagnostic reports
+only lengths. Each of the five native release targets runs the verifier against
+both the built and extracted executable, in addition to archive-validation
+positive and negative controls. Packaging does not expand consumer compatibility.
 
 ## Notation
 
@@ -333,7 +327,7 @@ remain outside this package suite, with broader policies covered by the
 source-built oracle and live hosted checks. Neither suite changes stdout
 release eligibility or the deferred `th-TH` decision.
 
-### Isolated Unicode implementation verification
+### Unicode implementation verification
 
 The current original-value expansion is specified by the
 [annotation](commands/github-actions-annotations.md) and
@@ -356,8 +350,9 @@ generated representation. Acceptance-set changes require explicit review of
 membership and its evidence; renderer success alone is not evidence of safety.
 Compare release-mode CLI performance with the recorded, predeclared method in
 [the evidence note](compatibility/stdout-unicode-policy.md#producer-performance).
-Normal stable/unstable Cargo and Runner oracle gates remain required. Neither
-completion here nor any old investigation section enables stable distribution.
+Normal default/no-default-feature Cargo and Runner oracle gates remain required.
+Publication additionally requires the [release admission policy](release.md#stdout-admission-and-compatibility-maintenance);
+neither this section nor historical investigation results alone authorize it.
 
 <a id="unicode-adoption-completion-criteria"></a>
 
@@ -1241,7 +1236,7 @@ of a successful live run.
 
 | Layer | Required evidence and scope |
 | --- | --- |
-| Producer | Existing stable and feature-on contract/property tests, exact bytes, rejection before output, resource limits, value-free diagnostics, exhaustive lookup agreement, reproducible table check |
+| Producer | Normal-build contract/property tests for all eight commands, exact bytes, rejection before output, resource limits, value-free diagnostics, exhaustive lookup agreement, reproducible table check |
 | Consumer integration | Pinned source oracle and official-package parser/Worker effects for all profile rows under explicit en-US and Invariant: original mask registration/redaction, selected annotation, message and typed properties, final TITLE/FILE cases |
 | Policy compatibility | Existing four-row Unicode-policy probe with data-start, final-field header, and metadata checks; preserve known excluded-configuration mismatches |
 | Live effects | Package-matched hosted experiment for each profile row, API annotation verification and external masked-log verification; record live Runner/image identities and leave hidden Worker fields unobserved |
@@ -1272,7 +1267,7 @@ observe must not be fabricated from its explicit-culture package probe.
 
 The ordinary three-OS hosted test matrix additionally runs
 [`hosted_boundaries.py`](../tests/workflow-smoke/hosted_boundaries.py) against
-the research binary, with native child stdout inherited directly by the live
+the normal binary, with native child stdout inherited directly by the live
 Runner. Binary stdin receives UTF-8 bytes; this is not additional shell argv or
 pipeline-transcoding coverage. Separate offline tests capture and compare
 exact producer bytes before testing consumer effects.

@@ -18,6 +18,9 @@ on:
       - tests/fixtures/stable-help.txt
       - tests/cli_contract.rs
       - tests/stable_surface.rs
+      - scripts/check-stdout-release.py
+      - scripts/verify-stdout-run.py
+      - tests/workflow-smoke/test_stdout_release.py
       - rust-toolchain.toml
 
 permissions:
@@ -60,6 +63,8 @@ jobs:
           cargo tree --locked --no-default-features -e normal > target/stable-tree.txt
           cargo tree --locked --features unstable-github-actions-stdout -e normal > target/unstable-tree.txt
           diff -u target/stable-tree.txt target/unstable-tree.txt
+      - name: Verify stdout publication gate failures
+        run: python3 -B tests/workflow-smoke/test_stdout_release.py
       - name: Verify release archive validator
         shell: bash
         run: |
@@ -157,15 +162,7 @@ jobs:
             echo "Tag does not match the Cargo package version"
             exit 1
           fi
-          latest_ci=$(gh api --method GET \
-            "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs" \
-            -f head_sha="$COMMIT_SHA" -f event=push -f per_page=1)
-          if [[ "$(jq -r '.workflow_runs | length' <<< "$latest_ci")" != 1 ]] ||
-             [[ "$(jq -r '.workflow_runs[0].status' <<< "$latest_ci")" != "completed" ]] ||
-             [[ "$(jq -r '.workflow_runs[0].conclusion' <<< "$latest_ci")" != "success" ]]; then
-            echo "The latest CI workflow run for the tagged commit is not successful"
-            exit 1
-          fi
+          python3 -B scripts/check-stdout-release.py --sha "$COMMIT_SHA"
           "$shoutx" github-actions:output publish true >> "$GITHUB_OUTPUT"
 
   build:
@@ -317,6 +314,10 @@ jobs:
       TAG: ${{ needs.metadata.outputs.tag }}
       PRERELEASE: ${{ needs.metadata.outputs.prerelease }}
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
         with:
           name: release-assets
@@ -383,15 +384,7 @@ jobs:
       - name: Publish verified release
         shell: bash
         run: |
-          latest_ci=$(gh api --method GET \
-            "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs" \
-            -f head_sha="$GITHUB_SHA" -f event=push -f per_page=1)
-          if [[ "$(jq -r '.workflow_runs | length' <<< "$latest_ci")" != 1 ]] ||
-             [[ "$(jq -r '.workflow_runs[0].status' <<< "$latest_ci")" != "completed" ]] ||
-             [[ "$(jq -r '.workflow_runs[0].conclusion' <<< "$latest_ci")" != "success" ]]; then
-            echo "The latest CI workflow run for the tagged commit is not successful"
-            exit 1
-          fi
+          python3 -B scripts/check-stdout-release.py --sha "$GITHUB_SHA"
 
           tag_object=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG")
           tag_type=$(jq -r '.object.type' <<< "$tag_object")

@@ -1,25 +1,9 @@
 name: Unicode policy integration
 
 on:
-  pull_request:
-    paths:
-      - '.gitattributes'
-      - '.github/workflows/unicode-policy.yml'
-      - 'tests/unicode-policy-probe/**'
-      - 'scripts/test-unicode-policy.py'
-      - 'scripts/test-runner-package.py'
-      - 'tests/runner-package/pins.json'
-      - 'src/github_actions/**'
-  push:
-    branches: [main]
-    paths:
-      - '.gitattributes'
-      - '.github/workflows/unicode-policy.yml'
-      - 'tests/unicode-policy-probe/**'
-      - 'scripts/test-unicode-policy.py'
-      - 'scripts/test-runner-package.py'
-      - 'tests/runner-package/pins.json'
-      - 'src/github_actions/**'
+  # CI owns PR/push filtering and the schedule/manual entry points. Keeping the
+  # probe in that run binds its result to the same source run and attempt.
+  workflow_call:
 
 permissions:
   contents: read
@@ -30,7 +14,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-22.04, ubuntu-24.04, macos-15, windows-latest]
+        os: [ubuntu-22.04, ubuntu-24.04, macos-15, windows-2025]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1

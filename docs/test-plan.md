@@ -1221,8 +1221,9 @@ For stdout admission, apply these checks to the profile owned by
 candidate and update process. Keep observations separate rather than treating
 one suite as proof of another layer:
 
-The harnesses exist, but their orchestration does not yet meet all admission
-requirements. CI now calls `unicode-policy.yml` as a reusable workflow whenever
+The admission orchestration is implemented; its successful main-side exercise
+is retained in the [productization snapshot](compatibility/stdout-unicode-policy.md#normal-build-productization-snapshot).
+CI calls `unicode-policy.yml` as a reusable workflow whenever
 full CI is selected, including scheduled and manual runs; its result participates
 in the required aggregate gate. Policy and package profile jobs select the named
 OS generations, including `windows-2025`. Resolved image identity still requires

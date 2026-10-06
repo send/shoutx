@@ -63,8 +63,8 @@ suffixes, mask registration and subsequent redaction, and annotation Worker
 effects. This finite local result does not extend the full candidate table's
 applicability to the local ICU78.1 environment. PR-hosted producer checks are
 separate latest-head evidence and are not certified by these historical runs.
-The current
-producer contract tests pass under both stable and feature-enabled builds,
+At that research snapshot, the
+producer contract tests passed under both stable and feature-enabled builds,
 including exact output and all-scalar lookup agreement with the source set.
 
 ## Merged implementation snapshot (PR #116)
@@ -92,9 +92,9 @@ passed eight mask and 30 annotation cases on each row. It observed Runner
 external job-log checking; annotation results use the API-visible effects.
 Here "external" means reading the completed producer job from a separate CI
 job. That verifier executes the candidate revision; it is not the independent
-default-branch publication gate. The latter currently covers only ordinary
+default-branch publication gate. At that snapshot, the latter covered only ordinary
 moving-label jobs. The [test plan](../test-plan.md#current-stdout-adoption-verification)
-records this orchestration gap, which must be closed before stdout admission.
+owns the admission checks that subsequently close this orchestration gap.
 
 The ordinary moving-label smoke verifier also passed on Ubuntu 24.04,
 Windows 2025 and macOS 26. Its macOS image was `20260907.0351.1`, distinct from
@@ -107,6 +107,74 @@ here under the [maintenance policy](../release.md#stdout-admission-and-compatibi
 without rewriting these dated results. At this snapshot, no pending update is
 asserted for the four recorded configurations; later unseen updates are not
 implicitly verified by this statement.
+
+## Normal-build productization snapshot
+
+On 2026-10-06, [PR #119](https://github.com/send/shoutx/pull/119) promoted the
+existing stdout surface without changing its encoders, start table, input
+policies, limits or dependency lockfile. Reviewed head
+`7a136a2c660a346b3a2ae7bf21bc6fd4455ca525` and merged main source
+`0a616c322da349cc019f3be951b866e0e22c4094` have identical Git trees. The
+[retained projection](evidence/stdout-productization-37446004086.json) records
+source/run/attempt, package digests, controlled consumer identities, image
+versions, result counts, and trusted live-verifier provenance. It omits raw
+logs, canary values and the historical native-internals research payloads.
+
+[Candidate CI 37444767738](https://github.com/send/shoutx/actions/runs/37444767738)
+and [main CI 37446004086](https://github.com/send/shoutx/actions/runs/37446004086)
+completed with all required checks exercised. Normal producer tests, explicit
+stdout targets and freshly exported corpora passed. On each adopted profile
+row, the pinned Runner 2.337.0/runtime 8.0.30 package completed the existing
+Invariant/en-US parser and Worker-effect checks. The policy probe per culture
+completed 4,422,088 start, 3,336,189 header and 72 metadata checks with zero
+failures; the controlled Worker suite passed 806 mask and 2,781 annotation
+cases, plus its existing stopped-command and echo controls.
+
+| Profile row | Image | Controlled ICU |
+| --- | --- | --- |
+| Ubuntu 22.04 x64 | 20260927.309.1 | 70.1.0.0 |
+| Ubuntu 24.04 x64 | 20260927.320.1 | 74.2.0.0 |
+| macOS 15 ARM64 | 20260907.0337.1 | 76.1.0.0 |
+| Windows 2025 x64 | 20260925.250.1 | 72.1.0.4 |
+
+The independent default-branch
+[verification 37447130599](https://github.com/send/shoutx/actions/runs/37447130599)
+passed for main CI attempt 1 and retained artifact `11403194479`. All four
+profile jobs and three ordinary moving-label jobs passed eight mask and
+30 annotation live cases apiece. This closes the historical partial-log
+coverage gap described above. Live Worker culture/backend remain unobserved;
+the controlled identities in the table are not substituted for them. The
+ordinary macOS 26 smoke result does not expand the adopted profile or overturn
+the recorded ICU 78.1 contrary evidence.
+
+The read-only publication gate rejected this main SHA while its CI was pending
+and accepted it after the matching trusted result completed. Its successful
+source/attempt/SHA and verifier/artifact identifiers are retained in the
+projection. Local verifier/publication fixtures also passed (9 and 10 tests),
+including missing, skipped, failed, mismatched and expired evidence, and
+source/verifier rerun races. Both publication decisions use that same gate.
+
+[Release dry run 37444767335](https://github.com/send/shoutx/actions/runs/37444767335)
+passed native binary, extracted package and exact eight-command checks on all
+five distribution targets, and passed archive/checksum aggregation. Publication
+was skipped. A local negative control rejected the old four-command binary.
+For this work, the maintainer explicitly selected GPT-6 Sol instead of Fable;
+this was an authorized review substitution, not a claim that Fable ran or was
+unavailable. GPT-6 Sol found no remaining actionable issue in the normal-surface
+change or corrected download transport. The maintainer also explicitly accepted
+a latest-head **Completed** Codex summary plus the connector bot's PR thumbs-up
+as terminal evidence for this work. The retained projection records that
+approved exception, summary status and reviewed commit, reaction identity, and
+the final zero-unresolved-thread check. The exception does not treat a running
+summary or an earlier-head review as completion, or alter the general procedure.
+
+The earlier producer benchmark below remains a dated regression observation;
+promotion did not change the measured lookup/encoding implementation, and no
+new cross-platform performance claim is made. This snapshot is not a permanent
+release certificate: [release policy](../release.md#stdout-admission-and-compatibility-maintenance)
+still requires fresh admission for the eventual exact main source, including
+after a documentation-only closeout. No stdout-enabled release or tag was
+created by this productization work.
 
 ## Producer performance
 

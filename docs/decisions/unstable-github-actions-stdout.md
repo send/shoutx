@@ -119,7 +119,7 @@ eligibility lives in [the release design](../release.md).
 ## Reconsideration conditions
 
 Remove the feature boundary only through the
-[productization increment](../implementation-plan.md#next-increment-stdout-productization),
+[productization increment](../implementation-history.md#stdout-productization),
 after the current verification requirements pass and the release policy admits
 the family. Historical native-proof obligations are not additional gates.
 

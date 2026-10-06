@@ -1,0 +1,965 @@
+{
+  "admission": {
+    "artifactId": 11403194479,
+    "sourceHeadSha": "0a616c322da349cc019f3be951b866e0e22c4094",
+    "sourceRunAttempt": 1,
+    "sourceRunId": 37446004086,
+    "status": "passed",
+    "verifierRunId": 37447130599
+  },
+  "pins": {
+    "packages": {
+      "linux-x64": {
+        "extension": "tar.gz",
+        "sha256": "70920811a4f8ad4328818682bca5c6469c1c942fab52448868071d0063816613",
+        "size": 226430031
+      },
+      "osx-arm64": {
+        "extension": "tar.gz",
+        "sha256": "5a2cd92908a93d7276a194e1de6008099f3e7946f3f8e14aa7a1a7b4a31fdec2",
+        "size": 127732571
+      },
+      "win-x64": {
+        "extension": "zip",
+        "sha256": "1150692afa94e71f872017e254ea55b6eece1eece3fe7e3a6d4c93d0a1b85cfc",
+        "size": 103528051
+      }
+    },
+    "runnerCommit": "397b032cbf865e9c3ddfab89d533ec19325e1273",
+    "runnerVersion": "2.337.0",
+    "runtimeCommit": "a83db3e0eb2defb6220e15dae2f1a0462fdbf99f",
+    "runtimeVersion": "8.0.30",
+    "sdkVersion": "8.0.424",
+    "sources": [
+      {
+        "name": "CompareInfo.Icu.8.0.0.cs",
+        "sha256": "0ba5ade719bcf378e88c2d8194041ccc71fdb2a839562167f38a60a788eb226e",
+        "url": "https://raw.githubusercontent.com/dotnet/runtime/v8.0.0/src/libraries/System.Private.CoreLib/src/System/Globalization/CompareInfo.Icu.cs"
+      },
+      {
+        "name": "CompareInfo.Icu.8.0.30.cs",
+        "sha256": "55a0a6f300d8488d2ebbb25be25df94f3d93e2f34137265f133099d71aea525f",
+        "url": "https://raw.githubusercontent.com/dotnet/runtime/a83db3e0eb2defb6220e15dae2f1a0462fdbf99f/src/libraries/System.Private.CoreLib/src/System/Globalization/CompareInfo.Icu.cs"
+      },
+      {
+        "name": "Interop.ICU.cs",
+        "sha256": "c3ff3b90bff9314e91f7818130e945def937fefa38bb14eb4a8a3d1b7e47a1e6",
+        "url": "https://raw.githubusercontent.com/dotnet/runtime/a83db3e0eb2defb6220e15dae2f1a0462fdbf99f/src/libraries/Common/src/Interop/Interop.ICU.cs"
+      },
+      {
+        "name": "pal_icushim.c",
+        "sha256": "8e3099e07bd4a927e0635b2cd6441e96ccbc54ffc2302938a140575b9a3c7d0c",
+        "url": "https://raw.githubusercontent.com/dotnet/runtime/a83db3e0eb2defb6220e15dae2f1a0462fdbf99f/src/native/libs/System.Globalization.Native/pal_icushim.c"
+      },
+      {
+        "name": "pal_collation.c",
+        "sha256": "f5dfcc47f48dca80ccaa487149317a5df8f652267ccb6f07b241db816b02ff76",
+        "url": "https://raw.githubusercontent.com/dotnet/runtime/a83db3e0eb2defb6220e15dae2f1a0462fdbf99f/src/native/libs/System.Globalization.Native/pal_collation.c"
+      }
+    ]
+  },
+  "profile": {
+    "macos-15": {
+      "artifactIds": {
+        "package": 11403561114,
+        "policy": 11402993759
+      },
+      "consumer": {
+        "architecture": "Arm64",
+        "coreLibrary": {
+          "file": "System.Private.CoreLib.dll",
+          "inPackage": true,
+          "informationalVersion": "8.0.30+a83db3e0eb2defb6220e15dae2f1a0462fdbf99f",
+          "moduleVersionId": "74a52948-a555-4f37-aa2d-dc7976567b96",
+          "path": "/private/var/folders/nj/vtw8zd2j31d1gdrtntc5y4600000gn/T/shoutx-runner-package-gj8i0tch/bin/System.Private.CoreLib.dll",
+          "sha256": "f43af84e79760beaab8e6b27e4f10d4a276c5c9e4b9b259cd65eb9d06fde2f78"
+        },
+        "maskerAssembly": {
+          "file": "Sdk.dll",
+          "inPackage": true,
+          "informationalVersion": "2.337.0+397b032cbf865e9c3ddfab89d533ec19325e1273",
+          "moduleVersionId": "c0ba6d06-c13d-45ff-8486-f14034cba700",
+          "path": "/private/var/folders/nj/vtw8zd2j31d1gdrtntc5y4600000gn/T/shoutx-runner-package-gj8i0tch/bin/Sdk.dll",
+          "sha256": "7e2cd1052ebbc08ebf079c96da0e491155f745a948bc3c3cb1d134ab45c07ff7"
+        },
+        "os": "Darwin 24.6.0 Darwin Kernel Version 24.6.0: Tue Jul 21 20:51:34 PDT 2026; root:xnu-11417.140.69.711.44~1/RELEASE_ARM64_VMAPPLE",
+        "parserAssembly": {
+          "file": "Runner.Common.dll",
+          "inPackage": true,
+          "informationalVersion": "2.337.0+397b032cbf865e9c3ddfab89d533ec19325e1273",
+          "moduleVersionId": "6536d35b-73b3-491d-b26e-eec973a72ecb",
+          "path": "/private/var/folders/nj/vtw8zd2j31d1gdrtntc5y4600000gn/T/shoutx-runner-package-gj8i0tch/bin/Runner.Common.dll",
+          "sha256": "994120c86b7997b370a2ff59111f379ab8065ec03762be4e10dfb7fdf3d042c0"
+        },
+        "runtime": ".NET 8.0.30",
+        "status": "passed",
+        "workerAssembly": {
+          "file": "Runner.Worker.dll",
+          "inPackage": true,
+          "informationalVersion": "2.337.0+397b032cbf865e9c3ddfab89d533ec19325e1273",
+          "moduleVersionId": "2a386544-b328-46d8-8461-e5a993b95088",
+          "path": "/private/var/folders/nj/vtw8zd2j31d1gdrtntc5y4600000gn/T/shoutx-runner-package-gj8i0tch/bin/Runner.Worker.dll",
+          "sha256": "d7d26ffdec4bf30b931fd35c98d792c32e20a5220ec3aaca039233398229ce70"
+        }
+      },
+      "cultures": [
+        {
+          "annotationCases": 2781,
+          "backendObserved": "ICU",
+          "culture": "",
+          "icu": {
+            "binding": "CoreLib:Interop.Globalization.GetICUVersion",
+            "version": "76.1.0.0",
+            "versionRaw": 1275133952
+          },
+          "maskCases": 806,
+          "sortId": "00008099-0000-0000-0000-00000000007f",
+          "sortVersion": 32921,
+          "unicodeWorkerEffects": {
+            "annotationCases": 180,
+            "maskCases": 120,
+            "maskedAnnotationCases": 10,
+            "negativeControlCases": 2,
+            "observedCulture": "",
+            "researchOnly": true,
+            "stoppedCases": 40
+          },
+          "workerEffects": {
+            "annotationCases": 2781,
+            "echoAndMaskedAnnotationCases": 1,
+            "maskCases": 806,
+            "stoppedCases": 4
+          }
+        },
+        {
+          "annotationCases": 2781,
+          "backendObserved": "ICU",
+          "culture": "en-US",
+          "icu": {
+            "binding": "CoreLib:Interop.Globalization.GetICUVersion",
+            "version": "76.1.0.0",
+            "versionRaw": 1275133952
+          },
+          "maskCases": 806,
+          "sortId": "00008099-0000-0000-0000-000000000409",
+          "sortVersion": 32921,
+          "unicodeWorkerEffects": {
+            "annotationCases": 180,
+            "maskCases": 120,
+            "maskedAnnotationCases": 10,
+            "negativeControlCases": 2,
+            "observedCulture": "en-US",
+            "researchOnly": true,
+            "stoppedCases": 40
+          },
+          "workerEffects": {
+            "annotationCases": 2781,
+            "echoAndMaskedAnnotationCases": 1,
+            "maskCases": 806,
+            "stoppedCases": 4
+          }
+        }
+      ],
+      "package": {
+        "imageOS": "macos15",
+        "imageVersion": "20260907.0337.1",
+        "package": {
+          "sha256": "5a2cd92908a93d7276a194e1de6008099f3e7946f3f8e14aa7a1a7b4a31fdec2",
+          "size": 127732571,
+          "url": "https://github.com/actions/runner/releases/download/v2.337.0/actions-runner-osx-arm64-2.337.0.tar.gz"
+        },
+        "probeSha256": "aa573a8cefc1350278c085f0a09e5a15d40876d4b8990d33cf82ebd03a0b9370",
+        "rid": "osx-arm64",
+        "selectedCoreClr": {
+          "file": "libcoreclr.dylib",
+          "sha256": "943ba6f94d6af4ed818306418dc774cf3940bbf9062be93a39a3a2f3a4da285a"
+        },
+        "status": "passed"
+      },
+      "policy": {
+        "exitCode": 0,
+        "githubRunId": "37446004086",
+        "githubSha": "0a616c322da349cc019f3be951b866e0e22c4094",
+        "imageOS": "macos15",
+        "imageVersion": "20260907.0337.1",
+        "packageSha256": "5a2cd92908a93d7276a194e1de6008099f3e7946f3f8e14aa7a1a7b4a31fdec2",
+        "probe": {
+          "candidateSha256": "14c8cfe5230d780ad64ec43f5c29c89863d1462ee47c90da390b1f9300273c93",
+          "coreLibrarySha256": "f43af84e79760beaab8e6b27e4f10d4a276c5c9e4b9b259cd65eb9d06fde2f78",
+          "icu": "76.1.0.0",
+          "os": "Unix 15.7.9",
+          "results": [
+            {
+              "cases": 72,
+              "culture": "",
+              "failures": [],
+              "headerCases": 3336189,
+              "headerFailures": 0,
+              "sortVersion": 32921,
+              "startCases": 4422088,
+              "startFailures": 0
+            },
+            {
+              "cases": 72,
+              "culture": "en-US",
+              "failures": [],
+              "headerCases": 3336189,
+              "headerFailures": 0,
+              "sortVersion": 32921,
+              "startCases": 4422088,
+              "startFailures": 0
+            }
+          ],
+          "runnerCommonSha256": "994120c86b7997b370a2ff59111f379ab8065ec03762be4e10dfb7fdf3d042c0",
+          "runtime": "8.0.30"
+        },
+        "rid": "osx-arm64",
+        "runnerVersion": "2.337.0",
+        "sdkVersion": "8.0.424",
+        "status": "passed"
+      }
+    },
+    "ubuntu-22.04": {
+      "artifactIds": {
+        "package": 11403376616,
+        "policy": 11402909388
+      },
+      "consumer": {
+        "architecture": "X64",
+        "coreLibrary": {
+          "file": "System.Private.CoreLib.dll",
+          "inPackage": true,
+          "informationalVersion": "8.0.30+a83db3e0eb2defb6220e15dae2f1a0462fdbf99f",
+          "moduleVersionId": "15d8ca4d-cc8e-483f-84a8-29a3752a0e78",
+          "path": "/tmp/shoutx-runner-package-jrzm95c3/bin/System.Private.CoreLib.dll",
+          "sha256": "003ac935a51189b420a7d84de724ccb94eca31e2d07b4faf1e2d943052018028"
+        },
+        "maskerAssembly": {
+          "file": "Sdk.dll",
+          "inPackage": true,
+          "informationalVersion": "2.337.0+397b032cbf865e9c3ddfab89d533ec19325e1273",
+          "moduleVersionId": "36797d56-c7bf-42a0-8f8c-c96854e5597c",
+          "path": "/tmp/shoutx-runner-package-jrzm95c3/bin/Sdk.dll",
+          "sha256": "cf9ba086a45675bd81f33b3001b69f9fcc90ff64c26ee201c4ca044fbe36581a"
+        },
+        "os": "Ubuntu 22.04.5 LTS",
+        "parserAssembly": {
+          "file": "Runner.Common.dll",
+          "inPackage": true,
+          "informationalVersion": "2.337.0+397b032cbf865e9c3ddfab89d533ec19325e1273",
+          "moduleVersionId": "6289778e-16c2-41cb-95db-167db9e51468",
+          "path": "/tmp/shoutx-runner-package-jrzm95c3/bin/Runner.Common.dll",
+          "sha256": "b10853d9c1a8498779ba5236933281018627a8dc7ce54b977b6d9e2343035393"
+        },
+        "runtime": ".NET 8.0.30",
+        "status": "passed",
+        "workerAssembly": {
+          "file": "Runner.Worker.dll",
+          "inPackage": true,
+          "informationalVersion": "2.337.0+397b032cbf865e9c3ddfab89d533ec19325e1273",
+          "moduleVersionId": "18030d59-a3cf-456a-9fc1-f881a82f195b",
+          "path": "/tmp/shoutx-runner-package-jrzm95c3/bin/Runner.Worker.dll",
+          "sha256": "f460f611aa5597a4d5331a8b9e848d5a535ece0e6dab396699328502b8b49c41"
+        }
+      },
+      "cultures": [
+        {
+          "annotationCases": 2781,
+          "backendObserved": "ICU",
+          "culture": "",
+          "icu": {
+            "binding": "CoreLib:Interop.Globalization.GetICUVersion",
+            "version": "70.1.0.0",
+            "versionRaw": 1174470656
+          },
+          "maskCases": 806,
+          "sortId": "00007099-0000-0000-0000-00000000007f",
+          "sortVersion": 28825,
+          "unicodeWorkerEffects": {
+            "annotationCases": 180,
+            "maskCases": 120,
+            "maskedAnnotationCases": 10,
+            "negativeControlCases": 2,
+            "observedCulture": "",
+            "researchOnly": true,
+            "stoppedCases": 40
+          },
+          "workerEffects": {
+            "annotationCases": 2781,
+            "echoAndMaskedAnnotationCases": 1,
+            "maskCases": 806,
+            "stoppedCases": 4
+          }
+        },
+        {
+          "annotationCases": 2781,
+          "backendObserved": "ICU",
+          "culture": "en-US",
+          "icu": {
+            "binding": "CoreLib:Interop.Globalization.GetICUVersion",
+            "version": "70.1.0.0",
+            "versionRaw": 1174470656
+          },
+          "maskCases": 806,
+          "sortId": "00007099-0000-0000-0000-000000000409",
+          "sortVersion": 28825,
+          "unicodeWorkerEffects": {
+            "annotationCases": 180,
+            "maskCases": 120,
+            "maskedAnnotationCases": 10,
+            "negativeControlCases": 2,
+            "observedCulture": "en-US",
+            "researchOnly": true,
+            "stoppedCases": 40
+          },
+          "workerEffects": {
+            "annotationCases": 2781,
+            "echoAndMaskedAnnotationCases": 1,
+            "maskCases": 806,
+            "stoppedCases": 4
+          }
+        }
+      ],
+      "package": {
+        "imageOS": "ubuntu22",
+        "imageVersion": "20260927.309.1",
+        "package": {
+          "sha256": "70920811a4f8ad4328818682bca5c6469c1c942fab52448868071d0063816613",
+          "size": 226430031,
+          "url": "https://github.com/actions/runner/releases/download/v2.337.0/actions-runner-linux-x64-2.337.0.tar.gz"
+        },
+        "probeSha256": "31960131e9dac3a2d3dd317bcd6e85d7695867071a910fc198ca20c1b8e1f22a",
+        "rid": "linux-x64",
+        "selectedCoreClr": {
+          "file": "libcoreclr.so",
+          "sha256": "fedf4074258e14b425cd3b4209bedc3e102765623445cc1bcfe8361f6193231c"
+        },
+        "status": "passed"
+      },
+      "policy": {
+        "exitCode": 0,
+        "githubRunId": "37446004086",
+        "githubSha": "0a616c322da349cc019f3be951b866e0e22c4094",
+        "imageOS": "ubuntu22",
+        "imageVersion": "20260927.309.1",
+        "packageSha256": "70920811a4f8ad4328818682bca5c6469c1c942fab52448868071d0063816613",
+        "probe": {
+          "candidateSha256": "14c8cfe5230d780ad64ec43f5c29c89863d1462ee47c90da390b1f9300273c93",
+          "coreLibrarySha256": "003ac935a51189b420a7d84de724ccb94eca31e2d07b4faf1e2d943052018028",
+          "icu": "70.1.0.0",
+          "os": "Unix 6.8.0.1064",
+          "results": [
+            {
+              "cases": 72,
+              "culture": "",
+              "failures": [],
+              "headerCases": 3336189,
+              "headerFailures": 0,
+              "sortVersion": 28825,
+              "startCases": 4422088,
+              "startFailures": 0
+            },
+            {
+              "cases": 72,
+              "culture": "en-US",
+              "failures": [],
+              "headerCases": 3336189,
+              "headerFailures": 0,
+              "sortVersion": 28825,
+              "startCases": 4422088,
+              "startFailures": 0
+            }
+          ],
+          "runnerCommonSha256": "b10853d9c1a8498779ba5236933281018627a8dc7ce54b977b6d9e2343035393",
+          "runtime": "8.0.30"
+        },
+        "rid": "linux-x64",
+        "runnerVersion": "2.337.0",
+        "sdkVersion": "8.0.424",
+        "status": "passed"
+      }
+    },
+    "ubuntu-24.04": {
+      "artifactIds": {
+        "package": 11403229143,
+        "policy": 11403148625
+      },
+      "consumer": {
+        "architecture": "X64",
+        "coreLibrary": {
+          "file": "System.Private.CoreLib.dll",
+          "inPackage": true,
+          "informationalVersion": "8.0.30+a83db3e0eb2defb6220e15dae2f1a0462fdbf99f",
+          "moduleVersionId": "15d8ca4d-cc8e-483f-84a8-29a3752a0e78",
+          "path": "/tmp/shoutx-runner-package-5z552yzw/bin/System.Private.CoreLib.dll",
+          "sha256": "003ac935a51189b420a7d84de724ccb94eca31e2d07b4faf1e2d943052018028"
+        },
+        "maskerAssembly": {
+          "file": "Sdk.dll",
+          "inPackage": true,
+          "informationalVersion": "2.337.0+397b032cbf865e9c3ddfab89d533ec19325e1273",
+          "moduleVersionId": "36797d56-c7bf-42a0-8f8c-c96854e5597c",
+          "path": "/tmp/shoutx-runner-package-5z552yzw/bin/Sdk.dll",
+          "sha256": "cf9ba086a45675bd81f33b3001b69f9fcc90ff64c26ee201c4ca044fbe36581a"
+        },
+        "os": "Ubuntu 24.04.5 LTS",
+        "parserAssembly": {
+          "file": "Runner.Common.dll",
+          "inPackage": true,
+          "informationalVersion": "2.337.0+397b032cbf865e9c3ddfab89d533ec19325e1273",
+          "moduleVersionId": "6289778e-16c2-41cb-95db-167db9e51468",
+          "path": "/tmp/shoutx-runner-package-5z552yzw/bin/Runner.Common.dll",
+          "sha256": "b10853d9c1a8498779ba5236933281018627a8dc7ce54b977b6d9e2343035393"
+        },
+        "runtime": ".NET 8.0.30",
+        "status": "passed",
+        "workerAssembly": {
+          "file": "Runner.Worker.dll",
+          "inPackage": true,
+          "informationalVersion": "2.337.0+397b032cbf865e9c3ddfab89d533ec19325e1273",
+          "moduleVersionId": "18030d59-a3cf-456a-9fc1-f881a82f195b",
+          "path": "/tmp/shoutx-runner-package-5z552yzw/bin/Runner.Worker.dll",
+          "sha256": "f460f611aa5597a4d5331a8b9e848d5a535ece0e6dab396699328502b8b49c41"
+        }
+      },
+      "cultures": [
+        {
+          "annotationCases": 2781,
+          "backendObserved": "ICU",
+          "culture": "",
+          "icu": {
+            "binding": "CoreLib:Interop.Globalization.GetICUVersion",
+            "version": "74.2.0.0",
+            "versionRaw": 1241645056
+          },
+          "maskCases": 806,
+          "sortId": "00007999-0000-0000-0000-00000000007f",
+          "sortVersion": 31129,
+          "unicodeWorkerEffects": {
+            "annotationCases": 180,
+            "maskCases": 120,
+            "maskedAnnotationCases": 10,
+            "negativeControlCases": 2,
+            "observedCulture": "",
+            "researchOnly": true,
+            "stoppedCases": 40
+          },
+          "workerEffects": {
+            "annotationCases": 2781,
+            "echoAndMaskedAnnotationCases": 1,
+            "maskCases": 806,
+            "stoppedCases": 4
+          }
+        },
+        {
+          "annotationCases": 2781,
+          "backendObserved": "ICU",
+          "culture": "en-US",
+          "icu": {
+            "binding": "CoreLib:Interop.Globalization.GetICUVersion",
+            "version": "74.2.0.0",
+            "versionRaw": 1241645056
+          },
+          "maskCases": 806,
+          "sortId": "00007999-0000-0000-0000-000000000409",
+          "sortVersion": 31129,
+          "unicodeWorkerEffects": {
+            "annotationCases": 180,
+            "maskCases": 120,
+            "maskedAnnotationCases": 10,
+            "negativeControlCases": 2,
+            "observedCulture": "en-US",
+            "researchOnly": true,
+            "stoppedCases": 40
+          },
+          "workerEffects": {
+            "annotationCases": 2781,
+            "echoAndMaskedAnnotationCases": 1,
+            "maskCases": 806,
+            "stoppedCases": 4
+          }
+        }
+      ],
+      "package": {
+        "imageOS": "ubuntu24",
+        "imageVersion": "20260927.320.1",
+        "package": {
+          "sha256": "70920811a4f8ad4328818682bca5c6469c1c942fab52448868071d0063816613",
+          "size": 226430031,
+          "url": "https://github.com/actions/runner/releases/download/v2.337.0/actions-runner-linux-x64-2.337.0.tar.gz"
+        },
+        "probeSha256": "029d5b7468d3b716971bcdbe7905ed35fefd7d55ae0fc0299f0fb2c364df1469",
+        "rid": "linux-x64",
+        "selectedCoreClr": {
+          "file": "libcoreclr.so",
+          "sha256": "fedf4074258e14b425cd3b4209bedc3e102765623445cc1bcfe8361f6193231c"
+        },
+        "status": "passed"
+      },
+      "policy": {
+        "exitCode": 0,
+        "githubRunId": "37446004086",
+        "githubSha": "0a616c322da349cc019f3be951b866e0e22c4094",
+        "imageOS": "ubuntu24",
+        "imageVersion": "20260927.320.1",
+        "packageSha256": "70920811a4f8ad4328818682bca5c6469c1c942fab52448868071d0063816613",
+        "probe": {
+          "candidateSha256": "14c8cfe5230d780ad64ec43f5c29c89863d1462ee47c90da390b1f9300273c93",
+          "coreLibrarySha256": "003ac935a51189b420a7d84de724ccb94eca31e2d07b4faf1e2d943052018028",
+          "icu": "74.2.0.0",
+          "os": "Unix 6.17.0.1022",
+          "results": [
+            {
+              "cases": 72,
+              "culture": "",
+              "failures": [],
+              "headerCases": 3336189,
+              "headerFailures": 0,
+              "sortVersion": 31129,
+              "startCases": 4422088,
+              "startFailures": 0
+            },
+            {
+              "cases": 72,
+              "culture": "en-US",
+              "failures": [],
+              "headerCases": 3336189,
+              "headerFailures": 0,
+              "sortVersion": 31129,
+              "startCases": 4422088,
+              "startFailures": 0
+            }
+          ],
+          "runnerCommonSha256": "b10853d9c1a8498779ba5236933281018627a8dc7ce54b977b6d9e2343035393",
+          "runtime": "8.0.30"
+        },
+        "rid": "linux-x64",
+        "runnerVersion": "2.337.0",
+        "sdkVersion": "8.0.424",
+        "status": "passed"
+      }
+    },
+    "windows-2025": {
+      "artifactIds": {
+        "package": 11403916502,
+        "policy": 11403800155
+      },
+      "consumer": {
+        "architecture": "X64",
+        "coreLibrary": {
+          "file": "System.Private.CoreLib.dll",
+          "inPackage": true,
+          "informationalVersion": "8.0.30+a83db3e0eb2defb6220e15dae2f1a0462fdbf99f",
+          "moduleVersionId": "15b41a79-0fb0-4554-a2bd-b64b84096fff",
+          "path": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\shoutx-runner-package-gw1sofdo\\bin\\System.Private.CoreLib.dll",
+          "sha256": "cc2cc43d28e3770d7cdeb80dc74eab265a1f5dd2f5547ccb236983b48d47d914"
+        },
+        "maskerAssembly": {
+          "file": "Sdk.dll",
+          "inPackage": true,
+          "informationalVersion": "2.337.0+397b032cbf865e9c3ddfab89d533ec19325e1273",
+          "moduleVersionId": "5001afba-a10e-492a-9cc8-f7207a71cb29",
+          "path": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\shoutx-runner-package-gw1sofdo\\bin\\Sdk.dll",
+          "sha256": "5200ef0056d28d29e7f806739a9dc661469788951147da9d62254607526ebf81"
+        },
+        "os": "Microsoft Windows 10.0.26100",
+        "parserAssembly": {
+          "file": "Runner.Common.dll",
+          "inPackage": true,
+          "informationalVersion": "2.337.0+397b032cbf865e9c3ddfab89d533ec19325e1273",
+          "moduleVersionId": "c11bc80d-0aa5-45bf-84c0-a6ec0eb4130b",
+          "path": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\shoutx-runner-package-gw1sofdo\\bin\\Runner.Common.dll",
+          "sha256": "276d5dde79696aecd105686f4b9ff7787ee9b458183ba3779e2044e0219e6fd5"
+        },
+        "runtime": ".NET 8.0.30",
+        "status": "passed",
+        "workerAssembly": {
+          "file": "Runner.Worker.dll",
+          "inPackage": true,
+          "informationalVersion": "2.337.0+397b032cbf865e9c3ddfab89d533ec19325e1273",
+          "moduleVersionId": "7b78ad51-adfa-413b-9eea-88192e9d8868",
+          "path": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\shoutx-runner-package-gw1sofdo\\bin\\Runner.Worker.dll",
+          "sha256": "513d54f9a2df265c72eb79cbe1e953d4195ea409b138dc50f47b4d2045ee154f"
+        }
+      },
+      "cultures": [
+        {
+          "annotationCases": 2781,
+          "backendObserved": "ICU",
+          "culture": "",
+          "icu": {
+            "binding": "CoreLib:Interop.Globalization.GetICUVersion",
+            "version": "72.1.0.4",
+            "versionRaw": 1208025092
+          },
+          "maskCases": 806,
+          "sortId": "00007999-0000-0000-0000-00000000007f",
+          "sortVersion": 31129,
+          "unicodeWorkerEffects": {
+            "annotationCases": 180,
+            "maskCases": 120,
+            "maskedAnnotationCases": 10,
+            "negativeControlCases": 2,
+            "observedCulture": "",
+            "researchOnly": true,
+            "stoppedCases": 40
+          },
+          "workerEffects": {
+            "annotationCases": 2781,
+            "echoAndMaskedAnnotationCases": 1,
+            "maskCases": 806,
+            "stoppedCases": 4
+          }
+        },
+        {
+          "annotationCases": 2781,
+          "backendObserved": "ICU",
+          "culture": "en-US",
+          "icu": {
+            "binding": "CoreLib:Interop.Globalization.GetICUVersion",
+            "version": "72.1.0.4",
+            "versionRaw": 1208025092
+          },
+          "maskCases": 806,
+          "sortId": "00007999-0000-0000-0000-000000000409",
+          "sortVersion": 31129,
+          "unicodeWorkerEffects": {
+            "annotationCases": 180,
+            "maskCases": 120,
+            "maskedAnnotationCases": 10,
+            "negativeControlCases": 2,
+            "observedCulture": "en-US",
+            "researchOnly": true,
+            "stoppedCases": 40
+          },
+          "workerEffects": {
+            "annotationCases": 2781,
+            "echoAndMaskedAnnotationCases": 1,
+            "maskCases": 806,
+            "stoppedCases": 4
+          }
+        }
+      ],
+      "package": {
+        "imageOS": "win25-vs2026",
+        "imageVersion": "20260925.250.1",
+        "package": {
+          "sha256": "1150692afa94e71f872017e254ea55b6eece1eece3fe7e3a6d4c93d0a1b85cfc",
+          "size": 103528051,
+          "url": "https://github.com/actions/runner/releases/download/v2.337.0/actions-runner-win-x64-2.337.0.zip"
+        },
+        "probeSha256": "92c931d63f6bcfced3a2dfe62c2d11f729ee884662b5e206bca32465a989eb6b",
+        "rid": "win-x64",
+        "selectedCoreClr": {
+          "file": "coreclr.dll",
+          "sha256": "fc2909e16b3f70edfeac96d69d3f1d444705b1e4ad922dc760bb396338a7b1de"
+        },
+        "status": "passed"
+      },
+      "policy": {
+        "exitCode": 0,
+        "githubRunId": "37446004086",
+        "githubSha": "0a616c322da349cc019f3be951b866e0e22c4094",
+        "imageOS": "win25-vs2026",
+        "imageVersion": "20260925.250.1",
+        "packageSha256": "1150692afa94e71f872017e254ea55b6eece1eece3fe7e3a6d4c93d0a1b85cfc",
+        "probe": {
+          "candidateSha256": "14c8cfe5230d780ad64ec43f5c29c89863d1462ee47c90da390b1f9300273c93",
+          "coreLibrarySha256": "cc2cc43d28e3770d7cdeb80dc74eab265a1f5dd2f5547ccb236983b48d47d914",
+          "icu": "72.1.0.4",
+          "os": "Microsoft Windows NT 10.0.26100.0",
+          "results": [
+            {
+              "cases": 72,
+              "culture": "",
+              "failures": [],
+              "headerCases": 3336189,
+              "headerFailures": 0,
+              "sortVersion": 31129,
+              "startCases": 4422088,
+              "startFailures": 0
+            },
+            {
+              "cases": 72,
+              "culture": "en-US",
+              "failures": [],
+              "headerCases": 3336189,
+              "headerFailures": 0,
+              "sortVersion": 31129,
+              "startCases": 4422088,
+              "startFailures": 0
+            }
+          ],
+          "runnerCommonSha256": "276d5dde79696aecd105686f4b9ff7787ee9b458183ba3779e2044e0219e6fd5",
+          "runtime": "8.0.30"
+        },
+        "rid": "win-x64",
+        "runnerVersion": "2.337.0",
+        "sdkVersion": "8.0.424",
+        "status": "passed"
+      }
+    }
+  },
+  "releaseDryRun": {
+    "conclusion": "success",
+    "event": "pull_request",
+    "head_sha": "7a136a2c660a346b3a2ae7bf21bc6fd4455ca525",
+    "html_url": "https://github.com/send/shoutx/actions/runs/37444767335",
+    "id": 37444767335,
+    "jobs": [
+      {
+        "conclusion": "success",
+        "id": 112206820249,
+        "name": "metadata"
+      },
+      {
+        "conclusion": "success",
+        "id": 112206820829,
+        "name": "release-gates"
+      },
+      {
+        "conclusion": "success",
+        "id": 112207282844,
+        "name": "build (macos-15, aarch64-apple-darwin, tar.gz)"
+      },
+      {
+        "conclusion": "success",
+        "id": 112207282886,
+        "name": "build (macos-15-intel, x86_64-apple-darwin, tar.gz)"
+      },
+      {
+        "conclusion": "success",
+        "id": 112207282891,
+        "name": "build (ubuntu-24.04, x86_64-unknown-linux-musl, tar.gz)"
+      },
+      {
+        "conclusion": "success",
+        "id": 112207282917,
+        "name": "build (ubuntu-24.04-arm, aarch64-unknown-linux-musl, tar.gz)"
+      },
+      {
+        "conclusion": "success",
+        "id": 112207282961,
+        "name": "build (windows-2025, x86_64-pc-windows-msvc, zip)"
+      },
+      {
+        "conclusion": "success",
+        "id": 112207948682,
+        "name": "aggregate"
+      },
+      {
+        "conclusion": "skipped",
+        "id": 112208094090,
+        "name": "publish"
+      }
+    ],
+    "run_attempt": 1,
+    "status": "completed"
+  },
+  "schema": 1,
+  "scope": "Dated productization observations, not a perpetual release certificate",
+  "source": {
+    "conclusion": "success",
+    "event": "push",
+    "head_sha": "0a616c322da349cc019f3be951b866e0e22c4094",
+    "html_url": "https://github.com/send/shoutx/actions/runs/37446004086",
+    "id": 37446004086,
+    "run_attempt": 1,
+    "status": "completed"
+  },
+  "trustedLive": {
+    "ordinary": {
+      "macos-latest": {
+        "annotationCases": 30,
+        "annotationsSha256": "8886370dfdf077293159eef9095b6da3ccf39117f2740418bca58768f73b45a3",
+        "identity": {
+          "GITHUB_RUN_ATTEMPT": "1",
+          "GITHUB_RUN_ID": "37446004086",
+          "GITHUB_SHA": "0a616c322da349cc019f3be951b866e0e22c4094",
+          "ImageOS": "macos26",
+          "ImageVersion": "20260907.0351.1",
+          "RUNNER_ARCH": "ARM64",
+          "RUNNER_OS": "macOS",
+          "SHOUTX_SOURCE_HEAD": "0a616c322da349cc019f3be951b866e0e22c4094"
+        },
+        "jobId": 112210929846,
+        "logSha256": "969021fee08696274cff981f70d9f2f6c4de4f8e2ca759191f20b999e95476c0",
+        "maskCases": 8,
+        "pinnedRunnerVersion": "2.337.0",
+        "runnerMatchesPin": true,
+        "runnerVersion": "2.337.0",
+        "status": "passed",
+        "workerCulture": null,
+        "workerGlobalizationBackend": null
+      },
+      "ubuntu-latest": {
+        "annotationCases": 30,
+        "annotationsSha256": "fc85493062afcfa9250c3b6e5b603b644af0165aa530cd2a461c521b4ccc8486",
+        "identity": {
+          "GITHUB_RUN_ATTEMPT": "1",
+          "GITHUB_RUN_ID": "37446004086",
+          "GITHUB_SHA": "0a616c322da349cc019f3be951b866e0e22c4094",
+          "ImageOS": "ubuntu24",
+          "ImageVersion": "20260927.320.1",
+          "RUNNER_ARCH": "X64",
+          "RUNNER_OS": "Linux",
+          "SHOUTX_SOURCE_HEAD": "0a616c322da349cc019f3be951b866e0e22c4094"
+        },
+        "jobId": 112210929940,
+        "logSha256": "c68a31c0b8e815eba06a1ee7343bbd05355cc3a3eb99686f5a27db2f6752be06",
+        "maskCases": 8,
+        "pinnedRunnerVersion": "2.337.0",
+        "runnerMatchesPin": true,
+        "runnerVersion": "2.337.0",
+        "status": "passed",
+        "workerCulture": null,
+        "workerGlobalizationBackend": null
+      },
+      "windows-latest": {
+        "annotationCases": 30,
+        "annotationsSha256": "040d713c2d8d7a7dd94c7b52b3dad99421c0161175bc176733ce288581964a69",
+        "identity": {
+          "GITHUB_RUN_ATTEMPT": "1",
+          "GITHUB_RUN_ID": "37446004086",
+          "GITHUB_SHA": "0a616c322da349cc019f3be951b866e0e22c4094",
+          "ImageOS": "win25-vs2026",
+          "ImageVersion": "20260925.250.1",
+          "RUNNER_ARCH": "X64",
+          "RUNNER_OS": "Windows",
+          "SHOUTX_SOURCE_HEAD": "0a616c322da349cc019f3be951b866e0e22c4094"
+        },
+        "jobId": 112210929977,
+        "logSha256": "c64af6f14cadaa4cc3cece3b664e1db8d1e9f798caf5fe4e55f67e5c7b5bed0e",
+        "maskCases": 8,
+        "pinnedRunnerVersion": "2.337.0",
+        "runnerMatchesPin": true,
+        "runnerVersion": "2.337.0",
+        "status": "passed",
+        "workerCulture": null,
+        "workerGlobalizationBackend": null
+      }
+    },
+    "profile": {
+      "macos-15": {
+        "annotationCases": 30,
+        "annotationsSha256": "b3cd16fd2ae80c0c170b351d7fef9d66622a4421c7b29fb8f66dc727b95876cf",
+        "identity": {
+          "GITHUB_RUN_ATTEMPT": "1",
+          "GITHUB_RUN_ID": "37446004086",
+          "GITHUB_SHA": "0a616c322da349cc019f3be951b866e0e22c4094",
+          "ImageOS": "macos15",
+          "ImageVersion": "20260907.0337.1",
+          "RUNNER_ARCH": "ARM64",
+          "RUNNER_OS": "macOS",
+          "SHOUTX_SOURCE_HEAD": "0a616c322da349cc019f3be951b866e0e22c4094"
+        },
+        "jobId": 112210929850,
+        "logSha256": "19a1f95ae4b2f77b0ed739dc2292c36de61d18cd012e9f1f47795701a1515033",
+        "maskCases": 8,
+        "pinnedRunnerVersion": "2.337.0",
+        "runnerMatchesPin": true,
+        "runnerVersion": "2.337.0",
+        "status": "passed",
+        "workerCulture": null,
+        "workerGlobalizationBackend": null
+      },
+      "ubuntu-22.04": {
+        "annotationCases": 30,
+        "annotationsSha256": "453aad443703d518aa85f39f376c131188488302814ef33d7cf5e9ad365c5c02",
+        "identity": {
+          "GITHUB_RUN_ATTEMPT": "1",
+          "GITHUB_RUN_ID": "37446004086",
+          "GITHUB_SHA": "0a616c322da349cc019f3be951b866e0e22c4094",
+          "ImageOS": "ubuntu22",
+          "ImageVersion": "20260927.309.1",
+          "RUNNER_ARCH": "X64",
+          "RUNNER_OS": "Linux",
+          "SHOUTX_SOURCE_HEAD": "0a616c322da349cc019f3be951b866e0e22c4094"
+        },
+        "jobId": 112210929805,
+        "logSha256": "c32a840d750bd16bb9effa023345477eff7b159d8269d66629e2c480f91477fa",
+        "maskCases": 8,
+        "pinnedRunnerVersion": "2.337.0",
+        "runnerMatchesPin": true,
+        "runnerVersion": "2.337.0",
+        "status": "passed",
+        "workerCulture": null,
+        "workerGlobalizationBackend": null
+      },
+      "ubuntu-24.04": {
+        "annotationCases": 30,
+        "annotationsSha256": "453aad443703d518aa85f39f376c131188488302814ef33d7cf5e9ad365c5c02",
+        "identity": {
+          "GITHUB_RUN_ATTEMPT": "1",
+          "GITHUB_RUN_ID": "37446004086",
+          "GITHUB_SHA": "0a616c322da349cc019f3be951b866e0e22c4094",
+          "ImageOS": "ubuntu24",
+          "ImageVersion": "20260927.320.1",
+          "RUNNER_ARCH": "X64",
+          "RUNNER_OS": "Linux",
+          "SHOUTX_SOURCE_HEAD": "0a616c322da349cc019f3be951b866e0e22c4094"
+        },
+        "jobId": 112210929832,
+        "logSha256": "50a904d12b01a34d6d6eaec68c7120806e745c40a95b33bab975a9e18c68712c",
+        "maskCases": 8,
+        "pinnedRunnerVersion": "2.337.0",
+        "runnerMatchesPin": true,
+        "runnerVersion": "2.337.0",
+        "status": "passed",
+        "workerCulture": null,
+        "workerGlobalizationBackend": null
+      },
+      "windows-2025": {
+        "annotationCases": 30,
+        "annotationsSha256": "453aad443703d518aa85f39f376c131188488302814ef33d7cf5e9ad365c5c02",
+        "identity": {
+          "GITHUB_RUN_ATTEMPT": "1",
+          "GITHUB_RUN_ID": "37446004086",
+          "GITHUB_SHA": "0a616c322da349cc019f3be951b866e0e22c4094",
+          "ImageOS": "win25-vs2026",
+          "ImageVersion": "20260925.250.1",
+          "RUNNER_ARCH": "X64",
+          "RUNNER_OS": "Windows",
+          "SHOUTX_SOURCE_HEAD": "0a616c322da349cc019f3be951b866e0e22c4094"
+        },
+        "jobId": 112210929956,
+        "logSha256": "67de5d3de3f38b969edbb3f81cc4b8d2095016233d2adba63e5e0a5d596605e5",
+        "maskCases": 8,
+        "pinnedRunnerVersion": "2.337.0",
+        "runnerMatchesPin": true,
+        "runnerVersion": "2.337.0",
+        "status": "passed",
+        "workerCulture": null,
+        "workerGlobalizationBackend": null
+      }
+    },
+    "schema": 1,
+    "sourceHeadSha": "0a616c322da349cc019f3be951b866e0e22c4094",
+    "sourceRepository": "send/shoutx",
+    "sourceRunAttempt": 1,
+    "sourceRunId": 37446004086,
+    "status": "passed",
+    "verifierRunAttempt": 1,
+    "verifierRunId": 37447130599,
+    "verifierSha": "0a616c322da349cc019f3be951b866e0e22c4094"
+  },
+  "reviewedCandidate": {
+    "pullRequest": 119,
+    "headSha": "7a136a2c660a346b3a2ae7bf21bc6fd4455ca525",
+    "ciRunId": 37444767738,
+    "treeMatchesMainSource": true,
+    "codexCompletion": {
+      "acceptance": "Maintainer explicitly approved latest-head Completed summary plus connector bot PR thumbs-up for this work",
+      "summaryId": 6013467837,
+      "summaryStatus": "Completed",
+      "summaryReviewedCommit": "7a136a2",
+      "prThumbId": 547990794,
+      "prThumbContent": "+1",
+      "botLogin": "chatgpt-codex-connector[bot]",
+      "finalRecheckedHeadSha": "7a136a2c660a346b3a2ae7bf21bc6fd4455ca525",
+      "finalUnresolvedThreads": 0,
+      "threadPaginationComplete": true
+    },
+    "independentReview": "Maintainer explicitly selected GPT-6 Sol instead of Fable for this work: no remaining actionable findings; full surface and focused transport review"
+  }
+}

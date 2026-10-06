@@ -84,16 +84,34 @@ def profile_identity(report, label):
     require(re.fullmatch(image, identity["ImageOS"]) is not None)
 
 
+def download(repo, suffix):
+    """Capture logs/archives without a CLI-version-dependent terminal filter."""
+    token = os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN")
+    if not token:
+        auth = subprocess.run(["gh", "auth", "token"], capture_output=True, timeout=30)
+        require(auth.returncode == 0)
+        token = auth.stdout.decode("utf-8").strip()
+    require(bool(token) and "\n" not in token and "\r" not in token)
+    result = subprocess.run([
+        "curl", "--fail", "--silent", "--show-error", "--location", "--max-time", "60",
+        "--header", "Authorization: Bearer " + token,
+        "--header", "X-GitHub-Api-Version: 2026-03-10",
+        f"https://api.github.com/repos/{repo}/{suffix}",
+    ], capture_output=True, timeout=65)
+    require(result.returncode == 0)
+    return result.stdout
+
+
 def api(repo, suffix, *, pages=False, raw=False):
-    args = ["gh", "api"]
-    # Job logs contain ANSI sequences. Capture them as data, never terminal output.
     if raw:
-        args += ["--allow-escape-sequences"]
+        require(not pages)
+        return download(repo, suffix).decode("utf-8")
+    args = ["gh", "api"]
     if pages:
         args += ["--paginate", "--slurp"]
     result = subprocess.run(args + [f"repos/{repo}/{suffix}"], capture_output=True, timeout=90)
     require(result.returncode == 0)
-    return result.stdout.decode("utf-8") if raw else json.loads(result.stdout)
+    return json.loads(result.stdout)
 
 
 def verify_job(repo, job, runner_os, run_id, attempt, sha):

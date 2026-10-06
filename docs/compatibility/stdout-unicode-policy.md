@@ -67,6 +67,42 @@ The current
 producer contract tests pass under both stable and feature-enabled builds,
 including exact output and all-scalar lookup agreement with the source set.
 
+## Merged implementation snapshot (PR #116)
+
+This is the retained adoption evidence, not a claim that the isolated commands
+have been released. [PR #116](https://github.com/send/shoutx/pull/116) merged as
+`92212eb8d07fb019cc546f2475a306473be89714`; its reviewed source head was
+`76b7b5244988913c58cb62dca9c89ac45ea5ccf6`. CI tested the PR merge tree at
+`f544872cd9df266106cdd273181fa500de0c1d61`.
+
+The final [policy run 37365740163](https://github.com/send/shoutx/actions/runs/37365740163)
+passed on all four rows of the table above, with the same image/ICU identities,
+Runner 2.337.0 and runtime 8.0.30. Each row/culture completed 4,422,088 start,
+3,336,189 header and 72 metadata checks with zero failures. Package digests
+are retained in the [snapshot's pins](https://github.com/send/shoutx/blob/76b7b5244988913c58cb62dca9c89ac45ea5ccf6/tests/runner-package/pins.json).
+These are controlled Invariant/en-US comparisons, not live Worker attestation.
+
+[Full CI 37365740201, attempt 3](https://github.com/send/shoutx/actions/runs/37365740201/attempts/3)
+passed. The official-package probe on each row/culture passed 806 mask and
+2,781 annotation cases through parsing and Worker effects, plus stopped-command
+and echo/masked-annotation controls. The package-matched live verifier separately
+passed eight mask and 30 annotation cases on each row. It observed Runner
+2.337.0 and the same four image identities, but explicitly recorded live
+`workerCulture` and `workerGlobalizationBackend` as null. Mask results include
+external job-log checking; annotation results use the API-visible effects.
+
+The ordinary moving-label smoke verifier also passed on Ubuntu 24.04,
+Windows 2025 and macOS 26. Its macOS image was `20260907.0351.1`, distinct from
+the package-matched macOS 15 row. This finite smoke success does not override
+the local ICU 78.1 contrary evidence or add macOS 26 to the adoption profile.
+
+These results support the [adoption judgment](../decisions/github-actions-stdout-framing.md).
+Future verification-pending or incompatible configurations must be recorded
+here under the [maintenance policy](../release.md#stdout-admission-and-compatibility-maintenance),
+without rewriting these dated results. At this snapshot, no pending update is
+asserted for the four recorded configurations; later unseen updates are not
+implicitly verified by this statement.
+
 ## Producer performance
 
 Local release-mode CLI comparison on 2026-10-06 used

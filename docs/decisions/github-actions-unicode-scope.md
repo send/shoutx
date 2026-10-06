@@ -1,9 +1,13 @@
 # Scope of V2 Unicode adoption research
 
-Status: Accepted
+Status: Superseded as an adoption work order; retained research history.
 
-This accepts only the research scope, not framing, stable support or release
-eligibility.
+The dated decisions below describe the former research scope and obligations.
+They are not current execution or release gates, and unfinished premises have
+not become proven facts. The [framing decision](github-actions-stdout-framing.md)
+now owns the adoption judgment, the [design](../design.md#stdout-adoption-contract)
+owns applicability, and the [release policy](../release.md) owns admission and
+maintenance. Retained observations remain usable with their original limits.
 
 ## Context
 
@@ -97,6 +101,10 @@ or retention of the restricted surface. The
 preserves that gate; it is not the current rule.
 
 ### Current work order and stop rule
+
+Historical heading retained for old links. "Current", "requires", and "Go"
+in this subsection refer to the 2026-10-05 research order, superseded by the
+adoption decision; they do not impose native-proof obligations on productization.
 
 This section owns the research work order and stop rule. The 2026-10-05
 direction supersedes the previous requirement to complete live Worker linkage

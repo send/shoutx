@@ -86,24 +86,78 @@ No reusable context encoder is currently planned for v1.0. The former
     locale-sensitive comparison do not create command names, option names,
     delimiters, property names, numeric syntax, or escape syntax. A
     command-specific value may accept strict UTF-8 as opaque data.
-16. A destination guarantee does not rely on the producer observing the
-    consumer process's culture or on a locale-sensitive protocol delimiter.
-    Producer success is not evidence that a separate consumer accepted the
-    record.
+16. A destination guarantee names its consumer compatibility scope and relies
+    on that consumer's protocol implementation, not on producer-side discovery
+    of hidden consumer settings. Producer success is not evidence that a
+    separate consumer accepted the record. Known incompatibilities must be
+    disclosed and handled through the compatibility and release process.
 
 These are product requirements, not a mandate to prove dependency internals.
 The [stdout threat inventory](threat-model.md#stdout-mask-and-annotation-responsibility)
 distinguishes concrete security paths from functional behavior and deployment
-conditions. Invariant 16 remains a constraint on adopting a destination guarantee;
-it is not a requirement to certify every culture before developing the isolated
-stdout feature. A scoped compatibility proposal must reconcile that invariant
-explicitly before claiming adoption, rather than silently weakening it.
+conditions. Invariant 16 does not prohibit adopting a protocol implemented with
+locale-sensitive operations. It requires a usable scope and an honest account
+of dependency assumptions; it neither transfers shoutx's own structural
+protection obligations to the caller nor requires proof of dependency internals.
 
 The current GitHub Actions stdout parser investigation and the limits of its
 cross-platform evidence are recorded in
 [the workflow-command compatibility note](compatibility/github-actions-workflow-command-parser.md).
-The compile-time-isolated stdout family is pre-release while the linked
-[framing decision](decisions/github-actions-stdout-framing.md) remains open.
+The compile-time-isolated stdout family remains pre-release. The
+[framing decision](decisions/github-actions-stdout-framing.md) governs adoption;
+it does not itself change the distributed command surface.
+
+## Stdout adoption contract
+
+This section defines the scope for productizing the existing mask and
+notice/warning/error implementations, including message, TITLE, and FILE. It
+does not enable them in official binaries. Their observable input and encoding
+rules remain solely in the command specifications.
+
+Shoutx owns validation, context-specific escaping, command/property framing,
+bounded resource use, value-free diagnostics, and rejection before output.
+The Runner owns interpreting the resulting command and applying the effect;
+its runtime and OS own their implementation behavior. Callers own safe input
+delivery, selecting the intended destination, keeping workflow-command
+processing active, and avoiding disclosure before mask registration. Success
+means that shoutx wrote the prepared record, not that the Runner acknowledged
+it. Mask is not a general secret-management or retrospective log-cleaning tool.
+
+The initial adoption profile is native jobs on standard GitHub-hosted
+Ubuntu 22.04 x64, Ubuntu 24.04 x64, macOS 15 arm64, and Windows 2025 x64 images,
+without replacing the Runner/runtime or customizing its globalization settings.
+The en-US and Invariant controlled-package configurations are reference
+verification targets, not settings users must discover or assert for the live
+Worker. Existing live integration observations are separate evidence: they do
+not identify that process's culture or backend. The maintainer owns comparing
+observations and classifying compatibility, rather than asking users to attest
+to unobservable Worker properties.
+
+Users can select the named OS generation and avoid consumer customization.
+They cannot pin every hosted-image component or make shoutx acknowledge a
+consumer effect. Shoutx does not attempt runtime detection or enforcement of
+this profile. Moving aliases must still resolve to a named generation; a new
+OS generation is not automatically included. Self-hosted runners, containers,
+custom globalization configurations, other cultures, and other OS generations
+are not initially covered by the adoption profile. This is a compatibility
+scope, not a claim that every excluded environment is unsafe.
+
+The [compatibility record](compatibility/stdout-unicode-policy.md) owns observed
+versions, coverage, and known mismatches. A passing finite hosted smoke test
+does not override a known broader incompatibility on a different configuration.
+In particular, the recorded local ICU 78.1 mismatch is not erased by the
+macOS 26 hosted smoke success. Neither arbitrary future dependency versions
+nor all Unicode/consumer combinations are certified by these observations.
+
+Within the profile, dependency correctness is an explicit assumption, as it is
+for other output destinations. A concrete failure affecting command structure,
+property interpretation, or mask confidentiality must be assessed against the
+[attack inventory](threat-model.md#stdout-mask-and-annotation-responsibility),
+not dismissed as somebody else's bug. A functional display mismatch is not
+automatically injection. Update verification, pending-status communication,
+and responses to incompatibility are owned by the [release policy](release.md).
+No hidden fallback, normalization, decoration, or lossy sanitization is added
+by this adoption contract.
 
 ## Distribution integrations
 

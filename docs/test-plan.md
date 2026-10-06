@@ -4,8 +4,8 @@ This document defines the test layers, shared input cases, runner differential
 strategy, and supported-shell matrix for the `shoutx` CLI. Command-specific
 matrices are colocated with the specifications linked below.
 
-The product contract is defined by the [README](../README.md), cross-cutting
-decisions by [design.md](design.md), destination contracts by the linked
+The [documentation map](README.md) assigns cross-cutting product requirements
+to [design.md](design.md), destination contracts to the linked
 [`commands/`](commands/) specifications, and the security boundary by
 [threat-model.md](threat-model.md). If this plan disagrees with those files,
 the disagreement must be resolved rather than silently encoded in a test.
@@ -359,7 +359,19 @@ Compare release-mode CLI performance with the recorded, predeclared method in
 Normal stable/unstable Cargo and Runner oracle gates remain required. Neither
 completion here nor any old investigation section enables stable distribution.
 
+<a id="unicode-adoption-completion-criteria"></a>
+
 ### Unicode adoption completion criteria (historical research plan)
+
+This section and the native-research sections through **Offline root mapping
+graph research** retain the old investigation's criteria and harness semantics.
+They are not current adoption completion gates. Their unresolved premises are
+not declared proven. The superseding
+[framing decision](decisions/github-actions-stdout-framing.md) and the current
+verification section below do not require new internal proofs. Existing
+executable CI checks remain enabled: a failure must be classified as a relevant
+product regression, compatibility drift, or research-instrumentation issue;
+this historical label does not authorize ignoring failed CI.
 
 The [research-scope decision](decisions/github-actions-unicode-scope.md) fixes
 the initial target; it does not expand CLI acceptance or release eligibility.
@@ -1207,6 +1219,34 @@ vendor data; local/native comparisons and their limitations belong in the
 Actual consumer data identity, normalization-related inputs, arbitrary-suffix
 iterator offsets, and other supported OS releases remain separate obligations.
 
+### Current stdout adoption verification
+
+Apply these existing checks to the profile owned by
+[design](design.md#stdout-adoption-contract), using the release policy's
+candidate and update process. Keep observations separate rather than treating
+one suite as proof of another layer:
+
+| Layer | Required evidence and scope |
+| --- | --- |
+| Producer | Existing stable and feature-on contract/property tests, exact bytes, rejection before output, resource limits, value-free diagnostics, exhaustive lookup agreement, reproducible table check |
+| Consumer integration | Pinned source oracle and official-package parser/Worker effects for all profile rows under explicit en-US and Invariant: original mask registration/redaction, selected annotation, message and typed properties, final TITLE/FILE cases |
+| Policy compatibility | Existing four-row Unicode-policy probe with data-start, final-field header, and metadata checks; preserve known excluded-configuration mismatches |
+| Live effects | Package-matched hosted experiment for each profile row, API annotation verification and external masked-log verification; record live Runner/image identities and leave hidden Worker fields unobserved |
+| Regression cost | Reuse the recorded performance baseline for unchanged code; rerun the existing paired benchmark if policy lookup or record construction changes |
+
+Retain stopped-command and feature-state negative controls. A successful
+producer, parser, or API annotation query alone cannot establish mask secrecy;
+masking requires the log verification described below. The ordinary moving-label
+smoke matrix provides additional observations, not automatic support for a new
+OS generation. These finite checks support the adopted dependency contract;
+they are not arbitrary-suffix or native-implementation proofs.
+
+The following live-test and continuing-check sections describe existing
+mechanisms. Startup/module/data-acquisition subsections retain historical
+feasibility observations; they do not impose deployment attestation or new
+native-proof work on adoption. Runtime identities that a live test cannot
+observe must not be fabricated from its explicit-culture package probe.
+
 ### Live hosted stdout boundary experiment
 
 The ordinary three-OS hosted test matrix additionally runs
@@ -1650,9 +1690,10 @@ against, interleaving and lifecycle behavior.
 The implementation PR following this design work should not be considered
 ready until:
 
-- every applicable deterministic verification case in this plan and the linked
-  command specifications is automated, including cases outside their normative
-  Contract sections;
+- every applicable current deterministic verification case in this plan and the
+  linked command specifications is automated, including cases outside their
+  normative Contract sections; historical research proof objectives are not
+  additional implementation obligations;
 - property tests establish the one-input-to-one-record invariant;
 - the pinned runner differential suite passes on the CI platform matrix;
 - supported shell redirection preserves stdout bytes;

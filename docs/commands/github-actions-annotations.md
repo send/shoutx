@@ -160,16 +160,13 @@ environment file.
 
 The intended structural guarantee is faithful workflow-command decoding of
 one accepted message and the supplied validated metadata as one selected
-annotation command while workflow-command processing is active. The current V2
-framing does not satisfy that guarantee across cultures. The eventual
-guarantee will not authorize the annotation's content, file association, or
-severity, or promise provider retention or presentation.
-
-The [reference-boundary proposal](../decisions/github-actions-stdout-framing.md#proposed-reference-configuration-boundary)
-changes research obligations, not these input rules or guarantees. Consumer
-configuration is not detected or enforced by shoutx. Command loss or
-reinterpretation remains a residual risk; the research has not established
-a complete guarantee even within its target configurations.
+annotation command while workflow-command processing is active, within the
+[design-owned adoption profile](../design.md#stdout-adoption-contract). It
+does not authorize content, file association, or severity, or promise provider
+retention or presentation. Consumer configuration is not detected or enforced
+by shoutx; known excluded-configuration failures remain documented, not fixed
+by this scope choice. The official binary surface is unchanged until the
+coordinated productization increment is complete.
 
 ## Boundary-specific threat analysis
 
@@ -350,8 +347,9 @@ state are destination behavior.
 
 Feature-enabled help exposes the commands as one explicitly unstable family.
 Default help and the packaged README do not advertise their invocation syntax.
-If the framing decision is accepted later, the three severities still ship
-together only after the shared contract, oracle, hosted, and release gates pass.
+The accepted framing decision does not enable distribution: the three
+severities ship together only after the shared contract, oracle, hosted, and
+release-admission gates pass.
 
 ## References
 

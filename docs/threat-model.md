@@ -8,7 +8,8 @@ Shared compatibility gates derived from this model are maintained in the
 are colocated in the command specifications linked below.
 
 Revision status: implemented writer baseline; stdout responsibility and attack
-classification clarified on 2026-10-06. No input-policy or release change.
+classification and adoption boundary clarified on 2026-10-06. This revision
+does not change CLI input policy or release contents.
 
 ## Security objective
 
@@ -54,11 +55,11 @@ recognized the emitted record. The known parser behavior and compatibility
 evidence are documented in the
 [workflow-command compatibility note](compatibility/github-actions-workflow-command-parser.md).
 
-The [proposed reference-boundary research](decisions/github-actions-stdout-framing.md#proposed-reference-configuration-boundary)
-does not change this product contract. It separates evidence about a reference
-parser from unobservable deployment conditions. Known excluded-culture failures,
-including failed mask registration and possible disclosure, remain residual
-risks; neither producer success nor a narrower research scope removes them.
+The [design-owned adoption contract](design.md#stdout-adoption-contract)
+separates the supported profile, dependency assumptions, and producer duties.
+Reference probes do not identify hidden live Worker settings. Known excluded-
+configuration failures, including mask disclosure, remain documented risks;
+producer success does not remove them.
 
 GitHub creates distinct environment-file paths while running a step or action.
 The runner reads these files after processing the producer.
@@ -181,8 +182,8 @@ Other recognized boundaries are deferred, candidates, or out of scope:
 | Boundary | Status | Primary concern |
 | --- | --- | --- |
 | `$GITHUB_STEP_SUMMARY` | Out of scope | GitHub-rendered Markdown has no runner command-file record structure to inject into; rendered HTML is sanitized, while content integrity remains the producer's responsibility |
-| stdout `add-mask` workflow command | Research feature; framing decision open; absent from releases | Register one faithfully decoded value for subsequent runner log masking |
-| stdout annotation workflow commands | Research feature; framing decision open; absent from releases | Emit one faithfully decoded notice, warning, or error with validated location metadata |
+| stdout `add-mask` workflow command | Productization accepted; still isolated and absent from releases | Register one faithfully decoded value for subsequent runner log masking |
+| stdout annotation workflow commands | Productization accepted; still isolated and absent from releases | Emit one faithfully decoded notice, warning, or error with validated location metadata |
 | other stdout workflow commands | Deferred | Lines such as `::stop-commands::` and `::group::` are runner control messages |
 | `$GITHUB_ARTIFACTS` | Deferred; 2026-09-28 hosted-runner gate failed | One file or OCI declaration per line |
 | `$GITHUB_ARTIFACTS_LIST` | Out of scope | Runner-managed, read-only JSON input |
@@ -212,13 +213,13 @@ Unicode behavior or an unfinished dependency proof is not itself such a finding.
 Faithful decoding remains a product correctness requirement: distinguishing a
 functional failure from an attack does not make that failure acceptable behavior.
 
-| Path | Boundary crossing and harm | Current control / remaining implementation question |
+| Path | Boundary crossing and harm | Current control within the design profile |
 | --- | --- | --- |
 | AP1: physical-line injection | Value CR/LF produces additional workflow commands | Existing percent-first CR/LF encoding and one-line construction block this route under the documented transport. Retain those controls. |
-| AP2: fallback command selection | Intended V2 recognition fails and value text becomes a different registered workflow command | Existing parser regressions establish the route; their demonstrated starts are rejected today. A broader acceptance policy must address newly accepted inputs, not claim current rejection protects them. |
-| AP3: message-to-property promotion | A shifted V2 separator promotes message data into annotation header fields | Assess the proposed message boundary against the existing parser evidence. Ordinary display differences are not this path. |
-| AP4: mask misregistration or disclosure | Misframing leaves the original secret unregistered, registers a different value, or exposes the command as ordinary log text | Preserve the original registration value and address known parsing failures within the proposed applicability conditions. A different registered string is not protection of the original. Consumer state and excluded configurations retain the limitations below. |
-| AP5: metadata injection | TITLE/FILE data escapes its field or changes other properties, including typed fields | Existing property escaping and typed-field validation are controls. Unicode header expansion needs its own header-boundary assessment, not an inference from message tests. |
+| AP2: fallback command selection | Intended V2 recognition fails and value text becomes a different registered workflow command | The command specifications' positive start policy and one-line encoding, checked against parser/fallback regressions and generated producer records. New acceptance changes require reassessment. |
+| AP3: message-to-property promotion | A shifted V2 separator promotes message data into annotation header fields | The shared data-start policy plus independent command/property round-trip checks. Ordinary display differences are not this path. |
+| AP4: mask misregistration or disclosure | Misframing leaves the original secret unregistered, registers a different value, or exposes the command as ordinary log text | Original-value construction, the data-start policy, exact registration and subsequent-redaction checks. A different registered string is not protection of the original. Consumer state and excluded configurations retain the limitations below. |
+| AP5: metadata injection | TITLE/FILE data escapes its field or changes other properties, including typed fields | Property escaping, typed-field validation and the structural Unicode-property terminator specified by the annotation contract, verified with final-field and Worker-effect cases independently of message tests. |
 
 AP2–AP4 reuse the
 [parser and fallback evidence](compatibility/github-actions-workflow-command-parser.md#parser-fallback-and-impact).
@@ -236,9 +237,8 @@ The workflow must deliver input as data and preserve output transport, and
 workflow-command processing must be active. Required annotation features and
 consumer configuration are deployment conditions, not state shoutx can inspect
 or enforce. The command specifications retain their concrete limitations.
-The next acceptance change targets recorded GitHub-hosted configurations under
-en-US and Invariant, not every culture or historical/future version. This is a
-development scope, not a newly established compatibility or release guarantee.
+The [design](design.md#stdout-adoption-contract) owns the adoption profile;
+command implementations remain isolated until productization is complete.
 Known excluded-environment failures, including deferred th-TH behavior, remain
 disclosed limitations rather than new investigation tasks.
 
@@ -403,8 +403,8 @@ appends to runner-created files with `>>`.
 For environment-file writers, GitHub's log masking and summary masking remain
 defense-in-depth rather than part of the `shoutx` guarantee. The mask command's
 intended guarantee is construction and runner registration of one accepted
-value, not comprehensive confidentiality; its current framing does not yet
-satisfy that guarantee across cultures. The authoritative behavior is in the
+value within the design profile, not comprehensive confidentiality or support
+across all cultures. The authoritative behavior is in the
 [mask command specification](commands/github-actions-mask.md). Successfully
 writing a secret to an output, environment variable, PATH entry, summary,
 command argument, or later parser may still disclose or misuse it.

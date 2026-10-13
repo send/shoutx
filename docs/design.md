@@ -26,6 +26,55 @@ The initial provider is GitHub Actions. Provider-specific behavior is isolated
 behind namespaced commands so support for other workflow engines can be added
 without pretending their protocols are interchangeable.
 
+## v1 readiness
+
+v1 means practical coverage of GitHub Actions output boundaries within the
+product boundary above, not merely a stable version number or implementation
+of every runner command. This section owns that criterion and the coverage
+inventory; command contracts and release procedures remain in their existing
+authoritative documents.
+
+Before proposing v1:
+
+- Resolve the open coverage rows below through a shipped writer with a concrete
+  injection-prevention use case, or an explicit exclusion with a documented
+  boundary rationale. An unimplemented useful boundary is not an exclusion.
+- Verify supported writers against their actual consumers within the declared
+  compatibility profile, with usable installation and workflow examples.
+- Review the CLI for an interface that can be maintained under v1 compatibility
+  expectations, and satisfy the [release gates](release.md). Maintainer approval
+  is still required; this inventory does not authorize publication.
+
+The inventory is based on the [official workflow-command surface][workflow-surface]
+and the [pinned runner command handlers][runner-command-surface]. It classifies
+product work, not universal safety of GitHub Actions. Existing evidence is
+reused; upstream internals are not investigated without a concrete attack path
+through a named shoutx output boundary.
+
+| Surface | Coverage / v1 disposition | Remaining action or rationale |
+| --- | --- | --- |
+| Output, environment, action state, PATH files | Shipped | Contracts indexed below; authorization of values and paths remains caller-owned. |
+| Mask and notice/warning/error annotations | Shipped | Contracts and compatibility profile below; not arbitrary log sanitization. |
+| Artifact declarations | Open: implementation candidate | Availability now permits reconsideration; follow the [artifact decision](decisions/github-actions-artifacts.md) and complete its remaining gates before advertising support. |
+| Debug message and group title | Open: boundary decision | Both accept data in stdout commands. Assess line/command injection and useful writer interfaces; implement or record a concrete exclusion before v1. Do not inherit annotation acceptance from a shared parser. |
+| `endgroup`, command echo on/off | No separate data writer required | Trusted fixed control operations; a future group interface may include a fixed terminator for usability. |
+| Stop/resume commands | Outside the current writer boundary | Controls a stream-wide protocol with a caller-managed token/lifetime, not one encoded value. Do not present this as protection for arbitrary subprocess output. |
+| Add/remove problem matcher | Open: bounded use-case decision | Paths/owners select matcher configuration. Determine whether a useful framing-only writer exists without implying authorization of a matcher, its patterns, or the selected file. |
+| Job summary / Markdown | Excluded | [Markdown decision](decisions/markdown-output.md): content-policy concerns, not the implemented record boundary. |
+| Legacy stdout output/env/state/path commands | Excluded | Use the supported command-file destinations instead; no legacy syntax expansion. |
+| Inputs, saved-state reads, artifact-list reads | Not output writers | Consumer-side inputs, not destinations to encode. |
+| Toolkit process failure, artifact upload/download, cache, GitHub API operations, internal runner commands | Outside this CLI boundary | Process status, services, or internal control protocols, not additional public value writers. |
+
+The next bounded increment is owned by the
+[implementation handoff](implementation-plan.md#current-handoff-status).
+An availability regression may defer artifacts with recorded evidence; it does
+not require shoutx to repair or prove GitHub's service. Before v1, recheck this
+inventory for newly documented practical output boundaries and record the
+maintainer's disposition of any remaining upstream-dependent deferral.
+
+[workflow-surface]: https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-commands
+[runner-command-surface]: https://github.com/actions/runner/blob/397b032cbf865e9c3ddfab89d533ec19325e1273/src/Runner.Worker/ActionCommandManager.cs
+
 ## GitHub Actions commands
 
 Provider-specific writers:
@@ -240,8 +289,8 @@ separately under the [decision-record policy](decisions/README.md):
 
 ## Open questions
 
-- When GitHub enables `$GITHUB_ARTIFACTS` processing uniformly on supported
-  hosted runners, allowing the deferred candidate to be reconsidered.
+- Remaining GitHub Actions coverage decisions are tracked in
+  [v1 readiness](#v1-readiness).
 - Whether provider extensions are compiled in, discovered as executables, or
   loaded through another plugin mechanism.
 - Compatibility and versioning rules for provider extensions.

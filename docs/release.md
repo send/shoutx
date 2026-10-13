@@ -35,6 +35,10 @@ GitHub release binaries. Users may still build from the repository with Cargo.
 
 ## Version and tag contract
 
+The product-level prerequisite for v1 is owned by
+[design: v1 readiness](design.md#v1-readiness), in addition to the publication
+gates in this document.
+
 Release versions follow SemVer as represented by Cargo, except that the initial
 release process prohibits build metadata. Revision 1 also limits `VERSION` to
 55 ASCII bytes so every member path fits the TAR name field without an

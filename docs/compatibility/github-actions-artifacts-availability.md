@@ -36,10 +36,9 @@ inputs, or the candidate's remaining acceptance cases. Image and runner
 versions come from job setup logs; assertion success comes from the completed
 verification steps, not from searching logs for echoed script text.
 
-The observation is sufficient to reopen the implementation candidate. It does
-not by itself satisfy the full adoption gate or broaden shoutx's existing
-compatibility profile. A future implementation must retain a repeatable
-consumer check for its claimed targets.
+The adoption consequence and any required implementation checks are owned by
+the [artifact decision](../decisions/github-actions-artifacts.md). These
+observations do not broaden shoutx's existing compatibility profile.
 
 [source]: https://github.com/send/shoutx/blob/b9b0f6ab040f386e652aa2c7a16c5e374fe541e1/.github/workflows/artifacts-availability-probe.yml
 [attempt1]: https://github.com/send/shoutx/actions/runs/36331651232/attempts/1

@@ -46,7 +46,10 @@ Before proposing v1:
   is still required; this inventory does not authorize publication.
 
 The inventory is based on the [official workflow-command surface][workflow-surface]
-and the [pinned runner command handlers][runner-command-surface]. It classifies
+and the pinned runner's [stdout handlers][runner-command-surface],
+[environment-file and summary handlers][runner-file-surface],
+[artifact declaration handler][runner-artifact-surface], and
+[artifact-list handler][runner-artifact-list-surface]. It classifies
 product work, not universal safety of GitHub Actions. Existing evidence is
 reused; upstream internals are not investigated without a concrete attack path
 through a named shoutx output boundary.
@@ -74,6 +77,9 @@ maintainer's disposition of any remaining upstream-dependent deferral.
 
 [workflow-surface]: https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-commands
 [runner-command-surface]: https://github.com/actions/runner/blob/397b032cbf865e9c3ddfab89d533ec19325e1273/src/Runner.Worker/ActionCommandManager.cs
+[runner-file-surface]: https://github.com/actions/runner/blob/397b032cbf865e9c3ddfab89d533ec19325e1273/src/Runner.Worker/FileCommandManager.cs
+[runner-artifact-surface]: https://github.com/actions/runner/blob/397b032cbf865e9c3ddfab89d533ec19325e1273/src/Runner.Worker/CreateArtifactsFileCommand.cs
+[runner-artifact-list-surface]: https://github.com/actions/runner/blob/397b032cbf865e9c3ddfab89d533ec19325e1273/src/Runner.Worker/ArtifactsListFileCommand.cs
 
 ## GitHub Actions commands
 

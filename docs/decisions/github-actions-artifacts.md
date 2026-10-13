@@ -256,7 +256,7 @@ implementation verification rather than repeatedly probing before work begins.
 
 ## Candidate implementation notes
 
-The sampled availability check permits implementation planning. Advertising
+The sampled availability check permits implementation to begin. Advertising
 support still requires all adoption gates above. The parser must implement the
 typed interface defined above.
 
@@ -278,7 +278,3 @@ host workspace context. The oracle must cover Unicode trimming, schemes,
 directory exclusion, hashing, name collisions, deduplication, conflicts,
 partial aggregation on conflict or cap failure, and limits without turning
 those runner behaviors into shoutx guarantees.
-
-Before implementation, rerun the hosted availability gate defined above. The
-mere presence of `GITHUB_ARTIFACTS` is insufficient; the probe must observe the
-declared subject in a subsequent step on every supported operating system.

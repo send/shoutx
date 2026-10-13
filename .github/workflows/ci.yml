@@ -417,7 +417,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Retain package runtime evidence
         if: ${{ always() }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: runner-package-evidence-${{ matrix.os }}-${{ matrix.runtime }}
           path: |
@@ -444,7 +444,7 @@ jobs:
           runpy.run_path("tests/runner-package/hosted_worker.py", run_name="__main__")
       - name: Retain limited hosted Worker observation
         if: ${{ always() && steps.worker_observation.outcome != 'skipped' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: hosted-worker-input-${{ matrix.os }}-${{ matrix.runtime }}
           path: target/hosted-worker-evidence.json
@@ -460,7 +460,7 @@ jobs:
         run: python -B tests/runner-package/hosted_modules.py --output target/hosted-worker-modules.json
       - name: Retain limited hosted Worker module metadata
         if: ${{ always() && steps.worker_modules.outcome != 'skipped' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: hosted-worker-modules-${{ matrix.os }}-${{ matrix.runtime }}
           path: target/hosted-worker-modules.json
@@ -635,7 +635,7 @@ jobs:
         run: python -B tests/workflow-smoke/hosted_boundaries.py summary --evidence "$RUNNER_TEMP/hosted-boundary-evidence"
       - name: Retain hosted boundary observations
         if: ${{ always() && needs.changes.outputs.run_ci == 'true' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: hosted-boundary-evidence
           path: ${{ runner.temp }}/hosted-boundary-evidence/

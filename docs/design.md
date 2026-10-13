@@ -58,7 +58,7 @@ through a named shoutx output boundary.
 | --- | --- | --- |
 | Output, environment, action state, PATH files | Shipped | Contracts indexed below; authorization of values and paths remains caller-owned. |
 | Mask and notice/warning/error annotations | Shipped | Contracts and compatibility profile below; not arbitrary log sanitization. |
-| Artifact declarations | Implemented in source; verification pending | [Contract](commands/github-actions-artifacts.md); not in v0.3.0. Complete consumer gates before advertising support. |
+| Artifact declarations | Implemented in source; unreleased | [Contract](commands/github-actions-artifacts.md), [consumer evidence](compatibility/github-actions-artifacts-availability.md#writer-integration-observations); not in v0.3.0. |
 | Debug message and group title | Open: boundary decision | Both accept data in stdout commands. Assess line/command injection and useful writer interfaces; implement or record a concrete exclusion before v1. Do not inherit annotation acceptance from a shared parser. |
 | `endgroup`, command echo on/off | No separate data writer required | Trusted fixed control operations; a future group interface may include a fixed terminator for usability. |
 | Stop/resume commands | Outside the current writer boundary | Controls a stream-wide protocol with a caller-managed token/lifetime, not one encoded value. Do not present this as protection for arbitrary subprocess output. |

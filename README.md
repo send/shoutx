@@ -186,8 +186,9 @@ file, calculate a digest, contact a registry, or authorize the selected resource
 The Runner processes declarations after the step. Exposed destination variables
 alone do not prove processing is enabled. See the
 [artifact contract](docs/commands/github-actions-artifacts.md) for input rules,
-consumer conditions, and limits. Hosted verification for this implementation is
-still pending; the earlier availability probe did not exercise this binary.
+consumer conditions, and limits, and the
+[hosted integration observations](docs/compatibility/github-actions-artifacts-availability.md#writer-integration-observations)
+for verification evidence.
 
 ### Output, environment, state, and PATH
 

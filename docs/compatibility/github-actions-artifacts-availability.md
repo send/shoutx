@@ -1,8 +1,36 @@
 # GitHub Actions artifact declaration availability
 
 This note owns hosted-runner observations, not a supported shoutx command.
-The [artifact decision](../decisions/github-actions-artifacts.md) owns the
-candidate and its adoption conditions.
+The [artifact decision](../decisions/github-actions-artifacts.md) owns adoption
+rationale; the [command contract](../commands/github-actions-artifacts.md) and
+[design profile](../design.md#artifact-consumer-scope) own behavior and scope.
+
+## Writer integration observations
+
+On 2026-10-14 JST, [CI run 38439704470][writer-run] at producer commit
+`6b514f4a8618188fc3203858e0cf75c69a74c4cf` completed both `Declare file and OCI
+subjects through shoutx` and `Verify artifact subjects in following step`
+successfully on all four profile rows:
+
+| Hosted label / architecture | Job |
+| --- | --- |
+| `ubuntu-22.04` / x64 | [115442827214](https://github.com/send/shoutx/actions/runs/38439704470/job/115442827214) |
+| `ubuntu-24.04` / x64 | [115442827229](https://github.com/send/shoutx/actions/runs/38439704470/job/115442827229) |
+| `macos-15` / arm64 | [115442827296](https://github.com/send/shoutx/actions/runs/38439704470/job/115442827296) |
+| `windows-2025` / x64 | [115442827237](https://github.com/send/shoutx/actions/runs/38439704470/job/115442827237) |
+
+The [versioned fixture][writer-fixture] executes the built shoutx binary,
+appends two file declarations (plain and Unicode names) and three opaque OCI
+declarations (SHA-256/384/512), then compares the entire next-step schema-1
+list against independently expected names, kinds, and digests. No opt-in is
+forced. Missing variables, zero-byte lists, missing/extra subjects, or changed
+fields fail. The same jobs also passed the pinned Runner handler comparison.
+These are completed-step observations, not a claim that the entire CI run or
+latest-head review had completed at recording time. Current-head CI and review
+remain separate PR gates. No registry object or file authorization is verified.
+
+[writer-run]: https://github.com/send/shoutx/actions/runs/38439704470
+[writer-fixture]: https://github.com/send/shoutx/blob/6b514f4a8618188fc3203858e0cf75c69a74c4cf/tests/workflow-smoke/hosted_artifacts.py
 
 ## Probe and observations
 

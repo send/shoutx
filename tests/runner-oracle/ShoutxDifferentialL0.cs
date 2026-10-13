@@ -133,6 +133,7 @@ public sealed class ShoutxDifferentialL0
             File.CreateSymbolicLink(Path.Combine(root, "link"), file);
             Process("file://link\n");
             var linked = Assert.Single(global.ArtifactSubjects).Value;
+            Assert.Equal("link", linked.Name);
             Assert.Equal(targetDigest, linked.Digest);
             Assert.Equal(ArtifactSubjectKind.File, linked.Kind);
 

@@ -31,6 +31,8 @@ jobs:
         run: python3 -B tests/workflow-smoke/test_stdout_run.py
       - name: Test source-bound publication gate
         run: python3 -B tests/workflow-smoke/test_stdout_release.py
+      - name: Test ID-bound release publication
+        run: python3 -B tests/workflow-smoke/test_release_publish.py
 
   changes:
     timeout-minutes: 5

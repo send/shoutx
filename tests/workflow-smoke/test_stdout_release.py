@@ -168,8 +168,10 @@ class GateTests(unittest.TestCase):
         metadata = workflow.split("  metadata:\n", 1)[1].split("  build:\n", 1)[0]
         publish = workflow.split("      - name: Publish verified release\n", 1)[1]
         self.assertIn('python3 -B scripts/check-stdout-release.py --sha "$COMMIT_SHA"', metadata)
-        self.assertIn('python3 -B scripts/check-stdout-release.py --sha "$GITHUB_SHA"', publish)
-        self.assertLess(publish.index("check-stdout-release.py"), publish.index("gh release edit"))
+        self.assertIn('python3 -B scripts/publish-release.py', publish)
+        publisher = (ROOT / 'scripts/publish-release.py').read_text()
+        self.assertIn("check-stdout-release.py", publisher)
+        self.assertLess(publisher.index('admission(sha)'), publisher.index("api.api('PATCH', endpoint"))
 
     def test_new_ci_or_verifier_attempt_during_check_blocks(self):
         for mode in ("new-ci", "source-attempt", "verifier-attempt"):

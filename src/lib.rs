@@ -18,6 +18,9 @@ macro_rules! stable_help {
 
 pub const HELP: &str = concat!(
     stable_help!(),
+    "\nGitHub Actions artifact declarations:\n",
+    "  shoutx github-actions:artifacts file [PATH]\n",
+    "  shoutx github-actions:artifacts oci REFERENCE DIGEST\n",
     "\nGitHub Actions stdout commands:\n",
     "  shoutx github-actions:mask   [VALUE]\n",
     "  shoutx github-actions:notice  [--title TITLE] [--file FILE] [--line N] [--end-line N] [--column N] [--end-column N] [MESSAGE]\n",

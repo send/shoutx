@@ -58,7 +58,7 @@ through a named shoutx output boundary.
 | --- | --- | --- |
 | Output, environment, action state, PATH files | Shipped | Contracts indexed below; authorization of values and paths remains caller-owned. |
 | Mask and notice/warning/error annotations | Shipped | Contracts and compatibility profile below; not arbitrary log sanitization. |
-| Artifact declarations | Open: implementation candidate | Availability now permits reconsideration; follow the [artifact decision](decisions/github-actions-artifacts.md) and complete its remaining gates before advertising support. |
+| Artifact declarations | Implemented in source; verification pending | [Contract](commands/github-actions-artifacts.md); not in v0.3.0. Complete consumer gates before advertising support. |
 | Debug message and group title | Open: boundary decision | Both accept data in stdout commands. Assess line/command injection and useful writer interfaces; implement or record a concrete exclusion before v1. Do not inherit annotation acceptance from a shared parser. |
 | `endgroup`, command echo on/off | No separate data writer required | Trusted fixed control operations; a future group interface may include a fixed terminator for usability. |
 | Stop/resume commands | Outside the current writer boundary | Controls a stream-wide protocol with a caller-managed token/lifetime, not one encoded value. Do not present this as protection for arbitrary subprocess output. |
@@ -90,6 +90,8 @@ shoutx github-actions:output [--first-line | --join-lines | --join-lines-with ST
 shoutx github-actions:env    [--first-line | --join-lines | --join-lines-with STRING | --multiline] NAME [VALUE]
 shoutx github-actions:state  [--first-line | --join-lines | --join-lines-with STRING | --multiline] NAME [VALUE]
 shoutx github-actions:path   [VALUE]
+shoutx github-actions:artifacts file [PATH]
+shoutx github-actions:artifacts oci REFERENCE DIGEST
 ```
 
 The same executable also provides stdout workflow-command writers:
@@ -101,7 +103,7 @@ shoutx github-actions:warning [ANNOTATION OPTIONS] [MESSAGE]
 shoutx github-actions:error   [ANNOTATION OPTIONS] [MESSAGE]
 ```
 
-All eight commands are included in default and `--no-default-features` builds.
+All nine commands are included in default and `--no-default-features` builds.
 The former research feature is removed. Stdout consumer compatibility is scoped
 by the adoption contract below; binary availability does not broaden it.
 
@@ -159,6 +161,21 @@ cross-platform evidence are recorded in
 [the workflow-command compatibility note](compatibility/github-actions-workflow-command-parser.md).
 The [framing decision](decisions/github-actions-stdout-framing.md) explains
 adoption, and the release policy governs publication of the implemented surface.
+
+## Artifact consumer scope
+
+The artifact writer targets native standard GitHub-hosted Ubuntu 22.04 x64,
+Ubuntu 24.04 x64, macOS 15 arm64, and Windows 2025 x64 jobs with artifact
+processing enabled. The pinned source reference is Runner v2.337.0. The
+implementation must pass declaration/list integration on these targets before
+support is claimed. Packaging for another architecture does not add its consumer
+to this profile. Self-hosted and container observations in tests characterize
+the protocol but do not initially extend the supported deployment scope.
+
+Shoutx cannot inspect the consumer feature flag or acknowledge post-step
+processing. Actual subject verification, not variable presence, provides
+availability evidence. This file-command destination does not use the stdout
+command parser or inherit its Unicode data-start restrictions.
 
 ## Stdout adoption contract
 
@@ -279,6 +296,7 @@ verification plan:
 
 - [GitHub Actions named records](commands/github-actions-records.md)
 - [GitHub Actions PATH writer](commands/github-actions-path.md)
+- [GitHub Actions artifact declarations](commands/github-actions-artifacts.md)
 - [GitHub Actions log-mask command](commands/github-actions-mask.md)
 - [GitHub Actions annotation commands](commands/github-actions-annotations.md)
 

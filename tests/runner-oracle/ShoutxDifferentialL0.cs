@@ -35,6 +35,121 @@ public sealed class ShoutxDifferentialL0
     public ShoutxDifferentialL0(ITestOutputHelper output) => _output = output;
     private ShoutxDifferentialL0() { }
 
+    private sealed record ArtifactCase(string Wire, string Name, string Digest, string Kind);
+
+    [Fact]
+    [Trait("Level", "L0")]
+    [Trait("Category", "Worker")]
+    public void ArtifactHandlersConsumeProducerRecords()
+    {
+        var corpusPath = Environment.GetEnvironmentVariable("SHOUTX_ARTIFACTS_CORPUS");
+        Assert.False(string.IsNullOrEmpty(corpusPath));
+        var cases = JsonSerializer.Deserialize<List<ArtifactCase>>(File.ReadAllText(corpusPath!),
+            new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
+        Assert.Equal(27, cases.Count);
+        using var host = new TestHostContext(this);
+        var root = Path.Combine(Path.GetTempPath(), "shoutx-artifacts-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        var input = Path.Combine(root, "command");
+        var output = Path.Combine(root, "list");
+        var context = new Mock<IExecutionContext>();
+        var global = new GlobalContext {
+            Variables = new Variables(host, new Dictionary<string, VariableValue> {
+                [Constants.Runner.Features.AllowArtifactsFile] = new VariableValue("true") }),
+            ArtifactSubjects = new Dictionary<string, ArtifactSubject>(StringComparer.Ordinal)
+        };
+        context.SetupGet(x => x.Global).Returns(global);
+        context.Setup(x => x.GetGitHubContext("workspace")).Returns(root);
+        var writer = new CreateArtifactsFileCommand();
+        writer.Initialize(host);
+        var reader = new ArtifactsListFileCommand();
+        reader.Initialize(host);
+        try {
+            foreach (var item in cases) {
+                global.ArtifactSubjects.Clear();
+                if (item.Kind == "file") File.WriteAllText(Path.Combine(root, item.Name), "abc", new UTF8Encoding(false));
+                File.WriteAllBytes(input, Convert.FromBase64String(item.Wire));
+                writer.ProcessCommand(context.Object, input, null!);
+                var subject = Assert.Single(global.ArtifactSubjects).Value;
+                Assert.Equal(item.Name, subject.Name);
+                Assert.Equal(item.Digest, subject.Digest);
+                Assert.Equal(item.Kind == "file" ? ArtifactSubjectKind.File : ArtifactSubjectKind.OciSubject, subject.Kind);
+                reader.PopulateInitialContents(context.Object, output, null!);
+                using var json = JsonDocument.Parse(File.ReadAllBytes(output));
+                Assert.Equal(1, json.RootElement.GetProperty("version").GetInt32());
+                var listed = Assert.Single(json.RootElement.GetProperty("subjects").EnumerateArray());
+                Assert.Equal(item.Name, listed.GetProperty("name").GetString());
+                Assert.Equal(item.Digest, listed.GetProperty("digest").GetString());
+                Assert.Equal(item.Kind, listed.GetProperty("kind").GetString());
+                writer.ProcessCommand(context.Object, input, null!);
+                Assert.Single(global.ArtifactSubjects); // Identical declaration deduplicates.
+            }
+            void Process(string wire, ContainerInfo? container = null) {
+                File.WriteAllText(input, wire, new UTF8Encoding(false));
+                writer.ProcessCommand(context.Object, input, container!);
+            }
+            var digest = "sha256:" + new string('a', 64);
+            var other = "sha256:" + new string('b', 64);
+            global.ArtifactSubjects.Clear();
+            Assert.ThrowsAny<Exception>(() => Process($"oci://good@{digest}\noci://bad\n"));
+            Assert.Empty(global.ArtifactSubjects); // Parse failures add nothing.
+            Process($"oci://same@{digest}\noci://Same@{digest}\n");
+            Assert.Equal(2, global.ArtifactSubjects.Count); // Ordinal identity.
+            Assert.ThrowsAny<Exception>(() => Process($"oci://new@{digest}\noci://same@{other}\n"));
+            Assert.Equal(3, global.ArtifactSubjects.Count); // Conflict is not transactional.
+            global.ArtifactSubjects.Clear();
+            for (var i = 0; i < 499; i++)
+                global.ArtifactSubjects.Add("s" + i, new ArtifactSubject("s" + i, digest, ArtifactSubjectKind.OciSubject));
+            Assert.ThrowsAny<Exception>(() => Process($"oci://last@{digest}\noci://overflow@{digest}\n"));
+            Assert.Equal(500, global.ArtifactSubjects.Count);
+            Assert.True(global.ArtifactSubjects.ContainsKey("last"));
+            Process($"oci://last@{digest}\n"); // Duplicate at cap is allowed.
+            global.ArtifactSubjects.Clear();
+            Process(new string(' ', CreateArtifactsFileCommand.MaxFileSizeBytes));
+            Assert.ThrowsAny<Exception>(() => Process(new string(' ', CreateArtifactsFileCommand.MaxFileSizeBytes + 1)));
+            Assert.Empty(global.ArtifactSubjects);
+
+            var file = Path.Combine(root, "mutable");
+            File.WriteAllText(file, "abc", new UTF8Encoding(false));
+            Process($"file://{file}\n"); // Absolute native path.
+            var original = global.ArtifactSubjects["mutable"].Digest;
+            global.ArtifactSubjects.Clear();
+            File.WriteAllText(file, "changed", new UTF8Encoding(false));
+            Process("file://mutable\n", new ContainerInfo()); // Relative stays workspace-relative.
+            Assert.NotEqual(original, global.ArtifactSubjects["mutable"].Digest);
+            global.ArtifactSubjects.Clear();
+            Assert.ThrowsAny<Exception>(() => Process($"file://{root}\n")); // Directory.
+            Assert.ThrowsAny<Exception>(() => Process($"file://{file}\n", new ContainerInfo())); // Unmapped.
+            var container = new ContainerInfo();
+            var mount = OperatingSystem.IsWindows() ? @"C:\container" : "/container";
+            container.AddPathTranslateMapping(root, mount);
+            Process($"file://{Path.Combine(mount, "mutable")}\n", container);
+            Assert.Single(global.ArtifactSubjects);
+
+            // Isolated fixture restores the process opt-in. Normal corpus uses only the server flag.
+            var saved = Environment.GetEnvironmentVariable(CreateArtifactsFileCommand.EnableEnvVar);
+            try {
+                global.ArtifactSubjects.Clear();
+                global.Variables = new Variables(host, new Dictionary<string, VariableValue>());
+                Environment.SetEnvironmentVariable(CreateArtifactsFileCommand.EnableEnvVar, null);
+                Process($"oci://disabled@{digest}\n");
+                Assert.Empty(global.ArtifactSubjects);
+                File.WriteAllBytes(output, Array.Empty<byte>());
+                reader.PopulateInitialContents(context.Object, output, null!);
+                Assert.Empty(File.ReadAllBytes(output));
+                Environment.SetEnvironmentVariable(CreateArtifactsFileCommand.EnableEnvVar, "true");
+                reader.PopulateInitialContents(context.Object, output, null!);
+                using (var empty = JsonDocument.Parse(File.ReadAllBytes(output)))
+                    Assert.Empty(empty.RootElement.GetProperty("subjects").EnumerateArray());
+                Process($"oci://enabled@{digest}\n");
+                Assert.Single(global.ArtifactSubjects);
+                reader.PopulateInitialContents(context.Object, output, null!);
+                using var enabled = JsonDocument.Parse(File.ReadAllBytes(output));
+                Assert.Single(enabled.RootElement.GetProperty("subjects").EnumerateArray());
+            } finally { Environment.SetEnvironmentVariable(CreateArtifactsFileCommand.EnableEnvVar, saved); }
+        } finally { Directory.Delete(root, recursive: true); }
+    }
+
     [Fact]
     [Trait("Level", "L0")]
     [Trait("Category", "Worker")]

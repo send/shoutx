@@ -327,7 +327,7 @@ contracts and lasting command-specific implementation constraints live under
 The stdout writers are compiled into the normal executable without a feature
 opt-in. Their encoders and input policies are unchanged by promotion. The parser
 still dispatches through one enumerable command table, now checked against the
-complete eight-command surface. Explicit stdout integration targets and fresh
+complete command surface. Explicit stdout integration targets and fresh
 corpus exports remain in CI; artifact tests exercise the same normal binary.
 The former isolation rationale is retained in its superseded decision record.
 
@@ -339,11 +339,11 @@ Fresh exact-source admission and release approval remain governed by the
 [release policy](release.md#stdout-admission-and-compatibility-maintenance),
 including after a documentation-only closeout.
 
-The next increment is the artifact declaration writer, following the
-[candidate decision](decisions/github-actions-artifacts.md). Move accepted
-observable behavior into a command specification, implement the typed writer,
-and add exact-output/rejection tests, pinned-handler comparison, and repeatable
-hosted verification on the claimed targets. Reuse the existing candidate and
+The current increment is the artifact declaration writer, following the
+[decision](decisions/github-actions-artifacts.md) and
+[command contract](commands/github-actions-artifacts.md). Complete the typed
+writer's exact-output/rejection tests, pinned-handler comparison, and repeatable
+hosted verification on the claimed targets. Reuse the existing specification and
 [availability evidence](compatibility/github-actions-artifacts-availability.md);
 do not repeat the exploratory availability work as a prerequisite.
 

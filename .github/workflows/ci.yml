@@ -351,7 +351,10 @@ jobs:
           $env:SHOUTX_ANNOTATION_CORPUS_PATH = "$pwd/target/runner-oracle/annotation-corpus.json"
           Remove-Item -ErrorAction Ignore $env:SHOUTX_ANNOTATION_CORPUS_PATH
           cargo +stable test --no-default-features --test annotation_runner_fixture export_annotation_corpus -- --ignored
-          foreach ($corpus in @($env:SHOUTX_CORPUS_PATH, $env:SHOUTX_PATH_CORPUS_PATH, $env:SHOUTX_MASK_CORPUS_PATH, $env:SHOUTX_ANNOTATION_CORPUS_PATH)) {
+          $env:SHOUTX_ARTIFACTS_CORPUS_PATH = "$pwd/target/runner-oracle/artifacts-corpus.json"
+          Remove-Item -ErrorAction Ignore $env:SHOUTX_ARTIFACTS_CORPUS_PATH
+          cargo +stable test --no-default-features --test artifacts_runner_fixture export_artifacts_corpus -- --ignored
+          foreach ($corpus in @($env:SHOUTX_CORPUS_PATH, $env:SHOUTX_PATH_CORPUS_PATH, $env:SHOUTX_MASK_CORPUS_PATH, $env:SHOUTX_ANNOTATION_CORPUS_PATH, $env:SHOUTX_ARTIFACTS_CORPUS_PATH)) {
             if (-not (Test-Path $corpus) -or (Get-Item $corpus).Length -eq 0) { throw "Missing fresh corpus" }
           }
       - name: Build pinned runner oracle
@@ -371,6 +374,7 @@ jobs:
           SHOUTX_PATH_CORPUS: ${{ github.workspace }}/target/runner-oracle/path-corpus.json
           SHOUTX_MASK_CORPUS: ${{ github.workspace }}/target/runner-oracle/mask-corpus.json
           SHOUTX_ANNOTATION_CORPUS: ${{ github.workspace }}/target/runner-oracle/annotation-corpus.json
+          SHOUTX_ARTIFACTS_CORPUS: ${{ github.workspace }}/target/runner-oracle/artifacts-corpus.json
         run: |
           dotnet test Test/Test.csproj `
             --configuration Release `
@@ -380,6 +384,18 @@ jobs:
             --logger 'console;verbosity=detailed' `
             --logger 'trx;LogFileName=runner-oracle.trx' `
             --results-directory '${{ github.workspace }}/target/runner-oracle-results'
+      - name: Declare file and OCI subjects through shoutx
+        shell: pwsh
+        run: |
+          $PSNativeCommandUseErrorActionPreference = $true
+          python -B tests/workflow-smoke/test_hosted_artifacts.py
+          $binary = if ($IsWindows) { 'target/oracle-stable/debug/shoutx.exe' } else { 'target/oracle-stable/debug/shoutx' }
+          python -B tests/workflow-smoke/hosted_artifacts.py emit $binary
+      - name: Verify artifact subjects in following step
+        shell: pwsh
+        run: |
+          $PSNativeCommandUseErrorActionPreference = $true
+          python -B tests/workflow-smoke/hosted_artifacts.py verify
       - name: Test published Runner runtime and parser
         env:
           RUSTUP_TOOLCHAIN: stable

@@ -60,6 +60,17 @@ pub struct PathRequest {
 }
 
 #[derive(Debug)]
+pub enum ArtifactRequest {
+    File {
+        path: Option<OsString>,
+    },
+    Oci {
+        reference: OsString,
+        digest: OsString,
+    },
+}
+
+#[derive(Debug)]
 pub struct MaskRequest {
     pub value: Option<OsString>,
 }
@@ -89,12 +100,14 @@ pub enum Action {
     Version,
     Write(WriteRequest),
     WritePath(PathRequest),
+    Artifact(ArtifactRequest),
     Mask(MaskRequest),
     Annotate(AnnotationRequest),
 }
 
 #[derive(Clone, Copy)]
 enum Command {
+    Artifacts,
     Output,
     Env,
     State,
@@ -106,6 +119,7 @@ enum Command {
 }
 
 const COMMANDS: &[(&str, Command)] = &[
+    ("github-actions:artifacts", Command::Artifacts),
     ("github-actions:output", Command::Output),
     ("github-actions:env", Command::Env),
     ("github-actions:state", Command::State),
@@ -143,6 +157,7 @@ pub fn parse(args: Vec<OsString>) -> Result<Action, ShoutxError> {
         .find_map(|(name, kind)| (*name == command).then_some(*kind))
         .ok_or_else(|| ShoutxError::usage("unknown command"))?;
     let destination = match command {
+        Command::Artifacts => return parse_artifacts(it.collect()),
         Command::Output => Destination::Output,
         Command::Env => Destination::Env,
         Command::State => Destination::State,
@@ -244,6 +259,46 @@ pub fn parse(args: Vec<OsString>) -> Result<Action, ShoutxError> {
         name,
         value,
     }))
+}
+
+fn parse_artifacts(tokens: Vec<OsString>) -> Result<Action, ShoutxError> {
+    let variant = tokens.first().and_then(|t| t.to_str());
+    match variant {
+        Some("--help") => return Ok(Action::Help),
+        Some("--version") => return Ok(Action::Version),
+        Some("file" | "oci") => {}
+        _ => return Err(ShoutxError::usage("missing or unknown artifact variant")),
+    }
+    let mut operands = Vec::new();
+    let mut options = true;
+    for token in tokens.iter().skip(1) {
+        if options {
+            match token.to_str() {
+                Some("--help") => return Ok(Action::Help),
+                Some("--version") => return Ok(Action::Version),
+                Some("--") => {
+                    options = false;
+                    continue;
+                }
+                _ if starts_with_ascii_dash(token) => {
+                    return Err(ShoutxError::usage("unknown option"));
+                }
+                _ => options = false,
+            }
+        }
+        operands.push(token.clone());
+    }
+    match (variant, operands.len()) {
+        (Some("file"), 0..=1) => Ok(Action::Artifact(ArtifactRequest::File {
+            path: operands.pop(),
+        })),
+        (Some("oci"), 2) => {
+            let digest = operands.pop().unwrap();
+            let reference = operands.pop().unwrap();
+            Ok(Action::Artifact(ArtifactRequest::Oci { reference, digest }))
+        }
+        _ => Err(ShoutxError::usage("wrong number of artifact operands")),
+    }
 }
 
 fn parse_annotation(

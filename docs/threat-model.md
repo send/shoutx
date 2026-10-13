@@ -185,7 +185,7 @@ Other recognized boundaries are deferred, candidates, or out of scope:
 | stdout `add-mask` workflow command | Implemented within the design-owned profile; publication separately gated | Register one faithfully decoded value for subsequent runner log masking |
 | stdout annotation workflow commands | Implemented within the design-owned profile; publication separately gated | Emit one faithfully decoded notice, warning, or error with validated location metadata |
 | other stdout workflow commands | Not implemented; dispositions in the [coverage inventory](design.md#v1-readiness) | Lines such as `::stop-commands::` and `::group::` are runner control messages |
-| `$GITHUB_ARTIFACTS` | Proposed, not implemented; see [decision](decisions/github-actions-artifacts.md) | One file or OCI declaration per line |
+| `$GITHUB_ARTIFACTS` | Implemented in source; consumer verification pending | One typed declaration; see [contract](commands/github-actions-artifacts.md) |
 | `$GITHUB_ARTIFACTS_LIST` | Out of scope | Runner-managed, read-only JSON input |
 
 Inventorying a boundary does not commit `shoutx` to supporting it. It prevents
@@ -259,13 +259,13 @@ Detailed boundary analyses are colocated with their command specifications:
 - [GitHub Actions PATH writer](commands/github-actions-path.md)
 - [GitHub Actions log-mask command](commands/github-actions-mask.md)
 - [GitHub Actions annotation commands](commands/github-actions-annotations.md)
+- [GitHub Actions artifact declarations](commands/github-actions-artifacts.md)
 
 ### Candidate, deferred, and out-of-scope analyses
 
 Detailed rationale for candidate, deferred, and out-of-scope features is recorded in
 decision documents:
 
-- [GitHub Actions artifact declarations](decisions/github-actions-artifacts.md)
 - [POSIX shell-word encoding](decisions/shell-arg.md)
 - [Markdown output](decisions/markdown-output.md)
 
@@ -277,7 +277,7 @@ decision documents:
 | Early multiline termination | Yes | Use an independent delimiter and verify that it does not occur in the value |
 | Record-name confusion | Yes | Validate against a documented conservative grammar |
 | Multiple PATH entries through a line break | Yes | Consume only one optional final boundary and reject remaining CR/LF |
-| Multiple artifact declarations through a line break | Proposed candidate, not protected today | Proposed control: emit one typed scheme and reject remaining CR/LF before output; adoption gates remain in the [decision](decisions/github-actions-artifacts.md) |
+| Multiple artifact declarations through a line break | Implemented; verification pending | Emit one typed scheme and reject record delimiters before output; [contract](commands/github-actions-artifacts.md) |
 | Multiple effective PATH entries through the PATH separator | Yes | Reject `:` for POSIX targets and `;` for Windows targets |
 | Container runtime option injection through PATH quoting | Yes | Reject `"` on every target before the runner constructs `docker exec` arguments |
 | Container path identity change through argument re-tokenization | Yes | Reject a trailing backslash for POSIX targets |

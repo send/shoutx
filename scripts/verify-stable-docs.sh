@@ -46,6 +46,7 @@ pattern = re.compile(
 )
 commands = [match.group(1) for match in pattern.finditer("\n".join(code))]
 stable = {
+    "github-actions:artifacts",
     "github-actions:output",
     "github-actions:env",
     "github-actions:state",

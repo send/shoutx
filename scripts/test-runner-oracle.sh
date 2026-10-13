@@ -8,6 +8,7 @@ corpus="$root/target/runner-oracle/corpus.json"
 path_corpus="$root/target/runner-oracle/path-corpus.json"
 mask_corpus="$root/target/runner-oracle/mask-corpus.json"
 annotation_corpus="$root/target/runner-oracle/annotation-corpus.json"
+artifacts_corpus="$root/target/runner-oracle/artifacts-corpus.json"
 staging_dir=
 
 cleanup() {
@@ -71,7 +72,10 @@ esac
 
 cd "$root"
 mkdir -p "$(dirname -- "$corpus")"
-rm -f -- "$corpus" "$path_corpus" "$mask_corpus" "$annotation_corpus"
+rm -f -- "$corpus" "$path_corpus" "$mask_corpus" "$annotation_corpus" "$artifacts_corpus"
+SHOUTX_ARTIFACTS_CORPUS_PATH="$artifacts_corpus" \
+  CARGO_TARGET_DIR=target/oracle-stable \
+  cargo test --no-default-features --test artifacts_runner_fixture export_artifacts_corpus -- --ignored
 SHOUTX_CORPUS_PATH="$corpus" \
   CARGO_TARGET_DIR=target/oracle-stable \
   cargo test --no-default-features --test runner_differential_fixture export_runner_corpus -- --ignored
@@ -84,7 +88,7 @@ SHOUTX_MASK_CORPUS_PATH="$mask_corpus" \
 SHOUTX_ANNOTATION_CORPUS_PATH="$annotation_corpus" \
   CARGO_TARGET_DIR=target/oracle-stable \
   cargo test --no-default-features --test annotation_runner_fixture export_annotation_corpus -- --ignored
-for generated in "$corpus" "$path_corpus" "$mask_corpus" "$annotation_corpus"; do
+for generated in "$corpus" "$path_corpus" "$mask_corpus" "$annotation_corpus" "$artifacts_corpus"; do
   if [ ! -s "$generated" ]; then
     echo "error: expected freshly generated corpus: $generated" >&2
     exit 1
@@ -103,7 +107,7 @@ cp tests/runner-oracle/ShoutxDifferentialL0.cs \
     --configuration Release \
     -p:PackageRuntime="$runtime" \
     -p:NuGetAudit=false
-  SHOUTX_CORPUS="$corpus" SHOUTX_PATH_CORPUS="$path_corpus" SHOUTX_MASK_CORPUS="$mask_corpus" SHOUTX_ANNOTATION_CORPUS="$annotation_corpus" DOTNET_CLI_TELEMETRY_OPTOUT=1 \
+  SHOUTX_ARTIFACTS_CORPUS="$artifacts_corpus" SHOUTX_CORPUS="$corpus" SHOUTX_PATH_CORPUS="$path_corpus" SHOUTX_MASK_CORPUS="$mask_corpus" SHOUTX_ANNOTATION_CORPUS="$annotation_corpus" DOTNET_CLI_TELEMETRY_OPTOUT=1 \
     dotnet_run test Test/Test.csproj \
     --configuration Release \
     --no-build \

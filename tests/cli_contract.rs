@@ -149,6 +149,7 @@ fn configured_command_table_is_the_complete_expected_surface() {
         );
     }
     const EXPECTED: &[&str] = &[
+        "github-actions:artifacts",
         "github-actions:output",
         "github-actions:env",
         "github-actions:state",

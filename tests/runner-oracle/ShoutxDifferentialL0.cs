@@ -64,7 +64,9 @@ public sealed class ShoutxDifferentialL0
         writer.Initialize(host);
         var reader = new ArtifactsListFileCommand();
         reader.Initialize(host);
+        var inheritedOptIn = Environment.GetEnvironmentVariable(CreateArtifactsFileCommand.EnableEnvVar);
         try {
+            Environment.SetEnvironmentVariable(CreateArtifactsFileCommand.EnableEnvVar, null);
             foreach (var item in cases) {
                 global.ArtifactSubjects.Clear();
                 if (item.Kind == "file") File.WriteAllText(Path.Combine(root, item.Name), "abc", new UTF8Encoding(false));
@@ -126,6 +128,14 @@ public sealed class ShoutxDifferentialL0
             Process($"file://{Path.Combine(mount, "mutable")}\n", container);
             Assert.Single(global.ArtifactSubjects);
 
+            var targetDigest = global.ArtifactSubjects["mutable"].Digest;
+            global.ArtifactSubjects.Clear();
+            File.CreateSymbolicLink(Path.Combine(root, "link"), file);
+            Process("file://link\n");
+            var linked = Assert.Single(global.ArtifactSubjects).Value;
+            Assert.Equal(targetDigest, linked.Digest);
+            Assert.Equal(ArtifactSubjectKind.File, linked.Kind);
+
             // Isolated fixture restores the process opt-in. Normal corpus uses only the server flag.
             var saved = Environment.GetEnvironmentVariable(CreateArtifactsFileCommand.EnableEnvVar);
             try {
@@ -147,7 +157,10 @@ public sealed class ShoutxDifferentialL0
                 using var enabled = JsonDocument.Parse(File.ReadAllBytes(output));
                 Assert.Single(enabled.RootElement.GetProperty("subjects").EnumerateArray());
             } finally { Environment.SetEnvironmentVariable(CreateArtifactsFileCommand.EnableEnvVar, saved); }
-        } finally { Directory.Delete(root, recursive: true); }
+        } finally {
+            Environment.SetEnvironmentVariable(CreateArtifactsFileCommand.EnableEnvVar, inheritedOptIn);
+            Directory.Delete(root, recursive: true);
+        }
     }
 
     [Fact]

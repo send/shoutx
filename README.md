@@ -154,6 +154,7 @@ GitHub Actions stdout commands:
 
 | Command | Produces | Line-break behavior |
 | --- | --- | --- |
+| `github-actions:artifacts` (unreleased) | One typed `$GITHUB_ARTIFACTS` declaration | File: one final boundary consumed; OCI: boundaries rejected |
 | `github-actions:output` | One `$GITHUB_OUTPUT` record | Internal boundaries rejected by default; explicit normalization |
 | `github-actions:env` | One `$GITHUB_ENV` record | Internal boundaries rejected by default; explicit normalization |
 | `github-actions:path` | One `$GITHUB_PATH` record | One final boundary consumed; others rejected |

@@ -104,7 +104,7 @@ zero bytes; when enabled with no subjects, the list contains
 command, CI must prove on every supported hosted runner that a file declaration
 appears with the expected name and digest in a later step's
 `GITHUB_ARTIFACTS_LIST`. The pinned runner oracle must separately enable the
-server-side feature variable without changing process-global state and exercise
+server-side feature variable with the process opt-in cleared and restored afterward, and exercise
 the actual artifact handlers. Official documentation is the public contract,
 but documentation alone is insufficient for a compatibility claim while
 silent disablement exists.
@@ -125,7 +125,7 @@ subject to the job aggregate, and content resembling another subject type must
 not change the selected type. An injected subject could corrupt the set of
 materials associated with later provenance or attestation processing.
 
-The proposed writer always emits `file://` or `oci://` and rejects record
+The writer always emits `file://` or `oci://` and rejects record
 boundaries before stdout begins. This does not establish that a declared file
 is trusted, immutable, or intended. The runner resolves and opens file paths
 after the producing step, follows symlinks, excludes directories, and calculates
@@ -194,8 +194,8 @@ in the Unicode `White_Space` property. Include final NEL, LINE SEPARATOR, and
 PARAGRAPH SEPARATOR rejections, plus U+FEFF and U+200B preservation. Assert
 empty stdout for every rejection.
 
-The local model must reproduce only runner parsing and resolution behavior
-needed for comparison: full-line Unicode trimming, explicit scheme selection,
+Use independently expected producer bytes and the pinned runner's actual
+handlers to check parsing and resolution: full-line Unicode trimming, explicit scheme selection,
 relative resolution against `GITHUB_WORKSPACE`, native rooted-path handling with
 a null container, rooted translation and outside-mount rejection with a job
 container, directory exclusion, symlink behavior, base-name selection, and
@@ -237,8 +237,8 @@ during aggregation and leave subjects inserted earlier by that same step;
 assert this non-transactional runner behavior explicitly.
 
 The pinned runner differential test explicitly enables the server-side
-`actions_runner_allow_artifacts_file` variable, without mutating the process
-environment, and calls the actual write and list handlers. Separately test the
+`actions_runner_allow_artifacts_file` variable, clears the process opt-in with
+restoration afterward, and calls the actual write and list handlers. Separately test the
 self-hosted `ACTIONS_RUNNER_ALLOW_ARTIFACTS_FILE` fallback with state restored
 afterward. A hosted workflow probe on every supported runner writes a known
 temporary file, appends the candidate encoding, and verifies in a later step
@@ -265,7 +265,7 @@ explicit-scheme record and validate its encoded size before stdout is opened.
 
 Add a dedicated runner oracle around `CreateArtifactsFileCommand` and
 `ArtifactsListFileCommand`. Enable the pinned runner's server-side feature
-variable explicitly without mutating process-global state, exercise real
+variable explicitly with the process opt-in cleared and restored afterward, exercise real
 temporary files and native path semantics, and compare the job-scoped aggregate
 and JSON list rather than transcribing only the line parser. Test the
 self-hosted process-environment fallback separately with cleanup. Test rooted

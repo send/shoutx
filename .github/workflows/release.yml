@@ -19,8 +19,10 @@ on:
       - tests/cli_contract.rs
       - tests/stable_surface.rs
       - scripts/check-stdout-release.py
+      - scripts/publish-release.py
       - scripts/verify-stdout-run.py
       - tests/workflow-smoke/test_stdout_release.py
+      - tests/workflow-smoke/test_release_publish.py
       - rust-toolchain.toml
 
 permissions:
@@ -65,6 +67,8 @@ jobs:
           diff -u target/stable-tree.txt target/default-tree.txt
       - name: Verify stdout publication gate failures
         run: python3 -B tests/workflow-smoke/test_stdout_release.py
+      - name: Verify ID-bound publication and retry behavior
+        run: python3 -B tests/workflow-smoke/test_release_publish.py
       - name: Verify release archive validator
         shell: bash
         run: |
@@ -323,117 +327,8 @@ jobs:
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6
         with:
           subject-path: dist/*
-      - name: Create or reset draft release
-        shell: bash
-        run: |
-          tag_object=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG")
-          tag_type=$(jq -r '.object.type' <<< "$tag_object")
-          tag_sha=$(jq -r '.object.sha' <<< "$tag_object")
-          for _ in {1..8}; do
-            [[ "$tag_type" == "tag" ]] || break
-            tag_object=$(gh api "repos/$GITHUB_REPOSITORY/git/tags/$tag_sha")
-            tag_type=$(jq -r '.object.type' <<< "$tag_object")
-            tag_sha=$(jq -r '.object.sha' <<< "$tag_object")
-          done
-          if [[ "$tag_type" != "commit" || "$tag_sha" != "$GITHUB_SHA" ]]; then
-            echo "The release tag no longer resolves to the triggering commit"
-            exit 1
-          fi
-
-          set +e
-          release=$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$TAG" 2>/dev/null)
-          found=$?
-          set -e
-          if [[ "$found" -eq 0 ]]; then
-            if [[ "$(jq -r '.draft' <<< "$release")" != "true" ]]; then
-              echo "A published release already exists for this tag"
-              exit 1
-            fi
-            release_id=$(jq -r '.id' <<< "$release")
-            gh api "repos/$GITHUB_REPOSITORY/releases/$release_id/assets" --paginate \
-              --jq '.[].id' | while IFS= read -r asset_id; do
-                gh api --method DELETE \
-                  "repos/$GITHUB_REPOSITORY/releases/assets/$asset_id"
-              done
-          elif [[ "$found" -eq 1 ]]; then
-            args=("$TAG" --draft --verify-tag --generate-notes)
-            if [[ "$PRERELEASE" == "true" ]]; then
-              args+=(--prerelease)
-            fi
-            gh release create "${args[@]}"
-          else
-            exit "$found"
-          fi
-      - name: Upload and verify draft assets
-        shell: bash
-        run: |
-          gh release upload "$TAG" dist/*
-          mkdir downloaded
-          gh release download "$TAG" --dir downloaded
-          diff -u dist/SHA256SUMS downloaded/SHA256SUMS
-          (cd downloaded && sha256sum --check SHA256SUMS)
-          test "$(find downloaded -maxdepth 1 -type f | wc -l | tr -d ' ')" = 6
       - name: Publish verified release
-        shell: bash
-        run: |
-          python3 -B scripts/check-stdout-release.py --sha "$GITHUB_SHA"
-
-          tag_object=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG")
-          tag_type=$(jq -r '.object.type' <<< "$tag_object")
-          tag_sha=$(jq -r '.object.sha' <<< "$tag_object")
-          for _ in {1..8}; do
-            [[ "$tag_type" == "tag" ]] || break
-            tag_object=$(gh api "repos/$GITHUB_REPOSITORY/git/tags/$tag_sha")
-            tag_type=$(jq -r '.object.type' <<< "$tag_object")
-            tag_sha=$(jq -r '.object.sha' <<< "$tag_object")
-          done
-          if [[ "$tag_type" != "commit" || "$tag_sha" != "$GITHUB_SHA" ]]; then
-            echo "The release tag no longer resolves to the triggering commit"
-            exit 1
-          fi
-
-          if [[ "$PRERELEASE" == "true" ]]; then
-            gh release edit "$TAG" --draft=false --prerelease --latest=false
-          else
-            latest_file=$(mktemp)
-            set +e
-            latest_status=$(curl --silent --show-error \
-              --output "$latest_file" --write-out '%{http_code}' \
-              --header "Authorization: Bearer $GH_TOKEN" \
-              --header "Accept: application/vnd.github+json" \
-              --header "X-GitHub-Api-Version: 2022-11-28" \
-              "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/releases/latest")
-            curl_status=$?
-            set -e
-            if [[ "$curl_status" -ne 0 ]]; then
-              exit "$curl_status"
-            elif [[ "$latest_status" == "200" ]]; then
-              current_latest=$(jq -er '.tag_name' "$latest_file")
-            elif [[ "$latest_status" == "404" ]]; then
-              current_latest=""
-            else
-              echo "Latest release lookup failed with HTTP $latest_status"
-              exit 1
-            fi
-            if [[ "$current_latest" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-              greatest=$(printf '%s\n%s\n' "$current_latest" "$TAG" |
-                LC_ALL=C sort -V | tail -n 1)
-              if [[ "$greatest" != "$TAG" ]]; then
-                echo "Refusing to move the latest release pointer backward"
-                exit 1
-              fi
-            elif [[ -n "$current_latest" ]]; then
-              echo "Current latest release has an unsupported tag"
-              exit 1
-            fi
-            gh release edit "$TAG" --draft=false --prerelease=false --latest
-          fi
-
-          release=$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$TAG")
-          if [[ "$(jq -r '.immutable' <<< "$release")" != "true" ]]; then
-            echo "Published release is not immutable; this version is ineligible"
-            exit 1
-          fi
+        run: python3 -B scripts/publish-release.py
 
   aggregate:
     needs: [metadata, build]

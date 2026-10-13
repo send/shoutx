@@ -284,6 +284,18 @@ after GitHub accepts the final publish operation cannot be made transactional
 and requires maintainer review. The workflow never modifies or silently
 replaces assets on an already published release.
 
+Draft discovery uses the authenticated, paginated release list, not the
+published-release-by-tag endpoint. Zero matching releases permits creation;
+exactly one mutable draft permits reuse with its existing notes retained.
+Multiple matches, a published match, incomplete enumeration, or any API error
+stop the operation. Capture the selected or newly created release ID and bind
+all asset operations, publication and post-publication checks to that ID.
+Recheck draft identity before mutations and uniqueness before publication.
+An ambiguous create/upload/publish failure is not retried automatically inside
+the publisher; the next workflow attempt rediscovers and validates remote state.
+Concurrent manual release edits are outside the serialized workflow transaction:
+do not edit or publish the draft while the workflow is assembling it.
+
 Release publication is serialized so two runs cannot publish the same tag
 concurrently. The workflow has a finite timeout and retains intermediate
 workflow artifacts only long enough to diagnose a failed release.

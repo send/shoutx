@@ -25,8 +25,8 @@ usability while distinguishing malicious from intended content also requires
 application-specific policy.
 
 This decision does not cover an unredirected process writing attacker-controlled
-lines to the workflow log. The `add-mask` command is specified separately and
-other GitHub Actions stdout workflow commands remain deferred. A future
+lines to the workflow log. The current stdout writers and remaining coverage
+decisions are indexed in the [design](../design.md). A future
 Markdown feature requires a concrete threat and named rendering surface rather
 than a renderer-independent promise. This conclusion is specific to
 GitHub-rendered content and does not treat the same bytes as safe for arbitrary

@@ -339,6 +339,22 @@ Fresh exact-source admission and release approval remain governed by the
 [release policy](release.md#stdout-admission-and-compatibility-maintenance),
 including after a documentation-only closeout.
 
+The next increment is the artifact declaration writer, following the
+[candidate decision](decisions/github-actions-artifacts.md). Move accepted
+observable behavior into a command specification, implement the typed writer,
+and add exact-output/rejection tests, pinned-handler comparison, and repeatable
+hosted verification on the claimed targets. Reuse the existing candidate and
+[availability evidence](compatibility/github-actions-artifacts-availability.md);
+do not repeat the exploratory availability work as a prerequisite.
+
+Completion means a reviewed implementation and its tests/documentation, not a
+v1 release. Do not expand into runner internals, file authorization, registry
+validation, or other output commands. Any material candidate contract issue
+must be resolved at the named declaration boundary, not through universal
+upstream safety proofs. Subsequent increments decide debug/group and matcher
+coverage; product readiness remains owned by the
+[v1 inventory](design.md#v1-readiness).
+
 ## CI and quality gates
 
 CI begins in the first implementation PR and expands with each supported

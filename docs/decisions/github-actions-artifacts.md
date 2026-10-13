@@ -1,9 +1,10 @@
 # GitHub Actions artifact declaration decision
 
-Status: Deferred
+Status: Proposed
 
-This document records the deferred `$GITHUB_ARTIFACTS` candidate and the
-conditions for reconsidering it.
+This document records the `$GITHUB_ARTIFACTS` candidate and its adoption gates.
+Hosted availability now permits implementation planning, but this document is
+not a shipped command contract.
 
 ## Candidate contract
 
@@ -106,24 +107,19 @@ the actual artifact handlers. Official documentation is the public contract,
 but documentation alone is insufficient for a compatibility claim while
 silent disablement exists.
 
-The hosted-runner gate was exercised on 2026-09-28 in
-[workflow run 36331651232][artifacts-availability-probe] using runner v2.337.0
-on `ubuntu-latest` (`ubuntu-24.04`), `macos-latest` (`macos-26-arm64`), and
-`windows-latest` (`windows-2025-vs2026`). On all three runners the declaration
-file and list file variables were present, but the later step received a
-zero-byte list file. This is the runner's disabled behavior, so the availability
-gate failed uniformly. `github-actions:artifacts` therefore remains deferred
-and must not be implemented or advertised. Reconsideration requires a new
-hosted-runner probe that observes the expected subject on every supported OS;
-the documented environment variables alone are not evidence that processing is
-enabled.
+The [hosted availability evidence](../compatibility/github-actions-artifacts-availability.md)
+records the initial failure and successful recheck. The observed availability
+blocker is removed for the sampled hosts, so implementation may be proposed.
+The command must not be advertised as supported until its contract,
+implementation, pinned-handler tests, and hosted checks for the claimed targets
+are complete. The sampled latest labels do not establish every release target
+or OCI behavior. Environment variables alone remain insufficient evidence.
 
 [workflow-artifacts-command]: https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-commands#declaring-workflow-artifacts
-[artifacts-availability-probe]: https://github.com/send/shoutx/actions/runs/36331651232
 
 ## Threat-model rationale
 
-### Deferred `$GITHUB_ARTIFACTS` candidate
+### Proposed `$GITHUB_ARTIFACTS` candidate
 
 The candidate security property is structural integrity of one typed artifact
 declaration. An attacker-controlled newline must not add another file or OCI
@@ -149,16 +145,17 @@ prove that the named object has that digest. Duplicate, conflicting, and
 aggregate-limit behavior depends on declarations outside one shoutx
 invocation.
 
-No protection is claimed until hosted-runner testing confirms the feature is
-enabled. A runner may currently expose `$GITHUB_ARTIFACTS` while silently
+No protection is claimed for this unimplemented candidate. A runner may expose
+`$GITHUB_ARTIFACTS` while silently
 ignoring its contents when both its server feature flag and self-hosted opt-in
 environment variable are disabled.
 
 ## Candidate verification gate
 
-These cases define the pre-implementation gate for the
-`github-actions:artifacts` candidate. They do not make the command public until
-the hosted-runner availability checks pass.
+These cases define acceptance checks for implementing the
+`github-actions:artifacts` candidate. Sampled availability is recorded above;
+passing an availability probe alone does not satisfy these remaining checks or
+make the command public.
 
 ### Command grammar and input
 
@@ -253,14 +250,15 @@ absent, the list file is zero bytes, the enabled empty-list JSON remains
 unchanged, or the expected subject is absent. Public support is blocked until
 this probe passes across the supported matrix.
 
-The recorded hosted-probe result and the condition for reconsideration are
-stated in the candidate contract above. Repeat the same positive-subject
-assertion before starting implementation.
+The recorded hosted-probe result and remaining adoption conditions are linked
+from the candidate contract above. Retain the positive-subject assertion in
+implementation verification rather than repeatedly probing before work begins.
 
 ## Candidate implementation notes
 
-Do not implement or advertise this command until its hosted-runner availability
-gate passes. The parser must implement the typed interface defined above.
+The sampled availability check permits implementation to begin. Advertising
+support still requires all adoption gates above. The parser must implement the
+typed interface defined above.
 
 Keep artifact validation separate from named records and PATH mutation. The
 file variant may reuse bounded argv/stdin acquisition and final-boundary
@@ -280,7 +278,3 @@ host workspace context. The oracle must cover Unicode trimming, schemes,
 directory exclusion, hashing, name collisions, deduplication, conflicts,
 partial aggregation on conflict or cap failure, and limits without turning
 those runner behaviors into shoutx guarantees.
-
-Before implementation, rerun the hosted availability gate defined above. The
-mere presence of `GITHUB_ARTIFACTS` is insufficient; the probe must observe the
-declared subject in a subsequent step on every supported operating system.

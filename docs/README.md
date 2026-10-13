@@ -7,7 +7,7 @@ appropriate owner and replace the duplicate with a link.
 
 | Information | Authoritative source |
 | --- | --- |
-| Product boundary, applicability profile, and accepted cross-cutting invariants | [`design.md`](design.md) |
+| Product boundary, v1 readiness and coverage inventory, applicability profile, and accepted cross-cutting invariants | [`design.md`](design.md) |
 | Adversary, trust assumptions, assets, and attack inventory | [`threat-model.md`](threat-model.md) |
 | Observable CLI behavior for one destination | [`commands/`](commands/) |
 | Rationale, alternatives, and reconsideration conditions | [`decisions/`](decisions/) |

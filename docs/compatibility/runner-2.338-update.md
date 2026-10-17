@@ -1,6 +1,7 @@
 # Runner v2.338.0 compatibility update
 
-Status: verification in progress; not release admission.
+Status: reviewed pin update; latest-head verification is recorded in
+[PR #129](https://github.com/send/shoutx/pull/129), not release admission.
 
 This separately reviewed update advances the test consumer from v2.337.0 to
 v2.338.0 without changing shoutx production behavior, accepted inputs, or the
@@ -49,7 +50,14 @@ tests, trusted-log verifier unit tests, and stable-document checks also passed.
 GPT-6 Sol's independent review found two stale documentation references; both
 were corrected without changing the test gates or producer behavior.
 
-Fresh hosted run identities and results will be recorded after verification.
+Hosted run identities and compact results are retained in
+[PR #129](https://github.com/send/shoutx/pull/129#issuecomment-6230259139), outside
+the candidate tree so recording final results does not change its SHA.
+Run 39006725139 at head `176d69fd20bbbd4c000cb79dcd3260d13d3d0238`
+passed the four-OS Unicode policy matrix; log-command run 39006724807 and
+matcher run 39006724621 passed their four-OS live effects. These earlier-head
+results do not replace the PR's latest-head CI/review checks. Full package/live
+results and any remaining main-only verification are distinguished in the PR.
 The local macOS arm64 package probe also passed both cultures with 806 mask
 and 2,781 annotation cases each, loaded runtime 8.0.31 at the pinned commit,
 and ICU 78.1. These finite package cases do not override the retained broader

@@ -24,7 +24,7 @@ or close the native selection and command-path obligations below.
 Inspected on 2026-10-04: Runner commit
 `397b032cbf865e9c3ddfab89d533ec19325e1273`, .NET commit
 `a83db3e0eb2defb6220e15dae2f1a0462fdbf99f` and the three archives in
-[`pins.json`](../../tests/runner-package/pins.json). Archive hashes were
+the [historical pins](https://github.com/send/shoutx/blob/626333b6b2dcfb4ca98aa4bdc7cd057cdc861806/tests/runner-package/pins.json). Archive hashes were
 rechecked before inspecting their member lists and extracted configuration.
 This is local package/source inspection, not a new hosted run.
 

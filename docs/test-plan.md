@@ -47,7 +47,7 @@ compatibility. Required CI and release gates remain unchanged.
 ### Executable configurations
 
 Default and `--no-default-features` builds expose the same complete command
-table: `output`, `env`, `state`, `path`, `mask`, `notice`, `warning`, and `error`.
+table: `output`, `env`, `state`, `path`, `artifacts`, `mask`, `notice`, `warning`, and `error`.
 Cargo's only feature entry is an empty `default` set. The former research feature
 and test `required-features` are removed. CI and release builds run all contract
 tests, including mask and annotation, without a feature opt-in. Focused stdout
@@ -57,7 +57,7 @@ not silently turn intended coverage into a zero-test success.
 
 Source-configuration tests check the exact enumerable command table and
 exhaustive dispatch. The independently specified LF help golden and version
-bytes must match each native artifact. The artifact verifier executes all eight
+bytes must match each native artifact. The artifact verifier executes all nine
 writers, including Unicode mask/message/metadata cases, and checks exact stdout,
 stderr and status. It also checks unsupported commands and rejected input with
 empty stdout. Negative controls corrupt status, output bytes and diagnostics
@@ -154,9 +154,7 @@ Detailed command matrices are colocated with their specifications:
 - [GitHub Actions log-mask command](commands/github-actions-mask.md)
 - [GitHub Actions annotation commands](commands/github-actions-annotations.md)
 
-Deferred candidate gates live with their decision records:
-
-- [GitHub Actions artifact declarations](decisions/github-actions-artifacts.md)
+- [GitHub Actions artifact declarations](commands/github-actions-artifacts.md)
 
 ## Text validation
 

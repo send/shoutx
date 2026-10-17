@@ -8,6 +8,10 @@ Usage:
   shoutx --help
   shoutx --version
 
+GitHub Actions artifact declarations:
+  shoutx github-actions:artifacts file [PATH]
+  shoutx github-actions:artifacts oci REFERENCE DIGEST
+
 GitHub Actions stdout commands:
   shoutx github-actions:mask   [VALUE]
   shoutx github-actions:notice  [--title TITLE] [--file FILE] [--line N] [--end-line N] [--column N] [--end-column N] [MESSAGE]

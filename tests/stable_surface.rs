@@ -76,7 +76,20 @@ fn packaged_binary_has_exact_help_and_version() {
 }
 
 #[test]
-fn packaged_binary_exposes_all_eight_writers() {
+fn packaged_binary_exposes_all_nine_writers() {
+    verify(
+        &["github-actions:artifacts", "file", "report"],
+        0,
+        b"file://report\n",
+        b"",
+    );
+    let digest = format!("sha256:{}", "a".repeat(64));
+    verify(
+        &["github-actions:artifacts", "oci", "image", &digest],
+        0,
+        format!("oci://image@{digest}\n").as_bytes(),
+        b"",
+    );
     for command in [
         "github-actions:output",
         "github-actions:env",

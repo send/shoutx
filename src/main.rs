@@ -32,6 +32,32 @@ fn run() -> Result<(), ShoutxError> {
     match shoutx::prepare(args)? {
         Action::Help => output(shoutx::HELP.as_bytes()),
         Action::Version => output(shoutx::version_output().as_bytes()),
+        Action::Artifact(request) => {
+            let record = match request {
+                shoutx::cli::ArtifactRequest::File { path } => {
+                    let value = if let Some(path) = path {
+                        shoutx::cli::os_bytes(&path)?.to_vec()
+                    } else {
+                        if io::stdin().is_terminal() {
+                            return Err(ShoutxError::usage(
+                                "PATH omitted while stdin is a terminal",
+                            ));
+                        }
+                        let mut stdin = process_io::stdin_file()
+                            .map_err(|_| ShoutxError::failure("failed to open stdin"))?;
+                        shoutx::input::read_bounded(&mut stdin)?
+                    };
+                    shoutx::github_actions::encode_artifact_file(value)?
+                }
+                shoutx::cli::ArtifactRequest::Oci { reference, digest } => {
+                    shoutx::github_actions::encode_artifact_oci(
+                        shoutx::cli::os_bytes(&reference)?,
+                        shoutx::cli::os_bytes(&digest)?,
+                    )?
+                }
+            };
+            output(&record)
+        }
         Action::Write(request) => {
             shoutx::github_actions::validate_request(&request)?;
             let value = if let Some(value) = request.value.as_ref() {

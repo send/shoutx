@@ -140,6 +140,10 @@ Usage:
   shoutx --help
   shoutx --version
 
+GitHub Actions artifact declarations:
+  shoutx github-actions:artifacts file [PATH]
+  shoutx github-actions:artifacts oci REFERENCE DIGEST
+
 GitHub Actions stdout commands:
   shoutx github-actions:mask   [VALUE]
   shoutx github-actions:notice  [--title TITLE] [--file FILE] [--line N] [--end-line N] [--column N] [--end-column N] [MESSAGE]
@@ -150,6 +154,7 @@ GitHub Actions stdout commands:
 
 | Command | Produces | Line-break behavior |
 | --- | --- | --- |
+| `github-actions:artifacts` (unreleased) | One typed `$GITHUB_ARTIFACTS` declaration | File: one final boundary consumed; OCI: boundaries rejected |
 | `github-actions:output` | One `$GITHUB_OUTPUT` record | Internal boundaries rejected by default; explicit normalization |
 | `github-actions:env` | One `$GITHUB_ENV` record | Internal boundaries rejected by default; explicit normalization |
 | `github-actions:path` | One `$GITHUB_PATH` record | One final boundary consumed; others rejected |
@@ -162,6 +167,30 @@ type. Provider-specific writers use the `PROVIDER:DESTINATION` form. Reusable
 encoders use the `LANGUAGE:CONTEXT` form.
 
 ## GitHub Actions writers
+
+### Artifact declarations (unreleased)
+
+The current source also implements `github-actions:artifacts`; released v0.3.0
+binaries do not contain it. Build from this source with
+`cargo build --release --locked` before using these examples:
+
+```sh
+shoutx github-actions:artifacts file -- "$ARTIFACT_PATH" >> "$GITHUB_ARTIFACTS"
+shoutx github-actions:artifacts oci -- "$OCI_REFERENCE" "$OCI_DIGEST" >> "$GITHUB_ARTIFACTS"
+```
+
+Supply values through workflow `env:` and quoted expansions, not expression
+interpolation into shell source. Use a shell that propagates failures. The
+writer declares one file or OCI subject; it does not upload an artifact, open a
+file, calculate a digest, contact a registry, or authorize the selected resource.
+The Runner processes declarations after the step. Exposed destination variables
+alone do not prove processing is enabled. See the
+[artifact contract](docs/commands/github-actions-artifacts.md) for input rules,
+consumer conditions, and limits, and the
+[hosted integration observations](docs/compatibility/github-actions-artifacts-availability.md#writer-integration-observations)
+for verification evidence.
+
+### Output, environment, state, and PATH
 
 `github-actions:output` writes a named value using the `$GITHUB_OUTPUT`
 environment-file protocol.

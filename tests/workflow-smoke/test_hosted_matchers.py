@@ -33,6 +33,7 @@ class Verification(unittest.TestCase):
 
     def test_disabled_missing_extra_wrong_effects_fail(self):
         for raw in [b"", self.raw([]), self.raw(expected_lines()[:-1]), self.raw() + b"\n" + END.encode(),
+                    self.raw().replace(b"##[warning]SHOUTX_MATCH_TARGET:", b"##[warning]"),
                     self.raw([*expected_lines(), "##[warning]extra"]),
                     self.raw([line.replace("##[warning]", "") for line in expected_lines()]),
                     self.raw([line.replace("SHOUTX_MATCH_TARGET:after_owner", "##[warning]after_owner")

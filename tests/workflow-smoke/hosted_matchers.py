@@ -23,15 +23,17 @@ CAPACITY_NOTICE = "Due to capacity constraints, jobs targeting macOS arm64 runne
 
 def expected_lines():
     return [TARGET_PREFIX + "before_registration",
-            "##[warning]before_owner", "##[warning]control_before_owner",
-            TARGET_PREFIX + "after_owner", "##[warning]control_after_owner",
-            "##[warning]before_file", TARGET_PREFIX + "after_file",
-            "##[warning]control_after_file"]
+            "##[warning]" + TARGET_PREFIX + "before_owner", "##[warning]" + CONTROL_PREFIX + "control_before_owner",
+            TARGET_PREFIX + "after_owner", "##[warning]" + CONTROL_PREFIX + "control_after_owner",
+            "##[warning]" + TARGET_PREFIX + "before_file", TARGET_PREFIX + "after_file",
+            "##[warning]" + CONTROL_PREFIX + "control_after_file"]
 
 
 def expected_annotations():
-    return sorted(line.removeprefix("##[warning]") for line in expected_lines()
-                  if line.startswith("##[warning]"))
+    # Runner logs the original matching line, but the annotation message is
+    # regex capture group 1, without our synthetic routing prefix.
+    return sorted(["before_owner", "control_before_owner", "control_after_owner",
+                   "before_file", "control_after_file"])
 
 
 def config(owner, prefix):

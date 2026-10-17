@@ -2,10 +2,10 @@
 
 set -euo pipefail
 
-readonly version="0.2.0"
+readonly version="1.0.0"
 readonly target="x86_64-unknown-linux-musl"
 readonly archive="shoutx-v${version}-${target}.tar.gz"
-readonly archive_sha256="2fc86f8c69b1fafb0e372337023d478f1a6b7b9074962918bc5beb29429adeb2"
+readonly archive_sha256="19b27d2a80833aa6535d719125a9e4638ec2ef7e45b2a2e198cc43ece41bde42"
 readonly install_dir="${RUNNER_TEMP:?RUNNER_TEMP must be set}/shoutx-bootstrap/bin"
 
 work_dir=$(mktemp -d "${RUNNER_TEMP}/shoutx-bootstrap.XXXXXX")

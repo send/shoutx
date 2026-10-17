@@ -178,7 +178,7 @@ encoders use the `LANGUAGE:CONTEXT` form.
 ### Problem matchers (unreleased)
 
 Build this source with `cargo build --release --locked`; v0.3.0 does not include
-these commands. Consumer verification is pending. For a caller-approved matcher
+these commands. For a caller-approved matcher
 file and owner, pass values through `env:` or quoted shell variables, never
 expression interpolation into shell source:
 

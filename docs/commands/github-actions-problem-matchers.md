@@ -1,6 +1,7 @@
 # GitHub Actions problem matcher commands
 
-Status: implemented in source; consumer verification pending; not published.
+Status: implemented and consumer-verified in source; not published. See the
+[versioned evidence](../compatibility/github-actions-problem-matchers.md).
 
 This file owns observable behavior and command-specific verification. The
 [decision](../decisions/github-actions-problem-matchers.md) owns rationale;

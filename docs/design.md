@@ -62,7 +62,7 @@ through a named shoutx output boundary.
 | Debug message and group title | Implemented and consumer-verified; unreleased | [Contract](commands/github-actions-log-commands.md) and [evidence](compatibility/github-actions-log-commands.md); not in v0.3.0. |
 | `endgroup`, command echo on/off | Fixed terminator included; no echo data writer required | Endgroup completes the group interface; echo is a trusted fixed control operation. |
 | Stop/resume commands | Outside the current writer boundary | Controls a stream-wide protocol with a caller-managed token/lifetime, not one encoded value. Do not present this as protection for arbitrary subprocess output. |
-| Add/remove problem matcher | Implemented in source; consumer verification pending | [Contract](commands/github-actions-problem-matchers.md) and [decision](decisions/github-actions-problem-matchers.md). Paths/owners select caller-authorized configuration; not in v0.3.0. |
+| Add/remove problem matcher | Implemented and consumer-verified; unreleased | [Contract](commands/github-actions-problem-matchers.md), [decision](decisions/github-actions-problem-matchers.md), and [evidence](compatibility/github-actions-problem-matchers.md). Paths/owners select caller-authorized configuration; not in v0.3.0. |
 | Job summary / Markdown | Excluded | [Markdown decision](decisions/markdown-output.md): content-policy concerns, not the implemented record boundary. |
 | Legacy stdout output/env/state/path commands | Excluded | Use the supported command-file destinations instead; no legacy syntax expansion. |
 | Inputs, saved-state reads, artifact-list reads | Not output writers | Consumer-side inputs, not destinations to encode. |

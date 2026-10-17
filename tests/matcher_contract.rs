@@ -37,6 +37,39 @@ const MODES: &[&[&str]] = &[
 ];
 
 #[test]
+fn argv_does_not_wait_for_stdin_eof() {
+    for mode in MODES {
+        let mut child = Command::new(env!("CARGO_BIN_EXE_shoutx"))
+            .args(*mode)
+            .arg("value")
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .unwrap();
+        let open_stdin = child.stdin.take().unwrap();
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
+        loop {
+            if child.try_wait().unwrap().is_some() {
+                break;
+            }
+            if std::time::Instant::now() >= deadline {
+                child.kill().unwrap();
+                child.wait().unwrap();
+                panic!("matcher waited for stdin EOF");
+            }
+            std::thread::sleep(std::time::Duration::from_millis(10));
+        }
+        drop(open_stdin);
+        let result = child.wait_with_output().unwrap();
+        assert!(result.status.success());
+        assert!(result.stderr.is_empty());
+        let expected = run(mode, b"value");
+        assert_eq!(result.stdout, expected.stdout);
+    }
+}
+
+#[test]
 fn exact_encoding_and_sources() {
     for (mode, expected) in MODES.iter().zip([
         "::add-matcher::α,x::y=a%250A%0D%0A##[warning]literal \n",
@@ -97,6 +130,27 @@ fn grammar_and_rejections() {
             check(mode, value, 1, b"");
         }
         check(mode, &vec![b'a'; VALUE_LIMIT + 1], 1, b"");
+        for size in [VALUE_LIMIT - 1, VALUE_LIMIT] {
+            let result = run(mode, &vec![b'a'; size]);
+            assert!(result.status.success());
+            assert!(result.stderr.is_empty());
+            let prefix = if mode.len() == 1 {
+                "::add-matcher::"
+            } else if mode[1] == "file" {
+                "::remove-matcher::"
+            } else {
+                "::remove-matcher owner="
+            };
+            let suffix = if mode.last() == Some(&"owner") {
+                ",::\n"
+            } else {
+                "\n"
+            };
+            assert_eq!(
+                result.stdout,
+                format!("{prefix}{}{suffix}", "a".repeat(size)).as_bytes()
+            );
+        }
     }
     for mode in [None, Some("unknown"), Some("OWNER"), Some("--")] {
         let mut args = vec!["github-actions:remove-matcher"];

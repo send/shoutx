@@ -1,0 +1,61 @@
+name: Matcher integration
+
+on:
+  pull_request:
+    paths: ['src/**', 'tests/**', 'scripts/verify-stdout-run.py', 'Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', '.github/workflows/matchers.yml']
+  push:
+    branches: [main]
+    paths: ['src/**', 'tests/**', 'scripts/verify-stdout-run.py', 'Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', '.github/workflows/matchers.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  SHOUTX_SOURCE_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+
+jobs:
+  matchers:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, ubuntu-24.04, macos-15, windows-2025]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Build producer and test verifier
+        shell: bash
+        run: |
+          cargo build --locked
+          python -B tests/workflow-smoke/test_hosted_matchers.py
+          python -B tests/workflow-smoke/log_process_io.py target/debug/shoutx${{ runner.os == 'Windows' && '.exe' || '' }}
+      - name: Exercise real matcher registration and removal
+        shell: bash
+        run: python -B tests/workflow-smoke/hosted_matchers.py emit target/debug/shoutx${{ runner.os == 'Windows' && '.exe' || '' }}
+
+  verify:
+    needs: matchers
+    if: ${{ always() }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
+      checks: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - run: python -B tests/workflow-smoke/hosted_matchers.py verify matcher-report.json
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: matcher-evidence
+          path: matcher-report.json
+          if-no-files-found: error
+          retention-days: 30

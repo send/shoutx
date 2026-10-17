@@ -58,26 +58,10 @@ control, so an inactive matcher subsystem cannot pass. Registration by file,
 removal by file and removal by owner need separate coverage. Avoid testing
 arbitrary regex behavior: use fixed simple patterns and synthetic public text.
 
-## Source observations (2026-10-17)
+## Consumer evidence
 
-The official toolkit documents add by JSON file path and removal by owner, and
-describes owner-based replacement. Pinned Runner v2.337.0 at
-`397b032cbf865e9c3ddfab89d533ec19325e1273` additionally supports removal by file:
-
-- `AddMatcherCommandExtension` requires nonempty data, resolves relative paths
-  against the workspace, loads JSON, validates the configuration and calls
-  `AddMatchers` when it contains matchers.
-- `RemoveMatcherCommandExtension` rejects simultaneous nonempty owner and file
-  or neither. It calls `RemoveMatchers` with the owner, or loads a file and takes
-  its configured owners. Removing by file is not ownership of the file content.
-- `ExecutionContext.AddMatchers` replaces existing owners using ordinal
-  case-insensitive comparison; `RemoveMatchers` uses the same comparison.
-  This is a consumer identity rule, not additional text normalization by shoutx.
-- Both extensions permit command echo. They do not offer a secret channel.
-
-These observations establish a concrete target for tests, not completed
-compatibility evidence. The command specification and design-owned applicability
-profile will own the supported behavior once the proposal is accepted.
+Versioned handler observations and verification results live in the
+[compatibility note](../compatibility/github-actions-problem-matchers.md).
 
 ## References
 

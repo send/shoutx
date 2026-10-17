@@ -69,13 +69,15 @@ public sealed class ShoutxDifferentialL0
             var add = cases.Single(x => x.Command == "add-matcher" && x.Data == "matcher.json");
             var removeFile = cases.Single(x => x.Command == "remove-matcher" && x.Data == "matcher.json");
             foreach (var item in cases.Where(x => x.Owner != null))
-            foreach (var byFile in new[] { false, true }) {
+            foreach (var byFile in new[] { false, true })
+            foreach (var echo in new[] { false, true }) {
                 var (host, root) = CreateRealExecutionContext(false);
                 using (host) {
                     var workspace = Path.Combine(Path.GetTempPath(), "shoutx-matcher-" + Guid.NewGuid());
                     Directory.CreateDirectory(workspace);
                     try {
                         root.SetGitHubContext("workspace", workspace);
+                        root.EchoOnActionCommand = echo;
                         root.Add((sender, args) => { });
                         var extensionManager = new Mock<IExtensionManager>();
                         IActionCommandExtension[] extensions = [new AddMatcherCommandExtension(), new RemoveMatcherCommandExtension()];
@@ -91,9 +93,17 @@ public sealed class ShoutxDifferentialL0
                         File.WriteAllText(Path.Combine(workspace, "matcher.json"), JsonSerializer.Serialize(new {
                             problemMatcher = new[] { new { owner = item.Owner, pattern = new[] { new { regexp = "^(TARGET)$", message = 1 } } } }
                         }));
+                        Assert.True(manager.TryProcessCommand(root, "::stop-commands::shoutx-matcher-resume", null!));
+                        Assert.False(manager.TryProcessCommand(root, Decode(add.Wire).TrimEnd('\n'), null!));
+                        Assert.Equal("shoutx-control", Assert.Single(root.GetMatchers()).Owner);
+                        Assert.True(manager.TryProcessCommand(root, "::shoutx-matcher-resume::", null!));
                         Assert.True(manager.TryProcessCommand(root, Decode(add.Wire).TrimEnd('\n'), null!));
                         Assert.Equal(2, root.GetMatchers().Count());
                         Assert.Contains(root.GetMatchers(), x => x.Owner == item.Owner);
+                        Assert.True(manager.TryProcessCommand(root, "::stop-commands::shoutx-matcher-resume", null!));
+                        Assert.False(manager.TryProcessCommand(root, Decode((byFile ? removeFile : item).Wire).TrimEnd('\n'), null!));
+                        Assert.Equal(2, root.GetMatchers().Count());
+                        Assert.True(manager.TryProcessCommand(root, "::shoutx-matcher-resume::", null!));
                         Assert.True(manager.TryProcessCommand(root, Decode((byFile ? removeFile : item).Wire).TrimEnd('\n'), null!));
                         Assert.Equal("shoutx-control", Assert.Single(root.GetMatchers()).Owner);
                     } finally { Directory.Delete(workspace, recursive: true); }

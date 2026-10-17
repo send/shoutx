@@ -1,5 +1,15 @@
 # Implementation history
 
+## Problem matcher writer completion
+
+PR #127 merged typed add/remove problem matcher writers in `614b029`.
+The [contract](commands/github-actions-problem-matchers.md) owns file/owner
+input and framing; the [compatibility note](compatibility/github-actions-problem-matchers.md)
+owns fixed-handler and four-profile lifecycle evidence. Registration/removal
+tests retained an independent live control matcher. Latest-head CI, GPT-6 Sol
+and Codex reviews completed before merge. These commands remain unreleased;
+their completion does not admit a later release candidate automatically.
+
 ## Debug/group writer completion
 
 PR #126 merged the debug/group writers and fixed endgroup in `ff7456b`.

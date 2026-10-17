@@ -348,26 +348,24 @@ The debug/group increment is complete in PR #126; see
 [implementation history](implementation-history.md#debuggroup-writer-completion).
 It remains unreleased. Do not repeat its completed consumer investigation.
 
-The current increment resolves add/remove problem matcher coverage. Start with
-practical use cases and concrete input-to-command/property injection paths,
-then distinguish framing from caller authorization of paths, owners and matcher
-configuration. Check official documentation and the pinned actual handlers;
-reuse stdout evidence without reopening dependency-internal proofs.
+The problem matcher increment is complete in PR #127; see
+[implementation history](implementation-history.md#problem-matcher-writer-completion).
+It remains unreleased. Do not repeat its completed consumer investigation.
 
-If useful writers exist, define their contract before implementation and finish
-CLI/help/examples, exact-output/rejection/limit and regression tests, fixed
-actual-handler checks and hosted consumer verification. Verify real registration
-and removal effects, not only parsing or absence of errors. If no useful writer
-exists, record the concrete boundary rationale in a decision and update the
-coverage inventory; implementation difficulty alone is not an exclusion reason.
+The current increment is the v1 readiness/CLI review. Its result is recorded in
+the [design inventory](design.md#v1-readiness) and
+[review decision](decisions/v1-cli-review.md). Finish this documentation PR with
+GPT-6 Sol review, latest-head CI/Codex convergence and no unresolved threads;
+do not merge, tag or publish it without separate maintainer direction.
 
-Completion means a merge-ready PR with documentation, GPT-6 Sol independent
-review, latest-head CI/Codex convergence, and no unresolved review threads.
-Do not merge or release in this increment. Do not expand into dependency-internal
-proofs, regex-engine audits, other repositories, or v1 publication. A newly found
-attack path directly breaking this boundary must be addressed here; unrelated
-paths belong in private durable follow-up without public exploit details.
-Product readiness remains owned by the [v1 inventory](design.md#v1-readiness).
+After that review, follow the ordered
+[release-preparation gates](release.md#next-release-preparation). The first
+bounded implementation follow-up is a separately reviewed Runner pin/package
+compatibility update, not a new writer or an ICU investigation. Keep all
+existing profile/effect checks; assess only concrete regressions. The review
+does not authorize executing the later publication steps or modifying other
+repositories. Unrelated new attack paths belong in confidential durable
+follow-up, not public exploit details or indefinite expansion of this task.
 
 ## CI and quality gates
 

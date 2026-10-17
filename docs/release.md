@@ -69,7 +69,8 @@ Official binaries are built with `--no-default-features`. The release workflow
 asserts that Cargo's default feature set is empty and applies the stable-surface
 source, dependency, and packaged-artifact gates defined by the
 [test plan](test-plan.md) to every native target. Default and no-default-feature
-builds expose the same eight-command surface and use the same dependencies.
+builds expose the same [complete command surface](design.md#github-actions-commands)
+and use the same dependencies.
 
 The release workflow reruns the stable contract suite and `cargo deny
 --all-features --locked` itself. A successful aggregate CI result whose relevant
@@ -108,7 +109,10 @@ is insufficient. Use full checks on the candidate source, or the identical
 production tree when only documentation changed, before release approval.
 Refresh live evidence during release preparation; an old research snapshot is
 not a permanent release certificate. Preserve a compact durable snapshot in the
-compatibility record before transient CI artifacts expire.
+compatibility record before transient CI artifacts expire. Record final
+exact-source admission evidence outside the candidate tree (for example, in
+the release-preparation PR), linking the compatibility snapshot. Committing
+further evidence changes the source SHA and requires fresh exact-source checks.
 
 Both eligibility and final publish call the same read-only stdout admission
 gate. It requires successful, fully exercised policy and trusted log-verification
@@ -164,6 +168,78 @@ issues, CI logs, or routine external review. Public notices must provide useful
 affected-scope guidance without prematurely exposing exploit details. Corrected
 binaries require a new version under the immutable artifact policy; never
 replace old assets. Packaged instructions remain historical, not updated in place.
+
+## Next release preparation
+
+The review after PR #127 supports preparing a v1 candidate, not publication.
+The [design inventory](design.md#v1-readiness) owns practical coverage and the
+[CLI baseline](design.md#v1-cli-compatibility-baseline) owns stability expectations.
+No version bump, tag or release is part of this documentation review.
+
+### Intended contents
+
+Relative to published v0.3.0, include the merged artifact file/OCI declaration
+writer, debug/group/endgroup, and add/remove problem matcher writers. Their
+contracts are indexed by the design; do not copy their acceptance rules into
+release notes. Existing output/env/state/path/mask/annotation contracts remain
+unchanged. Also include the merged release-publisher identity/retry hardening,
+archive-validator dependency updates and expanded CI/static analysis. These
+supporting changes do not introduce a new installation channel or artifact
+contract revision. Verify the final tag diff when drafting release notes.
+
+Call out command-specific limits, stdout versus command-file destinations,
+caller-owned authorization/lifecycle, and the distinction between packaged
+targets and supported consumer profiles. Point readers to the current
+compatibility record. The existing README installs v0.3.0 and labels later
+writers as source-only; do not present an unpublished version as installable.
+
+### Remaining gates and order
+
+1. **Reviewed Runner update.** The
+   [surface audit](compatibility/github-actions-surface-audit.md#newer-runner-verification-pending)
+   found a newer package than the retained baseline. Review its source/package
+   identities and update pins in a separate PR, retaining baseline evidence.
+   Run the existing producer, source/package, policy and live-effect suites on
+   the declared profiles; no new dependency-internal proof is required. A
+   concrete regression needs a scoped fix or explicit compatibility decision.
+   This is a real unresolved compatibility gate, not a known security defect
+   or an implementation gap in the current command inventory.
+2. **Version and scope approval.** The maintainer chooses the exact candidate
+   version (including whether to publish an RC first). Prepare matching Cargo
+   metadata/lockfile, release notes and truthful installation examples in a
+   reviewed PR. Keep the existing setup-action artifact contract unless a
+   separately approved change requires coordination. v1 naming alone does not
+   satisfy coverage or admission.
+3. **Final-source evidence.** After the preparation changes merge, run full CI
+   on the exact candidate `main` SHA and wait for its independent completed-log
+   verifier. Also run the existing log-command and matcher integration workflows
+   for that same SHA; retain artifact declaration/list effects from full CI.
+   Retain run/attempt/source and consumer identities and compact results in the
+   release-preparation PR or another durable record outside the candidate tree
+   before artifacts expire. If results are committed to compatibility notes,
+   that creates a new candidate SHA: repeat these exact-source checks after the
+   commit. A documentation-only green run,
+   earlier PR merge SHA, or older successful snapshot is not fresh admission.
+4. **Packaging dry run and admission preflight.** Exercise the non-publishing
+   Release workflow on that candidate for all native packages,
+   extracted-binary surface checks and aggregate verification. Dispatch/PR dry
+   runs do not execute source-bound admission. Separately run
+   `GITHUB_REPOSITORY=send/shoutx python3 -B scripts/check-stdout-release.py --sha <candidate-sha>`
+   with authenticated GitHub CLI read access; the tag-push workflow repeats this
+   gate before publishing.
+   The log-command and matcher integration checks above are additional manual
+   release gates, not checks enforced by that admission script. Confirm immutable
+   releases remain enabled. Any pending, skipped required, failed, mismatched or
+   expired evidence blocks publication under the policy above.
+5. **Explicit publication decision.** Present the exact candidate and evidence
+   for maintainer approval before creating a tag or release. After approved
+   publication, verify immutable assets, checksums/provenance, and installation
+   of that exact version through the existing setup action. Do not mutate older
+   releases or update another repository as an incidental step.
+
+At this review, steps 1–5 are not claimed complete for a new candidate. The
+review PR's own CI/Codex gates prove review readiness only. Scope/CLI evidence
+is sufficient to proceed to step 1; immediate v1 publication is not ready.
 
 ## Artifact contract
 

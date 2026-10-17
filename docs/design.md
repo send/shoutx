@@ -36,7 +36,7 @@ authoritative documents.
 
 Before proposing v1:
 
-- Resolve the open coverage rows below through a shipped writer with a concrete
+- Resolve the open coverage rows below through a release-included writer with a concrete
   injection-prevention use case, or an explicit exclusion with a documented
   boundary rationale. An unimplemented useful boundary is not an exclusion.
 - Verify supported writers against their actual consumers within the declared
@@ -44,6 +44,16 @@ Before proposing v1:
 - Review the CLI for an interface that can be maintained under v1 compatibility
   expectations, and satisfy the [release gates](release.md). Maintainer approval
   is still required; this inventory does not authorize publication.
+
+The 2026-10-17 review found no remaining implementation gap in this inventory
+within the stated product boundary. All intended writers are implemented and
+consumer-verified; the unreleased rows must be included in the proposed release
+before claiming shipped v1 coverage. This supports preparing a v1 candidate,
+not publishing one now. The [surface audit](compatibility/github-actions-surface-audit.md)
+records the sources and the newer Runner version still awaiting verification;
+the [release checklist](release.md#next-release-preparation) owns the remaining
+publication gates. The [CLI review decision](decisions/v1-cli-review.md)
+explains why existing destination-specific differences are retained.
 
 The inventory is based on the [official workflow-command surface][workflow-surface]
 and the pinned runner's [stdout handlers][runner-command-surface],
@@ -121,15 +131,17 @@ No reusable context encoder is currently planned for v1.0. The former
 1. A command protects only the interpretation boundary named by that command.
 2. Validation, encoding, and resource-limit failures occur before stdout output
    begins. I/O failure after writing begins may leave partial bytes.
-3. Every non-multiline GitHub Actions writer consumes at most one final line
-   boundary as input framing before applying its mode-specific rule.
+3. Single-value non-multiline writers consume at most one final line boundary
+   as producer framing as specified by their command contracts. Structured
+   operands such as annotation metadata and OCI fields do not inherit that
+   preprocessing; fixed commands such as `endgroup` have no input value.
 4. Discarding or normalizing content beyond that framing boundary is always
    explicit.
 5. Multiline framing never uses a delimiter that can terminate the value.
 6. NUL is rejected.
 7. Raw passthrough is not provided.
 8. Names and paths are validated according to their destination protocol.
-9. Diagnostics never include untrusted values unless safely represented.
+9. Diagnostics never reproduce untrusted values or value-derived excerpts.
 10. Documentation distinguishes structural encoding from authorization and
    semantic validation.
 11. Documentation does not imply protection from injection that occurs before
@@ -139,9 +151,10 @@ No reusable context encoder is currently planned for v1.0. The former
     supported runner parser and do not rely on host text-mode translation.
 13. Every input field has a documented hard size limit; a destination's encoded
     record limit may impose a smaller effective maximum after framing.
-14. A stdout workflow-command writer must emit exactly one command line whose
-    decoded data equals the accepted value; it does not claim that runner log
-    masking prevents every disclosure of that value.
+14. A stdout workflow-command writer must emit exactly one selected command
+    line whose decoded data and properties equal the accepted semantic fields.
+    Fixed commands have no value fields. This does not claim that runner log
+    masking prevents every disclosure of a value.
 15. Syntax defined by shoutx uses only ASCII code points. Matching is exact
     unless a rule explicitly specifies ASCII-only case folding; non-ASCII
     lookalikes, normalization equivalence, Unicode case folding, and
@@ -247,30 +260,33 @@ by this adoption contract.
 
 ## Distribution integrations
 
-An official GitHub Action will install an exact released `shoutx` version from
+The official GitHub Action installs an exact released `shoutx` version from
 the native artifacts without duplicating their publication contract. Its
 repository boundary, verification requirements, and initial no-cache policy
 are recorded in the
 [official setup action decision](decisions/official-setup-action.md). The
-action is not part of the current CLI surface and is not available until its
-separate repository publishes an immutable release.
+action is not part of the CLI surface; its repository owns its releases and
+interface. The [installation example](../README.md#installation) selects an
+existing immutable action release and an exact CLI version.
 
 ## Command model
 
 Provider writers use `PROVIDER:DESTINATION`. Reusable encoders use
 `LANGUAGE:CONTEXT`.
 
-A value argument is used when present. Otherwise, input is read from stdin when
+For commands with an optional single-value operand, that argument is used when
+present. Otherwise, input is read from stdin when
 stdin is not a terminal. Reading normally continues through EOF, but may stop
 when the first byte beyond the hard limit proves the input must be rejected.
 With no value and terminal stdin, commands fail with usage status 2 instead of
 waiting. An unreadable stdin error exposed by the host API has status 1. On
 POSIX, however, Rust runtime initialization replaces an inherited descriptor
 that was already closed with `/dev/null`; shoutx cannot distinguish it from an
-intentional empty input and therefore accepts it as empty stdin. Windows invalid
+intentional empty input; command-specific validation decides whether an empty
+value is accepted. Windows invalid
 handles remain observable I/O failures.
 
-Options precede `NAME`. After `NAME`, one token is treated as `VALUE` even if it
+For named-record writers, options precede `NAME`. After `NAME`, one token is treated as `VALUE` even if it
 begins with `-`. A value argument causes stdin to be ignored. An empty argument
 and empty non-terminal stdin both represent the empty value; `-` has no special
 stdin meaning.
@@ -288,6 +304,11 @@ general CLI convention for other options.
 `--help` and `--version` are recognized only while options are being parsed.
 After `NAME`, the same tokens are values rather than options.
 
+Other operand shapes are owned by their command specifications: artifact and
+matcher modes precede data, OCI requires two argv fields and never reads stdin,
+and endgroup accepts no value and never reads stdin. Help/version in option
+position return immediately; they are not validation of a subsequent write.
+
 An official stable binary writes exactly `shoutx VERSION` followed by LF for
 `--version`, where `VERSION` is its Cargo package version. It writes no stderr
 and exits 0. There is no research-feature suffix.
@@ -295,6 +316,28 @@ and exits 0. There is no research-feature suffix.
 Encoded output is written to stdout and diagnostics to stderr. This preserves
 normal Unix composition and keeps destination selection visible in the calling
 workflow.
+
+## v1 CLI compatibility baseline
+
+The proposed v1 baseline is the command surface and linked contracts above,
+not a generic parser or encoder API. Maintain command/mode/option names,
+documented operand order and input-source selection, status classes, accepted
+semantic fields, explicit transformations, and specified wire formats. Keep
+`--version` and artifact-layout compatibility under the release contract.
+Random multiline delimiters remain nondeterministic as specified. Diagnostics
+remain value-free; their human-readable wording and help layout are not a
+machine-readable API. The Rust library is an implementation detail, not a
+separately promised stable library or plugin interface.
+
+Additive commands or options need their own boundary contract and review.
+Incompatible changes to an existing documented CLI require a major-version
+decision rather than silently reinterpreting old invocations. Security fixes
+and upstream incompatibility may require rejecting previously accepted inputs
+or withdrawing a deployment recommendation: follow the incident and
+compatibility process in [release.md](release.md#stdout-admission-and-compatibility-maintenance),
+disclose the affected behavior, and never silently change the user's value.
+Version compatibility does not promise that GitHub will keep every consumer
+configuration or provider limit unchanged.
 
 ## Command specifications
 
@@ -317,6 +360,7 @@ separately under the [decision-record policy](decisions/README.md):
 - [GitHub Actions stdout workflow-command framing](decisions/github-actions-stdout-framing.md)
 - [GitHub Actions debug and group writers](decisions/github-actions-log-commands.md)
 - [GitHub Actions problem matcher writers](decisions/github-actions-problem-matchers.md)
+- [v1 CLI review](decisions/v1-cli-review.md)
 - [Unstable GitHub Actions stdout command isolation](decisions/unstable-github-actions-stdout.md)
 - [Markdown output](decisions/markdown-output.md)
 - [GitHub Actions artifact declarations](decisions/github-actions-artifacts.md)

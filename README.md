@@ -161,6 +161,7 @@ GitHub Actions stdout commands:
 | Command | Produces | Line-break behavior |
 | --- | --- | --- |
 | `github-actions:add-matcher`, `remove-matcher` (unreleased) | One typed matcher registration/removal request | One final boundary consumed; others encoded |
+| `github-actions:debug`, `group`, `endgroup` (unreleased) | One typed log command | Debug encodes remaining boundaries; group rejects them; endgroup takes no value |
 | `github-actions:artifacts` (unreleased) | One typed `$GITHUB_ARTIFACTS` declaration | File: one final boundary consumed; OCI: boundaries rejected |
 | `github-actions:output` | One `$GITHUB_OUTPUT` record | Internal boundaries rejected by default; explicit normalization |
 | `github-actions:env` | One `$GITHUB_ENV` record | Internal boundaries rejected by default; explicit normalization |
@@ -232,6 +233,7 @@ binaries do not contain it. Build from this source with
 `cargo build --release --locked` before using these examples:
 
 ```sh
+set -euo pipefail
 shoutx github-actions:artifacts file -- "$ARTIFACT_PATH" >> "$GITHUB_ARTIFACTS"
 shoutx github-actions:artifacts oci -- "$OCI_REFERENCE" "$OCI_DIGEST" >> "$GITHUB_ARTIFACTS"
 ```
@@ -344,6 +346,13 @@ enforce safe composition. Prefer an argv-capable API, or use `env:` and
 
 ## Input and output contract
 
+This is an overview of the [command contracts](docs/design.md#command-specifications),
+not one grammar applied to every destination. Named-record options precede
+`NAME`; single-value commands have no NAME. Artifact and matcher removal modes
+come first. `artifacts oci` requires two argv operands and never reads stdin;
+`endgroup` takes no value and never reads stdin. Optional-value rules below
+apply only to commands that expose that input form.
+
 - Options precede `NAME`. After `NAME`, one token is `VALUE` even if it begins
   with `-`.
 - `--` ends option parsing. Modes are mutually exclusive, extra operands are
@@ -363,8 +372,9 @@ enforce safe composition. Prefer an argv-capable API, or use `env:` and
 - An empty `VALUE` and empty non-terminal stdin both mean an empty value.
 - GitHub Actions `run:` steps normally provide non-terminal stdin, so omitting
   `VALUE` can successfully write an empty record when stdin is empty.
-- The `github-actions:path` writer rejects that empty value because an
-  empty line is not a path entry in the runner protocol.
+- Whether an empty value is accepted is destination-specific: named records
+  and debug/group accept it, while path, artifacts, mask, annotations and
+  matchers reject it. See the linked contracts for whitespace-only values.
 - Encoded output is written to stdout; diagnostics are written to stderr.
 - Values are limited to 1 MiB of UTF-8 before and after normalization. Names
   and `--join-lines-with` separators are limited to 255 bytes.
@@ -411,7 +421,9 @@ makes the next parser explicit.
 Default single-line mode treats at most one final CRLF, LF, or bare CR as input
 framing rather than value data. Other discarded or normalized content requires
 an explicit `--first-line`, `--join-lines`, or `--join-lines-with` mode. Use
-`--multiline` for exact value preservation.
+`--multiline` for exact named-record value preservation. These modes belong to
+output/env/state, not all commands. Structured annotation properties and OCI
+operands follow their own contracts rather than single-value framing.
 
 ### Validate before writing
 

@@ -363,11 +363,13 @@ is complete in PR #129, including its
 
 Final v1.0.0 metadata and release-note preparation, without an RC stage, merged
 in PR #130 after GPT-6 Sol review and latest-head CI/Codex convergence.
-The current increment is exact-source prepublication verification and the
-maintainer's publication decision, not another implementation investigation.
+Publication and post-publication verification are complete; see the
+[v1.0.0 release record](releases/v1.0.0.md). There is no outstanding v1.0.0
+publication gate. The current handoff is ordinary post-release maintenance,
+not another implementation investigation or a new release authorization.
 
 Follow the ordered [release-preparation gates](release.md#next-release-preparation)
-for packaging checks and exact-source evidence on the final merged candidate.
+for packaging checks and exact-source evidence when preparing a future release.
 No new writer or dependency-internal investigation is needed. Keep all
 existing profile/effect checks; assess only concrete regressions. Preparation
 does not authorize executing the later publication steps or modifying other

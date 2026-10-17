@@ -171,29 +171,32 @@ replace old assets. Packaged instructions remain historical, not updated in plac
 
 ## Next release preparation
 
-The maintainer selected v1.0.0 as a final release, without an RC stage.
-This preparation does not authorize publication.
+The v1.0.0 release cycle is complete; the
+[version-specific record](releases/v1.0.0.md) links publication and verification
+evidence. That is historical completion evidence, not admission for a future
+release. The reusable checklist below starts anew for every release; no gate
+is pre-completed by the v1.0.0 work.
 The [design inventory](design.md#v1-readiness) owns practical coverage and the
 [CLI baseline](design.md#v1-cli-compatibility-baseline) owns stability expectations.
 
 ### Intended contents
 
-The [v1.0.0 release notes](releases/v1.0.0.md) own the version-specific changes
+Each release's notes under `releases/` own its version-specific changes
 and migration guidance. Command contracts remain owned by the design inventory
-and linked specifications. Keep installation examples on a published version
-until v1.0.0 is available.
+and linked specifications. Keep installation examples on a published version.
 
-### Remaining gates and order
+### Gates and order
 
-1. **Reviewed Runner update — complete.** PR #129 updated the test consumer;
-   its [merged-main verification](compatibility/runner-2.338-update.md#merged-main-verification)
-   closes the previously pending update. That older source SHA is not admission
-   evidence for the release-preparation changes.
-2. **Version and preparation review — complete.** The maintainer selected
-   final v1.0.0. PR #130 merged matching Cargo metadata/lockfile, release notes
-   and publication-independent installation guidance after review. The
-   setup-action artifact contract is unchanged. v1 naming alone does not
-   satisfy coverage or admission. Subsequent documentation corrections still
+1. **Consumer compatibility review.** Reassess the reviewed Runner baseline
+   and any pending consumer changes under the compatibility policy above.
+   If an update is needed, review its pins and existing consumer tests in a
+   scoped PR. Otherwise record why the current baseline remains applicable.
+   An older release's successful snapshot alone is not fresh admission.
+2. **Version and preparation review.** Obtain maintainer approval for the
+   version and scope, then review matching Cargo metadata/lockfile, release
+   notes and truthful installation guidance. Preserve the setup-action
+   artifact contract unless a separately approved change requires coordination.
+   Version naming alone does not satisfy coverage or admission. Documentation corrections still
    require review and change the exact source SHA used by the remaining gates.
 3. **Final-source evidence.** After the preparation changes merge, run full CI
    on the exact candidate `main` SHA and wait for its independent completed-log
@@ -222,10 +225,11 @@ until v1.0.0 is available.
    of that exact version through the existing setup action. Do not mutate older
    releases or update another repository as an incidental step.
 
-Steps 1–2 are complete. Retain completion evidence for steps 3–5 outside the
+For every release, complete all five applicable steps and retain its gate
+decisions and completion evidence outside the
 candidate tree, as specified above, rather than committing each status update
 and repeatedly changing the candidate SHA. The preparation PR's own CI/Codex
-gates prove review readiness only; publication still requires approval.
+gates prove review readiness only; each new publication still requires approval.
 
 ## Artifact contract
 

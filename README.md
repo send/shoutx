@@ -35,14 +35,13 @@ compatibility evidence, and release policy each have one authoritative home.
 
 For GitHub Actions, use the official
 [`send/setup-shoutx`](https://github.com/send/setup-shoutx) action. This example
-pins the action commit and CLI version to the v0.3.0 baseline. For the complete
-fourteen-command surface, select `shoutx-version: '1.0.0'` once that version
-appears in GitHub Releases, or build this tree with `cargo build --release --locked`:
+pins the action commit and CLI version to the published v1.0.0 release, with
+the complete fourteen-command surface:
 
 ```yaml
 - uses: send/setup-shoutx@eb61a2361c6c0e0d37ab9cca1c50e998b4a94c24 # v0.1.0
   with:
-    shoutx-version: '0.3.0'
+    shoutx-version: '1.0.0'
     github-token: ${{ github.token }}
 - run: shoutx --version
 ```
@@ -53,6 +52,8 @@ independent manifest pin, supply the optional `checksums-sha256` input with a
 trusted SHA-256 digest of the selected version's `SHA256SUMS`; do not reuse a
 digest from another version. See the action repository for supported runners, inputs, and
 verification limits.
+
+Alternatively, build this tree with `cargo build --release --locked`.
 
 Download the archive for your platform and `SHA256SUMS` from the
 [latest GitHub release](https://github.com/send/shoutx/releases/latest). Verify

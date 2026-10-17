@@ -387,7 +387,9 @@ fn validate_zip_payloads(path: &Path, root: &str) -> Result<()> {
         let mut entry = archive.by_index(index)?;
         check_path(entry.name_raw(), root, true)?;
         let compression = entry.compression();
-        let data_start = entry.data_start();
+        let data_start = entry
+            .data_start()
+            .ok_or_else(|| invalid("ZIP entry data offset is unavailable"))?;
         let compressed_size = entry.compressed_size();
         let expected_size = entry.size();
         let copied = std::io::copy(

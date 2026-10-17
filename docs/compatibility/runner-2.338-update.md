@@ -50,6 +50,15 @@ GPT-6 Sol's independent review found two stale documentation references; both
 were corrected without changing the test gates or producer behavior.
 
 Fresh hosted run identities and results will be recorded after verification.
+The local macOS arm64 package probe also passed both cultures with 806 mask
+and 2,781 annotation cases each, loaded runtime 8.0.31 at the pinned commit,
+and ICU 78.1. These finite package cases do not override the retained broader
+data-start-policy mismatch on this excluded local configuration.
+
+The first hosted CI attempt exposed an offline fixture that assumed the old
+pin was always current when asserting the drift summary's `MATCH` label.
+The fixture now reads the current reviewed version; explicit `9.9.9` mismatch
+and malformed/incomplete controls remain. No live mismatch is suppressed.
 Local macOS 26 is outside the supported profile and cannot substitute for the
 macOS 15 hosted row. A passing update PR is not final-source release admission;
 the [release checklist](../release.md#next-release-preparation) still applies.

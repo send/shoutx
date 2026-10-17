@@ -189,12 +189,12 @@ until v1.0.0 is available.
    its [merged-main verification](compatibility/runner-2.338-update.md#merged-main-verification)
    closes the previously pending update. That older source SHA is not admission
    evidence for the release-preparation changes.
-2. **Version and preparation review — in progress.** The maintainer selected
-   final v1.0.0. Prepare matching Cargo
-   metadata/lockfile, release notes and truthful installation examples in a
-   reviewed PR. Keep the existing setup-action artifact contract unless a
-   separately approved change requires coordination. v1 naming alone does not
-   satisfy coverage or admission.
+2. **Version and preparation review — complete.** The maintainer selected
+   final v1.0.0. PR #130 merged matching Cargo metadata/lockfile, release notes
+   and publication-independent installation guidance after review. The
+   setup-action artifact contract is unchanged. v1 naming alone does not
+   satisfy coverage or admission. Subsequent documentation corrections still
+   require review and change the exact source SHA used by the remaining gates.
 3. **Final-source evidence.** After the preparation changes merge, run full CI
    on the exact candidate `main` SHA and wait for its independent completed-log
    verifier. Also run the existing log-command and matcher integration workflows
@@ -222,9 +222,10 @@ until v1.0.0 is available.
    of that exact version through the existing setup action. Do not mutate older
    releases or update another repository as an incidental step.
 
-Step 1 is complete and the version decision in step 2 is made. Preparation
-review and steps 3–5 remain release gates. The preparation PR's own CI/Codex
-gates prove review readiness only; immediate publication is not authorized.
+Steps 1–2 are complete. Retain completion evidence for steps 3–5 outside the
+candidate tree, as specified above, rather than committing each status update
+and repeatedly changing the candidate SHA. The preparation PR's own CI/Codex
+gates prove review readiness only; publication still requires approval.
 
 ## Artifact contract
 

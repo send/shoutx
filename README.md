@@ -7,10 +7,10 @@ destination-specific formats and protocols. The current source supports GitHub
 Actions environment files and scoped stdout workflow commands. Generic context encoders are deferred
 until a concrete destination and safe consumption contract justify one.
 
-Status: preparing v1.0.0, not yet published. See the
-[v1.0.0 release notes](docs/releases/v1.0.0.md) for the intended changes and
-remaining publication gates. The installation example below continues to use
-released v0.3.0 until v1.0.0 is available. The `github-actions:output`,
+This tree describes v1.0.0; see its [release notes](docs/releases/v1.0.0.md)
+for changes and migration guidance. Check
+[GitHub releases](https://github.com/send/shoutx/releases) for published versions;
+a version in this document does not establish publication. The `github-actions:output`,
 `github-actions:env`, `github-actions:path`, and `github-actions:state` commands
 are supported. Native binaries, checksums, and provenance are available from
 the [GitHub releases](https://github.com/send/shoutx/releases).
@@ -35,7 +35,9 @@ compatibility evidence, and release policy each have one authoritative home.
 
 For GitHub Actions, use the official
 [`send/setup-shoutx`](https://github.com/send/setup-shoutx) action. This example
-pins the action commit and CLI version:
+pins the action commit and CLI version to the v0.3.0 baseline. For the complete
+fourteen-command surface, select `shoutx-version: '1.0.0'` once that version
+appears in GitHub Releases, or build this tree with `cargo build --release --locked`:
 
 ```yaml
 - uses: send/setup-shoutx@eb61a2361c6c0e0d37ab9cca1c50e998b4a94c24 # v0.1.0
@@ -48,8 +50,8 @@ pins the action commit and CLI version:
 Run setup before untrusted steps and grant the job only the permissions it
 needs (`contents: read` is sufficient for installation). For an additional
 independent manifest pin, supply the optional `checksums-sha256` input with a
-trusted SHA-256 digest of this version's `SHA256SUMS`; the rc.1 digest is not
-valid for 0.3.0. See the action repository for supported runners, inputs, and
+trusted SHA-256 digest of the selected version's `SHA256SUMS`; do not reuse a
+digest from another version. See the action repository for supported runners, inputs, and
 verification limits.
 
 Download the archive for your platform and `SHA256SUMS` from the
@@ -163,9 +165,9 @@ GitHub Actions stdout commands:
 
 | Command | Produces | Line-break behavior |
 | --- | --- | --- |
-| `github-actions:add-matcher`, `remove-matcher` (unreleased) | One typed matcher registration/removal request | One final boundary consumed; others encoded |
-| `github-actions:debug`, `group`, `endgroup` (unreleased) | One typed log command | Debug encodes remaining boundaries; group rejects them; endgroup takes no value |
-| `github-actions:artifacts` (unreleased) | One typed `$GITHUB_ARTIFACTS` declaration | File: one final boundary consumed; OCI: boundaries rejected |
+| `github-actions:add-matcher`, `remove-matcher` (v1.0.0+) | One typed matcher registration/removal request | One final boundary consumed; others encoded |
+| `github-actions:debug`, `group`, `endgroup` (v1.0.0+) | One typed log command | Debug encodes remaining boundaries; group rejects them; endgroup takes no value |
+| `github-actions:artifacts` (v1.0.0+) | One typed `$GITHUB_ARTIFACTS` declaration | File: one final boundary consumed; OCI: boundaries rejected |
 | `github-actions:output` | One `$GITHUB_OUTPUT` record | Internal boundaries rejected by default; explicit normalization |
 | `github-actions:env` | One `$GITHUB_ENV` record | Internal boundaries rejected by default; explicit normalization |
 | `github-actions:path` | One `$GITHUB_PATH` record | One final boundary consumed; others rejected |
@@ -179,10 +181,10 @@ encoders use the `LANGUAGE:CONTEXT` form.
 
 ## GitHub Actions writers
 
-### Problem matchers (unreleased)
+### Problem matchers (v1.0.0+)
 
-Build this source with `cargo build --release --locked`; v0.3.0 does not include
-these commands. For a caller-approved matcher
+Use v1.0.0+ or build this tree as described under Installation; v0.3.0 does not
+include these commands. For a caller-approved matcher
 file and owner, pass values through `env:` or quoted shell variables, never
 expression interpolation into shell source:
 
@@ -202,9 +204,9 @@ Registration/removal failures are consumer effects, not acknowledged by a
 successful shoutx exit. See the [matcher contract](docs/commands/github-actions-problem-matchers.md)
 for consumer conditions, lifetime and file-removal semantics.
 
-### Debug and groups (unreleased)
+### Debug and groups (v1.0.0+)
 
-Build this source with `cargo build --release --locked`; published v0.3.0 does
+Use v1.0.0+ or build this tree as described under Installation; v0.3.0 does
 not include these commands. See the [consumer verification evidence](docs/compatibility/github-actions-log-commands.md).
 Pass values through workflow `env:`, not expression interpolation into shell
 source, and propagate native-command failures:
@@ -229,11 +231,10 @@ commands do not sanitize arbitrary logs or create annotations. See the
 [debug/group contract](docs/commands/github-actions-log-commands.md) for accepted
 inputs, encoding, limits and consumer conditions.
 
-### Artifact declarations (unreleased)
+### Artifact declarations (v1.0.0+)
 
-The current source also implements `github-actions:artifacts`; released v0.3.0
-binaries do not contain it. Build from this source with
-`cargo build --release --locked` before using these examples:
+Use v1.0.0+ or build this tree as described under Installation for
+`github-actions:artifacts`; v0.3.0 binaries do not contain it:
 
 ```sh
 set -euo pipefail

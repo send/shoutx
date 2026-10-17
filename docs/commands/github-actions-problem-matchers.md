@@ -1,6 +1,6 @@
 # GitHub Actions problem matcher commands
 
-Status: implementation contract; not yet exposed by the CLI or published.
+Status: implemented in source; consumer verification pending; not published.
 
 This file owns observable behavior and command-specific verification. The
 [decision](../decisions/github-actions-problem-matchers.md) owns rationale;

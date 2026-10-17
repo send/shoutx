@@ -185,6 +185,7 @@ Other recognized boundaries are deferred, candidates, or out of scope:
 | stdout `add-mask` workflow command | Implemented within the design-owned profile; publication separately gated | Register one faithfully decoded value for subsequent runner log masking |
 | stdout annotation workflow commands | Implemented within the design-owned profile; publication separately gated | Emit one faithfully decoded notice, warning, or error with validated location metadata |
 | debug/group log commands | [Command contract](commands/github-actions-log-commands.md) | Data must not select another command; group data must not introduce continuation records, while requested debug lines retain their debug tag |
+| add/remove problem matcher commands | [Command contract](commands/github-actions-problem-matchers.md); consumer verification pending | A path must remain command data and an owner must remain its single property; authorization of the selected file, configuration and owner remains caller-owned |
 | other stdout workflow commands | Not implemented; dispositions in the [coverage inventory](design.md#v1-readiness) | Lines such as `::stop-commands::` are runner control messages |
 | `$GITHUB_ARTIFACTS` | Implemented in source; unreleased | One typed declaration; see [contract](commands/github-actions-artifacts.md) |
 | `$GITHUB_ARTIFACTS_LIST` | Out of scope | Runner-managed, read-only JSON input |
@@ -261,6 +262,7 @@ Detailed boundary analyses are colocated with their command specifications:
 - [GitHub Actions log-mask command](commands/github-actions-mask.md)
 - [GitHub Actions annotation commands](commands/github-actions-annotations.md)
 - [GitHub Actions debug and group commands](commands/github-actions-log-commands.md)
+- [GitHub Actions problem matcher commands](commands/github-actions-problem-matchers.md)
 - [GitHub Actions artifact declarations](commands/github-actions-artifacts.md)
 
 ### Candidate, deferred, and out-of-scope analyses

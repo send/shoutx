@@ -82,6 +82,13 @@ pub enum LogKind {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum MatcherKind {
+    AddFile,
+    RemoveFile,
+    RemoveOwner,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum AnnotationSeverity {
     Notice,
     Warning,
@@ -113,11 +120,17 @@ pub enum Action {
         value: Option<OsString>,
     },
     EndGroup,
+    Matcher {
+        kind: MatcherKind,
+        value: Option<OsString>,
+    },
     Annotate(AnnotationRequest),
 }
 
 #[derive(Clone, Copy)]
 enum Command {
+    AddMatcher,
+    RemoveMatcher,
     Debug,
     Group,
     EndGroup,
@@ -133,6 +146,8 @@ enum Command {
 }
 
 const COMMANDS: &[(&str, Command)] = &[
+    ("github-actions:add-matcher", Command::AddMatcher),
+    ("github-actions:remove-matcher", Command::RemoveMatcher),
     ("github-actions:debug", Command::Debug),
     ("github-actions:group", Command::Group),
     ("github-actions:endgroup", Command::EndGroup),
@@ -174,6 +189,8 @@ pub fn parse(args: Vec<OsString>) -> Result<Action, ShoutxError> {
         .find_map(|(name, kind)| (*name == command).then_some(*kind))
         .ok_or_else(|| ShoutxError::usage("unknown command"))?;
     let destination = match command {
+        Command::AddMatcher => return parse_matcher(MatcherKind::AddFile, it.collect()),
+        Command::RemoveMatcher => return parse_remove_matcher(it.collect()),
         Command::Debug => return parse_log(LogKind::Debug, it.collect()),
         Command::Group => return parse_log(LogKind::Group, it.collect()),
         Command::EndGroup => return parse_endgroup(it.collect()),
@@ -287,6 +304,31 @@ fn parse_log(kind: LogKind, tokens: Vec<OsString>) -> Result<Action, ShoutxError
         Action::Mask(MaskRequest { value }) => Ok(Action::Log { kind, value }),
         action => Ok(action),
     }
+}
+
+fn parse_matcher(kind: MatcherKind, tokens: Vec<OsString>) -> Result<Action, ShoutxError> {
+    // Share only the single-value grammar, never mask acceptance rules.
+    match parse_mask(tokens)? {
+        Action::Mask(MaskRequest { value }) => Ok(Action::Matcher { kind, value }),
+        action => Ok(action),
+    }
+}
+
+fn parse_remove_matcher(tokens: Vec<OsString>) -> Result<Action, ShoutxError> {
+    let mut tokens = tokens.into_iter();
+    let mode = tokens.next();
+    let kind = match mode.as_deref().and_then(OsStr::to_str) {
+        Some("--help") => return Ok(Action::Help),
+        Some("--version") => return Ok(Action::Version),
+        Some("owner") => MatcherKind::RemoveOwner,
+        Some("file") => MatcherKind::RemoveFile,
+        _ => {
+            return Err(ShoutxError::usage(
+                "missing or unknown matcher removal mode",
+            ));
+        }
+    };
+    parse_matcher(kind, tokens.collect())
 }
 
 fn parse_endgroup(tokens: Vec<OsString>) -> Result<Action, ShoutxError> {

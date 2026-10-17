@@ -145,6 +145,9 @@ GitHub Actions artifact declarations:
   shoutx github-actions:artifacts oci REFERENCE DIGEST
 
 GitHub Actions stdout commands:
+  shoutx github-actions:add-matcher [PATH]
+  shoutx github-actions:remove-matcher owner [OWNER]
+  shoutx github-actions:remove-matcher file [PATH]
   shoutx github-actions:debug [MESSAGE]
   shoutx github-actions:group [TITLE]
   shoutx github-actions:endgroup
@@ -157,6 +160,7 @@ GitHub Actions stdout commands:
 
 | Command | Produces | Line-break behavior |
 | --- | --- | --- |
+| `github-actions:add-matcher`, `remove-matcher` (unreleased) | One typed matcher registration/removal request | One final boundary consumed; others encoded |
 | `github-actions:artifacts` (unreleased) | One typed `$GITHUB_ARTIFACTS` declaration | File: one final boundary consumed; OCI: boundaries rejected |
 | `github-actions:output` | One `$GITHUB_OUTPUT` record | Internal boundaries rejected by default; explicit normalization |
 | `github-actions:env` | One `$GITHUB_ENV` record | Internal boundaries rejected by default; explicit normalization |
@@ -170,6 +174,29 @@ type. Provider-specific writers use the `PROVIDER:DESTINATION` form. Reusable
 encoders use the `LANGUAGE:CONTEXT` form.
 
 ## GitHub Actions writers
+
+### Problem matchers (unreleased)
+
+Build this source with `cargo build --release --locked`; v0.3.0 does not include
+these commands. Consumer verification is pending. For a caller-approved matcher
+file and owner, pass values through `env:` or quoted shell variables, never
+expression interpolation into shell source:
+
+```sh
+set -euo pipefail
+shoutx github-actions:add-matcher -- "$MATCHER_PATH"
+# Run the intended tool here; the caller owns its output and failure handling.
+shoutx github-actions:remove-matcher owner -- "$MATCHER_OWNER"
+# Alternatively, remove the owners described by a configuration file:
+shoutx github-actions:remove-matcher file -- "$MATCHER_PATH"
+```
+
+Use one appropriate removal mode in a real workflow. These writers serialize
+paths and owners; they do not validate or authorize JSON configuration, regexes,
+the selected owner or later tool output. Keep stdout connected to the Runner.
+Registration/removal failures are consumer effects, not acknowledged by a
+successful shoutx exit. See the [matcher contract](docs/commands/github-actions-problem-matchers.md)
+for consumer conditions, lifetime and file-removal semantics.
 
 ### Debug and groups (unreleased)
 

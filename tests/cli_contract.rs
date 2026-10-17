@@ -149,6 +149,8 @@ fn configured_command_table_is_the_complete_expected_surface() {
         );
     }
     const EXPECTED: &[&str] = &[
+        "github-actions:add-matcher",
+        "github-actions:remove-matcher",
         "github-actions:debug",
         "github-actions:group",
         "github-actions:endgroup",

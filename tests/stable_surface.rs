@@ -77,6 +77,24 @@ fn packaged_binary_has_exact_help_and_version() {
 
 #[test]
 fn packaged_binary_exposes_complete_surface() {
+    verify(
+        &["github-actions:add-matcher", "α%0A.json"],
+        0,
+        "::add-matcher::α%250A.json\n".as_bytes(),
+        b"",
+    );
+    verify(
+        &["github-actions:remove-matcher", "file", "α.json"],
+        0,
+        "::remove-matcher::α.json\n".as_bytes(),
+        b"",
+    );
+    verify(
+        &["github-actions:remove-matcher", "owner", "α,tail "],
+        0,
+        "::remove-matcher owner=α%2Ctail ,::\n".as_bytes(),
+        b"",
+    );
     for command in ["debug", "group"] {
         verify(
             &[&format!("github-actions:{command}"), "日本語_😀%0A"],

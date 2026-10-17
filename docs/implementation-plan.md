@@ -344,24 +344,27 @@ and verification are recorded in
 [implementation history](implementation-history.md#artifact-writer-completion).
 It remains unreleased. Do not repeat its availability investigation.
 
-The current increment is debug-message and group-title writers. Start with the
-concrete input-to-command attack paths, then specify the CLI and consumer
-conditions before exposing commands. Reuse the existing stdout parser evidence
-and test infrastructure, but verify the actual debug/group handlers rather than
-inheriting annotation acceptance or retention behavior. A fixed endgroup
-operation may complete the interface; subprocess execution and automatic group
-lifetime management are out of scope.
+The debug/group increment is complete in PR #126; see
+[implementation history](implementation-history.md#debuggroup-writer-completion).
+It remains unreleased. Do not repeat its completed consumer investigation.
 
-Complete exact-output/rejection and limit tests, actual pinned-handler checks,
-and hosted verification for the declared consumer profile. Debug logging must
-actually be enabled for positive hosted checks; absence of a message is not
-evidence of safe processing. Distinguish decoded data from the log records
-produced by each handler, including multiline input and protocol-looking text.
+The current increment resolves add/remove problem matcher coverage. Start with
+practical use cases and concrete input-to-command/property injection paths,
+then distinguish framing from caller authorization of paths, owners and matcher
+configuration. Check official documentation and the pinned actual handlers;
+reuse stdout evidence without reopening dependency-internal proofs.
+
+If useful writers exist, define their contract before implementation and finish
+CLI/help/examples, exact-output/rejection/limit and regression tests, fixed
+actual-handler checks and hosted consumer verification. Verify real registration
+and removal effects, not only parsing or absence of errors. If no useful writer
+exists, record the concrete boundary rationale in a decision and update the
+coverage inventory; implementation difficulty alone is not an exclusion reason.
 
 Completion means a merge-ready PR with documentation, GPT-6 Sol independent
 review, latest-head CI/Codex convergence, and no unresolved review threads.
 Do not merge or release in this increment. Do not expand into dependency-internal
-proofs, problem matchers, other repositories, or v1 publication. A newly found
+proofs, regex-engine audits, other repositories, or v1 publication. A newly found
 attack path directly breaking this boundary must be addressed here; unrelated
 paths belong in private durable follow-up without public exploit details.
 Product readiness remains owned by the [v1 inventory](design.md#v1-readiness).

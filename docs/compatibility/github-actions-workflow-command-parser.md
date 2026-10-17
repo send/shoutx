@@ -1363,7 +1363,7 @@ GitHub documents a general 30-day self-hosted update requirement. Its September
 eligibility and says that the announced Enterprise Cloud enforcement does not
 apply to GitHub Enterprise Server.
 
-The source-built oracle executes v2.337.0. The additional
+At this snapshot the source-built oracle executed v2.337.0. The additional
 [package-backed probe](runner-package-runtime.md) checks its distributed
 parser/runtime, but neither tests v2.336.0 nor establishes a supported
 self-hosted compatibility matrix. This section records evidence only; the

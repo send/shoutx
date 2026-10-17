@@ -19,9 +19,9 @@ place of Docker, recording how the runner tokenizes its constructed argv.
 
 The baseline is:
 
-- tag: `v2.337.0`
-- commit: `397b032cbf865e9c3ddfab89d533ec19325e1273`
-- .NET SDK: `8.0.424` (the version pinned by that runner source tree)
+- tag: `v2.338.0`
+- commit: `197ca027b90de199464dee3bb9ff198a1db60967`
+- .NET SDK: `8.0.425` (the version pinned by that runner source tree)
 
 CI checks out that exact commit, copies `ShoutxDifferentialL0.cs` into the
 runner's existing Test project, builds through the runner's own build graph,

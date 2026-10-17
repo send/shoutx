@@ -305,18 +305,18 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: actions/runner
-          ref: 397b032cbf865e9c3ddfab89d533ec19325e1273
+          ref: 197ca027b90de199464dee3bb9ff198a1db60967
           path: target/runner-oracle/actions-runner
           persist-credentials: false
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68
         with:
-          dotnet-version: 8.0.424
+          dotnet-version: 8.0.425
       - name: Verify pinned .NET SDK
         shell: pwsh
         working-directory: target/runner-oracle/actions-runner/src
         run: |
-          if ((dotnet --version) -ne '8.0.424') {
-            throw "Expected .NET SDK 8.0.424, got $(dotnet --version)"
+          if ((dotnet --version) -ne '8.0.425') {
+            throw "Expected .NET SDK 8.0.425, got $(dotnet --version)"
           }
       - run: rustup toolchain install stable --profile minimal
       - name: Test offline managed reference inventory

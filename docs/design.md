@@ -50,7 +50,8 @@ within the stated product boundary. All intended writers are implemented and
 consumer-verified; the unreleased rows must be included in the proposed release
 before claiming shipped v1 coverage. This supports preparing a v1 candidate,
 not publishing one now. The [surface audit](compatibility/github-actions-surface-audit.md)
-records the sources and the newer Runner version still awaiting verification;
+records the sources; the [Runner update](compatibility/runner-2.338-update.md)
+tracks verification of the newer package;
 the [release checklist](release.md#next-release-preparation) owns the remaining
 publication gates. The [CLI review decision](decisions/v1-cli-review.md)
 explains why existing destination-specific differences are retained.
@@ -185,7 +186,8 @@ adoption, and the release policy governs publication of the implemented surface.
 
 The artifact writer targets native standard GitHub-hosted Ubuntu 22.04 x64,
 Ubuntu 24.04 x64, macOS 15 arm64, and Windows 2025 x64 jobs with artifact
-processing enabled. The pinned source reference is Runner v2.337.0. The
+processing enabled. The pinned source reference is recorded in the
+[oracle metadata](../tests/runner-oracle/README.md). The
 implementation must pass declaration/list integration on these targets before
 support is claimed. Packaging for another architecture does not add its consumer
 to this profile. Self-hosted and container observations in tests characterize

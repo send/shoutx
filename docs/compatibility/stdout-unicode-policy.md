@@ -37,7 +37,9 @@ The [2026-10-17 surface audit](github-actions-surface-audit.md#newer-runner-veri
 identified Runner v2.338.0 after the retained v2.337.0 baseline. Its runtime
 compatibility is verification pending; equal handler-source blobs do not admit
 the new package or establish that hosted Workers have changed. Retained
-v2.337.0 results are not withdrawn or relabeled by that discovery.
+v2.337.0 results are not withdrawn or relabeled by that discovery. The separate
+[v2.338.0 update record](runner-2.338-update.md) tracks the reviewed pin change
+and fresh verification; historical sections below retain their original scope.
 
 The local macOS26/runtime8.0.30/ICU78.1 configuration reports candidate
 misrecognition in both tested cultures. It is outside the table's characterized

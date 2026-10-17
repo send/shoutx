@@ -53,7 +53,9 @@ they were; do not relabel them as v2.338.0 verification. Verification of the new
 version is pending, with no new vulnerability inferred. The next release must
 complete the reviewed pin/package/source verification and fresh admission in
 the [release checklist](../release.md#next-release-preparation). This review does
-not change pins or add a new supported OS generation.
+not change pins or add a new supported OS generation. The subsequent
+[Runner update record](runner-2.338-update.md) tracks the separate pin update
+and its verification status.
 
 ## Installation observation
 

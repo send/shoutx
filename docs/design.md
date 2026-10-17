@@ -59,7 +59,7 @@ through a named shoutx output boundary.
 | Output, environment, action state, PATH files | Shipped | Contracts indexed below; authorization of values and paths remains caller-owned. |
 | Mask and notice/warning/error annotations | Shipped | Contracts and compatibility profile below; not arbitrary log sanitization. |
 | Artifact declarations | Implemented in source; unreleased | [Contract](commands/github-actions-artifacts.md), [consumer evidence](compatibility/github-actions-artifacts-availability.md#writer-integration-observations); not in v0.3.0. |
-| Debug message and group title | Implemented in source; consumer verification pending | [Contract](commands/github-actions-log-commands.md); not in v0.3.0. |
+| Debug message and group title | Implemented and consumer-verified; unreleased | [Contract](commands/github-actions-log-commands.md) and [evidence](compatibility/github-actions-log-commands.md); not in v0.3.0. |
 | `endgroup`, command echo on/off | Fixed terminator included; no echo data writer required | Endgroup completes the group interface; echo is a trusted fixed control operation. |
 | Stop/resume commands | Outside the current writer boundary | Controls a stream-wide protocol with a caller-managed token/lifetime, not one encoded value. Do not present this as protection for arbitrary subprocess output. |
 | Add/remove problem matcher | Open: bounded use-case decision | Paths/owners select matcher configuration. Determine whether a useful framing-only writer exists without implying authorization of a matcher, its patterns, or the selected file. |

@@ -149,8 +149,9 @@ Command-line arguments are subject to the host process API. Implementations
 must reject arguments that cannot be represented as valid UTF-8 rather than
 silently replacing data.
 
-Every non-multiline GitHub Actions writer consumes at most one final line
-boundary as input framing. The default named-writer mode then rejects both CR
+Single-value non-multiline inputs use the command-specified optional final line
+boundary as producer framing. Structured metadata/OCI operands and fixed
+commands are not single-value stdin interfaces. The default named-writer mode then rejects both CR
 and LF; normalization modes treat each remaining CRLF as one line boundary and
 each remaining bare CR or LF as one boundary. `--multiline` preserves all three
 forms, including trailing line breaks. Framing normally uses LF; on Windows a
@@ -330,7 +331,7 @@ value. The runner also derives several alternate representations for each
 registered value, which makes large masks operationally expensive even within
 the accepted bound.
 
-For the artifact candidate, PATH and REFERENCE each retain the 1 MiB input
+For artifact declarations, PATH and REFERENCE each retain the 1 MiB input
 limit, while DIGEST has a fixed algorithm-dependent length. The complete
 scheme-prefixed record including its final LF must also be at most 1 MiB, so
 framing overhead makes the maximum accepted PATH or REFERENCE smaller. This

@@ -43,7 +43,7 @@ results. Release eligibility remains authoritative in `docs/release.md`.
 Current cross-repository decisions:
 
 - [`official-setup-action.md`](official-setup-action.md) — repository boundary
-  and security constraints for the planned official installer action.
+  and security constraints for the official installer action.
 
 GitHub Actions stdout adoption and research history:
 

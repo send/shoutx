@@ -1238,7 +1238,7 @@ of a successful live run.
 
 | Layer | Required evidence and scope |
 | --- | --- |
-| Producer | Normal-build contract/property tests for all eight commands, exact bytes, rejection before output, resource limits, value-free diagnostics, exhaustive lookup agreement, reproducible table check |
+| Producer | Normal-build contract/property tests for the [complete command surface](design.md#github-actions-commands), exact bytes, rejection before output, resource limits, value-free diagnostics, exhaustive lookup agreement, reproducible table check |
 | Consumer integration | Pinned source oracle and official-package parser/Worker effects for all profile rows under explicit en-US and Invariant: original mask registration/redaction, selected annotation, message and typed properties, final TITLE/FILE cases |
 | Policy compatibility | Existing four-row Unicode-policy probe with data-start, final-field header, and metadata checks; preserve known excluded-configuration mismatches |
 | Live effects | Package-matched hosted experiment for each profile row, API annotation verification and external masked-log verification; record live Runner/image identities and leave hidden Worker fields unobserved |

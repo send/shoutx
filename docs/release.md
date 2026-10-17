@@ -171,8 +171,10 @@ replace old assets. Packaged instructions remain historical, not updated in plac
 
 ## Next release preparation
 
-The maintainer selected v1.0.0 as a final release, without an RC stage.
-This preparation does not authorize publication.
+The v1.0.0 release cycle is complete; the
+[version-specific record](releases/v1.0.0.md) links publication and verification
+evidence. The sequence below retains that cycle's preparation context and is
+the checklist for future releases, not an outstanding v1.0.0 task list.
 The [design inventory](design.md#v1-readiness) owns practical coverage and the
 [CLI baseline](design.md#v1-cli-compatibility-baseline) owns stability expectations.
 
@@ -180,10 +182,9 @@ The [design inventory](design.md#v1-readiness) owns practical coverage and the
 
 The [v1.0.0 release notes](releases/v1.0.0.md) own the version-specific changes
 and migration guidance. Command contracts remain owned by the design inventory
-and linked specifications. Keep installation examples on a published version
-until v1.0.0 is available.
+and linked specifications. Keep installation examples on a published version.
 
-### Remaining gates and order
+### Gates and order
 
 1. **Reviewed Runner update — complete.** PR #129 updated the test consumer;
    its [merged-main verification](compatibility/runner-2.338-update.md#merged-main-verification)
@@ -222,10 +223,11 @@ until v1.0.0 is available.
    of that exact version through the existing setup action. Do not mutate older
    releases or update another repository as an incidental step.
 
-Steps 1–2 are complete. Retain completion evidence for steps 3–5 outside the
+All five steps are complete for v1.0.0; see the version-specific record above.
+For future releases, retain completion evidence for steps 3–5 outside the
 candidate tree, as specified above, rather than committing each status update
 and repeatedly changing the candidate SHA. The preparation PR's own CI/Codex
-gates prove review readiness only; publication still requires approval.
+gates prove review readiness only; each new publication still requires approval.
 
 ## Artifact contract
 

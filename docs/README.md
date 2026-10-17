@@ -15,6 +15,7 @@ appropriate owner and replace the duplicate with a link.
 | Shared verification policy | [`test-plan.md`](test-plan.md) |
 | Release eligibility, compatibility maintenance/incident response, and publication policy | [`release.md`](release.md) |
 | Artifact contract consumed by integrations | [`release.md`](release.md) |
+| Version-specific release contents and migration notes (not command contracts or publication policy) | [`releases/`](releases/) |
 | Intended implementation architecture and finite next-increment handoff | [`implementation-plan.md`](implementation-plan.md) |
 | Completed implementation sequence | [`implementation-history.md`](implementation-history.md) |
 | User-facing overview and examples | [`../README.md`](../README.md) |

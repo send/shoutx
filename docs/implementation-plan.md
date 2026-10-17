@@ -352,17 +352,21 @@ The problem matcher increment is complete in PR #127; see
 [implementation history](implementation-history.md#problem-matcher-writer-completion).
 It remains unreleased. Do not repeat its completed consumer investigation.
 
-The current increment is the v1 readiness/CLI review. Its result is recorded in
+The v1 readiness/CLI review is complete in PR #128. Its result is recorded in
 the [design inventory](design.md#v1-readiness) and
-[review decision](decisions/v1-cli-review.md). Finish this documentation PR with
+[review decision](decisions/v1-cli-review.md). The Runner compatibility update
+is complete in PR #129, including its
+[merged-main verification](compatibility/runner-2.338-update.md#merged-main-verification).
+
+The current increment is final v1.0.0 release preparation, without an RC stage.
+Finish the metadata and release-notes PR with
 GPT-6 Sol review, latest-head CI/Codex convergence and no unresolved threads;
 do not merge, tag or publish it without separate maintainer direction.
 
-After that review, follow the ordered
-[release-preparation gates](release.md#next-release-preparation). The first
-bounded implementation follow-up is a separately reviewed Runner pin/package
-compatibility update, not a new writer or an ICU investigation. Keep all
-existing profile/effect checks; assess only concrete regressions. The review
+Follow the ordered [release-preparation gates](release.md#next-release-preparation)
+for packaging checks and exact-source evidence after the preparation merges.
+No new writer or dependency-internal investigation is needed. Keep all
+existing profile/effect checks; assess only concrete regressions. Preparation
 does not authorize executing the later publication steps or modifying other
 repositories. Unrelated new attack paths belong in confidential durable
 follow-up, not public exploit details or indefinite expansion of this task.

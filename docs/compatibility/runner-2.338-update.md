@@ -70,3 +70,21 @@ and malformed/incomplete controls remain. No live mismatch is suppressed.
 Local macOS 26 is outside the supported profile and cannot substitute for the
 macOS 15 hosted row. A passing update PR is not final-source release admission;
 the [release checklist](../release.md#next-release-preparation) still applies.
+
+## Merged-main verification
+
+PR #129 merged as `f8b04aa5c46cf4c86b5f12081f30a0b725a32345`.
+[Full CI 39008525485](https://github.com/send/shoutx/actions/runs/39008525485),
+attempt 1, and [independent log verification 39009146672](https://github.com/send/shoutx/actions/runs/39009146672)
+passed on that main SHA. The read-only admission preflight passed with artifact
+`12092450423`. [Log-command integration](https://github.com/send/shoutx/actions/runs/39008525486),
+[matcher integration](https://github.com/send/shoutx/actions/runs/39008525426) and
+CodeQL also passed. The bounded independent report and exact source/run/attempt
+identities are [retained in PR #129](https://github.com/send/shoutx/pull/129#issuecomment-6230576859).
+
+This completes verification of the reviewed Runner update within the existing
+profile. Controlled packages were v2.338.0/runtime 8.0.31; live Worker reports
+still observed v2.337.0 with unobserved culture/backend. Both are explicit,
+separate evidence, not a claim that GitHub deployed the new package. The tested
+main still had Cargo version 0.3.0. Version-preparation commits require their
+own final-source evidence before publication; this snapshot is not v1 admission.

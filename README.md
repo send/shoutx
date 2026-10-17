@@ -391,7 +391,7 @@ apply only to commands that expose that input form.
   the `sh` command and an explicit Dash invocation on Linux, `sh` and Bash on
   macOS, and PowerShell Core 7.4+ plus Git Bash on Windows. These shell tests
   run alongside differential tests against the pinned GitHub Actions runner
-  v2.337.0 parser. Windows PowerShell 5.1, older PowerShell Core versions,
+  identified in the [oracle metadata](tests/runner-oracle/README.md). Windows PowerShell 5.1, older PowerShell Core versions,
   text-writing cmdlets, and merged stderr/stdout redirection are unsupported.
 - A non-zero `shoutx` status must also be propagated by the workflow shell.
   PowerShell callers must enable native-command error propagation or check
@@ -491,7 +491,7 @@ raising the MSRV requires a deliberate release decision and matching manifest
 and CI changes.
 
 The pinned `actions/runner` differential suite additionally needs .NET SDK
-8.0.424. `mise.toml` can install that SDK for local development, but mise is
+8.0.425. `mise.toml` can install that SDK for local development, but mise is
 optional:
 
 ```sh

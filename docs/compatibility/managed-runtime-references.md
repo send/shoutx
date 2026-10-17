@@ -99,7 +99,8 @@ Both cultures in all four feasibility rows remain unverified.
 
 ## Reproduction
 
-Verify archive size/SHA-256 against `tests/runner-package/pins.json` before using
+Verify archive size/SHA-256 against the
+[historical pins](https://github.com/send/shoutx/blob/626333b6b2dcfb4ca98aa4bdc7cd057cdc861806/tests/runner-package/pins.json), not the moving current test pins, before using
 the existing package harness's flat `bin/` extractor. Run the
 [helper and fixtures](../../tests/runner-package/managed-references/README.md)
 with the recorded SDK; compare its source hashes first. Use only immutable,

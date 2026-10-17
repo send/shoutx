@@ -2,7 +2,7 @@
 set -eu
 
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
-runner_commit=397b032cbf865e9c3ddfab89d533ec19325e1273
+runner_commit=197ca027b90de199464dee3bb9ff198a1db60967
 runner_dir="$root/target/runner-oracle/actions-runner"
 corpus="$root/target/runner-oracle/corpus.json"
 path_corpus="$root/target/runner-oracle/path-corpus.json"
@@ -64,7 +64,7 @@ case "$dotnet_command" in
     ;;
   *)
     if ! command -v mise >/dev/null 2>&1; then
-      echo "error: install .NET 8.0.424 directly or with mise" >&2
+      echo "error: install .NET 8.0.425 directly or with mise" >&2
       exit 1
     fi
     dotnet_bin=$(mise -C "$root" which dotnet)
@@ -108,8 +108,8 @@ cp tests/runner-oracle/ShoutxDifferentialL0.cs \
 (
   cd "$runner_dir/src"
   actual_sdk=$(dotnet_run --version)
-  if [ "$actual_sdk" != 8.0.424 ]; then
-    echo "error: expected .NET SDK 8.0.424, got $actual_sdk" >&2
+  if [ "$actual_sdk" != 8.0.425 ]; then
+    echo "error: expected .NET SDK 8.0.425, got $actual_sdk" >&2
     exit 1
   fi
   DOTNET_CLI_TELEMETRY_OPTOUT=1 dotnet_run build Test/Test.csproj \

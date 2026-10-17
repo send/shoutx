@@ -11,6 +11,9 @@ from unittest.mock import patch
 
 import hosted_boundaries as probe
 
+PINNED_VERSION = json.loads((Path(__file__).resolve().parents[1] /
+                             "runner-package/pins.json").read_text())["runnerVersion"]
+
 
 class SafeTextResult(unittest.TextTestResult):
     def _exc_info_to_string(self, err, test):
@@ -26,7 +29,7 @@ class HostedTests(unittest.TestCase):
                     "SHOUTX_SOURCE_HEAD": "b" * 40,
                     "RUNNER_OS": "Linux", "RUNNER_ARCH": "X64", "ImageOS": "ubuntu24",
                     "ImageVersion": "20260920.1"}
-        lines = ["Current runner version: '2.337.0'", probe.IDENTITY + json.dumps(identity),
+        lines = [f"Current runner version: '{PINNED_VERSION}'", probe.IDENTITY + json.dumps(identity),
                  probe.BEGIN, *probe.expected_block(), probe.END, probe.FINISH]
         return "\n".join("2026-09-30T12:00:00.000Z " + line for line in lines) + "\n"
 
@@ -40,7 +43,7 @@ class HostedTests(unittest.TestCase):
         self.assertEqual((report["maskCases"], report["annotationCases"]), (8, 30))
         self.assertIsNone(report["workerCulture"])
         self.assertTrue(report["runnerMatchesPin"])
-        other = self.verify(self.fixture().replace("'2.337.0'", "'9.9.9'"))
+        other = self.verify(self.fixture().replace(f"'{PINNED_VERSION}'", "'9.9.9'"))
         self.assertFalse(other["runnerMatchesPin"])
         self.assertEqual(probe.STARTS, ("A", ":", "Ω", "ع", "ह", "日", "😀", "𐐀"))
         items = probe.annotations()
@@ -76,7 +79,7 @@ class HostedTests(unittest.TestCase):
     def test_identity_and_order_mutations_fail(self):
         raw = self.fixture()
         identity_line = next(line for line in raw.split("\n") if probe.IDENTITY in line)
-        mutations = [raw + identity_line + "\n", raw + "Current runner version: '2.337.0'\n",
+        mutations = [raw + identity_line + "\n", raw + f"Current runner version: '{PINNED_VERSION}'\n",
                      raw + probe.FINISH + "\n",
                      raw.replace(probe.FINISH, "").replace(probe.BEGIN, probe.FINISH + "\n" + probe.BEGIN),
                      raw.replace('"RUNNER_OS": "Linux"', '"RUNNER_OS": "Windows"'),
@@ -130,7 +133,7 @@ class HostedTests(unittest.TestCase):
             self.verify(actual=original + [{"message": "shoutx-boundary-mask-injected"}])
 
     def test_timestamp_and_cr_handling(self):
-        self.assertEqual(self.verify("\ufeff" + self.fixture())["runnerVersion"], "2.337.0")
+        self.assertEqual(self.verify("\ufeff" + self.fixture())["runnerVersion"], PINNED_VERSION)
         self.assertEqual(probe.log_lines("\ufeffa\n\ufeffb"), ["a", "\ufeffb"])
         self.assertEqual(probe.log_lines("2026-09-30T00:00:00Z a\r\nb\u2028c\n"),
                          ["a", "b\u2028c", ""])

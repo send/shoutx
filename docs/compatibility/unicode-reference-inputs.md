@@ -9,7 +9,7 @@ File identity is not proof of the Unicode acceptance predicate.
 ## Reference identities and per-culture state
 
 Runner/runtime/source identities remain owned by
-[`pins.json`](../../tests/runner-package/pins.json): Runner 2.337.0, runtime
+the [historical pins](https://github.com/send/shoutx/blob/626333b6b2dcfb4ca98aa4bdc7cd057cdc861806/tests/runner-package/pins.json): Runner 2.337.0, runtime
 8.0.30, SDK 8.0.424. The
 [retained projection](evidence/hosted-worker-modules-37184265280.json) records
 run 37184265280, attempt 1, source head
@@ -19,7 +19,7 @@ against those recorded hashes, not a moving hosted label.
 
 This table is a derived status index keyed to that projection, not a second
 definition of the supported matrix. The projection owns observation values;
-`pins.json` owns the package/runtime pins. The scope decision owns the fixed
+the linked historical pins own these package/runtime identities. The scope decision owns the fixed
 research target. The initial applicability table is populated; complete
 reference input/normal-path correctness is still open.
 

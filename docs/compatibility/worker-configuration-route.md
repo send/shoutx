@@ -607,7 +607,7 @@ from run 37190267207 to a new private directory and compare each digest before
 repeating the identity checks described above. For the file comparison, each
 `worker.onDiskSha256` entry must equal the same filename's value in
 `package-bin-sha256.json`; missing entries are not matches. Compare archive
-size/digest to `tests/runner-package/pins.json`. Preserve each explicit culture's
+size/digest to the [historical pins](https://github.com/send/shoutx/blob/626333b6b2dcfb4ca98aa4bdc7cd057cdc861806/tests/runner-package/pins.json). Preserve each explicit culture's
 probe result independently; neither a startup name nor one culture's result
 substitutes for the other.
 

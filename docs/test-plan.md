@@ -269,8 +269,9 @@ model. Its required cases and ordering assertions are specified in the
 
 ## Differential testing against `actions/runner`
 
-Pin the initial oracle to `actions/runner` v2.337.0. Record both the tag and
-resolved commit in the test fixture or dependency metadata. The harness should
+Pin the oracle to the reviewed `actions/runner` version recorded in
+[`tests/runner-oracle/README.md`](../tests/runner-oracle/README.md). Record both
+the tag and resolved commit in the test fixture or dependency metadata. The harness should
 compile or invoke the actual environment-file parser from that checkout; a
 second handwritten transcription is not an independent oracle.
 
@@ -796,7 +797,8 @@ measurements remain required before claiming CLI performance is unchanged.
 After both cultures' current-policy, Unicode parser and Worker checks finish,
 inspect the native ICU objects used by the package's actual `CompareInfo`.
 This is an additional research gate, not a producer dependency or a general
-Unicode acceptance proof. Require the inspected .NET 8.0.30 build, 64-bit
+Unicode acceptance proof. Require the exact inspected .NET build named by
+`tests/runner-package/pins.json` and the `CollationProbe.cs` guard, 64-bit
 x64/ARM64 layout, and positive ICU source preconditions before reading the
 private `SortHandle` layout pinned by `pal_collation.c`. Observe option zero's
 collator and head cached search iterator only, during synchronous inspection.

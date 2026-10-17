@@ -24,12 +24,13 @@ query does not attest a live Worker or any of its settings.
 
 ## Identity chain
 
-The reviewed [pins](../../tests/runner-package/pins.json) bind Runner v2.337.0
+The reviewed [historical pins](https://github.com/send/shoutx/blob/626333b6b2dcfb4ca98aa4bdc7cd057cdc861806/tests/runner-package/pins.json) bind Runner v2.337.0
 to its release commit, three published archives (Linux x64, macOS ARM64,
 Windows x64), byte sizes and SHA-256 digests. Archive identities came from the
 [official release API](https://api.github.com/repos/actions/runner/releases/tags/v2.337.0)
 on 2026-09-30. They are checked before extraction or execution, not refreshed
-from the network at test time.
+from the network at test time. Current test pins advance separately in the
+[v2.338.0 update](runner-2.338-update.md); they do not relabel this snapshot.
 
 `Runner.Worker.runtimeconfig.json` must declare the self-contained
 `Microsoft.NETCore.App` 8.0.30 framework. The probe uses that unmodified file

@@ -1,6 +1,6 @@
 # GitHub Actions artifact declarations
 
-Status: implementation contract; not yet available in a published release.
+For version availability, see the [coverage inventory](../design.md#v1-readiness).
 
 This document owns the artifact writer's observable behavior, boundary-specific
 threat analysis, and acceptance tests. The

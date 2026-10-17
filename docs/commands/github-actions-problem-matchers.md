@@ -1,6 +1,7 @@
 # GitHub Actions problem matcher commands
 
-Status: implemented and consumer-verified in source; not published. See the
+For version availability, see the [coverage inventory](../design.md#v1-readiness).
+For consumer verification, see the
 [versioned evidence](../compatibility/github-actions-problem-matchers.md).
 
 This file owns observable behavior and command-specific verification. The

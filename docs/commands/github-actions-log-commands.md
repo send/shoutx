@@ -1,6 +1,6 @@
 # GitHub Actions debug and group commands
 
-Status: implementation contract; not available in a published release.
+For version availability, see the [coverage inventory](../design.md#v1-readiness).
 
 This file owns observable behavior and destination-specific verification.
 The [decision](../decisions/github-actions-log-commands.md) owns rationale;

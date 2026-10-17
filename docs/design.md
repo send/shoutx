@@ -53,8 +53,8 @@ writers, not its publication status; consult
 Coverage alone does not authorize publication. The [surface audit](compatibility/github-actions-surface-audit.md)
 records the sources; the [Runner update](compatibility/runner-2.338-update.md)
 tracks verification of the newer package;
-the [release checklist](release.md#next-release-preparation) owns the remaining
-publication gates. The [CLI review decision](decisions/v1-cli-review.md)
+the [release checklist](release.md#next-release-preparation) owns the gates for
+each future publication. The [CLI review decision](decisions/v1-cli-review.md)
 explains why existing destination-specific differences are retained.
 
 The inventory is based on the [official workflow-command surface][workflow-surface]

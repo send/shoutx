@@ -1,5 +1,15 @@
 # Implementation history
 
+## Artifact writer completion
+
+PR #125 merged the typed file/OCI declaration writer in `d54ec23`. The
+[command contract](commands/github-actions-artifacts.md) owns its behavior;
+[hosted observations](compatibility/github-actions-artifacts-availability.md#writer-integration-observations)
+retain the sampled producer-to-consumer evidence. Local pinned-handler tests,
+the four-profile hosted integration, CI/CodeQL, release dry-run, GPT-6 Sol
+independent review and Codex completed before merge. The implementation is
+unreleased; this record does not authorize publication or expand consumer scope.
+
 This document preserves the implementation sequencing used to reach the
 current architecture. It is historical context, not the active product
 contract and does not override the command specifications. It is an archive of

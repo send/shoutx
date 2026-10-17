@@ -75,7 +75,7 @@ CARGO_TARGET_DIR=target/stable cargo clippy --all-targets --no-default-features 
 scripts/verify-stable-docs.sh
 ```
 
-Default and official builds expose all nine commands. There is no stdout
+Default and official builds expose all twelve commands. There is no stdout
 research feature. Preserve explicit mask/annotation test targets and fresh
 nonempty exported corpora when changing test orchestration; a zero-test run is
 not evidence. Consumer compatibility remains limited to the design-owned profile.

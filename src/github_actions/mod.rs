@@ -1,5 +1,6 @@
 mod annotation;
 mod artifacts;
+mod log;
 mod mask;
 mod name;
 mod normalize;
@@ -15,6 +16,7 @@ use crate::{cli::WriteRequest, error::ShoutxError, input::VALUE_LIMIT};
 
 pub use annotation::encode as encode_annotation;
 pub use artifacts::{encode_file as encode_artifact_file, encode_oci as encode_artifact_oci};
+pub use log::encode as encode_log;
 pub use mask::encode as encode_mask;
 pub use path::encode as encode_path;
 pub use random::{OsRandom, RandomSource};

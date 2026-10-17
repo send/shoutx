@@ -13,6 +13,9 @@ GitHub Actions artifact declarations:
   shoutx github-actions:artifacts oci REFERENCE DIGEST
 
 GitHub Actions stdout commands:
+  shoutx github-actions:debug [MESSAGE]
+  shoutx github-actions:group [TITLE]
+  shoutx github-actions:endgroup
   shoutx github-actions:mask   [VALUE]
   shoutx github-actions:notice  [--title TITLE] [--file FILE] [--line N] [--end-line N] [--column N] [--end-column N] [MESSAGE]
   shoutx github-actions:warning [--title TITLE] [--file FILE] [--line N] [--end-line N] [--column N] [--end-column N] [MESSAGE]

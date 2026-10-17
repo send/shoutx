@@ -76,6 +76,12 @@ pub struct MaskRequest {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum LogKind {
+    Debug,
+    Group,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum AnnotationSeverity {
     Notice,
     Warning,
@@ -102,11 +108,19 @@ pub enum Action {
     WritePath(PathRequest),
     Artifact(ArtifactRequest),
     Mask(MaskRequest),
+    Log {
+        kind: LogKind,
+        value: Option<OsString>,
+    },
+    EndGroup,
     Annotate(AnnotationRequest),
 }
 
 #[derive(Clone, Copy)]
 enum Command {
+    Debug,
+    Group,
+    EndGroup,
     Artifacts,
     Output,
     Env,
@@ -119,6 +133,9 @@ enum Command {
 }
 
 const COMMANDS: &[(&str, Command)] = &[
+    ("github-actions:debug", Command::Debug),
+    ("github-actions:group", Command::Group),
+    ("github-actions:endgroup", Command::EndGroup),
     ("github-actions:artifacts", Command::Artifacts),
     ("github-actions:output", Command::Output),
     ("github-actions:env", Command::Env),
@@ -157,6 +174,9 @@ pub fn parse(args: Vec<OsString>) -> Result<Action, ShoutxError> {
         .find_map(|(name, kind)| (*name == command).then_some(*kind))
         .ok_or_else(|| ShoutxError::usage("unknown command"))?;
     let destination = match command {
+        Command::Debug => return parse_log(LogKind::Debug, it.collect()),
+        Command::Group => return parse_log(LogKind::Group, it.collect()),
+        Command::EndGroup => return parse_endgroup(it.collect()),
         Command::Artifacts => return parse_artifacts(it.collect()),
         Command::Output => Destination::Output,
         Command::Env => Destination::Env,
@@ -259,6 +279,23 @@ pub fn parse(args: Vec<OsString>) -> Result<Action, ShoutxError> {
         name,
         value,
     }))
+}
+
+fn parse_log(kind: LogKind, tokens: Vec<OsString>) -> Result<Action, ShoutxError> {
+    // Only acquisition grammar is shared; mask validation is not invoked here.
+    match parse_mask(tokens)? {
+        Action::Mask(MaskRequest { value }) => Ok(Action::Log { kind, value }),
+        action => Ok(action),
+    }
+}
+
+fn parse_endgroup(tokens: Vec<OsString>) -> Result<Action, ShoutxError> {
+    match tokens.first().and_then(|token| token.to_str()) {
+        Some("--help") => Ok(Action::Help),
+        Some("--version") => Ok(Action::Version),
+        _ if tokens.is_empty() || (tokens.len() == 1 && tokens[0] == "--") => Ok(Action::EndGroup),
+        _ => Err(ShoutxError::usage("endgroup takes no operands")),
+    }
 }
 
 fn parse_artifacts(tokens: Vec<OsString>) -> Result<Action, ShoutxError> {

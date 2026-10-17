@@ -149,6 +149,9 @@ fn configured_command_table_is_the_complete_expected_surface() {
         );
     }
     const EXPECTED: &[&str] = &[
+        "github-actions:debug",
+        "github-actions:group",
+        "github-actions:endgroup",
         "github-actions:artifacts",
         "github-actions:output",
         "github-actions:env",
@@ -167,8 +170,6 @@ fn configured_command_table_is_the_complete_expected_surface() {
 fn unsupported_commands_are_ordinary_unknown_commands() {
     for args in [
         ["github-actions:add-mask", "fixed-mask-value"].as_slice(),
-        ["github-actions:debug", "fixed notice"].as_slice(),
-        ["github-actions:group", "fixed warning"].as_slice(),
         ["github-actions:stop-commands", "fixed error"].as_slice(),
     ] {
         let output = run(args, None);

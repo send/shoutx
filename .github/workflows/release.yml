@@ -110,15 +110,15 @@ jobs:
         id: setup-shoutx
         uses: send/setup-shoutx@eb61a2361c6c0e0d37ab9cca1c50e998b4a94c24 # v0.1.0
         with:
-          shoutx-version: '0.3.0-rc.1'
-          checksums-sha256: b280ecb4122b02c0961638c0eb84bae6932af55193c3ea9ae2aa2b02ef8afa99
+          shoutx-version: '1.0.0'
+          checksums-sha256: a6336c0e538c54e1fe4e35025983694e4f60ba9ab8aefda740796ab95ee13875
           github-token: ${{ github.token }}
       - name: Verify installed release and subsequent-step PATH
         shell: bash
         env:
           INSTALLED_VERSION: ${{ steps.setup-shoutx.outputs.version }}
         run: |
-          test "$INSTALLED_VERSION" = '0.3.0-rc.1'
+          test "$INSTALLED_VERSION" = '1.0.0'
           test "$(shoutx --version)" = "shoutx $INSTALLED_VERSION"
       - id: toolchain
         shell: bash

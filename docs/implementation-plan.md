@@ -342,15 +342,18 @@ including after a documentation-only closeout.
 The artifact declaration increment is complete in PR #125; its implementation
 and verification are recorded in
 [implementation history](implementation-history.md#artifact-writer-completion).
-It remains unreleased. Do not repeat its availability investigation.
+Its version availability is recorded in the design inventory. Do not repeat
+its availability investigation.
 
 The debug/group increment is complete in PR #126; see
 [implementation history](implementation-history.md#debuggroup-writer-completion).
-It remains unreleased. Do not repeat its completed consumer investigation.
+Its version availability is recorded in the design inventory. Do not repeat
+its completed consumer investigation.
 
 The problem matcher increment is complete in PR #127; see
 [implementation history](implementation-history.md#problem-matcher-writer-completion).
-It remains unreleased. Do not repeat its completed consumer investigation.
+Its version availability is recorded in the design inventory. Do not repeat
+its completed consumer investigation.
 
 The v1 readiness/CLI review is complete in PR #128. Its result is recorded in
 the [design inventory](design.md#v1-readiness) and
@@ -358,13 +361,13 @@ the [design inventory](design.md#v1-readiness) and
 is complete in PR #129, including its
 [merged-main verification](compatibility/runner-2.338-update.md#merged-main-verification).
 
-The current increment is final v1.0.0 release preparation, without an RC stage.
-Finish the metadata and release-notes PR with
-GPT-6 Sol review, latest-head CI/Codex convergence and no unresolved threads;
-do not merge, tag or publish it without separate maintainer direction.
+Final v1.0.0 metadata and release-note preparation, without an RC stage, merged
+in PR #130 after GPT-6 Sol review and latest-head CI/Codex convergence.
+The current increment is exact-source prepublication verification and the
+maintainer's publication decision, not another implementation investigation.
 
 Follow the ordered [release-preparation gates](release.md#next-release-preparation)
-for packaging checks and exact-source evidence after the preparation merges.
+for packaging checks and exact-source evidence on the final merged candidate.
 No new writer or dependency-internal investigation is needed. Keep all
 existing profile/effect checks; assess only concrete regressions. Preparation
 does not authorize executing the later publication steps or modifying other

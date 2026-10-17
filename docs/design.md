@@ -47,9 +47,10 @@ Before proposing v1:
 
 The 2026-10-17 review found no remaining implementation gap in this inventory
 within the stated product boundary. All intended writers are implemented and
-consumer-verified; the unreleased rows must be included in the proposed release
-before claiming shipped v1 coverage. This supports preparing a v1 candidate,
-not publishing one now. The [surface audit](compatibility/github-actions-surface-audit.md)
+consumer-verified. Rows marked v1.0.0 describe the version containing those
+writers, not its publication status; consult
+[published releases](https://github.com/send/shoutx/releases) for availability.
+Coverage alone does not authorize publication. The [surface audit](compatibility/github-actions-surface-audit.md)
 records the sources; the [Runner update](compatibility/runner-2.338-update.md)
 tracks verification of the newer package;
 the [release checklist](release.md#next-release-preparation) owns the remaining
@@ -69,11 +70,11 @@ through a named shoutx output boundary.
 | --- | --- | --- |
 | Output, environment, action state, PATH files | Shipped | Contracts indexed below; authorization of values and paths remains caller-owned. |
 | Mask and notice/warning/error annotations | Shipped | Contracts and compatibility profile below; not arbitrary log sanitization. |
-| Artifact declarations | Implemented in source; unreleased | [Contract](commands/github-actions-artifacts.md), [consumer evidence](compatibility/github-actions-artifacts-availability.md#writer-integration-observations); not in v0.3.0. |
-| Debug message and group title | Implemented and consumer-verified; unreleased | [Contract](commands/github-actions-log-commands.md) and [evidence](compatibility/github-actions-log-commands.md); not in v0.3.0. |
+| Artifact declarations | Implemented and consumer-verified; v1.0.0 | [Contract](commands/github-actions-artifacts.md), [consumer evidence](compatibility/github-actions-artifacts-availability.md#writer-integration-observations); not in v0.3.0. |
+| Debug message and group title | Implemented and consumer-verified; v1.0.0 | [Contract](commands/github-actions-log-commands.md) and [evidence](compatibility/github-actions-log-commands.md); not in v0.3.0. |
 | `endgroup`, command echo on/off | Fixed terminator included; no echo data writer required | Endgroup completes the group interface; echo is a trusted fixed control operation. |
 | Stop/resume commands | Outside the current writer boundary | Controls a stream-wide protocol with a caller-managed token/lifetime, not one encoded value. Do not present this as protection for arbitrary subprocess output. |
-| Add/remove problem matcher | Implemented and consumer-verified; unreleased | [Contract](commands/github-actions-problem-matchers.md), [decision](decisions/github-actions-problem-matchers.md), and [evidence](compatibility/github-actions-problem-matchers.md). Paths/owners select caller-authorized configuration; not in v0.3.0. |
+| Add/remove problem matcher | Implemented and consumer-verified; v1.0.0 | [Contract](commands/github-actions-problem-matchers.md), [decision](decisions/github-actions-problem-matchers.md), and [evidence](compatibility/github-actions-problem-matchers.md). Paths/owners select caller-authorized configuration; not in v0.3.0. |
 | Job summary / Markdown | Excluded | [Markdown decision](decisions/markdown-output.md): content-policy concerns, not the implemented record boundary. |
 | Legacy stdout output/env/state/path commands | Excluded | Use the supported command-file destinations instead; no legacy syntax expansion. |
 | Inputs, saved-state reads, artifact-list reads | Not output writers | Consumer-side inputs, not destinations to encode. |

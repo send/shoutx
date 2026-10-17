@@ -124,6 +124,71 @@ fn rejection_is_before_output() {
 }
 
 #[test]
+fn invalid_native_argv_is_rejected_without_output() {
+    #[cfg(unix)]
+    let invalid = {
+        use std::os::unix::ffi::OsStringExt;
+        std::ffi::OsString::from_vec(b"SECRET\xff".to_vec())
+    };
+    #[cfg(windows)]
+    let invalid = {
+        use std::os::windows::ffi::OsStringExt;
+        std::ffi::OsString::from_wide(&[83, 69, 67, 82, 69, 84, 0xd800])
+    };
+    for command in ["debug", "group"] {
+        let result = Command::new(env!("CARGO_BIN_EXE_shoutx"))
+            .arg(format!("github-actions:{command}"))
+            .arg(&invalid)
+            .stdin(Stdio::null())
+            .output()
+            .unwrap();
+        assert_eq!(result.status.code(), Some(1));
+        assert!(result.stdout.is_empty());
+        assert!(result.stderr.starts_with(b"error: "));
+        assert!(!result.stderr.windows(6).any(|bytes| bytes == b"SECRET"));
+    }
+}
+
+#[test]
+fn argv_and_endgroup_do_not_wait_for_stdin_eof() {
+    for (command, value, expected) in [
+        ("debug", Some("value"), b"::debug::value\n".as_slice()),
+        ("group", Some("value"), b"::group::value\n".as_slice()),
+        ("endgroup", None, b"::endgroup::\n".as_slice()),
+    ] {
+        let mut process = Command::new(env!("CARGO_BIN_EXE_shoutx"));
+        process.arg(format!("github-actions:{command}"));
+        if let Some(value) = value {
+            process.arg(value);
+        }
+        let mut child = process
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .unwrap();
+        let open_stdin = child.stdin.take().unwrap();
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
+        loop {
+            if child.try_wait().unwrap().is_some() {
+                break;
+            }
+            if std::time::Instant::now() >= deadline {
+                child.kill().unwrap();
+                child.wait().unwrap();
+                panic!("{command} waited for stdin EOF");
+            }
+            std::thread::sleep(std::time::Duration::from_millis(10));
+        }
+        drop(open_stdin);
+        let result = child.wait_with_output().unwrap();
+        assert!(result.status.success());
+        assert_eq!(result.stdout, expected);
+        assert!(result.stderr.is_empty());
+    }
+}
+
+#[test]
 fn limits_and_generated_wire_invariants() {
     for kind in [LogKind::Debug, LogKind::Group] {
         for size in [VALUE_LIMIT - 1, VALUE_LIMIT] {

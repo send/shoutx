@@ -174,7 +174,7 @@ encoders use the `LANGUAGE:CONTEXT` form.
 ### Debug and groups (unreleased)
 
 Build this source with `cargo build --release --locked`; published v0.3.0 does
-not include these commands. Consumer verification for this increment is pending.
+not include these commands. See the [consumer verification evidence](docs/compatibility/github-actions-log-commands.md).
 Pass values through workflow `env:`, not expression interpolation into shell
 source, and propagate native-command failures:
 

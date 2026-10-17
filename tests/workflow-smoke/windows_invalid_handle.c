@@ -88,6 +88,16 @@ int wmain(int argc, wchar_t **argv) {
     status = run_child(argv[1], L"github-actions:output result value", TRUE,
                        FALSE, 0, "result=value\n");
     if (status != 0) return status;
-    return run_child(argv[1], L"github-actions:output result value", FALSE,
-                     TRUE, 1, "");
+    status = run_child(argv[1], L"github-actions:output result value", FALSE,
+                       TRUE, 1, "");
+    if (status != 0) return status;
+    status = run_child(argv[1], L"github-actions:debug", TRUE, FALSE, 1, "");
+    if (status != 0) return status;
+    status = run_child(argv[1], L"github-actions:group", TRUE, FALSE, 1, "");
+    if (status != 0) return status;
+    status = run_child(argv[1], L"github-actions:debug value", TRUE, FALSE, 0, "::debug::value\n");
+    if (status != 0) return status;
+    status = run_child(argv[1], L"github-actions:group value", TRUE, FALSE, 0, "::group::value\n");
+    if (status != 0) return status;
+    return run_child(argv[1], L"github-actions:endgroup", TRUE, FALSE, 0, "::endgroup::\n");
 }

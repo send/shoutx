@@ -184,7 +184,8 @@ Other recognized boundaries are deferred, candidates, or out of scope:
 | `$GITHUB_STEP_SUMMARY` | Out of scope | GitHub-rendered Markdown has no runner command-file record structure to inject into; rendered HTML is sanitized, while content integrity remains the producer's responsibility |
 | stdout `add-mask` workflow command | Implemented within the design-owned profile; publication separately gated | Register one faithfully decoded value for subsequent runner log masking |
 | stdout annotation workflow commands | Implemented within the design-owned profile; publication separately gated | Emit one faithfully decoded notice, warning, or error with validated location metadata |
-| other stdout workflow commands | Not implemented; dispositions in the [coverage inventory](design.md#v1-readiness) | Lines such as `::stop-commands::` and `::group::` are runner control messages |
+| debug/group log commands | [Command contract](commands/github-actions-log-commands.md) | Data must not select another command; group data must not introduce continuation records, while requested debug lines retain their debug tag |
+| other stdout workflow commands | Not implemented; dispositions in the [coverage inventory](design.md#v1-readiness) | Lines such as `::stop-commands::` are runner control messages |
 | `$GITHUB_ARTIFACTS` | Implemented in source; unreleased | One typed declaration; see [contract](commands/github-actions-artifacts.md) |
 | `$GITHUB_ARTIFACTS_LIST` | Out of scope | Runner-managed, read-only JSON input |
 

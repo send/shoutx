@@ -5,7 +5,7 @@ from pathlib import Path
 import tempfile
 import unittest
 from unittest.mock import patch
-from hosted_matchers import BEGIN, END, ROWS, expected_lines, expected_annotations, verify_effects, verify_run
+from hosted_matchers import BEGIN, END, ROWS, CAPACITY_NOTICE, expected_lines, expected_annotations, verify_effects, verify_run
 
 
 class Verification(unittest.TestCase):
@@ -19,6 +19,17 @@ class Verification(unittest.TestCase):
         verify_effects(self.raw(), self.annotations())
         verify_effects(b"\xef\xbb\xbf" + b"\n".join(b"2026-10-17T00:00:00Z " + line
             for line in self.raw().split(b"\n")), self.annotations())
+
+    def test_only_known_infrastructure_notice_is_ignored(self):
+        notice = {"annotation_level": "notice", "message": CAPACITY_NOTICE,
+                  "path": ".github", "start_line": 1, "end_line": 1}
+        verify_effects(self.raw(), [*self.annotations(), notice])
+        with self.assertRaises(RuntimeError):
+            verify_effects(self.raw(), [*self.annotations()[:-1], notice])
+        for key, value in [("annotation_level", "warning"), ("message", "unexpected"),
+                           ("start_line", 2), ("path", "other")]:
+            with self.assertRaises(RuntimeError):
+                verify_effects(self.raw(), [*self.annotations(), {**notice, key: value}])
 
     def test_disabled_missing_extra_wrong_effects_fail(self):
         for raw in [b"", self.raw([]), self.raw(expected_lines()[:-1]), self.raw() + b"\n" + END.encode(),

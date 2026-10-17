@@ -18,6 +18,7 @@ OWNER = "Ελληνικά_العربية_हिन्दी_日本語_😀,::=%0
 CONTROL = "shoutx-probe-control"
 TARGET_PREFIX = "SHOUTX_MATCH_TARGET:"
 CONTROL_PREFIX = "SHOUTX_MATCH_CONTROL:"
+CAPACITY_NOTICE = "Due to capacity constraints, jobs targeting macOS arm64 runners may experience longer queue times."
 
 
 def expected_lines():
@@ -89,6 +90,12 @@ def verify_effects(raw, annotations):
     start, end = lines.index(BEGIN), lines.index(END)
     if start >= end or lines[start + 1:end] != expected_lines():
         raise RuntimeError("matcher lifecycle log mismatch")
+    # Observed GitHub infrastructure notice, not produced by the probe. Do not
+    # discard arbitrary notices or any warning/error from the test job.
+    annotations = [item for item in annotations if not (
+        item.get("annotation_level") == "notice" and item.get("message") == CAPACITY_NOTICE
+        and item.get("path") == ".github" and item.get("start_line") == 1
+        and item.get("end_line") == 1)]
     if any(item["annotation_level"] != "warning" for item in annotations):
         raise RuntimeError("unexpected matcher annotation kind")
     if sorted(item["message"] for item in annotations) != expected_annotations():
@@ -127,7 +134,8 @@ def verify_run(destination):
                 time.sleep(5)
         evidence.append({"label": row, "job": job["id"], "logSha256": hashlib.sha256(raw).hexdigest(),
                          "annotationsSha256": hashlib.sha256(json.dumps(annotations, sort_keys=True).encode()).hexdigest(),
-                         "verifiedRecords": len(expected_lines()), "verifiedAnnotations": len(annotations)})
+                         "verifiedRecords": len(expected_lines()), "verifiedAnnotations": len(expected_annotations()),
+                         "totalAnnotations": len(annotations)})
     Path(destination).write_text(json.dumps({"run": run, "attempt": attempt, "testedSha": sha,
         "sourceHead": source, "status": "passed", "jobs": evidence}, indent=2) + "\n")
 

@@ -90,8 +90,9 @@ public sealed class ShoutxDifferentialL0
                             Owner = "shoutx-control", Patterns = [new IssuePatternConfig { Pattern = "^(CONTROL)$", Message = 1 }]
                         }] };
                         root.AddMatchers(control);
+                        var registeredOwner = item.Owner == "target" ? "TARGET" : item.Owner;
                         File.WriteAllText(Path.Combine(workspace, "matcher.json"), JsonSerializer.Serialize(new {
-                            problemMatcher = new[] { new { owner = item.Owner, pattern = new[] { new { regexp = "^(TARGET)$", message = 1 } } } }
+                            problemMatcher = new[] { new { owner = registeredOwner, pattern = new[] { new { regexp = "^(TARGET)$", message = 1 } } } }
                         }));
                         Assert.True(manager.TryProcessCommand(root, "::stop-commands::shoutx-matcher-resume", null!));
                         Assert.False(manager.TryProcessCommand(root, Decode(add.Wire).TrimEnd('\n'), null!));
@@ -99,7 +100,7 @@ public sealed class ShoutxDifferentialL0
                         Assert.True(manager.TryProcessCommand(root, "::shoutx-matcher-resume::", null!));
                         Assert.True(manager.TryProcessCommand(root, Decode(add.Wire).TrimEnd('\n'), null!));
                         Assert.Equal(2, root.GetMatchers().Count());
-                        Assert.Contains(root.GetMatchers(), x => x.Owner == item.Owner);
+                        Assert.Contains(root.GetMatchers(), x => x.Owner == registeredOwner);
                         Assert.True(manager.TryProcessCommand(root, "::stop-commands::shoutx-matcher-resume", null!));
                         Assert.False(manager.TryProcessCommand(root, Decode((byFile ? removeFile : item).Wire).TrimEnd('\n'), null!));
                         Assert.Equal(2, root.GetMatchers().Count());

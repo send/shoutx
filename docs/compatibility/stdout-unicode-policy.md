@@ -34,12 +34,13 @@ matching generation data alone does not identify the running consumer.
 ## Contrary and pending evidence
 
 The [2026-10-17 surface audit](github-actions-surface-audit.md#newer-runner-verification-pending)
-identified Runner v2.338.0 after the retained v2.337.0 baseline. Its runtime
-compatibility is verification pending; equal handler-source blobs do not admit
-the new package or establish that hosted Workers have changed. Retained
-v2.337.0 results are not withdrawn or relabeled by that discovery. The separate
-[v2.338.0 update record](runner-2.338-update.md) tracks the reviewed pin change
-and fresh verification; historical sections below retain their original scope.
+identified Runner v2.338.0 after the retained v2.337.0 baseline. The separate
+[v2.338.0 update record](runner-2.338-update.md#merged-main-verification) now records
+completed source/package/policy and live-effect verification, including main's
+independent log gate. Controlled packages were v2.338.0; observed hosted Workers
+remained v2.337.0. This closes that update's pending verification, not admission
+of a future version-preparation SHA. Historical sections below retain their
+original versions and scope.
 
 The local macOS26/runtime8.0.30/ICU78.1 configuration reports candidate
 misrecognition in both tested cultures. It is outside the table's characterized

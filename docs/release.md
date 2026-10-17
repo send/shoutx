@@ -171,41 +171,26 @@ replace old assets. Packaged instructions remain historical, not updated in plac
 
 ## Next release preparation
 
-The review after PR #127 supports preparing a v1 candidate, not publication.
+The maintainer selected v1.0.0 as a final release, without an RC stage.
+This preparation does not authorize publication.
 The [design inventory](design.md#v1-readiness) owns practical coverage and the
 [CLI baseline](design.md#v1-cli-compatibility-baseline) owns stability expectations.
-No version bump, tag or release is part of this documentation review.
 
 ### Intended contents
 
-Relative to published v0.3.0, include the merged artifact file/OCI declaration
-writer, debug/group/endgroup, and add/remove problem matcher writers. Their
-contracts are indexed by the design; do not copy their acceptance rules into
-release notes. Existing output/env/state/path/mask/annotation contracts remain
-unchanged. Also include the merged release-publisher identity/retry hardening,
-archive-validator dependency updates and expanded CI/static analysis. These
-supporting changes do not introduce a new installation channel or artifact
-contract revision. Verify the final tag diff when drafting release notes.
-
-Call out command-specific limits, stdout versus command-file destinations,
-caller-owned authorization/lifecycle, and the distinction between packaged
-targets and supported consumer profiles. Point readers to the current
-compatibility record. The existing README installs v0.3.0 and labels later
-writers as source-only; do not present an unpublished version as installable.
+The [v1.0.0 release notes](releases/v1.0.0.md) own the version-specific changes
+and migration guidance. Command contracts remain owned by the design inventory
+and linked specifications. Keep installation examples on a published version
+until v1.0.0 is available.
 
 ### Remaining gates and order
 
-1. **Reviewed Runner update.** The
-   [surface audit](compatibility/github-actions-surface-audit.md#newer-runner-verification-pending)
-   found a newer package than the retained baseline. Review its source/package
-   identities and update pins in a separate PR, retaining baseline evidence.
-   Run the existing producer, source/package, policy and live-effect suites on
-   the declared profiles; no new dependency-internal proof is required. A
-   concrete regression needs a scoped fix or explicit compatibility decision.
-   This is a real unresolved compatibility gate, not a known security defect
-   or an implementation gap in the current command inventory.
-2. **Version and scope approval.** The maintainer chooses the exact candidate
-   version (including whether to publish an RC first). Prepare matching Cargo
+1. **Reviewed Runner update — complete.** PR #129 updated the test consumer;
+   its [merged-main verification](compatibility/runner-2.338-update.md#merged-main-verification)
+   closes the previously pending update. That older source SHA is not admission
+   evidence for the release-preparation changes.
+2. **Version and preparation review — in progress.** The maintainer selected
+   final v1.0.0. Prepare matching Cargo
    metadata/lockfile, release notes and truthful installation examples in a
    reviewed PR. Keep the existing setup-action artifact contract unless a
    separately approved change requires coordination. v1 naming alone does not
@@ -237,9 +222,9 @@ writers as source-only; do not present an unpublished version as installable.
    of that exact version through the existing setup action. Do not mutate older
    releases or update another repository as an incidental step.
 
-At this review, steps 1–5 are not claimed complete for a new candidate. The
-review PR's own CI/Codex gates prove review readiness only. Scope/CLI evidence
-is sufficient to proceed to step 1; immediate v1 publication is not ready.
+Step 1 is complete and the version decision in step 2 is made. Preparation
+review and steps 3–5 remain release gates. The preparation PR's own CI/Codex
+gates prove review readiness only; immediate publication is not authorized.
 
 ## Artifact contract
 

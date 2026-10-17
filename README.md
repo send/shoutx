@@ -7,7 +7,10 @@ destination-specific formats and protocols. The current source supports GitHub
 Actions environment files and scoped stdout workflow commands. Generic context encoders are deferred
 until a concrete destination and safe consumption contract justify one.
 
-Status: early implementation. The `github-actions:output`,
+Status: preparing v1.0.0, not yet published. See the
+[v1.0.0 release notes](docs/releases/v1.0.0.md) for the intended changes and
+remaining publication gates. The installation example below continues to use
+released v0.3.0 until v1.0.0 is available. The `github-actions:output`,
 `github-actions:env`, `github-actions:path`, and `github-actions:state` commands
 are supported. Native binaries, checksums, and provenance are available from
 the [GitHub releases](https://github.com/send/shoutx/releases).

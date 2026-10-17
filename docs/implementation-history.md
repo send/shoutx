@@ -1,5 +1,16 @@
 # Implementation history
 
+## Debug/group writer completion
+
+PR #126 merged the debug/group writers and fixed endgroup in `ff7456b`.
+The [command contract](commands/github-actions-log-commands.md) owns their
+behavior and the [compatibility note](compatibility/github-actions-log-commands.md)
+records consumer evidence. The implementation distinguishes debug's tagged
+multiline output from group's single-line title and does not own group-body
+execution or lifetime. Fixed-handler, four-profile hosted, CI/CodeQL, release
+dry-run, GPT-6 Sol and Codex checks completed before merge. These commands
+remain unreleased; completion does not authorize publication.
+
 ## Artifact writer completion
 
 PR #125 merged the typed file/OCI declaration writer in `d54ec23`. The

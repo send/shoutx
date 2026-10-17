@@ -62,7 +62,7 @@ through a named shoutx output boundary.
 | Debug message and group title | Implemented and consumer-verified; unreleased | [Contract](commands/github-actions-log-commands.md) and [evidence](compatibility/github-actions-log-commands.md); not in v0.3.0. |
 | `endgroup`, command echo on/off | Fixed terminator included; no echo data writer required | Endgroup completes the group interface; echo is a trusted fixed control operation. |
 | Stop/resume commands | Outside the current writer boundary | Controls a stream-wide protocol with a caller-managed token/lifetime, not one encoded value. Do not present this as protection for arbitrary subprocess output. |
-| Add/remove problem matcher | Open: bounded use-case decision | Paths/owners select matcher configuration. Determine whether a useful framing-only writer exists without implying authorization of a matcher, its patterns, or the selected file. |
+| Add/remove problem matcher | Implemented and consumer-verified; unreleased | [Contract](commands/github-actions-problem-matchers.md), [decision](decisions/github-actions-problem-matchers.md), and [evidence](compatibility/github-actions-problem-matchers.md). Paths/owners select caller-authorized configuration; not in v0.3.0. |
 | Job summary / Markdown | Excluded | [Markdown decision](decisions/markdown-output.md): content-policy concerns, not the implemented record boundary. |
 | Legacy stdout output/env/state/path commands | Excluded | Use the supported command-file destinations instead; no legacy syntax expansion. |
 | Inputs, saved-state reads, artifact-list reads | Not output writers | Consumer-side inputs, not destinations to encode. |
@@ -101,12 +101,15 @@ shoutx github-actions:mask    [VALUE]
 shoutx github-actions:debug   [MESSAGE]
 shoutx github-actions:group   [TITLE]
 shoutx github-actions:endgroup
+shoutx github-actions:add-matcher [PATH]
+shoutx github-actions:remove-matcher owner [OWNER]
+shoutx github-actions:remove-matcher file [PATH]
 shoutx github-actions:notice  [ANNOTATION OPTIONS] [MESSAGE]
 shoutx github-actions:warning [ANNOTATION OPTIONS] [MESSAGE]
 shoutx github-actions:error   [ANNOTATION OPTIONS] [MESSAGE]
 ```
 
-All twelve commands are included in default and `--no-default-features` builds.
+All fourteen commands are included in default and `--no-default-features` builds.
 The former research feature is removed. Stdout consumer compatibility is scoped
 by the adoption contract below; binary availability does not broaden it.
 
@@ -184,7 +187,7 @@ command parser or inherit its Unicode data-start restrictions.
 
 This section defines the scope for productizing the existing mask and
 notice/warning/error implementations, including message, TITLE, and FILE, and
-the debug/group/endgroup implementation increment. It
+the debug/group/endgroup and problem matcher implementation increments. It
 defines their consumer compatibility, not whether a particular release contains
 them. Their observable input and encoding rules remain solely in the command
 specifications. Previously published binaries are unchanged.
@@ -304,6 +307,7 @@ verification plan:
 - [GitHub Actions log-mask command](commands/github-actions-mask.md)
 - [GitHub Actions annotation commands](commands/github-actions-annotations.md)
 - [GitHub Actions debug and group commands](commands/github-actions-log-commands.md)
+- [GitHub Actions problem matcher commands](commands/github-actions-problem-matchers.md)
 
 ## Design decisions
 
@@ -312,6 +316,7 @@ separately under the [decision-record policy](decisions/README.md):
 
 - [GitHub Actions stdout workflow-command framing](decisions/github-actions-stdout-framing.md)
 - [GitHub Actions debug and group writers](decisions/github-actions-log-commands.md)
+- [GitHub Actions problem matcher writers](decisions/github-actions-problem-matchers.md)
 - [Unstable GitHub Actions stdout command isolation](decisions/unstable-github-actions-stdout.md)
 - [Markdown output](decisions/markdown-output.md)
 - [GitHub Actions artifact declarations](decisions/github-actions-artifacts.md)

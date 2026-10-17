@@ -46,6 +46,8 @@ pattern = re.compile(
 )
 commands = [match.group(1) for match in pattern.finditer("\n".join(code))]
 stable = {
+    "github-actions:add-matcher",
+    "github-actions:remove-matcher",
     "github-actions:debug",
     "github-actions:group",
     "github-actions:endgroup",

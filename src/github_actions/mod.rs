@@ -2,6 +2,7 @@ mod annotation;
 mod artifacts;
 mod log;
 mod mask;
+mod matcher;
 mod name;
 mod normalize;
 mod path;
@@ -18,6 +19,7 @@ pub use annotation::encode as encode_annotation;
 pub use artifacts::{encode_file as encode_artifact_file, encode_oci as encode_artifact_oci};
 pub use log::encode as encode_log;
 pub use mask::encode as encode_mask;
+pub use matcher::encode as encode_matcher;
 pub use path::encode as encode_path;
 pub use random::{OsRandom, RandomSource};
 

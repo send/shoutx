@@ -13,6 +13,9 @@ GitHub Actions artifact declarations:
   shoutx github-actions:artifacts oci REFERENCE DIGEST
 
 GitHub Actions stdout commands:
+  shoutx github-actions:add-matcher [PATH]
+  shoutx github-actions:remove-matcher owner [OWNER]
+  shoutx github-actions:remove-matcher file [PATH]
   shoutx github-actions:debug [MESSAGE]
   shoutx github-actions:group [TITLE]
   shoutx github-actions:endgroup

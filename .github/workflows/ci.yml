@@ -358,7 +358,11 @@ jobs:
           Remove-Item -ErrorAction Ignore $env:SHOUTX_LOG_CORPUS_PATH
           cargo +stable test --no-default-features --test log_runner_fixture
           cargo +stable test --no-default-features --test log_runner_fixture export_log_corpus -- --ignored
-          foreach ($corpus in @($env:SHOUTX_CORPUS_PATH, $env:SHOUTX_PATH_CORPUS_PATH, $env:SHOUTX_MASK_CORPUS_PATH, $env:SHOUTX_ANNOTATION_CORPUS_PATH, $env:SHOUTX_ARTIFACTS_CORPUS_PATH, $env:SHOUTX_LOG_CORPUS_PATH)) {
+          $env:SHOUTX_MATCHER_CORPUS_PATH = "$pwd/target/runner-oracle/matcher-corpus.json"
+          Remove-Item -ErrorAction Ignore $env:SHOUTX_MATCHER_CORPUS_PATH
+          cargo +stable test --no-default-features --test matcher_runner_fixture
+          cargo +stable test --no-default-features --test matcher_runner_fixture export_matcher_corpus -- --ignored
+          foreach ($corpus in @($env:SHOUTX_CORPUS_PATH, $env:SHOUTX_PATH_CORPUS_PATH, $env:SHOUTX_MASK_CORPUS_PATH, $env:SHOUTX_ANNOTATION_CORPUS_PATH, $env:SHOUTX_ARTIFACTS_CORPUS_PATH, $env:SHOUTX_LOG_CORPUS_PATH, $env:SHOUTX_MATCHER_CORPUS_PATH)) {
             if (-not (Test-Path $corpus) -or (Get-Item $corpus).Length -eq 0) { throw "Missing fresh corpus" }
           }
       - name: Build pinned runner oracle
@@ -380,6 +384,7 @@ jobs:
           SHOUTX_ANNOTATION_CORPUS: ${{ github.workspace }}/target/runner-oracle/annotation-corpus.json
           SHOUTX_ARTIFACTS_CORPUS: ${{ github.workspace }}/target/runner-oracle/artifacts-corpus.json
           SHOUTX_LOG_CORPUS: ${{ github.workspace }}/target/runner-oracle/log-corpus.json
+          SHOUTX_MATCHER_CORPUS: ${{ github.workspace }}/target/runner-oracle/matcher-corpus.json
         run: |
           dotnet test Test/Test.csproj `
             --configuration Release `

@@ -10,6 +10,7 @@ mask_corpus="$root/target/runner-oracle/mask-corpus.json"
 annotation_corpus="$root/target/runner-oracle/annotation-corpus.json"
 artifacts_corpus="$root/target/runner-oracle/artifacts-corpus.json"
 log_corpus="$root/target/runner-oracle/log-corpus.json"
+matcher_corpus="$root/target/runner-oracle/matcher-corpus.json"
 staging_dir=
 
 cleanup() {
@@ -74,6 +75,10 @@ esac
 cd "$root"
 mkdir -p "$(dirname -- "$corpus")"
 rm -f -- "$corpus" "$path_corpus" "$mask_corpus" "$annotation_corpus" "$artifacts_corpus" "$log_corpus"
+rm -f -- "$matcher_corpus"
+SHOUTX_MATCHER_CORPUS_PATH="$matcher_corpus" \
+  CARGO_TARGET_DIR=target/oracle-stable \
+  cargo test --no-default-features --test matcher_runner_fixture export_matcher_corpus -- --ignored
 SHOUTX_LOG_CORPUS_PATH="$log_corpus" \
   CARGO_TARGET_DIR=target/oracle-stable \
   cargo test --no-default-features --test log_runner_fixture export_log_corpus -- --ignored
@@ -92,7 +97,7 @@ SHOUTX_MASK_CORPUS_PATH="$mask_corpus" \
 SHOUTX_ANNOTATION_CORPUS_PATH="$annotation_corpus" \
   CARGO_TARGET_DIR=target/oracle-stable \
   cargo test --no-default-features --test annotation_runner_fixture export_annotation_corpus -- --ignored
-for generated in "$corpus" "$path_corpus" "$mask_corpus" "$annotation_corpus" "$artifacts_corpus" "$log_corpus"; do
+for generated in "$corpus" "$path_corpus" "$mask_corpus" "$annotation_corpus" "$artifacts_corpus" "$log_corpus" "$matcher_corpus"; do
   if [ ! -s "$generated" ]; then
     echo "error: expected freshly generated corpus: $generated" >&2
     exit 1
@@ -111,7 +116,7 @@ cp tests/runner-oracle/ShoutxDifferentialL0.cs \
     --configuration Release \
     -p:PackageRuntime="$runtime" \
     -p:NuGetAudit=false
-  SHOUTX_LOG_CORPUS="$log_corpus" SHOUTX_ARTIFACTS_CORPUS="$artifacts_corpus" SHOUTX_CORPUS="$corpus" SHOUTX_PATH_CORPUS="$path_corpus" SHOUTX_MASK_CORPUS="$mask_corpus" SHOUTX_ANNOTATION_CORPUS="$annotation_corpus" DOTNET_CLI_TELEMETRY_OPTOUT=1 \
+  SHOUTX_MATCHER_CORPUS="$matcher_corpus" SHOUTX_LOG_CORPUS="$log_corpus" SHOUTX_ARTIFACTS_CORPUS="$artifacts_corpus" SHOUTX_CORPUS="$corpus" SHOUTX_PATH_CORPUS="$path_corpus" SHOUTX_MASK_CORPUS="$mask_corpus" SHOUTX_ANNOTATION_CORPUS="$annotation_corpus" DOTNET_CLI_TELEMETRY_OPTOUT=1 \
     dotnet_run test Test/Test.csproj \
     --configuration Release \
     --no-build \

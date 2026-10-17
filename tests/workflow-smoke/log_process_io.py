@@ -23,6 +23,19 @@ def verify(binary):
                                 capture_output=True, timeout=10)
         assert result.returncode == 0 and not result.stderr
         assert result.stdout == b"::endgroup::\n"
+        for args, expected in [
+            (["github-actions:add-matcher"], b"::add-matcher::value\n"),
+            (["github-actions:remove-matcher", "file"], b"::remove-matcher::value\n"),
+            (["github-actions:remove-matcher", "owner"], b"::remove-matcher owner=value,::\n"),
+        ]:
+            result = subprocess.run([binary, *args], stdin=slave,
+                                    capture_output=True, timeout=10)
+            assert result.returncode == 2 and not result.stdout
+            assert result.stderr.startswith(b"error: ")
+            result = subprocess.run([binary, *args, "value"], stdin=slave,
+                                    capture_output=True, timeout=10)
+            assert result.returncode == 0 and not result.stderr
+            assert result.stdout == expected
     finally:
         os.close(slave)
         os.close(master)

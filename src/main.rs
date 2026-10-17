@@ -33,6 +33,21 @@ fn run() -> Result<(), ShoutxError> {
         Action::Help => output(shoutx::HELP.as_bytes()),
         Action::Version => output(shoutx::version_output().as_bytes()),
         Action::EndGroup => output(b"::endgroup::\n"),
+        Action::Matcher { kind, value } => {
+            let value = if let Some(value) = value {
+                shoutx::cli::os_bytes(&value)?.to_vec()
+            } else {
+                if io::stdin().is_terminal() {
+                    return Err(ShoutxError::usage(
+                        "VALUE omitted while stdin is a terminal",
+                    ));
+                }
+                let mut stdin = process_io::stdin_file()
+                    .map_err(|_| ShoutxError::failure("failed to open stdin"))?;
+                shoutx::input::read_bounded(&mut stdin)?
+            };
+            output(&shoutx::github_actions::encode_matcher(kind, value)?)
+        }
         Action::Log { kind, value } => {
             let value = if let Some(value) = value {
                 shoutx::cli::os_bytes(&value)?.to_vec()

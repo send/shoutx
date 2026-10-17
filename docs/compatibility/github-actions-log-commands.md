@@ -26,11 +26,13 @@ existing exact mask/annotation-log experiments. The Runner reads the vars
 context into its debug setting before running steps; setting only a child's
 environment variable is not evidence of consumer configuration.
 
-The producer requires RUNNER_DEBUG=1 and the completed-log verifier additionally
+The producer disables command echo before its measured block, requires
+RUNNER_DEBUG=1, and the completed-log verifier additionally
 requires actual debug records. It compares the entire sentinel-bounded sequence,
 not mere marker presence, and rejects disabled debug, changed, missing or extra
-records. API inventory binds each producer job to the run attempt and tested
-SHA. Reports retain job IDs, log digests and checked counts, not full logs.
+records. API inventory binds each producer job to the run attempt and source
+head SHA. Reports separately retain the tested checkout SHA (the synthetic
+merge for pull requests), job IDs, log digests and checked counts, not full logs.
 Only synthetic public text is emitted. No hostile checkout receives secrets or
 write permissions. Documentation-only changes skip this workflow; manual
 dispatch remains available.

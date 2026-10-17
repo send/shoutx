@@ -2,14 +2,17 @@ name: Log command integration
 
 on:
   pull_request:
-    paths: ['src/**', 'tests/**', 'Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', '.github/workflows/log-commands.yml']
+    paths: ['src/**', 'tests/**', 'scripts/verify-stdout-run.py', 'Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', '.github/workflows/log-commands.yml']
   push:
     branches: [main]
-    paths: ['src/**', 'tests/**', 'Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', '.github/workflows/log-commands.yml']
+    paths: ['src/**', 'tests/**', 'scripts/verify-stdout-run.py', 'Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', '.github/workflows/log-commands.yml']
   workflow_dispatch:
 
 permissions:
   contents: read
+
+env:
+  SHOUTX_SOURCE_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
 
 jobs:
   log-commands:

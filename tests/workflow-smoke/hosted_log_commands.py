@@ -1,5 +1,6 @@
 """Dedicated debug-enabled hosted checks, separate from mask log experiments."""
 import hashlib
+import importlib.util
 import json
 import os
 import re
@@ -39,6 +40,8 @@ def emit(binary):
     # This is a precondition check, not substitute evidence for actual debug output.
     if os.environ.get("RUNNER_DEBUG") != "1":
         raise RuntimeError("debug logging must be enabled for this probe")
+    # Trusted setup outside the measured block; group/endgroup otherwise permit echo.
+    print("::echo::off", flush=True)
     print(BEGIN, flush=True)
     for command, value in cases():
         args = [binary, "github-actions:" + command]
@@ -65,9 +68,20 @@ def api(endpoint):
     return subprocess.check_output(["gh", "api", endpoint], stderr=subprocess.PIPE, timeout=60)
 
 
+def download_log(repo, job_id):
+    # Reuse the existing raw transport: gh's terminal-escape filter is not a
+    # reliable binary/log download API. Never print downloaded log contents.
+    path = Path(__file__).resolve().parents[2] / "scripts/verify-stdout-run.py"
+    spec = importlib.util.spec_from_file_location("stdout_transport", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module.download(repo, f"actions/jobs/{job_id}/logs")
+
+
 def verify_run(destination):
     repo, run, attempt, sha = [os.environ[key] for key in
                              ["GH_REPO", "GITHUB_RUN_ID", "GITHUB_RUN_ATTEMPT", "GITHUB_SHA"]]
+    source_head = os.environ["SHOUTX_SOURCE_HEAD"]
     endpoint = f"repos/{repo}/actions/runs/{run}/attempts/{attempt}/jobs?per_page=100"
     jobs = json.loads(api(endpoint))
     if jobs["total_count"] > 100:
@@ -78,20 +92,21 @@ def verify_run(destination):
         if len(matches) != 1 or matches[0]["conclusion"] != "success":
             raise RuntimeError("missing or failed producer job")
         job = matches[0]
-        if job["head_sha"] != sha or job["run_attempt"] != int(attempt):
+        if job["head_sha"] != source_head or job["run_attempt"] != int(attempt):
             raise RuntimeError("producer identity mismatch")
         for retry in range(6):
             try:
-                raw = api(f"repos/{repo}/actions/jobs/{job['id']}/logs")
+                raw = download_log(repo, job['id'])
                 verify_log(raw)
                 break
-            except (RuntimeError, subprocess.SubprocessError):
+            except (RuntimeError, ValueError, subprocess.SubprocessError):
                 if retry == 5:
                     raise
                 time.sleep(5)
         evidence.append({"label": row, "job": job["id"], "logSha256": hashlib.sha256(raw).hexdigest(),
                          "verifiedRecords": len(expected())})
-    Path(destination).write_text(json.dumps({"run": run, "attempt": attempt, "sha": sha,
+    Path(destination).write_text(json.dumps({"run": run, "attempt": attempt, "testedSha": sha,
+                                           "sourceHead": source_head,
                                            "status": "passed", "jobs": evidence}, indent=2) + "\n")
 
 

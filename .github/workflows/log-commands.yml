@@ -1,0 +1,59 @@
+name: Log command integration
+
+on:
+  pull_request:
+    paths: ['src/**', 'tests/**', 'Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', '.github/workflows/log-commands.yml']
+  push:
+    branches: [main]
+    paths: ['src/**', 'tests/**', 'Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', '.github/workflows/log-commands.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  log-commands:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, ubuntu-24.04, macos-15, windows-2025]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    # Only this environment has ACTIONS_STEP_DEBUG=true. Do not enable it for
+    # the existing exact mask/annotation log experiments.
+    environment: shoutx-log-command-verification
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Build producer and check verifier
+        shell: bash
+        run: |
+          cargo build --locked
+          python -B tests/workflow-smoke/test_hosted_log_commands.py
+      - name: Exercise real debug and grouping effects
+        shell: bash
+        run: python -B tests/workflow-smoke/hosted_log_commands.py emit target/debug/shoutx${{ runner.os == 'Windows' && '.exe' || '' }}
+
+  verify:
+    needs: log-commands
+    if: ${{ always() }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - run: python -B tests/workflow-smoke/hosted_log_commands.py verify report.json
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: log-command-evidence
+          path: report.json
+          if-no-files-found: error
+          retention-days: 30

@@ -76,7 +76,16 @@ fn packaged_binary_has_exact_help_and_version() {
 }
 
 #[test]
-fn packaged_binary_exposes_all_nine_writers() {
+fn packaged_binary_exposes_complete_surface() {
+    for command in ["debug", "group"] {
+        verify(
+            &[&format!("github-actions:{command}"), "日本語_😀%0A"],
+            0,
+            format!("::{command}::日本語_😀%250A\n").as_bytes(),
+            b"",
+        );
+    }
+    verify(&["github-actions:endgroup"], 0, b"::endgroup::\n", b"");
     verify(
         &["github-actions:artifacts", "file", "report"],
         0,
@@ -143,8 +152,6 @@ fn packaged_binary_exposes_all_nine_writers() {
 fn packaged_binary_rejects_invalid_and_unintended_surface() {
     for command in [
         "github-actions:add-mask",
-        "github-actions:debug",
-        "github-actions:group",
         "github-actions:stop-commands",
         "github-actions:raw",
     ] {

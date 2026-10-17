@@ -59,8 +59,8 @@ through a named shoutx output boundary.
 | Output, environment, action state, PATH files | Shipped | Contracts indexed below; authorization of values and paths remains caller-owned. |
 | Mask and notice/warning/error annotations | Shipped | Contracts and compatibility profile below; not arbitrary log sanitization. |
 | Artifact declarations | Implemented in source; unreleased | [Contract](commands/github-actions-artifacts.md), [consumer evidence](compatibility/github-actions-artifacts-availability.md#writer-integration-observations); not in v0.3.0. |
-| Debug message and group title | Open: boundary decision | Both accept data in stdout commands. Assess line/command injection and useful writer interfaces; implement or record a concrete exclusion before v1. Do not inherit annotation acceptance from a shared parser. |
-| `endgroup`, command echo on/off | No separate data writer required | Trusted fixed control operations; a future group interface may include a fixed terminator for usability. |
+| Debug message and group title | Implemented in source; consumer verification pending | [Contract](commands/github-actions-log-commands.md); not in v0.3.0. |
+| `endgroup`, command echo on/off | Fixed terminator included; no echo data writer required | Endgroup completes the group interface; echo is a trusted fixed control operation. |
 | Stop/resume commands | Outside the current writer boundary | Controls a stream-wide protocol with a caller-managed token/lifetime, not one encoded value. Do not present this as protection for arbitrary subprocess output. |
 | Add/remove problem matcher | Open: bounded use-case decision | Paths/owners select matcher configuration. Determine whether a useful framing-only writer exists without implying authorization of a matcher, its patterns, or the selected file. |
 | Job summary / Markdown | Excluded | [Markdown decision](decisions/markdown-output.md): content-policy concerns, not the implemented record boundary. |
@@ -98,12 +98,15 @@ The same executable also provides stdout workflow-command writers:
 
 ```text
 shoutx github-actions:mask    [VALUE]
+shoutx github-actions:debug   [MESSAGE]
+shoutx github-actions:group   [TITLE]
+shoutx github-actions:endgroup
 shoutx github-actions:notice  [ANNOTATION OPTIONS] [MESSAGE]
 shoutx github-actions:warning [ANNOTATION OPTIONS] [MESSAGE]
 shoutx github-actions:error   [ANNOTATION OPTIONS] [MESSAGE]
 ```
 
-All nine commands are included in default and `--no-default-features` builds.
+All twelve commands are included in default and `--no-default-features` builds.
 The former research feature is removed. Stdout consumer compatibility is scoped
 by the adoption contract below; binary availability does not broaden it.
 
@@ -180,7 +183,8 @@ command parser or inherit its Unicode data-start restrictions.
 ## Stdout adoption contract
 
 This section defines the scope for productizing the existing mask and
-notice/warning/error implementations, including message, TITLE, and FILE. It
+notice/warning/error implementations, including message, TITLE, and FILE, and
+the debug/group/endgroup implementation increment. It
 defines their consumer compatibility, not whether a particular release contains
 them. Their observable input and encoding rules remain solely in the command
 specifications. Previously published binaries are unchanged.
@@ -299,6 +303,7 @@ verification plan:
 - [GitHub Actions artifact declarations](commands/github-actions-artifacts.md)
 - [GitHub Actions log-mask command](commands/github-actions-mask.md)
 - [GitHub Actions annotation commands](commands/github-actions-annotations.md)
+- [GitHub Actions debug and group commands](commands/github-actions-log-commands.md)
 
 ## Design decisions
 
@@ -306,6 +311,7 @@ Proposed, accepted, deferred, rejected, and superseded decisions are maintained
 separately under the [decision-record policy](decisions/README.md):
 
 - [GitHub Actions stdout workflow-command framing](decisions/github-actions-stdout-framing.md)
+- [GitHub Actions debug and group writers](decisions/github-actions-log-commands.md)
 - [Unstable GitHub Actions stdout command isolation](decisions/unstable-github-actions-stdout.md)
 - [Markdown output](decisions/markdown-output.md)
 - [GitHub Actions artifact declarations](decisions/github-actions-artifacts.md)

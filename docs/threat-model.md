@@ -259,6 +259,7 @@ Detailed boundary analyses are colocated with their command specifications:
 - [GitHub Actions PATH writer](commands/github-actions-path.md)
 - [GitHub Actions log-mask command](commands/github-actions-mask.md)
 - [GitHub Actions annotation commands](commands/github-actions-annotations.md)
+- [GitHub Actions debug and group commands](commands/github-actions-log-commands.md)
 - [GitHub Actions artifact declarations](commands/github-actions-artifacts.md)
 
 ### Candidate, deferred, and out-of-scope analyses

@@ -145,6 +145,9 @@ GitHub Actions artifact declarations:
   shoutx github-actions:artifacts oci REFERENCE DIGEST
 
 GitHub Actions stdout commands:
+  shoutx github-actions:debug [MESSAGE]
+  shoutx github-actions:group [TITLE]
+  shoutx github-actions:endgroup
   shoutx github-actions:mask   [VALUE]
   shoutx github-actions:notice  [--title TITLE] [--file FILE] [--line N] [--end-line N] [--column N] [--end-column N] [MESSAGE]
   shoutx github-actions:warning [--title TITLE] [--file FILE] [--line N] [--end-line N] [--column N] [--end-column N] [MESSAGE]
@@ -167,6 +170,33 @@ type. Provider-specific writers use the `PROVIDER:DESTINATION` form. Reusable
 encoders use the `LANGUAGE:CONTEXT` form.
 
 ## GitHub Actions writers
+
+### Debug and groups (unreleased)
+
+Build this source with `cargo build --release --locked`; published v0.3.0 does
+not include these commands. Consumer verification for this increment is pending.
+Pass values through workflow `env:`, not expression interpolation into shell
+source, and propagate native-command failures:
+
+```yaml
+- shell: bash
+  env:
+    TITLE: ${{ github.event.pull_request.title }}
+    MESSAGE: ${{ steps.check.outputs.message }}
+  run: |
+    set -euo pipefail
+    shoutx github-actions:debug -- "$MESSAGE"
+    shoutx github-actions:group -- "$TITLE"
+    echo 'Trusted group body'
+    shoutx github-actions:endgroup
+```
+
+Enable `ACTIONS_STEP_DEBUG=true` in GitHub's debug logging settings to display
+debug messages. Keep stdout connected to the Runner. Group titles are single
+line; the caller owns balancing groups and the safety of body output. These
+commands do not sanitize arbitrary logs or create annotations. See the
+[debug/group contract](docs/commands/github-actions-log-commands.md) for accepted
+inputs, encoding, limits and consumer conditions.
 
 ### Artifact declarations (unreleased)
 

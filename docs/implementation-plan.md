@@ -339,21 +339,32 @@ Fresh exact-source admission and release approval remain governed by the
 [release policy](release.md#stdout-admission-and-compatibility-maintenance),
 including after a documentation-only closeout.
 
-The current increment is the artifact declaration writer, following the
-[decision](decisions/github-actions-artifacts.md) and
-[command contract](commands/github-actions-artifacts.md). Complete the typed
-writer's exact-output/rejection tests, pinned-handler comparison, and repeatable
-hosted verification on the claimed targets. Reuse the existing specification and
-[availability evidence](compatibility/github-actions-artifacts-availability.md);
-do not repeat the exploratory availability work as a prerequisite.
+The artifact declaration increment is complete in PR #125; its implementation
+and verification are recorded in
+[implementation history](implementation-history.md#artifact-writer-completion).
+It remains unreleased. Do not repeat its availability investigation.
 
-Completion means a reviewed implementation and its tests/documentation, not a
-v1 release. Do not expand into runner internals, file authorization, registry
-validation, or other output commands. Any material candidate contract issue
-must be resolved at the named declaration boundary, not through universal
-upstream safety proofs. Subsequent increments decide debug/group and matcher
-coverage; product readiness remains owned by the
-[v1 inventory](design.md#v1-readiness).
+The current increment is debug-message and group-title writers. Start with the
+concrete input-to-command attack paths, then specify the CLI and consumer
+conditions before exposing commands. Reuse the existing stdout parser evidence
+and test infrastructure, but verify the actual debug/group handlers rather than
+inheriting annotation acceptance or retention behavior. A fixed endgroup
+operation may complete the interface; subprocess execution and automatic group
+lifetime management are out of scope.
+
+Complete exact-output/rejection and limit tests, actual pinned-handler checks,
+and hosted verification for the declared consumer profile. Debug logging must
+actually be enabled for positive hosted checks; absence of a message is not
+evidence of safe processing. Distinguish decoded data from the log records
+produced by each handler, including multiline input and protocol-looking text.
+
+Completion means a merge-ready PR with documentation, GPT-6 Sol independent
+review, latest-head CI/Codex convergence, and no unresolved review threads.
+Do not merge or release in this increment. Do not expand into dependency-internal
+proofs, problem matchers, other repositories, or v1 publication. A newly found
+attack path directly breaking this boundary must be addressed here; unrelated
+paths belong in private durable follow-up without public exploit details.
+Product readiness remains owned by the [v1 inventory](design.md#v1-readiness).
 
 ## CI and quality gates
 

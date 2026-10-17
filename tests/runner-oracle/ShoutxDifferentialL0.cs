@@ -37,6 +37,63 @@ public sealed class ShoutxDifferentialL0
 
     private sealed record ArtifactCase(string Wire, string Name, string Digest, string Kind);
 
+    private sealed record LogCase(string Wire, string Command, string Data);
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("en-US")]
+    [Trait("Level", "L0")]
+    [Trait("Category", "Worker")]
+    public void LogCommandsConsumeProducerRecords(string culture)
+    {
+        var path = Environment.GetEnvironmentVariable("SHOUTX_LOG_CORPUS");
+        Assert.False(string.IsNullOrEmpty(path));
+        var cases = JsonSerializer.Deserialize<List<LogCase>>(File.ReadAllText(path!),
+            new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
+        Assert.Equal(56, cases.Count);
+        WithCulture(culture, () => {
+            foreach (var item in cases)
+            foreach (var debug in new[] { false, true })
+            foreach (var echo in new[] { false, true }) {
+                var wire = Decode(item.Wire);
+                Assert.EndsWith("\n", wire);
+                var line = wire[..^1];
+                Assert.True(ActionCommand.TryParseV2(line,
+                    new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "debug", "group", "endgroup" }, out var parsed));
+                Assert.Equal(item.Command, parsed.Command);
+                Assert.Equal(item.Data, parsed.Data);
+                Assert.Empty(parsed.Properties);
+                var (host, manager, context) = CreateActionCommandContext();
+                using (host) {
+                    context.Object.Global.WriteDebug = debug;
+                    context.Object.EchoOnActionCommand = echo;
+                    var logs = new List<(string?, string)>();
+                    context.Setup(x => x.Write(It.IsAny<string>(), It.IsAny<string>()))
+                        .Callback<string, string>((tag, text) => logs.Add((tag, text)));
+                    var output = new OutputManager(context.Object, manager);
+                    output.OnDataReceived(null, new ProcessDataReceivedEventArgs(line));
+                    var expected = new List<(string?, string)>();
+                    if (echo && item.Command != "debug") expected.Add((null, line));
+                    if (item.Command == "debug") {
+                        if (debug) foreach (var part in item.Data.Replace("\r\n", "\n").Split('\n'))
+                            expected.Add((WellKnownTags.Debug, part));
+                    } else expected.Add((null, $"##[{item.Command}]{item.Data}"));
+                    Assert.Equal(expected, logs);
+                    context.Verify(x => x.AddIssue(It.IsAny<Issue>(), It.IsAny<ExecutionContextLogOptions>()), Times.Never);
+                    Assert.True(manager.TryProcessCommand(context.Object, "::stop-commands::shoutx-log-resume", null!));
+                    logs.Clear();
+                    output.OnDataReceived(null, new ProcessDataReceivedEventArgs(line));
+                    // Debug diagnostics about stopped commands are not user effects.
+                    Assert.Equal(new[] { (null as string, line) }, logs.Where(x => x.Item1 != WellKnownTags.Debug));
+                    Assert.True(manager.TryProcessCommand(context.Object, "::shoutx-log-resume::", null!));
+                    logs.Clear();
+                    output.OnDataReceived(null, new ProcessDataReceivedEventArgs(line));
+                    Assert.Equal(expected, logs);
+                }
+            }
+        });
+    }
+
     [Fact]
     [Trait("Level", "L0")]
     [Trait("Category", "Worker")]
@@ -1181,6 +1238,9 @@ public sealed class ShoutxDifferentialL0
         IActionCommandExtension[] commands =
         [
             new AddMaskCommandExtension(),
+            new DebugCommandExtension(),
+            new GroupCommandExtension(),
+            new EndGroupCommandExtension(),
             new NoticeCommandExtension(),
             new WarningCommandExtension(),
             new ErrorCommandExtension(),

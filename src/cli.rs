@@ -109,6 +109,8 @@ pub struct AnnotationRequest {
 
 #[derive(Debug)]
 pub enum Action {
+    AzureVariable(crate::azure_pipelines::Variable),
+    AzureIssue(crate::azure_pipelines::Issue),
     Help,
     Version,
     Write(WriteRequest),
@@ -129,6 +131,9 @@ pub enum Action {
 
 #[derive(Clone, Copy)]
 enum Command {
+    AzureVariable,
+    AzureWarning,
+    AzureError,
     AddMatcher,
     RemoveMatcher,
     Debug,
@@ -146,6 +151,9 @@ enum Command {
 }
 
 const COMMANDS: &[(&str, Command)] = &[
+    ("azure-pipelines:variable", Command::AzureVariable),
+    ("azure-pipelines:warning", Command::AzureWarning),
+    ("azure-pipelines:error", Command::AzureError),
     ("github-actions:add-matcher", Command::AddMatcher),
     ("github-actions:remove-matcher", Command::RemoveMatcher),
     ("github-actions:debug", Command::Debug),
@@ -189,6 +197,13 @@ pub fn parse(args: Vec<OsString>) -> Result<Action, ShoutxError> {
         .find_map(|(name, kind)| (*name == command).then_some(*kind))
         .ok_or_else(|| ShoutxError::usage("unknown command"))?;
     let destination = match command {
+        Command::AzureVariable => return parse_azure_variable(it.collect()),
+        Command::AzureWarning => {
+            return parse_azure_issue(crate::azure_pipelines::Severity::Warning, it.collect());
+        }
+        Command::AzureError => {
+            return parse_azure_issue(crate::azure_pipelines::Severity::Error, it.collect());
+        }
         Command::AddMatcher => return parse_matcher(MatcherKind::AddFile, it.collect()),
         Command::RemoveMatcher => return parse_remove_matcher(it.collect()),
         Command::Debug => return parse_log(LogKind::Debug, it.collect()),
@@ -296,6 +311,106 @@ pub fn parse(args: Vec<OsString>) -> Result<Action, ShoutxError> {
         name,
         value,
     }))
+}
+
+fn parse_azure_variable(tokens: Vec<OsString>) -> Result<Action, ShoutxError> {
+    let mut output = false;
+    let mut read_only = false;
+    let mut options = true;
+    let mut it = tokens.into_iter();
+    let name = loop {
+        let token = it
+            .next()
+            .ok_or_else(|| ShoutxError::usage("missing NAME"))?;
+        if options {
+            match token.to_str() {
+                Some("--help") => return Ok(Action::Help),
+                Some("--version") => return Ok(Action::Version),
+                Some("--") => {
+                    options = false;
+                    continue;
+                }
+                Some("--output" | "--read-only") => {
+                    let flag = if token == "--output" {
+                        &mut output
+                    } else {
+                        &mut read_only
+                    };
+                    if *flag {
+                        return Err(ShoutxError::usage("duplicate Azure option"));
+                    }
+                    *flag = true;
+                    continue;
+                }
+                _ if starts_with_ascii_dash(&token) => {
+                    return Err(ShoutxError::usage("unknown option"));
+                }
+                _ => {}
+            }
+        }
+        break token;
+    };
+    let value = it.next();
+    if it.next().is_some() {
+        return Err(ShoutxError::usage("too many operands"));
+    }
+    Ok(Action::AzureVariable(crate::azure_pipelines::Variable {
+        name,
+        output,
+        read_only,
+        value,
+    }))
+}
+
+fn parse_azure_issue(
+    severity: crate::azure_pipelines::Severity,
+    tokens: Vec<OsString>,
+) -> Result<Action, ShoutxError> {
+    let mut request = crate::azure_pipelines::Issue {
+        severity,
+        file: None,
+        line: None,
+        column: None,
+        code: None,
+        message: None,
+    };
+    let mut options = true;
+    let mut it = tokens.into_iter();
+    while let Some(token) = it.next() {
+        if request.message.is_some() {
+            return Err(ShoutxError::usage("too many operands"));
+        }
+        if options {
+            let field = match token.to_str() {
+                Some("--help") => return Ok(Action::Help),
+                Some("--version") => return Ok(Action::Version),
+                Some("--") => {
+                    options = false;
+                    continue;
+                }
+                Some("--file") => Some(&mut request.file),
+                Some("--line") => Some(&mut request.line),
+                Some("--column") => Some(&mut request.column),
+                Some("--code") => Some(&mut request.code),
+                _ => None,
+            };
+            if let Some(field) = field {
+                if field.is_some() {
+                    return Err(ShoutxError::usage("duplicate Azure option"));
+                }
+                *field = Some(
+                    it.next()
+                        .ok_or_else(|| ShoutxError::usage("missing Azure option operand"))?,
+                );
+                continue;
+            }
+            if starts_with_ascii_dash(&token) {
+                return Err(ShoutxError::usage("unknown option"));
+            }
+        }
+        request.message = Some(token);
+    }
+    Ok(Action::AzureIssue(request))
 }
 
 fn parse_log(kind: LogKind, tokens: Vec<OsString>) -> Result<Action, ShoutxError> {

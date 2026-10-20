@@ -14,6 +14,12 @@ current architecture without changing their expected behavior.
 
 ## Test layers
 
+The Azure increment adds a bounded upstream-source parser suite and a separate
+hosted smoke gate; its cases are owned by the
+[Azure contract](commands/azure-pipelines.md#verification).
+The GitHub-specific differential, package and historical research requirements
+below do not automatically apply to a new provider.
+
 The implementation should be tested at four layers:
 
 1. **CLI contract tests** invoke the built executable and assert stdout bytes,
@@ -48,7 +54,8 @@ compatibility. Required CI and release gates remain unchanged.
 
 Default and `--no-default-features` builds expose the same complete command
 table: `output`, `env`, `state`, `path`, `artifacts`, `mask`, `notice`, `warning`,
-`error`, `debug`, `group`, `endgroup`, `add-matcher`, and `remove-matcher`.
+`error`, `debug`, `group`, `endgroup`, `add-matcher`, and `remove-matcher` in
+the GitHub namespace, plus Azure `variable`, `warning`, and `error`.
 Cargo's only feature entry is an empty `default` set. The former research feature
 and test `required-features` are removed. CI and release builds run all contract
 tests, including mask and annotation, without a feature opt-in. Focused stdout
@@ -58,7 +65,7 @@ not silently turn intended coverage into a zero-test success.
 
 Source-configuration tests check the exact enumerable command table and
 exhaustive dispatch. The independently specified LF help golden and version
-bytes must match each native artifact. The artifact verifier executes all fourteen
+bytes must match each native artifact. The artifact verifier executes all seventeen
 writers, including Unicode mask/message/metadata cases, and checks exact stdout,
 stderr and status. It also checks unsupported commands and rejected input with
 empty stdout. Negative controls corrupt status, output bytes and diagnostics

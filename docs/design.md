@@ -121,7 +121,8 @@ shoutx github-actions:warning [ANNOTATION OPTIONS] [MESSAGE]
 shoutx github-actions:error   [ANNOTATION OPTIONS] [MESSAGE]
 ```
 
-All fourteen commands are included in default and `--no-default-features` builds.
+All fourteen GitHub commands are included in default and `--no-default-features` builds,
+alongside the three Azure commands in the next increment.
 The former research feature is removed. Stdout consumer compatibility is scoped
 by the adoption contract below; binary availability does not broaden it.
 
@@ -133,7 +134,7 @@ No reusable context encoder is currently planned for v1.0. The former
 1. A command protects only the interpretation boundary named by that command.
 2. Validation, encoding, and resource-limit failures occur before stdout output
    begins. I/O failure after writing begins may leave partial bytes.
-3. Single-value non-multiline writers consume at most one final line boundary
+3. GitHub Actions single-value non-multiline writers consume at most one final line boundary
    as producer framing as specified by their command contracts. Structured
    operands such as annotation metadata and OCI fields do not inherit that
    preprocessing; fixed commands such as `endgroup` have no input value.
@@ -261,6 +262,28 @@ and responses to incompatibility are owned by the [release policy](release.md).
 No hidden fallback, normalization, decoration, or lossy sanitization is added
 by this adoption contract.
 
+## Azure Pipelines profile
+
+The next source increment adds variable and warning/error writers described
+by the [Azure command contract](commands/azure-pipelines.md). It is not included
+in v1.0.0. Their values preserve all input bytes, including final line endings.
+
+The initial verification target is native Microsoft-hosted Ubuntu 24.04 x64
+with Bash and Windows 2025 x64 with PowerShell Core 7.4+, normal command
+processing and `DECODE_PERCENTS=true`. Pin the source parser version in the
+[evidence record](compatibility/azure-pipelines.md); record actual hosted
+versions separately before claiming service compatibility. No hidden consumer
+settings are discovered by the producer. Self-hosted, containers, classic
+release pipelines and percent-decoding-disabled configurations are excluded
+from this initial profile, not declared inherently unsafe.
+
+Shoutx owns one typed command's framing, fields, validation, bounded allocation
+and value-free diagnostics. Azure owns applying the operation and subsequent
+scope, display and variable-export semantics. Callers authorize variable names
+and content, deliver inputs as data and propagate process failures. The
+[Azure attack inventory](threat-model.md#azure-pipelines-boundary) defines the
+bounded security work; dependency-internal proofs are not admission gates.
+
 ## Distribution integrations
 
 The official GitHub Action installs an exact released `shoutx` version from
@@ -354,6 +377,7 @@ verification plan:
 - [GitHub Actions annotation commands](commands/github-actions-annotations.md)
 - [GitHub Actions debug and group commands](commands/github-actions-log-commands.md)
 - [GitHub Actions problem matcher commands](commands/github-actions-problem-matchers.md)
+- [Azure Pipelines variable and issue commands](commands/azure-pipelines.md)
 
 ## Design decisions
 
@@ -382,5 +406,5 @@ separately under the [decision-record policy](decisions/README.md):
 - Static workflow analysis and attack-path discovery.
 - General JSON and HTML encoders.
 - Arbitrary document sanitization.
-- Providers other than GitHub Actions.
+- Providers other than GitHub Actions and the scoped Azure Pipelines increment.
 - A stable third-party plugin API.

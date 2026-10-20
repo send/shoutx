@@ -311,6 +311,14 @@ jobs:
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68
         with:
           dotnet-version: 8.0.425
+      - name: Verify Azure logging-command source parser (not hosted Azure)
+        shell: pwsh
+        run: |
+          $PSNativeCommandUseErrorActionPreference = $true
+          cargo build --locked --no-default-features
+          $binary = if ($IsWindows) { 'target/debug/shoutx.exe' } else { 'target/debug/shoutx' }
+          python -B tests/azure-oracle/verify.py $binary
+          python -B tests/azure-hosted/test_smoke.py
       - name: Verify pinned .NET SDK
         shell: pwsh
         working-directory: target/runner-oracle/actions-runner/src

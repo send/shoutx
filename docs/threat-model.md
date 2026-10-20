@@ -194,6 +194,29 @@ Other recognized boundaries are deferred, candidates, or out of scope:
 Inventorying a boundary does not commit `shoutx` to supporting it. It prevents
 an unsupported control channel from being mistaken for a protected one.
 
+## Azure Pipelines boundary
+
+The [Azure contract](commands/azure-pipelines.md) protects one selected
+`task.setvariable` or `task.logissue` operation on the stdout command stream.
+The same adversary and producer duties apply; the trusted consumer is Azure's
+Agent within the [design profile](design.md#azure-pipelines-profile).
+
+| Path | Protected asset / consequence | Control |
+| --- | --- | --- |
+| CR/LF starts another physical command line | Integrity of variable state and requested operation | One-line encoding of every input field |
+| Header text injects `;` or `]` | Property identity, severity and flags | Validated name, fixed keys/flags, text-property escaping |
+| Literal escape text is decoded as another value | Value fidelity; not automatically another-command execution | Percent-first encoding under the supported consumer setting |
+| Invalid/oversized input or diagnostics disclose data | Producer availability and input confidentiality in diagnostics | Bounded validation before stdout and fixed diagnostics |
+
+Data containing another command prefix after the fixed valid header remains
+data in the inspected parser. Reassess concrete evidence of a second
+interpretation, not all possible character sets. These writers do not
+authorize variable names, prevent deliberate overwrites, sanitize later shell
+expansion, mask secrets or sanitize other processes' logs. Agent restrictions,
+variable scope, service limits and issue display/translation are separate
+consumer effects. Record new concrete security paths privately per SECURITY.md,
+not as public exploit-bearing follow-up issues.
+
 ## Protected and specified boundaries
 
 ### Stdout mask and annotation responsibility

@@ -30,6 +30,15 @@ fn output(bytes: &[u8]) -> Result<(), ShoutxError> {
 fn run() -> Result<(), ShoutxError> {
     let args: Vec<OsString> = std::env::args_os().skip(1).collect();
     match shoutx::prepare(args)? {
+        Action::AzureVariable(request) => {
+            shoutx::azure_pipelines::validate_variable(&request)?;
+            let value = read_value(request.value.as_ref())?;
+            output(&shoutx::azure_pipelines::encode_variable(&request, &value)?)
+        }
+        Action::AzureIssue(request) => {
+            let value = read_value(request.message.as_ref())?;
+            output(&shoutx::azure_pipelines::encode_issue(&request, &value)?)
+        }
         Action::Help => output(shoutx::HELP.as_bytes()),
         Action::Version => output(shoutx::version_output().as_bytes()),
         Action::EndGroup => output(b"::endgroup::\n"),
@@ -168,6 +177,20 @@ fn run() -> Result<(), ShoutxError> {
             )?)
         }
     }
+}
+
+fn read_value(value: Option<&OsString>) -> Result<Vec<u8>, ShoutxError> {
+    if let Some(value) = value {
+        return Ok(shoutx::cli::os_bytes(value)?.to_vec());
+    }
+    if io::stdin().is_terminal() {
+        return Err(ShoutxError::usage(
+            "VALUE omitted while stdin is a terminal",
+        ));
+    }
+    let mut stdin =
+        process_io::stdin_file().map_err(|_| ShoutxError::failure("failed to open stdin"))?;
+    shoutx::input::read_bounded(&mut stdin)
 }
 
 fn caught_status<F>(operation: F) -> u8

@@ -75,7 +75,9 @@ CARGO_TARGET_DIR=target/stable cargo clippy --all-targets --no-default-features 
 scripts/verify-stable-docs.sh
 ```
 
-Default and official builds expose all fourteen commands. There is no stdout
+Default builds expose the fourteen GitHub commands and three unreleased Azure
+commands. Azure hosted verification is pending; see its compatibility record.
+There is no stdout
 research feature. Preserve explicit mask/annotation test targets and fresh
 nonempty exported corpora when changing test orchestration; a zero-test run is
 not evidence. Consumer compatibility remains limited to the design-owned profile.

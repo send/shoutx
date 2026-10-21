@@ -5,7 +5,8 @@ Prevent injection at CI workflow output boundaries.
 `shoutx` safely writes untrusted values from shell-driven workflows to
 destination-specific formats and protocols. The current source supports GitHub
 Actions environment files and scoped stdout workflow commands, plus an
-unreleased Azure Pipelines increment with hosted verification pending.
+unreleased Azure Pipelines increment; its verification status is recorded
+in the [Azure compatibility note](docs/compatibility/azure-pipelines.md).
 Generic context encoders are deferred
 until a concrete destination and safe consumption contract justify one.
 
@@ -164,7 +165,7 @@ GitHub Actions stdout commands:
   shoutx github-actions:warning [--title TITLE] [--file FILE] [--line N] [--end-line N] [--column N] [--end-column N] [MESSAGE]
   shoutx github-actions:error   [--title TITLE] [--file FILE] [--line N] [--end-line N] [--column N] [--end-column N] [MESSAGE]
 
-Azure Pipelines commands (hosted verification pending):
+Azure Pipelines commands (unreleased):
   shoutx azure-pipelines:variable [--output] [--read-only] NAME [VALUE]
   shoutx azure-pipelines:warning [--file FILE] [--line N] [--column N] [--code CODE] [MESSAGE]
   shoutx azure-pipelines:error   [--file FILE] [--line N] [--column N] [--code CODE] [MESSAGE]
@@ -190,8 +191,8 @@ encoders use the `LANGUAGE:CONTEXT` form.
 ## Azure Pipelines writers (unreleased)
 
 These commands require building this source tree; published v1.0.0 binaries
-do not contain them. Hosted verification is **pending**, so these are not yet
-a verified Azure deployment recommendation.
+do not contain them. See the [verification record](docs/compatibility/azure-pipelines.md)
+for tested hosted environments, observed effects and limits.
 
 ```sh
 shoutx azure-pipelines:variable --output Result "$VALUE"
@@ -205,7 +206,7 @@ Unlike the GitHub single-value writers, these commands preserve final
 newlines as value data. They do not set secrets or register masks.
 See the [Azure contract](docs/commands/azure-pipelines.md), including consumer
 configuration and output-variable scope, and the
-[pending hosted verification](docs/compatibility/azure-pipelines.md).
+[hosted verification record](docs/compatibility/azure-pipelines.md).
 
 ## GitHub Actions writers
 

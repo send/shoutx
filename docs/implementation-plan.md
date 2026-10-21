@@ -368,13 +368,13 @@ Publication and post-publication verification are complete; see the
 publication gate.
 
 The current bounded increment is the
-[Azure variable and issue writers](commands/azure-pipelines.md). Complete
-implementation, CLI and upstream-source parser checks, independent review,
-and latest-head CI/Codex review before requesting merge. The
+[Azure variable and issue writers](commands/azure-pipelines.md). Implementation
+and the hosted-verifier null-parent correction merged in PRs #137 and #138.
+The
 [compatibility record](compatibility/azure-pipelines.md) owns results and the
-separate hosted gate. The local implementation goal does not wait for Azure
-account setup or claim service verification. Prepare the manual hosted fixture
-now, then run it when the maintainer supplies the environment.
+separate hosted gate. Complete the remaining location observation and keep
+the verified scope explicit before release preparation; do not expand into
+Agent-internal investigation or additional writer commands.
 
 Follow the ordered [release-preparation gates](release.md#next-release-preparation)
 for packaging checks and exact-source evidence when preparing a future release.

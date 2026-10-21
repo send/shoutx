@@ -43,15 +43,47 @@ differential job. CI results must be checked at the final PR head; merely
 configuring it is not cross-platform evidence. The local .NET 8 harness does
 not execute the full v5.280.0 Agent runtime or task handlers.
 
-Hosted verification: **not run; account/environment preparation pending**.
-Do not infer Azure service support from GitHub CI, a native binary build, or
-source-parser success. The local implementation goal can finish without this
-gate; publication cannot claim completed Azure verification.
+## Hosted observations
 
-The [manual hosted fixture](../../tests/azure-hosted/README.md) is prepared.
-It uses synthetic values, verifies next-step effects and reads the build
-timeline for warning/error checks. Source-location translation still requires
-a hosted observation before recommending those metadata options.
+On 2026-10-21, [run 3](https://dev.azure.com/kazjuly7/shoutx/_build/results?buildId=3)
+passed every step in both jobs at source
+`3a506e13b96403b88c8c0d16bf8472dc58ddd83b` (PR #138, subsequently merged).
+Both job attempts were 1, using Agent 5.280.0, X64:
+
+| Job | Image | Image version |
+| --- | --- | --- |
+| Linux | ubuntu24 | 20261012.334.1 |
+| Windows | win25 | 20261013.288.2 |
+
+The [manual hosted fixture](../../tests/azure-hosted/README.md) verified exact
+next-step multiline/Unicode variable values, named-step output mapping,
+read-only registration's initial value, and absence of an injected sentinel
+variable. Timeline verification confirmed exactly one requested warning and
+one requested error per job, including their type, message, code and counts.
+The issue samples include leading combining/default-ignorable characters,
+Thai/Japanese/emoji, literal `%0A`, delimiters and a newline.
+
+Run 1 exposed a test-harness bug handling the root timeline's null `parentId`;
+run 2 was canceled. PR #138 added null-parent regression coverage. Neither run
+is counted as a successful hosted gate. Run 3 used the corrected verifier.
+
+On the same date, [run 4](https://dev.azure.com/kazjuly7/shoutx/_build/results?buildId=4)
+passed all steps at source `54ab91f0e439ec24b95fc692b8a87f7aadf6b633`.
+Both job attempts were 1 with the same Agent/architecture/image identities as
+run 3. In addition to repeating the existing checks, it supplied the absolute
+checkout path of the real `README.md` with line 1, column 3 for both severities.
+Azure's timeline recorded `sourcepath=README.md`, `linenumber=1`,
+`columnnumber=3`, category `Code`, and the expected severity/code. Its message
+was `README.md(1,3): warning SHOUTX_LOCATION: shoutx location smoke` (or `error`).
+The verifier requires these exact observations and the requested issue counts;
+it does not accept producer success as evidence of a consumer effect.
+Hosted UI rendering still awaits manual confirmation.
+
+Read-only overwrite enforcement
+and downstream job/stage mappings are not exercised by this fixture; they
+remain Azure/caller semantics rather than producer framing guarantees.
+No result here extends the design profile to self-hosted agents, containers,
+classic release pipelines or percent-decoding-disabled configurations.
 
 ## Official references
 

@@ -1,0 +1,197 @@
+//! Typed Azure logging commands. No dependency on GitHub's boundary policy.
+use std::ffi::OsString;
+
+use crate::{ShoutxError, cli::os_bytes, input::VALUE_LIMIT};
+
+const RECORD_LIMIT: usize = 8 * 1024 * 1024;
+
+#[derive(Debug)]
+pub struct Variable {
+    pub name: OsString,
+    pub output: bool,
+    pub read_only: bool,
+    pub value: Option<OsString>,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum Severity {
+    Warning,
+    Error,
+}
+
+#[derive(Debug)]
+pub struct Issue {
+    pub severity: Severity,
+    pub file: Option<OsString>,
+    pub line: Option<OsString>,
+    pub column: Option<OsString>,
+    pub code: Option<OsString>,
+    pub message: Option<OsString>,
+}
+
+fn validate_text(bytes: &[u8], limit: usize, empty: bool) -> Result<(), ShoutxError> {
+    if bytes.len() > limit {
+        return Err(ShoutxError::failure("Azure field exceeds size limit"));
+    }
+    std::str::from_utf8(bytes)
+        .map_err(|_| ShoutxError::failure("Azure field is not valid UTF-8"))?;
+    if bytes.contains(&0) {
+        return Err(ShoutxError::failure("Azure field contains NUL"));
+    }
+    if !empty && bytes.is_empty() {
+        return Err(ShoutxError::failure("Azure field must not be empty"));
+    }
+    Ok(())
+}
+
+pub fn validate_variable(request: &Variable) -> Result<(), ShoutxError> {
+    let name = os_bytes(&request.name)?;
+    validate_text(name, 255, false)?;
+    if !(name[0].is_ascii_alphabetic() || name[0] == b'_')
+        || !name
+            .iter()
+            .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'_' | b'.'))
+    {
+        return Err(ShoutxError::failure("invalid Azure variable name"));
+    }
+    for prefix in [
+        b"endpoint".as_slice(),
+        b"input",
+        b"secret",
+        b"path",
+        b"securefile",
+    ] {
+        if name
+            .get(..prefix.len())
+            .is_some_and(|start| start.eq_ignore_ascii_case(prefix))
+        {
+            return Err(ShoutxError::failure("reserved Azure variable prefix"));
+        }
+    }
+    Ok(())
+}
+
+pub fn encode_variable(request: &Variable, value: &[u8]) -> Result<Vec<u8>, ShoutxError> {
+    validate_variable(request)?;
+    validate_text(value, VALUE_LIMIT, true)?;
+    record(
+        b"task.setvariable",
+        &[
+            (b"variable", os_bytes(&request.name)?),
+            (b"isOutput", if request.output { b"true" } else { b"false" }),
+            (
+                b"isReadOnly",
+                if request.read_only { b"true" } else { b"false" },
+            ),
+        ],
+        value,
+    )
+}
+
+fn number(value: &OsString) -> Result<Vec<u8>, ShoutxError> {
+    let bytes = os_bytes(value)?;
+    if bytes.is_empty() || bytes.len() > 10 || !bytes.iter().all(u8::is_ascii_digit) {
+        return Err(ShoutxError::failure("invalid Azure location number"));
+    }
+    let value = bytes.iter().try_fold(0u32, |n, b| {
+        n.checked_mul(10)?.checked_add(u32::from(b - b'0'))
+    });
+    match value {
+        Some(value @ 1..=2_147_483_647) => Ok(value.to_string().into_bytes()),
+        _ => Err(ShoutxError::failure("invalid Azure location number")),
+    }
+}
+
+pub fn encode_issue(request: &Issue, message: &[u8]) -> Result<Vec<u8>, ShoutxError> {
+    validate_text(message, VALUE_LIMIT, false)?;
+    if request.line.is_some() && request.file.is_none()
+        || request.column.is_some() && request.line.is_none()
+    {
+        return Err(ShoutxError::failure(
+            "Azure location fields require their parent",
+        ));
+    }
+    let line = request.line.as_ref().map(number).transpose()?;
+    let column = request.column.as_ref().map(number).transpose()?;
+    let mut properties: Vec<(&[u8], &[u8])> = vec![(
+        b"type",
+        match request.severity {
+            Severity::Warning => b"warning",
+            Severity::Error => b"error",
+        },
+    )];
+    for (field, limit) in [(request.file.as_ref(), 4096), (request.code.as_ref(), 255)] {
+        if let Some(field) = field {
+            validate_text(os_bytes(field)?, limit, false)?;
+        }
+    }
+    if let Some(file) = request.file.as_ref() {
+        properties.push((b"sourcepath", os_bytes(file)?));
+    }
+    if let Some(line) = line.as_ref() {
+        properties.push((b"linenumber", line));
+    }
+    if let Some(column) = column.as_ref() {
+        properties.push((b"columnnumber", column));
+    }
+    if let Some(code) = request.code.as_ref() {
+        properties.push((b"code", os_bytes(code)?));
+    }
+    record(b"task.logissue", &properties, message)
+}
+
+fn escaped(byte: u8) -> Option<&'static [u8]> {
+    match byte {
+        b'%' => Some(b"%AZP25"),
+        b'\r' => Some(b"%0D"),
+        b'\n' => Some(b"%0A"),
+        b';' => Some(b"%3B"),
+        b']' => Some(b"%5D"),
+        _ => None,
+    }
+}
+
+fn record(
+    command: &[u8],
+    properties: &[(&[u8], &[u8])],
+    data: &[u8],
+) -> Result<Vec<u8>, ShoutxError> {
+    // Fixed syntax + each property key, '=' and ';' + escaped values.
+    let mut size = Some(b"##vso[".len() + command.len() + b" ]\n".len());
+    for (key, value) in properties {
+        size = size.and_then(|n| n.checked_add(key.len() + 2));
+        for &byte in *value {
+            size = size.and_then(|n| n.checked_add(escaped(byte).map_or(1, <[u8]>::len)));
+        }
+    }
+    for &byte in data {
+        size = size.and_then(|n| n.checked_add(escaped(byte).map_or(1, <[u8]>::len)));
+    }
+    let size = size
+        .filter(|n| *n <= RECORD_LIMIT)
+        .ok_or_else(|| ShoutxError::failure("encoded Azure command exceeds size limit"))?;
+    let mut out = Vec::with_capacity(size);
+    out.extend_from_slice(b"##vso[");
+    out.extend_from_slice(command);
+    out.push(b' ');
+    for (key, value) in properties {
+        out.extend_from_slice(key);
+        out.push(b'=');
+        append(&mut out, value);
+        out.push(b';');
+    }
+    out.push(b']');
+    append(&mut out, data);
+    out.push(b'\n');
+    debug_assert_eq!(size, out.len());
+    Ok(out)
+}
+
+fn append(out: &mut Vec<u8>, bytes: &[u8]) {
+    for &byte in bytes {
+        match escaped(byte) {
+            Some(replacement) => out.extend_from_slice(replacement),
+            None => out.push(byte),
+        }
+    }
+}

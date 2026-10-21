@@ -7,6 +7,13 @@ creating a release tag remains an explicit maintainer action.
 
 ## Initial distribution scope
 
+The unreleased Azure increment has a separate outstanding hosted gate recorded
+in [its compatibility note](compatibility/azure-pipelines.md). Before publishing
+a binary containing these commands, complete that gate and review the observed
+Agent/image identities against the design profile. Local parser tests and
+GitHub CI do not establish Azure service compatibility. This does not alter
+already-published v1.0.0 artifacts.
+
 GitHub Releases is the initial binary distribution channel. A release contains
 native executables for these Rust targets:
 

@@ -78,6 +78,21 @@ fn packaged_binary_has_exact_help_and_version() {
 #[test]
 fn packaged_binary_exposes_complete_surface() {
     verify(
+        &["azure-pipelines:variable", "Result", "α%0A\n"],
+        0,
+        "##vso[task.setvariable variable=Result;isOutput=false;isReadOnly=false;]α%AZP250A%0A\n"
+            .as_bytes(),
+        b"",
+    );
+    for severity in ["warning", "error"] {
+        verify(
+            &[&format!("azure-pipelines:{severity}"), "\u{301}😀"],
+            0,
+            format!("##vso[task.logissue type={severity};]\u{301}😀\n").as_bytes(),
+            b"",
+        );
+    }
+    verify(
         &["github-actions:add-matcher", "α%0A.json"],
         0,
         "::add-matcher::α%250A.json\n".as_bytes(),

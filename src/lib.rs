@@ -1,5 +1,6 @@
 #![forbid(unsafe_code)]
 
+pub mod azure_pipelines;
 pub mod cli;
 pub mod error;
 pub mod github_actions;
@@ -32,6 +33,10 @@ pub const HELP: &str = concat!(
     "  shoutx github-actions:notice  [--title TITLE] [--file FILE] [--line N] [--end-line N] [--column N] [--end-column N] [MESSAGE]\n",
     "  shoutx github-actions:warning [--title TITLE] [--file FILE] [--line N] [--end-line N] [--column N] [--end-column N] [MESSAGE]\n",
     "  shoutx github-actions:error   [--title TITLE] [--file FILE] [--line N] [--end-line N] [--column N] [--end-column N] [MESSAGE]\n",
+    "\nAzure Pipelines commands (hosted verification pending):\n",
+    "  shoutx azure-pipelines:variable [--output] [--read-only] NAME [VALUE]\n",
+    "  shoutx azure-pipelines:warning [--file FILE] [--line N] [--column N] [--code CODE] [MESSAGE]\n",
+    "  shoutx azure-pipelines:error   [--file FILE] [--line N] [--column N] [--code CODE] [MESSAGE]\n",
 );
 
 pub fn version_output() -> String {

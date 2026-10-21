@@ -1,0 +1,62 @@
+# Manually queue a reviewed branch; never run untrusted PR code with OAuth access.
+trigger: none
+pr: none
+
+parameters:
+  - name: images
+    type: object
+    default:
+      - name: linux
+        vmImage: ubuntu-24.04
+      - name: windows
+        vmImage: windows-2025
+
+jobs:
+  - ${{ each image in parameters.images }}:
+      - job: ${{ image.name }}
+        timeoutInMinutes: 15
+        pool:
+          vmImage: ${{ image.vmImage }}
+        variables:
+          DECODE_PERCENTS: 'true'
+        steps:
+          - checkout: self
+            persistCredentials: false
+          - pwsh: |
+              $PSNativeCommandUseErrorActionPreference = $true
+              cargo build --release --locked --no-default-features
+            displayName: Build reviewed source
+          - ${{ if eq(image.name, 'linux') }}:
+              - bash: |
+                  set -euo pipefail
+                  python3 tests/azure-hosted/smoke.py emit-variables
+                name: emit
+                displayName: Emit Azure variables
+          - ${{ else }}:
+              - pwsh: |
+                  $PSNativeCommandUseErrorActionPreference = $true
+                  python tests/azure-hosted/smoke.py emit-variables
+                name: emit
+                displayName: Emit Azure variables
+          - pwsh: |
+              $PSNativeCommandUseErrorActionPreference = $true
+              python tests/azure-hosted/smoke.py verify-variables
+            displayName: Verify next-step values
+            env:
+              SHOUTX_OUTPUT_VALUE: $(emit.ShoutxOutput)
+          - pwsh: |
+              $PSNativeCommandUseErrorActionPreference = $true
+              python tests/azure-hosted/smoke.py warning
+            displayName: shoutx Azure warning
+          - pwsh: |
+              $PSNativeCommandUseErrorActionPreference = $true
+              python tests/azure-hosted/smoke.py error
+            displayName: shoutx Azure error
+            continueOnError: true
+          - pwsh: |
+              $PSNativeCommandUseErrorActionPreference = $true
+              python tests/azure-hosted/smoke.py verify-timeline
+            displayName: Verify requested Azure issues
+            condition: succeededOrFailed()
+            env:
+              SYSTEM_ACCESSTOKEN: $(System.AccessToken)

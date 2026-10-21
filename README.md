@@ -4,10 +4,12 @@ Prevent injection at CI workflow output boundaries.
 
 `shoutx` safely writes untrusted values from shell-driven workflows to
 destination-specific formats and protocols. The current source supports GitHub
-Actions environment files and scoped stdout workflow commands. Generic context encoders are deferred
+Actions environment files and scoped stdout workflow commands, plus an
+unreleased Azure Pipelines increment with hosted verification pending.
+Generic context encoders are deferred
 until a concrete destination and safe consumption contract justify one.
 
-This tree describes v1.0.0; see its [release notes](docs/releases/v1.0.0.md)
+The published baseline is v1.0.0; see its [release notes](docs/releases/v1.0.0.md)
 for changes and migration guidance. Check
 [GitHub releases](https://github.com/send/shoutx/releases) for published versions;
 a version in this document does not establish publication. The `github-actions:output`,
@@ -161,6 +163,11 @@ GitHub Actions stdout commands:
   shoutx github-actions:notice  [--title TITLE] [--file FILE] [--line N] [--end-line N] [--column N] [--end-column N] [MESSAGE]
   shoutx github-actions:warning [--title TITLE] [--file FILE] [--line N] [--end-line N] [--column N] [--end-column N] [MESSAGE]
   shoutx github-actions:error   [--title TITLE] [--file FILE] [--line N] [--end-line N] [--column N] [--end-column N] [MESSAGE]
+
+Azure Pipelines commands (hosted verification pending):
+  shoutx azure-pipelines:variable [--output] [--read-only] NAME [VALUE]
+  shoutx azure-pipelines:warning [--file FILE] [--line N] [--column N] [--code CODE] [MESSAGE]
+  shoutx azure-pipelines:error   [--file FILE] [--line N] [--column N] [--code CODE] [MESSAGE]
 ```
 <!-- stable-command-surface:end -->
 
@@ -179,6 +186,26 @@ GitHub Actions stdout commands:
 Namespaced commands identify the interpretation context, not merely a data
 type. Provider-specific writers use the `PROVIDER:DESTINATION` form. Reusable
 encoders use the `LANGUAGE:CONTEXT` form.
+
+## Azure Pipelines writers (unreleased)
+
+These commands require building this source tree; published v1.0.0 binaries
+do not contain them. Hosted verification is **pending**, so these are not yet
+a verified Azure deployment recommendation.
+
+```sh
+shoutx azure-pipelines:variable --output Result "$VALUE"
+shoutx azure-pipelines:warning --code CHECK -- "$MESSAGE"
+shoutx azure-pipelines:error --file "$FILE" --line 1 -- "$MESSAGE"
+```
+
+Keep stdout connected to the Azure Agent. Pass inputs as data, not by inserting
+Azure expressions into shell source, and propagate nonzero exit status.
+Unlike the GitHub single-value writers, these commands preserve final
+newlines as value data. They do not set secrets or register masks.
+See the [Azure contract](docs/commands/azure-pipelines.md), including consumer
+configuration and output-variable scope, and the
+[pending hosted verification](docs/compatibility/azure-pipelines.md).
 
 ## GitHub Actions writers
 

@@ -365,12 +365,20 @@ Final v1.0.0 metadata and release-note preparation, without an RC stage, merged
 in PR #130 after GPT-6 Sol review and latest-head CI/Codex convergence.
 Publication and post-publication verification are complete; see the
 [v1.0.0 release record](releases/v1.0.0.md). There is no outstanding v1.0.0
-publication gate. The current handoff is ordinary post-release maintenance,
-not another implementation investigation or a new release authorization.
+publication gate.
+
+The current bounded increment is the
+[Azure variable and issue writers](commands/azure-pipelines.md). Complete
+implementation, CLI and upstream-source parser checks, independent review,
+and latest-head CI/Codex review before requesting merge. The
+[compatibility record](compatibility/azure-pipelines.md) owns results and the
+separate hosted gate. The local implementation goal does not wait for Azure
+account setup or claim service verification. Prepare the manual hosted fixture
+now, then run it when the maintainer supplies the environment.
 
 Follow the ordered [release-preparation gates](release.md#next-release-preparation)
 for packaging checks and exact-source evidence when preparing a future release.
-No new writer or dependency-internal investigation is needed. Keep all
+No further GitHub writer or dependency-internal investigation is needed. Keep all
 existing profile/effect checks; assess only concrete regressions. Preparation
 does not authorize executing the later publication steps or modifying other
 repositories. Unrelated new attack paths belong in confidential durable

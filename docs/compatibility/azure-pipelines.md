@@ -85,6 +85,24 @@ remain Azure/caller semantics rather than producer framing guarantees.
 No result here extends the design profile to self-hosted agents, containers,
 classic release pipelines or percent-decoding-disabled configurations.
 
+## Release assessment
+
+The observed Agent version matches the pinned source baseline and both image
+generations/architectures match the design profile. The three writers have
+passed the scoped hosted consumer-effect checks, including location metadata.
+No writer implementation defect or new attack path was observed in these runs.
+The remaining observation is hosted UI rendering of the location messages;
+do not describe clickable source navigation or pixel-identical rendering as
+verified from timeline API data alone.
+
+After that observation and this change's CI/review converge, proceed to
+[release preparation](../release.md#next-release-preparation). This is not
+permission to publish or proof that release packaging gates passed: version
+selection, release notes/metadata, exact release-source checks and maintainer
+approval remain separate. Published v1.0.0 binaries are unchanged and contain
+none of the Azure commands. The Azure-specific checks do not replace the
+existing GitHub consumer and artifact verification gates.
+
 ## Official references
 
 - [Logging commands](https://learn.microsoft.com/en-us/azure/devops/pipelines/scripts/logging-commands?view=azure-devops)

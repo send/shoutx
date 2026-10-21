@@ -77,7 +77,10 @@ Azure's timeline recorded `sourcepath=README.md`, `linenumber=1`,
 was `README.md(1,3): warning SHOUTX_LOCATION: shoutx location smoke` (or `error`).
 The verifier requires these exact observations and the requested issue counts;
 it does not accept producer success as evidence of a consumer effect.
-Hosted UI rendering still awaits manual confirmation.
+The Azure run Summary UI was inspected on 2026-10-21: both the Errors and
+Warnings tabs displayed the corresponding `README.md(1,3)` message for Linux
+and Windows. This confirms visible file/line/column text, not clickable source
+navigation or pixel-identical formatting of arbitrary messages.
 
 Read-only overwrite enforcement
 and downstream job/stage mappings are not exercised by this fixture; they
@@ -91,11 +94,11 @@ The observed Agent version matches the pinned source baseline and both image
 generations/architectures match the design profile. The three writers have
 passed the scoped hosted consumer-effect checks, including location metadata.
 No writer implementation defect or new attack path was observed in these runs.
-The remaining observation is hosted UI rendering of the location messages;
-do not describe clickable source navigation or pixel-identical rendering as
-verified from timeline API data alone.
+The location messages were also confirmed in the hosted UI as described above.
+The scoped Azure hosted gate is satisfied; clickable source navigation and
+pixel-identical rendering of arbitrary messages are not claimed.
 
-After that observation and this change's CI/review converge, proceed to
+After this change's CI/review converge, proceed to
 [release preparation](../release.md#next-release-preparation). This is not
 permission to publish or proof that release packaging gates passed: version
 selection, release notes/metadata, exact release-source checks and maintainer

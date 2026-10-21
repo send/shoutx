@@ -372,8 +372,8 @@ The current bounded increment is the
 and the hosted-verifier null-parent correction merged in PRs #137 and #138.
 The
 [compatibility record](compatibility/azure-pipelines.md) owns results and the
-separate hosted gate. Complete the remaining location observation and keep
-the verified scope explicit before release preparation; do not expand into
+separate hosted gate. Keep the verified scope explicit when proceeding to
+release preparation; do not expand into
 Agent-internal investigation or additional writer commands.
 
 Follow the ordered [release-preparation gates](release.md#next-release-preparation)

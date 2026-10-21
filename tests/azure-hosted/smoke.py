@@ -12,6 +12,9 @@ VALUE = "\u0301\u200bไทย日本語😀 %0A;%AZP25]\r\nnext\n"
 INJECTION = "data\n##vso[task.setvariable variable=SHOUTX_INJECTED;]unexpected"
 MESSAGE = "\u0301\u200bไทย日本語😀 %0A;]\nsecond"
 CODE = "SHOUTX;]%0A"
+LOCATION_FILE = "README.md"
+LOCATION_MESSAGE = "shoutx location smoke"
+LOCATION_CODE = "SHOUTX_LOCATION"
 
 
 def invoke(args, value):
@@ -42,12 +45,12 @@ def verify_variables(env):
         raise RuntimeError("variable effect mismatch")
 
 
-def check_timeline(timeline, job, attempt):
+def check_timeline(timeline, job, attempt, location=False):
     records = timeline.get("records", [])
     for severity in ["warning", "error"]:
         matching = [r for r in records
                     if (r.get("parentId") or "").lower() == job.lower()
-                    and r.get("name") == "shoutx Azure " + severity
+                    and r.get("name") == "shoutx Azure " + severity + (" location" if location else "")
                     and r.get("attempt") == attempt]
         if len(matching) != 1 or matching[0].get("state") != "completed":
             raise RuntimeError("missing completed issue step")
@@ -55,9 +58,16 @@ def check_timeline(timeline, job, attempt):
         if len(issues) != 1:
             raise RuntimeError("unexpected issue count")
         issue = issues[0]
-        if (issue.get("type") != severity or issue.get("message") != MESSAGE
-                or issue.get("data", {}).get("code") != CODE):
+        message = (f"{LOCATION_FILE}(1,3): {severity} {LOCATION_CODE}: {LOCATION_MESSAGE}"
+                   if location else MESSAGE)
+        if (issue.get("type") != severity or issue.get("message") != message
+                or issue.get("data", {}).get("code") != (LOCATION_CODE if location else CODE)):
             raise RuntimeError("issue effect mismatch")
+        if location:
+            data = issue.get("data", {})
+            if (issue.get("category") != "Code" or data.get("sourcepath") != LOCATION_FILE
+                    or data.get("linenumber") != "1" or data.get("columnnumber") != "3"):
+                raise RuntimeError("location effect mismatch")
         if (matching[0].get("errorCount", 0) != (1 if severity == "error" else 0)
                 or matching[0].get("warningCount", 0) != (1 if severity == "warning" else 0)):
             raise RuntimeError("issue count mismatch")
@@ -90,6 +100,7 @@ def verify_timeline():
             raise RuntimeError("timeline too large")
         try:
             check_timeline(json.loads(raw), job, attempt)
+            check_timeline(json.loads(raw), job, attempt, location=True)
             break
         except RuntimeError:
             if retry == 5:
@@ -112,6 +123,13 @@ def main():
         print("Azure next-step variable effects passed")
     elif phase in ("warning", "error"):
         sys.stdout.buffer.write(invoke(["azure-pipelines:" + phase, "--code", CODE], MESSAGE))
+        sys.stdout.buffer.flush()
+    elif phase in ("warning-location", "error-location"):
+        severity = phase.split("-")[0]
+        source = str(Path(LOCATION_FILE).resolve(strict=True))
+        sys.stdout.buffer.write(invoke(["azure-pipelines:" + severity,
+                                       "--file", source, "--line", "1", "--column", "3",
+                                       "--code", LOCATION_CODE], LOCATION_MESSAGE))
         sys.stdout.buffer.flush()
     elif phase == "verify-timeline":
         verify_timeline()

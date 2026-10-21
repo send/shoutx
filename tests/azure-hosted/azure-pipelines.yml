@@ -55,6 +55,15 @@ jobs:
             continueOnError: true
           - pwsh: |
               $PSNativeCommandUseErrorActionPreference = $true
+              python tests/azure-hosted/smoke.py warning-location
+            displayName: shoutx Azure warning location
+          - pwsh: |
+              $PSNativeCommandUseErrorActionPreference = $true
+              python tests/azure-hosted/smoke.py error-location
+            displayName: shoutx Azure error location
+            continueOnError: true
+          - pwsh: |
+              $PSNativeCommandUseErrorActionPreference = $true
               python tests/azure-hosted/smoke.py verify-timeline
             displayName: Verify requested Azure issues
             condition: succeededOrFailed()

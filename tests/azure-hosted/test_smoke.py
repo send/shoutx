@@ -4,6 +4,23 @@ import smoke
 
 
 class SmokeTests(unittest.TestCase):
+    def test_location_controls(self):
+        records = [{"parentId": "job", "attempt": 1, "state": "completed",
+                    "name": "shoutx Azure " + severity + " location",
+                    "errorCount": int(severity == "error"),
+                    "warningCount": int(severity == "warning"),
+                    "issues": [{"type": severity, "category": "Code",
+                                "message": f"README.md(1,3): {severity} SHOUTX_LOCATION: shoutx location smoke",
+                                "data": {"code": "SHOUTX_LOCATION", "sourcepath": "README.md",
+                                         "linenumber": "1", "columnnumber": "3"}}]}
+                   for severity in ["warning", "error"]]
+        smoke.check_timeline({"records": [{"parentId": None}, *records]}, "job", 1, True)
+        for field in ["sourcepath", "linenumber", "columnnumber", "code"]:
+            changed = copy.deepcopy(records)
+            changed[0]["issues"][0]["data"][field] = "wrong"
+            with self.assertRaises(RuntimeError):
+                smoke.check_timeline({"records": changed}, "job", 1, True)
+
     def test_variables(self):
         env = {"SHOUTXVALUE": smoke.VALUE, "SHOUTXINJECTION": smoke.INJECTION,
                "SHOUTX_OUTPUT_VALUE": smoke.VALUE, "SHOUTXREADONLY": "fixed"}

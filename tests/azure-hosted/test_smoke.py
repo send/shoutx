@@ -25,7 +25,11 @@ class SmokeTests(unittest.TestCase):
                                 "data": {"code": smoke.CODE}}]}
                    for severity in ["warning", "error"]]
         smoke.check_timeline({"records": records}, "job", 1)
+        # Azure includes a root stage whose parentId is explicitly null.
+        for root in [{"parentId": None}, {}]:
+            smoke.check_timeline({"records": [root, *records]}, "job", 1)
         for key, value in [("parentId", "other"), ("attempt", 2), ("state", "pending"),
+                           ("parentId", None),
                            ("issues", []), ("errorCount", 1), ("warningCount", 0)]:
             changed = copy.deepcopy(records)
             changed[0][key] = value

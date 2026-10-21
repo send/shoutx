@@ -46,7 +46,7 @@ def check_timeline(timeline, job, attempt):
     records = timeline.get("records", [])
     for severity in ["warning", "error"]:
         matching = [r for r in records
-                    if r.get("parentId", "").lower() == job.lower()
+                    if (r.get("parentId") or "").lower() == job.lower()
                     and r.get("name") == "shoutx Azure " + severity
                     and r.get("attempt") == attempt]
         if len(matching) != 1 or matching[0].get("state") != "completed":

@@ -33,7 +33,7 @@ pub const HELP: &str = concat!(
     "  shoutx github-actions:notice  [--title TITLE] [--file FILE] [--line N] [--end-line N] [--column N] [--end-column N] [MESSAGE]\n",
     "  shoutx github-actions:warning [--title TITLE] [--file FILE] [--line N] [--end-line N] [--column N] [--end-column N] [MESSAGE]\n",
     "  shoutx github-actions:error   [--title TITLE] [--file FILE] [--line N] [--end-line N] [--column N] [--end-column N] [MESSAGE]\n",
-    "\nAzure Pipelines commands (hosted verification pending):\n",
+    "\nAzure Pipelines commands (unreleased):\n",
     "  shoutx azure-pipelines:variable [--output] [--read-only] NAME [VALUE]\n",
     "  shoutx azure-pipelines:warning [--file FILE] [--line N] [--column N] [--code CODE] [MESSAGE]\n",
     "  shoutx azure-pipelines:error   [--file FILE] [--line N] [--column N] [--code CODE] [MESSAGE]\n",

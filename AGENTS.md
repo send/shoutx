@@ -76,7 +76,7 @@ scripts/verify-stable-docs.sh
 ```
 
 Default builds expose the fourteen GitHub commands and three unreleased Azure
-commands. Azure hosted verification is pending; see its compatibility record.
+commands. The Azure compatibility record owns hosted verification status.
 There is no stdout
 research feature. Preserve explicit mask/annotation test targets and fresh
 nonempty exported corpora when changing test orchestration; a zero-test run is

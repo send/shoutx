@@ -1,6 +1,8 @@
-# Pending Azure hosted smoke
+# Azure hosted smoke
 
-This fixture has not yet been run against Azure. Create a YAML pipeline using
+Results and tested identities live in the
+[compatibility record](../../docs/compatibility/azure-pipelines.md).
+Create a YAML pipeline using
 `tests/azure-hosted/azure-pipelines.yml` and manually queue a reviewed source
 revision. Automatic push/PR triggers are disabled. Do not run attacker-selected
 branches or queue-time overrides with OAuth access.
@@ -19,10 +21,12 @@ Prerequisites:
 The fixture checks multiline variable fidelity in the next step, named-step
 output mapping, read-only registration's initial value, absence of an injected
 sentinel variable, and warning/error type, text, code and counts through the
-timeline API. It does not yet test read-only overwrite enforcement, downstream
-job/stage mapping or source-location translation; these are provider effects,
-not source-parser guarantees. Review location rendering manually with a
-caller-approved real source path before recommending location metadata.
+timeline API. Location steps pass the absolute path of the checked-out
+`README.md`, line 1, column 3, then verify Azure's relative source path,
+coordinates, Code category and formatted message for both severities.
+Inspect the hosted UI as well before recording location rendering evidence.
+The fixture does not test read-only overwrite enforcement or downstream
+job/stage mapping; these remain provider effects, not source-parser guarantees.
 
 An intentional error issue may mark its step/job as succeeded-with-issues; its
 step has `continueOnError`. That alone is not evidence of a passed test. Require

@@ -7,7 +7,7 @@ creating a release tag remains an explicit maintainer action.
 
 ## Initial distribution scope
 
-The unreleased Azure increment has a separate outstanding hosted gate recorded
+The unreleased Azure increment has a separate hosted gate recorded
 in [its compatibility note](compatibility/azure-pipelines.md). Before publishing
 a binary containing these commands, complete that gate and review the observed
 Agent/image identities against the design profile. Local parser tests and

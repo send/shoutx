@@ -1,9 +1,9 @@
 # Azure Pipelines logging-command writers
 
 Status: implementation contract for the next increment, not in v1.0.0.
-Hosted verification is pending. The [design profile](../design.md#azure-pipelines-profile)
+The [design profile](../design.md#azure-pipelines-profile)
 owns applicability; the [compatibility record](../compatibility/azure-pipelines.md)
-owns observations and the outstanding hosted gate.
+owns observations and hosted verification status.
 
 ## Interface
 

@@ -372,8 +372,10 @@ and hosted verification are complete in PRs #137–#139. The
 [compatibility record](compatibility/azure-pipelines.md) owns their results.
 
 On 2026-10-24 the maintainer put release preparation on hold and selected PATH
-as the next bounded increment. Follow the [Azure PATH plan](decisions/azure-path.md)
-through contract, implementation, parser tests and Linux/Windows hosted effects.
+as the next bounded increment. Within the
+[design-owned Azure scope](design.md#azure-pipelines-profile), first complete
+the contract work in the [proposed PATH plan](decisions/azure-path.md), then
+proceed to implementation, parser tests and Linux/Windows hosted effects.
 Do not add secret commands or resume version changes, tagging or publication as
 part of PATH. No release version is approved by this handoff.
 

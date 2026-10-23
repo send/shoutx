@@ -205,6 +205,9 @@ explicitly directed the merge.
 
 ## Change workflow
 
+- Start follow-up work from the current handoff in `docs/implementation-plan.md`;
+  follow its linked decision records rather than reconstructing pending scope
+  and maintainer decisions from conversation history.
 - Keep pull requests focused and explain any security-contract consequence.
 - Let CI and configured review complete before merging; resolve completed
   review threads.

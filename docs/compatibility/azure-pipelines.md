@@ -26,6 +26,23 @@ These observations justify bounded command-framing work, not an audit of
 Agent, .NET or Unicode internals. GitHub-specific start restrictions are not
 transferred to this protocol.
 
+## PATH source observations
+
+Inspected on 2026-10-24 at the source pin above:
+
+- [`TaskPrepandPathCommand`](https://github.com/microsoft/azure-pipelines-agent/blob/efa064fee06c75b31cabc0451857ad1e294649c7/src/Agent.Worker/TaskCommandExtension.cs#L765-L786)
+  checks task restrictions, requires nonempty data, removes a
+  current-culture-equal earlier entry and appends the value.
+- The [native handler](https://github.com/microsoft/azure-pipelines-agent/blob/efa064fee06c75b31cabc0451857ad1e294649c7/src/Agent.Worker/Handlers/Handler.cs#L240-L274)
+  reverses the prepend list and joins it with `Path.PathSeparator` before
+  invoking `PathUtil.PrependPath`.
+
+These are source observations for the proposed writer, not a PATH acceptance
+contract or hosted verification. The helper and real next-task effects remain
+to be checked under the [PATH plan](../decisions/azure-path.md). The pin does not
+establish that later hosted Agents match it. Hosted observations below cover
+only the existing variable and issue writers.
+
 ## Verification status
 
 Local checks on macOS arm64, 2026-10-20:
@@ -98,9 +115,9 @@ The location messages were also confirmed in the hosted UI as described above.
 The scoped Azure hosted gate is satisfied; clickable source navigation and
 pixel-identical rendering of arbitrary messages are not claimed.
 
-After this change's CI/review converge, proceed to
-[release preparation](../release.md#next-release-preparation). This is not
-permission to publish or proof that release packaging gates passed: version
+The [current implementation handoff](../implementation-plan.md#current-handoff-status)
+owns the next work item and whether release preparation is scheduled. These
+observations are not permission to publish or proof that release packaging gates passed: version
 selection, release notes/metadata, exact release-source checks and maintainer
 approval remain separate. Published v1.0.0 binaries are unchanged and contain
 none of the Azure commands. The Azure-specific checks do not replace the

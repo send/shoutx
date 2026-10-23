@@ -45,6 +45,12 @@ Current cross-repository decisions:
 - [`official-setup-action.md`](official-setup-action.md) — repository boundary
   and security constraints for the official installer action.
 
+Azure follow-up planning:
+
+- [`azure-path.md`](azure-path.md) — proposed next writer and finite work plan.
+- [`azure-secret-boundary.md`](azure-secret-boundary.md) — unresolved secret
+  protection boundary; no secret implementation is authorized by this record.
+
 GitHub Actions stdout adoption and research history:
 
 - [`github-actions-stdout-framing.md`](github-actions-stdout-framing.md) —

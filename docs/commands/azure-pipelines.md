@@ -1,6 +1,6 @@
 # Azure Pipelines logging-command writers
 
-Status: implementation contract for the next increment, not in v1.0.0.
+Status: implemented, unreleased; not in v1.0.0.
 The [design profile](../design.md#azure-pipelines-profile)
 owns applicability; the [compatibility record](../compatibility/azure-pipelines.md)
 owns observations and hosted verification status.

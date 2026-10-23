@@ -367,17 +367,27 @@ Publication and post-publication verification are complete; see the
 [v1.0.0 release record](releases/v1.0.0.md). There is no outstanding v1.0.0
 publication gate.
 
-The current bounded increment is the
-[Azure variable and issue writers](commands/azure-pipelines.md). Implementation
-and the hosted-verifier null-parent correction merged in PRs #137 and #138.
-The
-[compatibility record](compatibility/azure-pipelines.md) owns results and the
-separate hosted gate. Keep the verified scope explicit when proceeding to
-release preparation; do not expand into
-Agent-internal investigation or additional writer commands.
+The initial [Azure variable and issue writers](commands/azure-pipelines.md)
+and hosted verification are complete in PRs #137–#139. The
+[compatibility record](compatibility/azure-pipelines.md) owns their results.
+
+On 2026-10-24 the maintainer put release preparation on hold and selected PATH
+as the next bounded increment. Within the
+[design-owned Azure scope](design.md#azure-pipelines-profile), first complete
+the contract work in the [proposed PATH plan](decisions/azure-path.md), then
+proceed to implementation, parser tests and Linux/Windows hosted effects.
+Do not add secret commands or resume version changes, tagging or publication as
+part of PATH. No release version is approved by this handoff.
+
+Secret support requires a separate boundary discussion before implementation.
+Its discussion context, investigation principles and unresolved questions have
+one home in [the secret discussion record](decisions/azure-secret-boundary.md). Read that
+record when resuming secret work; do not reconstruct the decision from chat or
+treat the provider's limitations alone as an accepted exclusion.
 
 Follow the ordered [release-preparation gates](release.md#next-release-preparation)
-for packaging checks and exact-source evidence when preparing a future release.
+for packaging checks and exact-source evidence when release preparation resumes
+with maintainer direction.
 No further GitHub writer or dependency-internal investigation is needed. Keep all
 existing profile/effect checks; assess only concrete regressions. Preparation
 does not authorize executing the later publication steps or modifying other

@@ -98,9 +98,9 @@ The location messages were also confirmed in the hosted UI as described above.
 The scoped Azure hosted gate is satisfied; clickable source navigation and
 pixel-identical rendering of arbitrary messages are not claimed.
 
-After this change's CI/review converge, proceed to
-[release preparation](../release.md#next-release-preparation). This is not
-permission to publish or proof that release packaging gates passed: version
+The [current implementation handoff](../implementation-plan.md#current-handoff-status)
+owns the next work item and whether release preparation is scheduled. These
+observations are not permission to publish or proof that release packaging gates passed: version
 selection, release notes/metadata, exact release-source checks and maintainer
 approval remain separate. Published v1.0.0 binaries are unchanged and contain
 none of the Azure commands. The Azure-specific checks do not replace the

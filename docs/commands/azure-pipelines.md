@@ -50,7 +50,8 @@ with two leading separators and nonempty server/share components (neither `.`
 nor `?`). Windows permits either slash as a separator, but rejects `;` and
 double quotes. Device/verbatim namespace paths are not accepted in this increment.
 The list-separator rejection prevents additional PATH entries after decoding;
-Windows quotes are excluded to avoid quoted search-path interpretation.
+Windows quotes are conservatively excluded; quoted-entry syntax is not part
+of this native path grammar.
 POSIX quotes and trailing backslashes are ordinary native path data and are
 preserved. No trimming, normalization, existence check or symlink resolution
 is performed. Fully qualified syntax does not establish resource trust or

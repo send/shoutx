@@ -1,6 +1,6 @@
 # Azure PATH writer plan
 
-Status: Contract specified; implementation and hosted verification in progress.
+Status: Implemented with scoped hosted verification; PR review pending.
 
 The [PATH command contract](../commands/azure-pipelines.md#path) now owns all
 acceptance and wire rules. The checklist below records the implementation work

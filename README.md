@@ -205,10 +205,9 @@ shoutx azure-pipelines:path -- "$TOOL_DIRECTORY"
 Keep stdout connected to the Azure Agent. Pass inputs as data, not by inserting
 Azure expressions into shell source, and propagate nonzero exit status.
 Unlike the GitHub single-value writers, variable/issue commands preserve final
-newlines as value data. PATH instead rejects all CR/LF, including a producer
-newline, and requires one fully qualified native path without the PATH-list
-separator. It does not authorize the directory or executables. These commands
-do not set secrets or register masks.
+newlines as value data. PATH has its own
+[input rules and trust boundary](docs/commands/azure-pipelines.md#path).
+These commands do not set secrets or register masks.
 See the [Azure contract](docs/commands/azure-pipelines.md), including consumer
 configuration and output-variable scope, and the
 [hosted verification record](docs/compatibility/azure-pipelines.md).

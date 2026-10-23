@@ -379,6 +379,11 @@ proceed to implementation, parser tests and Linux/Windows hosted effects.
 Do not add secret commands or resume version changes, tagging or publication as
 part of PATH. No release version is approved by this handoff.
 
+PR #142 implements the PATH contract and tests; scoped native hosted effects
+have passed as recorded in the [Azure evidence](compatibility/azure-pipelines.md#path-hosted-observations).
+The remaining handoff is latest-head CI/review convergence and maintainer
+merge direction, not another PATH investigation or release preparation.
+
 Secret support requires a separate boundary discussion before implementation.
 Its discussion context, investigation principles and unresolved questions have
 one home in [the secret discussion record](decisions/azure-secret-boundary.md). Read that

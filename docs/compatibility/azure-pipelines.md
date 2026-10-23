@@ -26,6 +26,23 @@ These observations justify bounded command-framing work, not an audit of
 Agent, .NET or Unicode internals. GitHub-specific start restrictions are not
 transferred to this protocol.
 
+## PATH source observations
+
+Inspected on 2026-10-24 at the source pin above:
+
+- [`TaskPrepandPathCommand`](https://github.com/microsoft/azure-pipelines-agent/blob/efa064fee06c75b31cabc0451857ad1e294649c7/src/Agent.Worker/TaskCommandExtension.cs#L765-L786)
+  checks task restrictions, requires nonempty data, removes a
+  current-culture-equal earlier entry and appends the value.
+- The [native handler](https://github.com/microsoft/azure-pipelines-agent/blob/efa064fee06c75b31cabc0451857ad1e294649c7/src/Agent.Worker/Handlers/Handler.cs#L240-L274)
+  reverses the prepend list and joins it with `Path.PathSeparator` before
+  invoking `PathUtil.PrependPath`.
+
+These are source observations for the proposed writer, not a PATH acceptance
+contract or hosted verification. The helper and real next-task effects remain
+to be checked under the [PATH plan](../decisions/azure-path.md). The pin does not
+establish that later hosted Agents match it. Hosted observations below cover
+only the existing variable and issue writers.
+
 ## Verification status
 
 Local checks on macOS arm64, 2026-10-20:

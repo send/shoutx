@@ -380,8 +380,8 @@ Do not add secret commands or resume version changes, tagging or publication as
 part of PATH. No release version is approved by this handoff.
 
 Secret support requires a separate boundary discussion before implementation.
-Its unresolved questions and agreed investigation principles have one home in
-[the secret discussion record](decisions/azure-secret-boundary.md). Read that
+Its discussion context, investigation principles and unresolved questions have
+one home in [the secret discussion record](decisions/azure-secret-boundary.md). Read that
 record when resuming secret work; do not reconstruct the decision from chat or
 treat the provider's limitations alone as an accepted exclusion.
 

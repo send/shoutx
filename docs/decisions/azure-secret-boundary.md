@@ -9,6 +9,11 @@ This record is the single home for the unresolved secret-boundary discussion;
 it does not introduce a command or change the existing non-secret variable
 contract. The implementation handoff links here instead of repeating it.
 
+The maintainer agreed to consider lossless escaping, rejection and, where
+justified, explicit sanitization. That agreement sets the investigation
+direction; this record remains Proposed because the accepted input rules,
+interface and protection boundary have not been decided.
+
 ## Decision drivers
 
 Provider limitations alone do not justify accepting a value that cannot receive

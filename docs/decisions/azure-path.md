@@ -4,10 +4,11 @@ Status: Proposed
 
 ## Context
 
-The next implementation increment is one typed `task.prependpath` writer,
+This proposal covers one typed `task.prependpath` writer,
 tentatively `shoutx azure-pipelines:path [PATH]`. It complements the existing
 non-secret variable and issue writers. This plan does not expose the command;
-the command specification must be updated before implementation.
+the command specification must be updated before implementation. Work ordering
+is owned by the [current handoff](../implementation-plan.md#current-handoff-status).
 
 ## Boundary and proposed approach
 
@@ -31,8 +32,11 @@ agents are not added by this increment.
   target PATH separator. A protocol escape that Azure later decodes cannot
   make a PATH-list separator safe as path data.
 - Decide CR/LF handling, including a trailing producer newline, explicitly;
-  do not inherit GitHub's final-boundary consumption. Assess quotes and other
-  identity-changing syntax at the actual native consumer boundary. Import no
+  do not inherit GitHub's final-boundary consumption. Reconcile the existing
+  Azure final-newline statements in the command contract, design and README
+  with the chosen PATH behavior, scoping them to variable/issue writers where
+  needed. Assess quotes and other identity-changing syntax at the actual native
+  consumer boundary. Import no
   GitHub container-only restrictions without an Azure attack path.
 - Define exact fixed wire syntax, input/record limits, argv/stdin behavior,
   option errors and empty-stdout rejection. Maintain byte fidelity for every
@@ -68,13 +72,7 @@ Agent audit. Secret support and release work are outside this increment.
 
 ## Source starting points
 
-The existing Azure pin is the starting baseline, not a claim that later hosted
-Agents match it. At that pin, `TaskPrepandPathCommand` checks task restrictions,
-requires nonempty data, removes a current-culture-equal earlier entry and appends
-the value. The native handler reverses the prepend list and joins it with
-`Path.PathSeparator` before invoking `PathUtil.PrependPath`. Review that helper
-and retain real next-task observations before finalizing the contract.
-
-- [Task handler](https://github.com/microsoft/azure-pipelines-agent/blob/efa064fee06c75b31cabc0451857ad1e294649c7/src/Agent.Worker/TaskCommandExtension.cs#L765-L786)
-- [Native PATH composition](https://github.com/microsoft/azure-pipelines-agent/blob/efa064fee06c75b31cabc0451857ad1e294649c7/src/Agent.Worker/Handlers/Handler.cs#L240-L274)
-- [Existing verification identities](../compatibility/azure-pipelines.md)
+Start from the [retained PATH source observations](../compatibility/azure-pipelines.md#path-source-observations).
+Review the linked native composition helper and retain real next-task
+observations before finalizing the contract. Existing variable/issue hosted
+results are not PATH verification.

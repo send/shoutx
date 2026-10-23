@@ -122,7 +122,7 @@ shoutx github-actions:error   [ANNOTATION OPTIONS] [MESSAGE]
 ```
 
 All fourteen GitHub commands are included in default and `--no-default-features` builds,
-alongside the three Azure commands in the next increment.
+alongside the three unreleased Azure commands.
 The former research feature is removed. Stdout consumer compatibility is scoped
 by the adoption contract below; binary availability does not broaden it.
 
@@ -268,12 +268,14 @@ The current source implements variable and warning/error writers described
 by the [Azure command contract](commands/azure-pipelines.md). It is not included
 in v1.0.0. Their values preserve all input bytes, including final line endings.
 
-The next planned Azure addition is a typed PATH writer, subject to the contract
+A typed PATH writer is proposed, subject to the contract
 work in the [proposed PATH plan](decisions/azure-path.md). It is not part of the
 implemented command surface yet. Before exposing it, update the Azure command
 specification and relevant threat inventory, resolving any changes needed to
 this profile. The implementation handoff does not itself extend the product
-contract. Secret support remains a separate unresolved design discussion.
+contract. Work ordering is owned by the
+[current handoff](implementation-plan.md#current-handoff-status).
+Secret support remains a separate unresolved design discussion.
 
 The initial verification target is native Microsoft-hosted Ubuntu 24.04 x64
 with Bash and Windows 2025 x64 with PowerShell Core 7.4+, normal command

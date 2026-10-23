@@ -41,6 +41,12 @@ unknown options exit 2. Empty input, malformed UTF-8, NUL, CR or LF anywhere
 (including a final producer newline) exit 1 with empty stdout. Use `printf '%s'`,
 not `echo`. The shared 1 MiB input and 8 MiB record limits apply.
 
+In PATH's first operand/option position, malformed text is an input failure
+(status 1) before unknown-option classification, including a dash-prefixed
+malformed token. Variable/issue option positions retain usage-error precedence
+for unknown dash-prefixed tokens. This is a PATH-specific classification rule;
+it does not change the shared help/version or extra-operand behavior.
+
 The native executable selects its own OS dialect; `RUNNER_OS`, `AGENT_OS` and
 other environment selectors do not override it. Producer and consumer must use
 the same native OS, within the design-owned profile. No cross-target option is

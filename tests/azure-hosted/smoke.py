@@ -58,12 +58,22 @@ def verify_paths():
     root = path_root()
     paths = path_entries(root)
     baseline = json.loads((root / "baseline.json").read_text(encoding="utf-8"))
-    check_path_value(os.environ["PATH"], baseline, paths, os.pathsep)
+    actual_path = os.environ["PATH"]
+    entries = actual_path.split(os.pathsep)
+    print(json.dumps({"pathObservation": {
+        "entryCount": len(entries), "baselineEntryCount": len(baseline.split(os.pathsep)),
+        "fixtureCounts": [entries.count(str(path)) for path in paths],
+        "prefixMatches": entries[:3] == [str(paths[i]) for i in [2, 0, 1]],
+        "baselineTailMatches": os.pathsep.join(entries[3:]) == baseline,
+    }}), flush=True)
+    check_path_value(actual_path, baseline, paths, os.pathsep)
+    print("Azure PATH comparison passed", flush=True)
     suffix = ".exe" if os.name == "nt" else ""
     expected = paths[2] / ("shoutx-path-probe" + suffix)
     found = shutil.which("shoutx-path-probe" + suffix)
     if found != str(expected):
         raise RuntimeError("executable lookup mismatch")
+    print("Azure PATH executable discovery passed", flush=True)
     # Execute the caller-owned native binary, never an input-derived script.
     actual = subprocess.run(["shoutx-path-probe" + suffix, "--version"],
                             capture_output=True, timeout=30)

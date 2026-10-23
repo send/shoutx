@@ -201,10 +201,7 @@ pub fn parse(args: Vec<OsString>) -> Result<Action, ShoutxError> {
         .ok_or_else(|| ShoutxError::usage("unknown command"))?;
     let destination = match command {
         Command::AzurePath => {
-            return parse_path(it.collect()).map(|action| match action {
-                Action::WritePath(request) => Action::AzurePath(request),
-                other => other,
-            });
+            return parse_path(it.collect(), true);
         }
         Command::AzureVariable => return parse_azure_variable(it.collect()),
         Command::AzureWarning => {
@@ -222,7 +219,7 @@ pub fn parse(args: Vec<OsString>) -> Result<Action, ShoutxError> {
         Command::Output => Destination::Output,
         Command::Env => Destination::Env,
         Command::State => Destination::State,
-        Command::Path => return parse_path(it.collect()),
+        Command::Path => return parse_path(it.collect(), false),
         Command::Mask => return parse_mask(it.collect()),
         Command::Notice => return parse_annotation(AnnotationSeverity::Notice, it.collect()),
         Command::Warning => return parse_annotation(AnnotationSeverity::Warning, it.collect()),
@@ -596,11 +593,14 @@ fn parse_mask(tokens: Vec<OsString>) -> Result<Action, ShoutxError> {
     Ok(Action::Mask(MaskRequest { value }))
 }
 
-fn parse_path(tokens: Vec<OsString>) -> Result<Action, ShoutxError> {
+fn parse_path(tokens: Vec<OsString>, azure: bool) -> Result<Action, ShoutxError> {
     let mut options = true;
     let mut value = None;
     for token in tokens {
         let token_text = token.to_str();
+        if azure && value.is_none() && token_text.is_none() {
+            os_bytes(&token)?;
+        }
         if value.is_none() && options && token_text == Some("--") {
             options = false;
             continue;
@@ -619,7 +619,12 @@ fn parse_path(tokens: Vec<OsString>) -> Result<Action, ShoutxError> {
         }
         value = Some(token);
     }
-    Ok(Action::WritePath(PathRequest { value }))
+    let request = PathRequest { value };
+    Ok(if azure {
+        Action::AzurePath(request)
+    } else {
+        Action::WritePath(request)
+    })
 }
 
 pub fn os_bytes(value: &OsStr) -> Result<&[u8], ShoutxError> {

@@ -373,13 +373,35 @@ fn path_native_bytes_and_rejections() {
 #[test]
 fn path_rejects_unpaired_surrogate_argv() {
     use std::{ffi::OsString, os::windows::ffi::OsStringExt};
-    let value = OsString::from_wide(&[0x43, 0x3a, 0x5c, 0xd800]);
-    let result = Command::new(env!("CARGO_BIN_EXE_shoutx"))
-        .arg("azure-pipelines:path")
-        .arg(value)
-        .output()
-        .unwrap();
-    assert_eq!(result.status.code(), Some(1));
-    assert!(result.stdout.is_empty());
-    assert_eq!(result.stderr, b"error: input is not valid UTF-8\n");
+    for units in [&[0x43, 0x3a, 0x5c, 0xd800][..], &[0x2d, 0xd800][..]] {
+        let value = OsString::from_wide(units);
+        let result = Command::new(env!("CARGO_BIN_EXE_shoutx"))
+            .arg("azure-pipelines:path")
+            .arg(value)
+            .output()
+            .unwrap();
+        assert_eq!(result.status.code(), Some(1));
+        assert!(result.stdout.is_empty());
+        assert_eq!(result.stderr, b"error: input is not valid UTF-8\n");
+    }
+}
+
+#[cfg(unix)]
+#[test]
+fn azure_path_invalid_dash_operand_is_input_failure() {
+    use std::{ffi::OsString, os::unix::ffi::OsStringExt};
+    for end_options in [false, true] {
+        let mut command = Command::new(env!("CARGO_BIN_EXE_shoutx"));
+        command.arg("azure-pipelines:path");
+        if end_options {
+            command.arg("--");
+        }
+        let result = command
+            .arg(OsString::from_vec(vec![b'-', 0xff]))
+            .output()
+            .unwrap();
+        assert_eq!(result.status.code(), Some(1));
+        assert!(result.stdout.is_empty());
+        assert_eq!(result.stderr, b"error: input is not valid UTF-8\n");
+    }
 }

@@ -28,7 +28,7 @@ def path_entries(root):
     return [root / "alpha", root / "bravo", root / special]
 
 
-def emit_paths():
+def prepare_paths():
     root = path_root()
     root.mkdir(exist_ok=False)
     paths = path_entries(root)
@@ -40,6 +40,10 @@ def emit_paths():
     for path in paths:
         path.mkdir()
     shutil.copy2(Path("target/release/shoutx" + suffix), paths[2] / ("shoutx-path-probe" + suffix))
+
+
+def emit_paths():
+    paths = path_entries(path_root())
     # Repeat alpha: expected final order is special, alpha, bravo.
     for index in [0, 1, 0, 2]:
         sys.stdout.buffer.write(invoke(["azure-pipelines:path"], str(paths[index])))
@@ -188,6 +192,8 @@ def main():
         emit_variables()
     elif phase == "emit-paths":
         emit_paths()
+    elif phase == "prepare-paths":
+        prepare_paths()
     elif phase == "verify-paths":
         verify_paths()
     elif phase == "verify-variables":

@@ -36,6 +36,11 @@ exercise decoded byte fidelity; distinct ASCII directories exercise ordering.
 The next step checks executable discovery and runs only that trusted fixture.
 Agent culture/backend remain unobserved; exact-repeat results do not establish
 portable duplicate equivalence.
+Capture the baseline and verify effects using direct `PythonScript@0` tasks:
+shell startup may independently prepend its own directory to PATH. Keep the
+actual command emission in Bash (Linux) / PowerShell Core (Windows). This
+separates Agent PATH effects from shell-startup edits rather than allowing
+unexpected entries in the verifier.
 
 An intentional error issue may mark its step/job as succeeded-with-issues; its
 step has `continueOnError`. That alone is not evidence of a passed test. Require

@@ -31,6 +31,12 @@ agents are not added by this increment.
 - Specify fully qualified POSIX/Windows path forms and reject the effective
   target PATH separator. A protocol escape that Azure later decodes cannot
   make a PATH-list separator safe as path data.
+- Explicitly constrain the contract to one selected command and one incoming
+  PATH entry, not stable duplicate identity or preservation of earlier entries.
+  Azure's [observed duplicate handling](../compatibility/azure-pipelines.md#path-source-observations)
+  can replace an earlier, ordinally different entry. Do not promise that all
+  distinct strings coexist or that deduplication is portable across cultures.
+  Input byte fidelity is not a claim about the resulting list's membership.
 - Decide CR/LF handling, including a trailing producer newline, explicitly;
   do not inherit GitHub's final-boundary consumption. Reconcile the existing
   Azure final-newline statements in the command contract, design and README
@@ -46,7 +52,9 @@ agents are not added by this increment.
 
 1. Follow the pinned command through PATH composition, limiting inspection to
    the native path handler and relevant helper. Record useful source findings
-   in the Azure compatibility record; no collation-internal proof is required.
+   in the Azure compatibility record. Keep the duplicate-identity limitation
+   explicit in the command contract; no collation-internal proof is required
+   for that constrained guarantee.
 2. Update the Azure command contract and relevant threat inventory. Implement
    explicit Azure path validation, CLI dispatch and help; keep GitHub behavior
    unchanged. Share only grammar helpers whose assumptions actually match.
@@ -57,7 +65,12 @@ agents are not added by this increment.
 4. Extend the existing hosted fixture on Ubuntu and Windows. Create synthetic
    caller-owned directories, emit through shoutx, and inspect the subsequent
    task's PATH entries and executable lookup. Assert the expected entry bytes,
-   no additional entry/operation, and order for distinct entries. Test rejection
+   no injected entry/operation, and order for unambiguously distinct ASCII
+   fixture entries. Exercise repeat registration on both OS generations and
+   distinguish the requested incoming entry from replacement of earlier entries.
+   Record any culture/backend identities actually observed as such; unavailable
+   Agent identities remain unknown, not inferred from the producer process.
+   These fixtures do not establish portable duplicate equivalence. Test rejection
    before stdout separately; do not execute attacker-controlled fixtures.
 5. Update complete-surface checks and packaged-binary verification so the new
    command cannot be omitted from a native artifact. Run Cargo tests, fmt,

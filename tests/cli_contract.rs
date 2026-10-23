@@ -152,6 +152,7 @@ fn configured_command_table_is_the_complete_expected_surface() {
         "azure-pipelines:variable",
         "azure-pipelines:warning",
         "azure-pipelines:error",
+        "azure-pipelines:path",
         "github-actions:add-matcher",
         "github-actions:remove-matcher",
         "github-actions:debug",

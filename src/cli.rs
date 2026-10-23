@@ -109,6 +109,7 @@ pub struct AnnotationRequest {
 
 #[derive(Debug)]
 pub enum Action {
+    AzurePath(PathRequest),
     AzureVariable(crate::azure_pipelines::Variable),
     AzureIssue(crate::azure_pipelines::Issue),
     Help,
@@ -131,6 +132,7 @@ pub enum Action {
 
 #[derive(Clone, Copy)]
 enum Command {
+    AzurePath,
     AzureVariable,
     AzureWarning,
     AzureError,
@@ -154,6 +156,7 @@ const COMMANDS: &[(&str, Command)] = &[
     ("azure-pipelines:variable", Command::AzureVariable),
     ("azure-pipelines:warning", Command::AzureWarning),
     ("azure-pipelines:error", Command::AzureError),
+    ("azure-pipelines:path", Command::AzurePath),
     ("github-actions:add-matcher", Command::AddMatcher),
     ("github-actions:remove-matcher", Command::RemoveMatcher),
     ("github-actions:debug", Command::Debug),
@@ -197,6 +200,12 @@ pub fn parse(args: Vec<OsString>) -> Result<Action, ShoutxError> {
         .find_map(|(name, kind)| (*name == command).then_some(*kind))
         .ok_or_else(|| ShoutxError::usage("unknown command"))?;
     let destination = match command {
+        Command::AzurePath => {
+            return parse_path(it.collect()).map(|action| match action {
+                Action::WritePath(request) => Action::AzurePath(request),
+                other => other,
+            });
+        }
         Command::AzureVariable => return parse_azure_variable(it.collect()),
         Command::AzureWarning => {
             return parse_azure_issue(crate::azure_pipelines::Severity::Warning, it.collect());

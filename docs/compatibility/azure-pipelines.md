@@ -36,9 +36,14 @@ Inspected on 2026-10-24 at the source pin above:
 - The [native handler](https://github.com/microsoft/azure-pipelines-agent/blob/efa064fee06c75b31cabc0451857ad1e294649c7/src/Agent.Worker/Handlers/Handler.cs#L240-L274)
   reverses the prepend list and joins it with `Path.PathSeparator` before
   invoking `PathUtil.PrependPath`.
+- [`PathUtil.PrependPath`](https://github.com/microsoft/azure-pipelines-agent/blob/efa064fee06c75b31cabc0451857ad1e294649c7/src/Agent.Sdk/Util/PathUtil.cs#L19-L38)
+  returns the incoming string if the old PATH is empty, otherwise joins with
+  the native separator. If the old PATH already starts with the incoming
+  prefix plus separator under `IOUtil.FilePathStringComparison`, it keeps the
+  old PATH (including its spelling). It does not trim, unquote or resolve paths.
 
-These are source observations for the proposed writer, not a PATH acceptance
-contract or hosted verification. The helper and real next-task effects remain
+These are source observations, not a PATH acceptance
+contract or hosted verification. Real next-task effects remain
 to be checked under the [PATH plan](../decisions/azure-path.md). The pin does not
 establish that later hosted Agents match it. Hosted observations below cover
 only the existing variable and issue writers.

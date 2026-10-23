@@ -77,6 +77,13 @@ fn packaged_binary_has_exact_help_and_version() {
 
 #[test]
 fn packaged_binary_exposes_complete_surface() {
+    let path = if cfg!(windows) { "C:\\tools" } else { "/tools" };
+    verify(
+        &["azure-pipelines:path", path],
+        0,
+        format!("##vso[task.prependpath]{path}\n").as_bytes(),
+        b"",
+    );
     verify(
         &["azure-pipelines:variable", "Result", "α%0A\n"],
         0,

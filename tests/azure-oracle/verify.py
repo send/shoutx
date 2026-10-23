@@ -72,6 +72,12 @@ def corpus(binary):
                 props.update(sourcepath=file, linenumber="1", columnnumber="2", code=code)
             add(args, data, "logissue", props)
 
+    root = "C:\\" if os.name == "nt" else "/"
+    for sample in samples:
+        # Native PATH policy, not the variable/issue newline policy.
+        tail = sample.translate(str.maketrans("", "", '\r\n;"' if os.name == "nt" else "\r\n:"))
+        add(["azure-pipelines:path"], root + tail, "prependpath", {})
+
     # Prove the matcher notices a configuration mismatch, wrong command,
     # property mismatch, payload mismatch, and an additional physical line.
     original = next(c for c in cases if "%0A" in c["data"])

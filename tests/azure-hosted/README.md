@@ -28,9 +28,18 @@ Inspect the hosted UI as well before recording location rendering evidence.
 The fixture does not test read-only overwrite enforcement or downstream
 job/stage mapping; these remain provider effects, not source-parser guarantees.
 
+PATH steps create caller-owned fixture directories and copy the native shoutx
+binary as a uniquely named lookup probe. Repeated registrations must produce
+exactly the expected ordered prefix plus the saved original PATH in the next
+task, with no additional entry. Unicode and literal-escape directory names
+exercise decoded byte fidelity; distinct ASCII directories exercise ordering.
+The next step checks executable discovery and runs only that trusted fixture.
+Agent culture/backend remain unobserved; exact-repeat results do not establish
+portable duplicate equivalence.
+
 An intentional error issue may mark its step/job as succeeded-with-issues; its
 step has `continueOnError`. That alone is not evidence of a passed test. Require
-the value verification and final timeline verification steps to succeed in
+the value, PATH/executable and final timeline verification steps to succeed in
 both jobs, and inspect the whole run for other failures. Missing timeline data,
 wrong attempts or mismatched issues fail the verifier.
 

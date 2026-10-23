@@ -28,3 +28,4 @@ Azure Pipelines commands (unreleased):
   shoutx azure-pipelines:variable [--output] [--read-only] NAME [VALUE]
   shoutx azure-pipelines:warning [--file FILE] [--line N] [--column N] [--code CODE] [MESSAGE]
   shoutx azure-pipelines:error   [--file FILE] [--line N] [--column N] [--code CODE] [MESSAGE]
+  shoutx azure-pipelines:path [PATH]

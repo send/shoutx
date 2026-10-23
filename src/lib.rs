@@ -37,6 +37,7 @@ pub const HELP: &str = concat!(
     "  shoutx azure-pipelines:variable [--output] [--read-only] NAME [VALUE]\n",
     "  shoutx azure-pipelines:warning [--file FILE] [--line N] [--column N] [--code CODE] [MESSAGE]\n",
     "  shoutx azure-pipelines:error   [--file FILE] [--line N] [--column N] [--code CODE] [MESSAGE]\n",
+    "  shoutx azure-pipelines:path [PATH]\n",
 );
 
 pub fn version_output() -> String {

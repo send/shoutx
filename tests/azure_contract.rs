@@ -277,7 +277,11 @@ fn exact_limits_and_expansion() {
 #[test]
 fn invalid_argv_is_not_lossily_replaced() {
     use std::{ffi::OsString, os::unix::ffi::OsStringExt};
-    for command in ["azure-pipelines:variable", "azure-pipelines:warning"] {
+    for command in [
+        "azure-pipelines:variable",
+        "azure-pipelines:warning",
+        "azure-pipelines:path",
+    ] {
         let mut cmd = Command::new(env!("CARGO_BIN_EXE_shoutx"));
         cmd.arg(command);
         if command.ends_with("variable") {
@@ -291,4 +295,91 @@ fn invalid_argv_is_not_lossily_replaced() {
         assert!(result.stdout.is_empty());
         assert!(!result.stderr.windows(6).any(|s| s == b"SECRET"));
     }
+}
+
+#[test]
+fn path_native_bytes_and_rejections() {
+    let root = if cfg!(windows) { "C:\\" } else { "/" };
+    for tail in [
+        "tools",
+        "α日本語😀ไทย\u{301}\u{200b}",
+        "%0A%AZP25]",
+        " space ",
+    ] {
+        let path = format!("{root}{tail}");
+        let expected = format!(
+            "##vso[task.prependpath]{}\n",
+            path.replace('%', "%AZP25").replace(']', "%5D")
+        );
+        check("path", &[&path], b"ignored\xff", 0, expected.as_bytes());
+        check("path", &[], path.as_bytes(), 0, expected.as_bytes());
+        check("path", &["--", &path], b"", 0, expected.as_bytes());
+    }
+    for data in [
+        b"".as_slice(),
+        b"relative",
+        b"SECRET\xff",
+        b"/SECRET\0",
+        b"/SECRET\n##vso[task.complete]x",
+        b"/SECRET\r",
+        b"/SECRET\n",
+        b"/SECRET\r\n",
+    ] {
+        check("path", &[], data, 1, b"");
+    }
+    let separator = if cfg!(windows) { ';' } else { ':' };
+    check(
+        "path",
+        &[&format!("{root}first{separator}{root}second")],
+        b"",
+        1,
+        b"",
+    );
+    for args in [vec!["--unknown"], vec!["--multiline"], vec![root, root]] {
+        check("path", &args, b"", 2, b"");
+    }
+    check("path", &["--help"], b"", 0, shoutx::HELP.as_bytes());
+    check(
+        "path",
+        &["--version"],
+        b"",
+        0,
+        shoutx::version_output().as_bytes(),
+    );
+    let value = format!("{root}{}", "%".repeat(VALUE_LIMIT - root.len()));
+    let expected = format!(
+        "##vso[task.prependpath]{root}{}\n",
+        "%AZP25".repeat(VALUE_LIMIT - root.len())
+    );
+    check("path", &[], value.as_bytes(), 0, expected.as_bytes());
+    check("path", &[], format!("{value}x").as_bytes(), 1, b"");
+    for selector in ["Windows", "Linux", "invalid", ""] {
+        let result = Command::new(env!("CARGO_BIN_EXE_shoutx"))
+            .args(["azure-pipelines:path", root])
+            .env("RUNNER_OS", selector)
+            .env("AGENT_OS", selector)
+            .output()
+            .unwrap();
+        assert!(result.status.success());
+        assert!(result.stderr.is_empty());
+        assert_eq!(
+            result.stdout,
+            format!("##vso[task.prependpath]{root}\n").as_bytes()
+        );
+    }
+}
+
+#[cfg(windows)]
+#[test]
+fn path_rejects_unpaired_surrogate_argv() {
+    use std::{ffi::OsString, os::windows::ffi::OsStringExt};
+    let value = OsString::from_wide(&[0x43, 0x3a, 0x5c, 0xd800]);
+    let result = Command::new(env!("CARGO_BIN_EXE_shoutx"))
+        .arg("azure-pipelines:path")
+        .arg(value)
+        .output()
+        .unwrap();
+    assert_eq!(result.status.code(), Some(1));
+    assert!(result.stdout.is_empty());
+    assert_eq!(result.stderr, b"error: input is not valid UTF-8\n");
 }

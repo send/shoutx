@@ -272,8 +272,8 @@ in v1.0.0. The command contract owns destination-specific input and newline
 rules. PATH uses the native producer OS dialect, without extending this profile
 to cross-OS producers or containers. Work ordering is owned by the
 [current handoff](implementation-plan.md#current-handoff-status).
-The accepted [mask contract](commands/azure-pipelines-mask.md) is being
-implemented; its hosted admission remains pending in the compatibility record.
+The [mask contract](commands/azure-pipelines-mask.md) is implemented, with scoped
+hosted results in the [compatibility record](compatibility/azure-pipelines.md#mask-hosted-observations).
 
 Mask registration additionally requires trusted pipeline/job `variables:`
 configuration `AZP_IGNORE_SECRETS_SHORTER_THAN: '0'` before job startup,

@@ -211,8 +211,8 @@ newlines as value data. PATH has its own
 The four writers above do not set secrets or register masks. The separate
 `azure-pipelines:mask [--each-line]` command registers stdin values; its
 [contract and finite verification plan](docs/commands/azure-pipelines-mask.md)
-describe the caller obligations. Hosted admission for mask registration is
-still pending; it is not yet a verified Azure masking profile.
+describe the caller obligations. The scoped native hosted results are recorded
+in the [mask verification evidence](docs/compatibility/azure-pipelines.md#mask-hosted-observations).
 See the [Azure contract](docs/commands/azure-pipelines.md), including consumer
 configuration and output-variable scope, and the
 [hosted verification record](docs/compatibility/azure-pipelines.md).

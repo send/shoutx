@@ -116,8 +116,8 @@ The [official logging-command documentation](https://learn.microsoft.com/en-us/a
 describes job-duration registration and subsequent masking, excludes previous
 occurrences, and recommends registering transformed values explicitly. Its
 general guidance distinguishes complete secrets from fragments and warns
-against argv transport. No synthetic secret experiment has yet been run for
-this design; the finite proposed tests own the remaining measurements.
+against argv transport. These source observations are separate from the
+[mask hosted observations](#mask-hosted-observations) below.
 
 ## Verification status
 
@@ -234,6 +234,52 @@ selection, release notes/metadata, exact release-source checks and maintainer
 approval remain separate. Published v1.0.0 binaries are unchanged and contain
 none of the Azure commands. The Azure-specific checks do not replace the
 existing GitHub consumer and artifact verification gates.
+
+## Mask hosted observations
+
+On 2026-10-24, manual [run 8](https://dev.azure.com/kazjuly7/shoutx/_build/results?buildId=8)
+of pipeline 2 completed successfully at source
+`61945dfe25ecb902fb98cf1f5243bcc95b3b32b6`. All 32 producer jobs and the downstream
+completed-log verifier succeeded on attempt 1. The pipeline used project-scoped
+authorization; only the verifier script received its read token.
+
+The [bounded report](azure-mask-run-8.json) retains every producer job/attempt,
+source/run identity, binary/log digest and result count, without raw logs or
+canary values. All jobs reported Agent 5.280.0. Ubuntu 24.04 image versions were
+`20261012.334.1` and `20261023.334.3`; Windows 2025 reported `20261021.299.1`.
+Each OS reused its source-bound binary from its first producer job.
+
+The verifier checked 8,492 output blocks across 24 positive jobs and eight
+explicit negative-control jobs. Complete registered values and line entries
+were replaced exactly by `***` on later-task stdout/stderr, including inside
+fixed surrounding text. Cases covered short ASCII/supplementary values,
+literal escapes, spaces, opaque JSON, separately registered derived values,
+whitespace-only data, 1 MiB values, mixed boundaries, duplicate/header/short
+lines, and all 1,024 entries at the raw cap. Omission and wrong-registration
+controls remained visibly discriminating. Unregistered calibration checked all
+line-mode shapes, including every cap entry; calibration is not secrecy evidence.
+
+Registration logs contained no expected value-bearing command wire. Unique long
+registered values and their wire forms were absent from positive-job logs;
+short/whitespace cases used exact blocks rather than ambiguous character searches.
+Every producer had an empty issue inventory. The unrelated marker remained
+visible and the named injected-variable sentinel remained unset. The latter is
+not a generic monitor for all possible Agent operations.
+
+The completed-log gate verified inventory membership, exact line counts,
+completion markers, source/job/attempt identities and the per-job 32 MiB ceiling.
+Plain-text responses satisfied the expected final LF/count framing. CRLF, lone
+CR and LF probes matched the fixed log-record projection on both native profiles.
+No raw log bundle was retained. The zero-threshold/debug-off/percent-decoding
+profile was configured as specified; internal masker backend selection was not
+observed. Results do not extend to debug-on, same-task races or arbitrary outputs.
+
+Producer checks remain distinct: local Rust tests/fmt/Clippy and document checks
+passed; the pinned parser checked 1,671 cases with 11 negative controls; GitHub
+CI exercised the helper byte sink on Windows and POSIX. Independent Fable review
+and its focused follow-up completed successfully without denied inspections.
+The follow-up confirmed the substantive findings were addressed. Scoped hosted
+admission is satisfied; release preparation and merge authorization are separate.
 
 ## Official references
 

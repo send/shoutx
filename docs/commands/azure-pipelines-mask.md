@@ -1,6 +1,6 @@
 # Azure Pipelines mask registration
 
-Status: accepted contract, implementation and hosted admission in progress;
+Status: implemented, with scoped hosted admission recorded in the compatibility evidence;
 unreleased and not in v1.0.0. The [design profile](../design.md#azure-pipelines-profile)
 owns applicability; [compatibility evidence](../compatibility/azure-pipelines.md)
 owns observed results. The [decision](../decisions/azure-secret-boundary.md)
@@ -99,7 +99,8 @@ existing variable writer or infer its effects from this registration command.
 ## Input delivery examples
 
 These examples require the [mask profile](../design.md#azure-pipelines-profile)
-and registration in a separate earlier task. Hosted admission is still pending.
+and registration in a separate earlier task. See the compatibility record for
+tested identities and results.
 Do not enable shell tracing or print rejected input.
 
 For a bounded value already securely acquired in Bash, the quoted builtin
@@ -143,7 +144,7 @@ Windows execution of that test is required before adopting the example.
 
 ## Finite verification plan
 
-Secret hosted verification is pending. Reuse
+For compatibility maintenance, reuse
 the pinned parser harness and the native Ubuntu 24.04 / Windows 2025 fixture;
 do not add new OS profiles or dependency-internal proof obligations.
 

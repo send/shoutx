@@ -396,7 +396,7 @@ owns the observed results. Do not silently reduce accepted scope or waive failed
 secrecy checks. A future cap/profile change requires evidence and maintainer approval.
 Merge still requires explicit direction, and release preparation remains on hold.
 
-Implementation PR #143 is draft. The first implementation Fable review completed
+Implementation is tracked in PR #143. The first implementation Fable review completed
 with `claude-fable-5-1`, success and no denied inspections. Its three medium
 readiness findings were accepted: separate stdout/stderr tasks to avoid merged
 stream interleaving, calibrate cap-shaped values before registration (all entries,
@@ -406,14 +406,14 @@ failure handling, and corrected stale evidence wording. Combined-error diagnosti
 tests had already been added while review ran. The sentinel's intentionally
 narrow purpose remains paired with exact parser records and an empty issue
 inventory; it is not a generic whole-Agent operation monitor. Source/runtime
-assumptions still require the scoped hosted experiment, not an expanded audit.
+assumptions were checked by the scoped hosted experiment, not an expanded audit.
 The focused follow-up completed successfully with the same Fable model and no
 denied inspections. It confirmed the findings addressed and found no false-pass
 regression. Its remaining runtime assumptions (log counts/final LF and system
 task log availability) passed the hosted gate; cosmetic comments and offline
 fixture ordering did not affect correctness. No third implementation review is
 needed for evidence-only documentation. For PR #143, latest-head CI/Codex
-convergence and draft removal are the final merge-readiness gates; neither
+convergence is the final merge-readiness gate; it does not
 authorizes merging or publishing without maintainer direction.
 
 Follow the ordered [release-preparation gates](release.md#next-release-preparation)

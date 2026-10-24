@@ -414,7 +414,7 @@ task log availability) passed the hosted gate; cosmetic comments and offline
 fixture ordering did not affect correctness. No third implementation review is
 needed for evidence-only documentation. For PR #143, latest-head CI/Codex
 convergence is the final merge-readiness gate; it does not
-authorizes merging or publishing without maintainer direction.
+authorize merging or publishing without maintainer direction.
 
 Follow the ordered [release-preparation gates](release.md#next-release-preparation)
 for packaging checks and exact-source evidence when release preparation resumes

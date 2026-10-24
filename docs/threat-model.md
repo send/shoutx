@@ -20,7 +20,8 @@ Given an attacker-controlled value, `shoutx` either:
 2. rejects the value before beginning output.
 
 Parsing a successful representation with the supported destination parser must
-produce exactly the requested name and value and no additional record.
+produce exactly the requested fields and no unrequested record. Explicit batch
+modes select the ordered records defined by their destination contract.
 
 The selected command names one interpretation boundary. Crossing that boundary
 safely does not make the value safe for other parsers, establish that the value
@@ -208,12 +209,18 @@ Agent within the [design profile](design.md#azure-pipelines-profile).
 | Literal escape text is decoded as another value | Value fidelity; not automatically another-command execution | Percent-first encoding under the supported consumer setting |
 | Invalid/oversized input or diagnostics disclose data | Producer availability and input confidentiality in diagnostics | Bounded validation before stdout and fixed diagnostics |
 | Decoded PATH data inserts additional search entries | Executable-search list integrity | Reject the native list separator and empty/relative paths before output; no lossy normalization |
+| Mask misregistration or registration-channel disclosure | Original value remains visible or registration data is logged | Fixed header, lossless encoding, input validation, exact parser and registration-step/completed-log checks under the mask profile |
+| A late invalid line emits earlier registrations | Partial effects despite input rejection | Validate complete input and all batch limits before stdout; I/O failure after writing is not transactional |
 
 Data containing another command prefix after the fixed valid header remains
 data in the inspected parser. Reassess concrete evidence of a second
 interpretation, not all possible character sets. These writers do not
 authorize variable names or executable directories, prevent deliberate overwrites, sanitize later shell
-expansion, mask secrets or sanitize other processes' logs. Agent restrictions,
+expansion or sanitize arbitrary process logs. The separate
+[mask contract](commands/azure-pipelines-mask.md) protects its selected values
+within the mask profile, not all fragments or representations. Multiple short
+or whitespace entries can amplify overmasking; caller authorization remains
+required, including for non-secret headers. Agent restrictions,
 variable scope, service limits and issue display/translation are separate
 consumer effects. Record new concrete security paths privately per SECURITY.md,
 not as public exploit-bearing follow-up issues.

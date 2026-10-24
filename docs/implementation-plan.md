@@ -379,16 +379,42 @@ proceed to implementation, parser tests and Linux/Windows hosted effects.
 Do not add secret commands or resume version changes, tagging or publication as
 part of PATH. No release version is approved by this handoff.
 
-PR #142 implements the PATH contract and tests; scoped native hosted effects
+PR #142 merged as `0fe8114` with the PATH contract and tests; scoped native hosted effects
 have passed as recorded in the [Azure evidence](compatibility/azure-pipelines.md#path-hosted-observations).
-The remaining handoff is latest-head CI/review convergence and maintainer
-merge direction, not another PATH investigation or release preparation.
+PATH CI/review and merge are complete. Do not resume PATH investigation or
+release preparation as part of the next task.
 
-Secret support requires a separate boundary discussion before implementation.
-Its discussion context, investigation principles and unresolved questions have
-one home in [the secret discussion record](decisions/azure-secret-boundary.md). Read that
-record when resuming secret work; do not reconstruct the decision from chat or
-treat the provider's limitations alone as an accepted exclusion.
+On 2026-10-24 the maintainer approved the reviewed secret design at `cb20337`,
+including explicit line registration. Implement the
+[mask contract and finite verification plan](commands/azure-pipelines-mask.md);
+the [decision record](decisions/azure-secret-boundary.md) owns rationale.
+Complete producer/parser/helper tests, scoped hosted effects, independent Fable
+review and latest-head CI/Codex convergence, then present a merge-ready PR.
+Implementation and scoped hosted admission are complete; the
+[compatibility record](compatibility/azure-pipelines.md#mask-hosted-observations)
+owns the observed results. Do not silently reduce accepted scope or waive failed
+secrecy checks. A future cap/profile change requires evidence and maintainer approval.
+Merge still requires explicit direction, and release preparation remains on hold.
+
+Implementation is tracked in PR #143. The first implementation Fable review completed
+with `claude-fable-5-1`, success and no denied inspections. Its three medium
+readiness findings were accepted: separate stdout/stderr tasks to avoid merged
+stream interleaving, calibrate cap-shaped values before registration (all entries,
+not only endpoints), and compare job GUIDs case-insensitively. Accepted low
+findings added final-segment/debug/encoder-variant controls and precise log-cap
+failure handling, and corrected stale evidence wording. Combined-error diagnostic
+tests had already been added while review ran. The sentinel's intentionally
+narrow purpose remains paired with exact parser records and an empty issue
+inventory; it is not a generic whole-Agent operation monitor. Source/runtime
+assumptions were checked by the scoped hosted experiment, not an expanded audit.
+The focused follow-up completed successfully with the same Fable model and no
+denied inspections. It confirmed the findings addressed and found no false-pass
+regression. Its remaining runtime assumptions (log counts/final LF and system
+task log availability) passed the hosted gate; cosmetic comments and offline
+fixture ordering did not affect correctness. No third implementation review is
+needed for evidence-only documentation. For PR #143, latest-head CI/Codex
+convergence is the final merge-readiness gate; it does not
+authorize merging or publishing without maintainer direction.
 
 Follow the ordered [release-preparation gates](release.md#next-release-preparation)
 for packaging checks and exact-source evidence when release preparation resumes

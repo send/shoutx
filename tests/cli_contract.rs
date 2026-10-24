@@ -149,6 +149,7 @@ fn configured_command_table_is_the_complete_expected_surface() {
         );
     }
     const EXPECTED: &[&str] = &[
+        "azure-pipelines:mask",
         "azure-pipelines:variable",
         "azure-pipelines:warning",
         "azure-pipelines:error",

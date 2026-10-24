@@ -47,6 +47,78 @@ These are source observations, not a PATH acceptance
 contract or hosted verification. The pin does not establish that later hosted
 Agents match it. PATH-specific hosted observations are recorded below.
 
+## Secret source observations
+
+Inspected on 2026-10-24 at the same pinned Agent commit; these observations
+inform the [accepted secret boundary](../decisions/azure-secret-boundary.md).
+They do not establish hosted secrecy for the newly implemented command.
+
+- [Task command handlers](https://github.com/microsoft/azure-pipelines-agent/blob/efa064fee06c75b31cabc0451857ad1e294649c7/src/Agent.Worker/TaskCommandExtension.cs)
+  send decoded `task.setsecret` data to `TaskCommandHelper.AddSecret`, which
+  ignores empty input and calls the host masker for nonempty data. The
+  `task.setvariable` secret branch is different: it checks multiline input
+  against `Environment.NewLine` and a knob, registers escaped command data,
+  and later applies variable restrictions and assignment.
+- [LoggedSecretMasker](https://github.com/microsoft/azure-pipelines-agent/blob/efa064fee06c75b31cabc0451857ad1e294649c7/src/Agent.Sdk/SecretMasking/LoggedSecretMasker.cs)
+  delegates value registration without logging the value. Its `MinSecretLength`
+  setter caps a requested threshold at 6. This is a wrapper observation, not
+  evidence of the active job threshold, underlying length semantics or hosted
+  acceptance of every six-scalar value.
+- [AgentKnobs](https://github.com/microsoft/azure-pipelines-agent/blob/efa064fee06c75b31cabc0451857ad1e294649c7/src/Agent.Sdk/Knob/AgentKnobs.cs)
+  defines `MaskedSecretMinLength` from runtime/environment
+  `AZP_IGNORE_SECRETS_SHORTER_THAN`, with built-in default `0`.
+  `ExecutionContext.InitializeJob` assigns this setting to the wrapper and
+  removes short entries. This disproves an inference that six is the default
+  minimum. The live job's selected value was not measured here.
+  [Upstream masker tests](https://github.com/microsoft/azure-pipelines-agent/blob/efa064fee06c75b31cabc0451857ad1e294649c7/src/Test/L0/SecretMaskerTests/SecretMaskerL0.cs)
+  specify `***` for registered short strings and spaces, and show configured
+  threshold removal. They are source expectations for backend fixtures, not
+  tests executed by this investigation. The top-level helper checks null/empty,
+  not null/whitespace; a universal whitespace rejection is not established.
+  The same upstream test fixture has both legacy and OSS subclasses. Its
+  `MinLengthSetThroughProperty`/`MinLengthSetThroughConstructor` tests set a
+  threshold before `AddValue` and expect shorter values to remain visible;
+  this is not merely an initialization-time removal expectation. It remains
+  source evidence, not an executed backend or hosted result.
+  [CompositeKnobSource](https://github.com/microsoft/azure-pipelines-agent/blob/efa064fee06c75b31cabc0451857ad1e294649c7/src/Agent.Sdk/Knob/CompositeKnobSource.cs)
+  chooses the first non-null source in declared order: this knob lists runtime,
+  environment, then default. `RuntimeKnobSource` reads the execution context's
+  variables; `ExecutionContext.GetVariableValueOrDefault` reads `Variables`.
+  Thus an explicit nonempty job variable `'0'` precedes the Agent environment
+  in this source path. This knob contract is source-derived here, not claimed
+  as an independently documented stable public interface or a live observation.
+- [HostContext](https://github.com/microsoft/azure-pipelines-agent/blob/efa064fee06c75b31cabc0451857ad1e294649c7/src/Microsoft.VisualStudio.Services.Agent/HostContext.cs)
+  selects legacy or OSS masker via a knob and installs JSON-string, URI-data
+  and backslash encoders. No general promise about arbitrary transformed
+  representations follows from that list. The adapters delegate registration
+  and redaction to their respective libraries; neither backend was executed
+  during this inspection and the hosted backend remains unobserved.
+  The pinned [OSS adapter](https://github.com/microsoft/azure-pipelines-agent/blob/efa064fee06c75b31cabc0451857ad1e294649c7/src/Agent.Sdk/SecretMasking/OssSecretMasker.cs)
+  passes `defaultRegexRedactionToken: "***"`, delegates `AddValue` and the
+  minimum-length property, and documents immediate threshold behavior rather
+  than an explicit removal call. Regex-token configuration alone is not proof
+  of literal-value redaction; the shared upstream tests supply that expectation.
+- [ExecutionContext.Write](https://github.com/microsoft/azure-pipelines-agent/blob/efa064fee06c75b31cabc0451857ad1e294649c7/src/Agent.Worker/ExecutionContext.cs)
+  normally calls the host masker before writing log messages, with an explicit
+  `canMaskSecrets` bypass parameter. The
+  [process handler](https://github.com/microsoft/azure-pipelines-agent/blob/efa064fee06c75b31cabc0451857ad1e294649c7/src/Agent.Worker/Handlers/ProcessHandler/ProcessHandler.cs)
+  tries command processing before ordinary line output. This is a source
+  route example, not a measurement of every task host or log destination.
+- [WorkerCommandManager](https://github.com/microsoft/azure-pipelines-agent/blob/efa064fee06c75b31cabc0451857ad1e294649c7/src/Agent.Worker/WorkerCommandManager.cs)
+  returns false on parse failure and has warning/error paths containing command
+  input. Its processed-command debug message is in `finally`, after the handler
+  attempt, and unescapes the input. This bounded inspection does not show a
+  blanket setsecret echo-suppression rule or prove every task host's behavior;
+  it motivates registration-step log checks and the proposal's debug-off
+  precondition, not a claim of a newly reproduced vulnerability.
+
+The [official logging-command documentation](https://learn.microsoft.com/en-us/azure/devops/pipelines/scripts/logging-commands?view=azure-devops#setsecret-register-a-value-as-a-secret)
+describes job-duration registration and subsequent masking, excludes previous
+occurrences, and recommends registering transformed values explicitly. Its
+general guidance distinguishes complete secrets from fragments and warns
+against argv transport. These source observations are separate from the
+[mask hosted observations](#mask-hosted-observations) below.
+
 ## Verification status
 
 Local checks on macOS arm64, 2026-10-20:
@@ -162,6 +234,52 @@ selection, release notes/metadata, exact release-source checks and maintainer
 approval remain separate. Published v1.0.0 binaries are unchanged and contain
 none of the Azure commands. The Azure-specific checks do not replace the
 existing GitHub consumer and artifact verification gates.
+
+## Mask hosted observations
+
+On 2026-10-24, manual [run 8](https://dev.azure.com/kazjuly7/shoutx/_build/results?buildId=8)
+of pipeline 2 completed successfully at source
+`61945dfe25ecb902fb98cf1f5243bcc95b3b32b6`. All 32 producer jobs and the downstream
+completed-log verifier succeeded on attempt 1. The pipeline used project-scoped
+authorization; only the verifier script received its read token.
+
+The [bounded report](azure-mask-run-8.json) retains every producer job/attempt,
+source/run identity, binary/log digest and result count, without raw logs or
+canary values. All jobs reported Agent 5.280.0. Ubuntu 24.04 image versions were
+`20261012.334.1` and `20261023.334.3`; Windows 2025 reported `20261021.299.1`.
+Each OS reused its source-bound binary from its first producer job.
+
+The verifier checked 8,492 output blocks across 24 positive jobs and eight
+explicit negative-control jobs. Complete registered values and line entries
+were replaced exactly by `***` on later-task stdout/stderr, including inside
+fixed surrounding text. Cases covered short ASCII/supplementary values,
+literal escapes, spaces, opaque JSON, separately registered derived values,
+whitespace-only data, 1 MiB values, mixed boundaries, duplicate/header/short
+lines, and all 1,024 entries at the raw cap. Omission and wrong-registration
+controls remained visibly discriminating. Unregistered calibration checked all
+line-mode shapes, including every cap entry; calibration is not secrecy evidence.
+
+Registration logs contained no expected value-bearing command wire. Unique long
+registered values and their wire forms were absent from positive-job logs;
+short/whitespace cases used exact blocks rather than ambiguous character searches.
+Every producer had an empty issue inventory. The unrelated marker remained
+visible and the named injected-variable sentinel remained unset. The latter is
+not a generic monitor for all possible Agent operations.
+
+The completed-log gate verified inventory membership, exact line counts,
+completion markers, source/job/attempt identities and the per-job 32 MiB ceiling.
+Plain-text responses satisfied the expected final LF/count framing. CRLF, lone
+CR and LF probes matched the fixed log-record projection on both native profiles.
+No raw log bundle was retained. The zero-threshold/debug-off/percent-decoding
+profile was configured as specified; internal masker backend selection was not
+observed. Results do not extend to debug-on, same-task races or arbitrary outputs.
+
+Producer checks remain distinct: local Rust tests/fmt/Clippy and document checks
+passed; the pinned parser checked 1,671 cases with 11 negative controls; GitHub
+CI exercised the helper byte sink on Windows and POSIX. Independent Fable review
+and its focused follow-up completed successfully without denied inspections.
+The follow-up confirmed the substantive findings were addressed. Scoped hosted
+admission is satisfied; release preparation and merge authorization are separate.
 
 ## Official references
 

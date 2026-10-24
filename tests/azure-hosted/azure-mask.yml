@@ -1,0 +1,140 @@
+# Manual trusted-revision admission only. OAuth token belongs to verifier alone.
+trigger: none
+pr: none
+
+parameters:
+  - name: images
+    type: object
+    default:
+      - name: linux
+        vmImage: ubuntu-24.04
+      - name: windows
+        vmImage: windows-2025
+  - name: cases
+    type: object
+    default:
+      - ascii
+      - unicode
+      - escapes
+      - spaces
+      - json
+      - derived
+      - whitespace
+      - nearcap
+      - missing
+      - wrong
+      - original
+      - lines_pem
+      - lines_mixed
+      - lines_short
+      - lines_cap
+      - lines_omission
+
+variables:
+  DECODE_PERCENTS: 'true'
+  AZP_IGNORE_SECRETS_SHORTER_THAN: '0'
+  system.debug: 'false'
+
+jobs:
+  - ${{ each image in parameters.images }}:
+      - ${{ each case in parameters.cases }}:
+          - job: ${{ image.name }}_${{ case }}
+            displayName: ${{ image.name }}_${{ case }}
+            timeoutInMinutes: 15
+            ${{ if ne(case, 'ascii') }}:
+              dependsOn: ${{ image.name }}_ascii
+            pool:
+              vmImage: ${{ image.vmImage }}
+            variables:
+              SHOUTX_MASK_CASE: ${{ case }}
+            steps:
+              - checkout: self
+                persistCredentials: false
+              - ${{ if eq(case, 'ascii') }}:
+                  - pwsh: |
+                      $PSNativeCommandUseErrorActionPreference = $true
+                      cargo build --release --locked --no-default-features
+                      python tests/azure-hosted/mask_producer.py package
+                    displayName: Build and bind binary
+                  - publish: $(Pipeline.Workspace)/mask-binary
+                    artifact: mask-binary-${{ image.name }}
+                    displayName: Publish binary before registration
+              - ${{ else }}:
+                  - download: current
+                    artifact: mask-binary-${{ image.name }}
+                    displayName: Download source-bound binary
+                  - pwsh: |
+                      Move-Item -LiteralPath '$(Pipeline.Workspace)/mask-binary-${{ image.name }}' -Destination '$(Pipeline.Workspace)/mask-binary'
+                    displayName: Place binary
+              - task: PythonScript@0
+                displayName: Prepare mask fixture
+                inputs:
+                  scriptSource: filePath
+                  scriptPath: tests/azure-hosted/mask_producer.py
+                  arguments: prepare
+              - task: PythonScript@0
+                displayName: Calibrate stderr fixture
+                inputs:
+                  scriptSource: filePath
+                  scriptPath: tests/azure-hosted/mask_producer.py
+                  arguments: calibrate-err
+              - ${{ if eq(image.name, 'linux') }}:
+                  - bash: |
+                      set -euo pipefail
+                      set +x
+                      source tests/azure-hosted/mask-stdin.bash
+                      flags=()
+                      if [[ "$SHOUTX_MASK_CASE" == lines_* ]]; then flags=(--each-line); fi
+                      shopt -s nullglob
+                      for input in "$AGENT_TEMPDIRECTORY"/shoutx-mask-inputs/*.bin; do
+                        register_shoutx_mask "$PIPELINE_WORKSPACE/mask-binary/shoutx" "${flags[@]}" < "$input"
+                      done
+                      printf '%s\n' SX_REGISTERED
+                    displayName: Register masks
+              - ${{ else }}:
+                  - pwsh: |
+                      $ErrorActionPreference = 'Stop'
+                      Set-PSDebug -Off
+                      . ./tests/azure-hosted/mask-stdin.ps1
+                      $eachLine = $env:SHOUTX_MASK_CASE.StartsWith('lines_')
+                      foreach ($inputFile in Get-ChildItem -LiteralPath "$env:AGENT_TEMPDIRECTORY/shoutx-mask-inputs" -Filter '*.bin' | Sort-Object Name) {
+                        $stream = [IO.File]::OpenRead($inputFile.FullName)
+                        try {
+                          Register-ShoutxMask -Binary "$env:PIPELINE_WORKSPACE/mask-binary/shoutx.exe" -InputStream $stream -EachLine:$eachLine
+                        } finally { $stream.Dispose() }
+                      }
+                      Write-Output 'SX_REGISTERED'
+                    displayName: Register masks
+              - task: PythonScript@0
+                displayName: Emit masked stdout
+                inputs:
+                  scriptSource: filePath
+                  scriptPath: tests/azure-hosted/mask_producer.py
+                  arguments: emit-out
+              - task: PythonScript@0
+                displayName: Emit masked stderr
+                inputs:
+                  scriptSource: filePath
+                  scriptPath: tests/azure-hosted/mask_producer.py
+                  arguments: emit-err
+
+  - job: verify_masks
+    displayName: Verify completed mask jobs
+    timeoutInMinutes: 15
+    condition: always()
+    dependsOn:
+      - ${{ each image in parameters.images }}:
+          - ${{ each case in parameters.cases }}:
+              - ${{ image.name }}_${{ case }}
+    pool:
+      vmImage: ubuntu-24.04
+    steps:
+      - checkout: self
+        persistCredentials: false
+      - task: PythonScript@0
+        displayName: Verify completed logs without retaining values
+        inputs:
+          scriptSource: filePath
+          scriptPath: tests/azure-hosted/mask_verify.py
+        env:
+          SYSTEM_ACCESSTOKEN: $(System.AccessToken)

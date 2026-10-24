@@ -319,6 +319,9 @@ jobs:
           $binary = if ($IsWindows) { 'target/debug/shoutx.exe' } else { 'target/debug/shoutx' }
           python -B tests/azure-oracle/verify.py $binary
           python -B tests/azure-hosted/test_smoke.py
+          python -B tests/azure-hosted/test_mask_stdin.py
+          python -B tests/azure-hosted/test_mask_cases.py
+          python -B tests/azure-hosted/test_mask_verify.py
       - name: Verify pinned .NET SDK
         shell: pwsh
         working-directory: target/runner-oracle/actions-runner/src

@@ -6,6 +6,7 @@ import json
 import os
 from pathlib import Path
 import random
+import re
 import shutil
 import subprocess
 import sys
@@ -87,6 +88,42 @@ def corpus(binary):
     cases.append(dict(original, data="wrong value", match=False))
     cases.append(dict(original, match=False, record=base64.b64encode(
         base64.b64decode(original["record"]) + b"##vso[task.complete]x\n").decode("ascii")))
+
+    for sample in samples:
+        single = sample.replace("\r", "").replace("\n", "")
+        if single:
+            add(["azure-pipelines:mask"], single, "setsecret", {})
+
+    batches = samples + ["\r\na\r\n\r\nb\rc\n \n\t\na\n",
+                         "x\n" * 1024, "%" * 1_048_576,
+                         "\n\r\n" + "\n".join(str(n) for n in range(1024))]
+    batch_original = None
+    for data in batches:
+        # Independent contract selection, not the Rust splitting implementation.
+        entries = [part for part in re.split(r"\r\n|\r|\n", data) if part != ""]
+        if not entries:
+            continue
+        result = run([str(binary), "azure-pipelines:mask", "--each-line"],
+                     input=data.encode("utf-8"))
+        if result.stderr:
+            raise RuntimeError("producer wrote diagnostics")
+        row = {"record": base64.b64encode(result.stdout).decode("ascii"),
+               "decode": True, "match": True,
+               "records": [{"event": "setsecret", "properties": {}, "data": entry}
+                           for entry in entries]}
+        cases.append(row)
+        if entries == ["a", "b", "c", " ", "\t", "a"]:
+            batch_original = row
+    if batch_original is None:
+        raise RuntimeError("missing batch control source")
+    lines = base64.b64decode(batch_original["record"]).splitlines(keepends=True)
+    for altered in [lines[:-1], list(reversed(lines)), lines + lines[:1],
+                    lines[:1] + lines[2:], lines + [b"##vso[task.complete]x\n"]]:
+        cases.append(dict(batch_original, match=False,
+                          record=base64.b64encode(b"".join(altered)).decode("ascii")))
+    cases.append(dict(batch_original, match=False, records=[
+        dict(entry, properties={"unexpected": "yes"})
+        for entry in batch_original["records"]]))
     return cases
 
 
@@ -113,7 +150,7 @@ def main():
         payload = "".join(json.dumps(c, ensure_ascii=True) + "\n" for c in cases).encode()
         result = run(["dotnet", str(work / "out/Oracle.dll")], input=payload, env=env)
         report = json.loads(result.stdout)
-        if report != {"cases": len(cases), "negativeControls": 5} or result.stderr:
+        if report != {"cases": len(cases), "negativeControls": 11} or result.stderr:
             raise RuntimeError("missing source-parser results")
         print(json.dumps({"agentCommit": COMMIT, "scope": "source-parser-only", **report}))
 

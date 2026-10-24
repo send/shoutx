@@ -38,6 +38,212 @@ fn check(command: &str, args: &[&str], input: &[u8], status: i32, expected: &[u8
 }
 
 #[test]
+fn mask_exact_values_and_line_selection() {
+    for value in [" ", "\t", "\u{feff}日本語😀ไทย", "header", "a"] {
+        let expected = format!("##vso[task.setsecret]{value}\n");
+        for args in [
+            &[][..],
+            &["--"][..],
+            &["--each-line"][..],
+            &["--each-line", "--"][..],
+        ] {
+            check("mask", args, value.as_bytes(), 0, expected.as_bytes());
+        }
+    }
+    for n in 1..=7 {
+        for scalar in ["x", "😀"] {
+            let value = scalar.repeat(n);
+            check(
+                "mask",
+                &[],
+                value.as_bytes(),
+                0,
+                format!("##vso[task.setsecret]{value}\n").as_bytes(),
+            );
+        }
+    }
+    check(
+        "mask",
+        &[],
+        b"%0A;%AZP25]##vso[task.complete]",
+        0,
+        b"##vso[task.setsecret]%AZP250A%3B%AZP25AZP25%5D##vso[task.complete%5D\n",
+    );
+    check("mask", &["--each-line"], b"\r\na\r\n\r\nb\rc\n \n\t\na\n", 0,
+        b"##vso[task.setsecret]a\n##vso[task.setsecret]b\n##vso[task.setsecret]c\n##vso[task.setsecret] \n##vso[task.setsecret]\t\n##vso[task.setsecret]a\n");
+}
+
+#[test]
+fn mask_rejection_is_batch_wide_and_value_free() {
+    for input in [
+        &b""[..],
+        b"SECRET\0",
+        b"SECRET\xff",
+        b"SECRET\r",
+        b"SECRET\n",
+        b"SECRET\r\n",
+        b"SE\nCRET",
+    ] {
+        check("mask", &[], input, 1, b"");
+    }
+    for input in [
+        &b""[..],
+        b"\r\n\n\r",
+        b"valid\nSECRET\0",
+        b"valid\nSECRET\xff",
+    ] {
+        check("mask", &["--each-line"], input, 1, b"");
+    }
+    for args in [
+        vec!["SECRET"],
+        vec!["--", "SECRET"],
+        vec!["--", "--each-line"],
+        vec!["--each-line", "--each-line"],
+        vec!["--each-line=true"],
+        vec!["--secret"],
+        vec!["--output"],
+    ] {
+        check("mask", &args, b"\xffSECRET", 2, b"");
+    }
+}
+
+#[test]
+fn mask_raw_and_entry_limits_are_inclusive() {
+    let raw = vec![b'%'; 1_048_576];
+    let expected = format!("##vso[task.setsecret]{}\n", "%AZP25".repeat(1_048_576));
+    for args in [&[][..], &["--each-line"][..]] {
+        check("mask", args, &raw, 0, expected.as_bytes());
+        check("mask", args, &vec![b'x'; 1_048_577], 1, b"");
+    }
+    check(
+        "mask",
+        &["--each-line"],
+        "x\r\n\n".repeat(1024).as_bytes(),
+        0,
+        "##vso[task.setsecret]x\n".repeat(1024).as_bytes(),
+    );
+    check(
+        "mask",
+        &["--each-line"],
+        "x\n".repeat(1025).as_bytes(),
+        1,
+        b"",
+    );
+    let mut late_invalid = "x\n".repeat(1024).into_bytes();
+    late_invalid.push(0xff);
+    check("mask", &["--each-line"], &late_invalid, 1, b"");
+}
+
+#[test]
+fn mask_validation_precedence_and_immediate_help() {
+    for (input, expected) in [
+        (&b"valid\n\0\xff"[..], "Azure field is not valid UTF-8"),
+        (&b"valid\n\0"[..], "Azure field contains NUL"),
+        (&b"valid\n"[..], "Azure mask contains a line boundary"),
+    ] {
+        let error = azure_pipelines::encode_mask(input, false).unwrap_err();
+        assert_eq!(error.message(), expected);
+    }
+    for args in [
+        vec!["--help", "SECRET"],
+        vec!["--each-line", "--help", "--each-line"],
+    ] {
+        check("mask", &args, b"\xffSECRET", 0, shoutx::HELP.as_bytes());
+    }
+    check(
+        "mask",
+        &["--version", "SECRET"],
+        b"\xffSECRET",
+        0,
+        shoutx::version_output().as_bytes(),
+    );
+    check("mask", &["--", "--help"], b"", 2, b"");
+    check(
+        "mask",
+        &["--each-line", "--each-line", "--help"],
+        b"",
+        2,
+        b"",
+    );
+}
+
+#[test]
+fn mask_combined_failures_choose_fixed_diagnostics_before_output() {
+    let mut over_raw = vec![b'x'; 1_048_576];
+    over_raw.push(0xff);
+    let mut over_count_utf8 = b"x\n".repeat(1025);
+    over_count_utf8.push(0xff);
+    let mut over_count_nul = b"x\n".repeat(1025);
+    over_count_nul.push(0);
+    for (input, diagnostic) in [
+        (over_raw, "error: value exceeds size limit\n"),
+        (over_count_utf8, "error: Azure field is not valid UTF-8\n"),
+        (over_count_nul, "error: Azure field contains NUL\n"),
+        (
+            b"x\n".repeat(1025),
+            "error: Azure mask exceeds entry limit\n",
+        ),
+    ] {
+        let mut child = Command::new(env!("CARGO_BIN_EXE_shoutx"))
+            .args(["azure-pipelines:mask", "--each-line"])
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .unwrap();
+        let mut stdin = child.stdin.take().unwrap();
+        let writer = std::thread::spawn(move || {
+            if let Err(error) = stdin.write_all(&input) {
+                assert_eq!(error.kind(), std::io::ErrorKind::BrokenPipe);
+            }
+        });
+        let result = child.wait_with_output().unwrap();
+        writer.join().unwrap();
+        assert_eq!(result.status.code(), Some(1));
+        assert!(result.stdout.is_empty());
+        assert_eq!(result.stderr, diagnostic.as_bytes());
+    }
+    // A final boundary counts toward the raw ceiling, not toward entry count.
+    let mut at_cap = vec![b'x'; 1_048_575];
+    at_cap.push(b'\n');
+    let expected = format!("##vso[task.setsecret]{}\n", "x".repeat(1_048_575));
+    check("mask", &["--each-line"], &at_cap, 0, expected.as_bytes());
+    check("mask", &[], &at_cap, 1, b"");
+    at_cap.push(b'\n');
+    check("mask", &["--each-line"], &at_cap, 1, b"");
+}
+
+#[cfg(windows)]
+#[test]
+fn mask_rejects_unpaired_surrogate_argv_as_usage() {
+    use std::os::windows::ffi::OsStringExt;
+    let output = Command::new(env!("CARGO_BIN_EXE_shoutx"))
+        .arg("azure-pipelines:mask")
+        .arg(std::ffi::OsString::from_wide(&[0xd800]))
+        .stdin(Stdio::null())
+        .output()
+        .unwrap();
+    assert_eq!(output.status.code(), Some(2));
+    assert!(output.stdout.is_empty());
+    assert_eq!(output.stderr, b"error: invalid Azure mask argument\n");
+}
+
+#[cfg(unix)]
+#[test]
+fn mask_rejects_non_utf8_argv_as_usage_without_disclosure() {
+    use std::os::unix::ffi::OsStringExt;
+    let output = Command::new(env!("CARGO_BIN_EXE_shoutx"))
+        .arg("azure-pipelines:mask")
+        .arg(std::ffi::OsString::from_vec(b"SECRET\xff".to_vec()))
+        .stdin(Stdio::null())
+        .output()
+        .unwrap();
+    assert_eq!(output.status.code(), Some(2));
+    assert!(output.stdout.is_empty());
+    assert_eq!(output.stderr, b"error: invalid Azure mask argument\n");
+}
+
+#[test]
 fn exact_values_flags_and_properties() {
     check("variable", &["--output", "--read-only", "Result", "%0A;%AZP25]\r\n"],
         b"\xffSECRET", 0,

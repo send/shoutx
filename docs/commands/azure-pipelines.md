@@ -11,10 +11,11 @@ owns observations and hosted verification status.
 shoutx azure-pipelines:variable [--output] [--read-only] NAME [VALUE]
 shoutx azure-pipelines:warning [--file FILE] [--line N] [--column N] [--code CODE] [MESSAGE]
 shoutx azure-pipelines:error   [--file FILE] [--line N] [--column N] [--code CODE] [MESSAGE]
+shoutx azure-pipelines:path [PATH]
 ```
 
-These are typed writers for `task.setvariable` and `task.logissue`, not a
-generic command builder. No raw properties, secret option, masking, PATH,
+These are typed writers for `task.setvariable`, `task.logissue` and
+`task.prependpath`, not a generic command builder. No raw properties, secret option, masking,
 artifact operation, or command-name operand is provided.
 
 Options precede NAME or MESSAGE. `--` ends option parsing. Help/version in
@@ -25,11 +26,54 @@ After NAME, a single token is VALUE even if it begins with `-`. For MESSAGE
 use `--` before a dash-prefixed value.
 
 An explicit value ignores stdin. Otherwise the shared bounded non-terminal
-stdin acquisition applies. **All Azure value/message bytes, including final
+stdin acquisition applies. **All variable/issue value/message bytes, including final
 CR/LF, are semantic data and are preserved.** These commands do not consume a
 producer newline, trim, normalize, decorate, or offer line-normalization modes.
 Use `printf '%s'` when a producer newline is not wanted. This differs from
 GitHub writers that consume one final boundary.
+
+### PATH
+
+`azure-pipelines:path` accepts one optional PATH operand and no options other
+than the shared help/version and `--`. An explicit operand ignores stdin;
+otherwise bounded non-terminal stdin supplies the path. Extra operands and
+unknown options exit 2. Empty input, malformed UTF-8, NUL, CR or LF anywhere
+(including a final producer newline) exit 1 with empty stdout. Use `printf '%s'`,
+not `echo`. The shared 1 MiB input and 8 MiB record limits apply.
+
+In PATH's first operand/option position, malformed text is an input failure
+(status 1) before unknown-option classification, including a dash-prefixed
+malformed token. Variable/issue option positions retain usage-error precedence
+for unknown dash-prefixed tokens. This is a PATH-specific classification rule;
+it does not change the shared help/version or extra-operand behavior.
+
+The native executable selects its own OS dialect; `RUNNER_OS`, `AGENT_OS` and
+other environment selectors do not override it. Producer and consumer must use
+the same native OS, within the design-owned profile. No cross-target option is
+provided. POSIX paths must begin with `/` and contain no `:`. Windows paths must
+be drive-absolute (`[A-Za-z]:` followed by `/` or `\`) or ordinary UNC paths
+with two leading separators and nonempty server/share components (neither `.`
+nor `?`). Windows permits either slash as a separator, but rejects `;` and
+double quotes. Device/verbatim namespace paths are not accepted in this increment.
+The list-separator rejection prevents additional PATH entries after decoding;
+Windows quotes are conservatively excluded; quoted-entry syntax is not part
+of this native path grammar.
+POSIX quotes and trailing backslashes are ordinary native path data and are
+preserved. No trimming, normalization, existence check or symlink resolution
+is performed. Fully qualified syntax does not establish resource trust or
+guarantee that a path exists or is usable by every executable launcher.
+
+Emit `##vso[task.prependpath]PATH` followed by LF, with no properties. Apply the
+same escaping table below to PATH. Every accepted path is preserved as command
+data. The protected boundary is one selected command and one incoming PATH
+entry, not stable duplicate identity or preservation of earlier entries.
+Azure can replace earlier entries using its own comparison, or retain an
+existing equivalent prefix. Distinct ordinal strings need not coexist, and
+the final PATH need not retain the incoming spelling in that prefix case.
+The caller authorizes the directory and executables; shoutx does not make
+attacker-selected executable lookup safe. Changes apply to subsequent tasks,
+not the producing process. Settable-variable restrictions and other Agent
+conditions can prevent the effect even after a successful write.
 
 ## Validation and limits
 
@@ -62,7 +106,7 @@ input; shared I/O-failure and status behavior applies.
 
 ## Wire contract
 
-Escape every variable value, message and text property byte as follows:
+Escape every variable value, message, PATH and text property byte as follows:
 
 | Byte | Emitted ASCII |
 | --- | --- |
@@ -123,3 +167,12 @@ The writer does not sanitize other process output or authorize later shell use.
   and metadata. Use synthetic non-secret inputs only; record Agent/image
   identities. A local parser check cannot satisfy this hosted gate.
 - Existing GitHub command bytes and tests remain unchanged.
+- PATH: both dialect grammars, exact argv/stdin bytes, native selector isolation,
+  final-newline and list-separator rejection, raw limits and empty-stdout errors.
+  Parse producer output using the pinned upstream parser with exact event,
+  empty property map and unchanged decoded data. On both hosted generations,
+  verify next-task PATH against the original PATH plus the expected prefix,
+  exact repeat registration, distinct-ASCII ordering and lookup/execution of a
+  caller-owned native fixture binary. Include Unicode and literal-escape paths;
+  verifier negative controls must catch altered, missing and additional entries.
+  These finite cases do not establish portable duplicate equivalence.

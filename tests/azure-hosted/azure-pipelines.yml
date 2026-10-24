@@ -48,6 +48,28 @@ jobs:
               $PSNativeCommandUseErrorActionPreference = $true
               python tests/azure-hosted/smoke.py warning
             displayName: shoutx Azure warning
+          - task: PythonScript@0
+            displayName: Prepare native PATH baseline and fixtures
+            inputs:
+              scriptSource: filePath
+              scriptPath: tests/azure-hosted/smoke.py
+              arguments: prepare-paths
+          - ${{ if eq(image.name, 'linux') }}:
+              - bash: |
+                  set -euo pipefail
+                  python3 tests/azure-hosted/smoke.py emit-paths
+                displayName: Emit Azure PATH entries
+          - ${{ else }}:
+              - pwsh: |
+                  $PSNativeCommandUseErrorActionPreference = $true
+                  python tests/azure-hosted/smoke.py emit-paths
+                displayName: Emit Azure PATH entries
+          - task: PythonScript@0
+            displayName: Verify next-step PATH and executable lookup
+            inputs:
+              scriptSource: filePath
+              scriptPath: tests/azure-hosted/smoke.py
+              arguments: verify-paths
           - pwsh: |
               $PSNativeCommandUseErrorActionPreference = $true
               python tests/azure-hosted/smoke.py error

@@ -12,7 +12,9 @@ files into a temporary directory, compiles them unchanged with a constructor
 assertion stub, and compares actual CLI output with independently supplied
 command/property/data expectations. No production dependency is added.
 
-It checks 665 successful records and five discriminating negative controls.
+It checks 998 successful records (including 333 native PATH cases) and five
+discriminating negative controls. PATH cases require the fixed `prependpath`
+event, no properties and exact decoded input; native validation precedes them.
 Randomized cases use a fixed seed across Unicode scalar values; this is a
 regression corpus, not a character-set proof. Only bounded counts and source
 identity are printed. Fetch/build/process failures fail the test.

@@ -197,7 +197,7 @@ an unsupported control channel from being mistaken for a protected one.
 ## Azure Pipelines boundary
 
 The [Azure contract](commands/azure-pipelines.md) protects one selected
-`task.setvariable` or `task.logissue` operation on the stdout command stream.
+`task.setvariable`, `task.logissue` or `task.prependpath` operation on the stdout command stream.
 The same adversary and producer duties apply; the trusted consumer is Azure's
 Agent within the [design profile](design.md#azure-pipelines-profile).
 
@@ -207,11 +207,12 @@ Agent within the [design profile](design.md#azure-pipelines-profile).
 | Header text injects `;` or `]` | Property identity, severity and flags | Validated name, fixed keys/flags, text-property escaping |
 | Literal escape text is decoded as another value | Value fidelity; not automatically another-command execution | Percent-first encoding under the supported consumer setting |
 | Invalid/oversized input or diagnostics disclose data | Producer availability and input confidentiality in diagnostics | Bounded validation before stdout and fixed diagnostics |
+| Decoded PATH data inserts additional search entries | Executable-search list integrity | Reject the native list separator and empty/relative paths before output; no lossy normalization |
 
 Data containing another command prefix after the fixed valid header remains
 data in the inspected parser. Reassess concrete evidence of a second
 interpretation, not all possible character sets. These writers do not
-authorize variable names, prevent deliberate overwrites, sanitize later shell
+authorize variable names or executable directories, prevent deliberate overwrites, sanitize later shell
 expansion, mask secrets or sanitize other processes' logs. Agent restrictions,
 variable scope, service limits and issue display/translation are separate
 consumer effects. Record new concrete security paths privately per SECURITY.md,

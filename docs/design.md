@@ -122,7 +122,7 @@ shoutx github-actions:error   [ANNOTATION OPTIONS] [MESSAGE]
 ```
 
 All fourteen GitHub commands are included in default and `--no-default-features` builds,
-alongside the three unreleased Azure commands.
+alongside the four unreleased Azure commands.
 The former research feature is removed. Stdout consumer compatibility is scoped
 by the adoption contract below; binary availability does not broaden it.
 
@@ -264,16 +264,11 @@ by this adoption contract.
 
 ## Azure Pipelines profile
 
-The current source implements variable and warning/error writers described
+The current source implements variable, warning/error and PATH writers described
 by the [Azure command contract](commands/azure-pipelines.md). It is not included
-in v1.0.0. Their values preserve all input bytes, including final line endings.
-
-A typed PATH writer is proposed, subject to the contract
-work in the [proposed PATH plan](decisions/azure-path.md). It is not part of the
-implemented command surface yet. Before exposing it, update the Azure command
-specification and relevant threat inventory, resolving any changes needed to
-this profile. The implementation handoff does not itself extend the product
-contract. Work ordering is owned by the
+in v1.0.0. The command contract owns destination-specific input and newline
+rules. PATH uses the native producer OS dialect, without extending this profile
+to cross-OS producers or containers. Work ordering is owned by the
 [current handoff](implementation-plan.md#current-handoff-status).
 Secret support remains a separate unresolved design discussion.
 
@@ -386,7 +381,7 @@ verification plan:
 - [GitHub Actions annotation commands](commands/github-actions-annotations.md)
 - [GitHub Actions debug and group commands](commands/github-actions-log-commands.md)
 - [GitHub Actions problem matcher commands](commands/github-actions-problem-matchers.md)
-- [Azure Pipelines variable and issue commands](commands/azure-pipelines.md)
+- [Azure Pipelines commands](commands/azure-pipelines.md)
 
 ## Design decisions
 

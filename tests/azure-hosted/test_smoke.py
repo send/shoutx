@@ -4,6 +4,18 @@ import smoke
 
 
 class SmokeTests(unittest.TestCase):
+    def test_path_controls(self):
+        for sep in [":", ";"]:
+            paths = ["alpha", "bravo", "unicode α😀%0A]"]
+            for baseline in ["", sep.join(["old1", "old2"])]:
+                expected = sep.join([paths[2], paths[0], paths[1]]) + (sep + baseline if baseline else "")
+                smoke.check_path_value(expected, baseline, paths, sep)
+                for changed in ["", expected + sep + "injected", expected.replace("α", "a"),
+                                expected.replace("alpha", "bravo"), sep.join(paths),
+                                expected + sep + "alpha"]:
+                    with self.assertRaises(RuntimeError):
+                        smoke.check_path_value(changed, baseline, paths, sep)
+
     def test_location_controls(self):
         records = [{"parentId": "job", "attempt": 1, "state": "completed",
                     "name": "shoutx Azure " + severity + " location",

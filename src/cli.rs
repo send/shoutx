@@ -109,6 +109,7 @@ pub struct AnnotationRequest {
 
 #[derive(Debug)]
 pub enum Action {
+    AzurePath(PathRequest),
     AzureVariable(crate::azure_pipelines::Variable),
     AzureIssue(crate::azure_pipelines::Issue),
     Help,
@@ -131,6 +132,7 @@ pub enum Action {
 
 #[derive(Clone, Copy)]
 enum Command {
+    AzurePath,
     AzureVariable,
     AzureWarning,
     AzureError,
@@ -154,6 +156,7 @@ const COMMANDS: &[(&str, Command)] = &[
     ("azure-pipelines:variable", Command::AzureVariable),
     ("azure-pipelines:warning", Command::AzureWarning),
     ("azure-pipelines:error", Command::AzureError),
+    ("azure-pipelines:path", Command::AzurePath),
     ("github-actions:add-matcher", Command::AddMatcher),
     ("github-actions:remove-matcher", Command::RemoveMatcher),
     ("github-actions:debug", Command::Debug),
@@ -197,6 +200,9 @@ pub fn parse(args: Vec<OsString>) -> Result<Action, ShoutxError> {
         .find_map(|(name, kind)| (*name == command).then_some(*kind))
         .ok_or_else(|| ShoutxError::usage("unknown command"))?;
     let destination = match command {
+        Command::AzurePath => {
+            return parse_path(it.collect(), true);
+        }
         Command::AzureVariable => return parse_azure_variable(it.collect()),
         Command::AzureWarning => {
             return parse_azure_issue(crate::azure_pipelines::Severity::Warning, it.collect());
@@ -213,7 +219,7 @@ pub fn parse(args: Vec<OsString>) -> Result<Action, ShoutxError> {
         Command::Output => Destination::Output,
         Command::Env => Destination::Env,
         Command::State => Destination::State,
-        Command::Path => return parse_path(it.collect()),
+        Command::Path => return parse_path(it.collect(), false),
         Command::Mask => return parse_mask(it.collect()),
         Command::Notice => return parse_annotation(AnnotationSeverity::Notice, it.collect()),
         Command::Warning => return parse_annotation(AnnotationSeverity::Warning, it.collect()),
@@ -587,11 +593,14 @@ fn parse_mask(tokens: Vec<OsString>) -> Result<Action, ShoutxError> {
     Ok(Action::Mask(MaskRequest { value }))
 }
 
-fn parse_path(tokens: Vec<OsString>) -> Result<Action, ShoutxError> {
+fn parse_path(tokens: Vec<OsString>, azure: bool) -> Result<Action, ShoutxError> {
     let mut options = true;
     let mut value = None;
     for token in tokens {
         let token_text = token.to_str();
+        if azure && value.is_none() && token_text.is_none() {
+            os_bytes(&token)?;
+        }
         if value.is_none() && options && token_text == Some("--") {
             options = false;
             continue;
@@ -610,7 +619,12 @@ fn parse_path(tokens: Vec<OsString>) -> Result<Action, ShoutxError> {
         }
         value = Some(token);
     }
-    Ok(Action::WritePath(PathRequest { value }))
+    let request = PathRequest { value };
+    Ok(if azure {
+        Action::AzurePath(request)
+    } else {
+        Action::WritePath(request)
+    })
 }
 
 pub fn os_bytes(value: &OsStr) -> Result<&[u8], ShoutxError> {

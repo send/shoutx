@@ -1,13 +1,18 @@
 # Azure PATH writer plan
 
-Status: Proposed
+Status: Implemented with scoped hosted verification; PR review pending.
+
+The [PATH command contract](../commands/azure-pipelines.md#path) now owns all
+acceptance and wire rules. The checklist below records the implementation work
+and its rationale, not a second normative specification. Verification results
+belong in the [compatibility record](../compatibility/azure-pipelines.md).
 
 ## Context
 
 This proposal covers one typed `task.prependpath` writer,
-tentatively `shoutx azure-pipelines:path [PATH]`. It complements the existing
-non-secret variable and issue writers. This plan does not expose the command;
-the command specification must be updated before implementation. Work ordering
+`shoutx azure-pipelines:path [PATH]`. It complements the existing
+non-secret variable and issue writers. Its command contract was specified
+before implementation. Work ordering
 is owned by the [current handoff](../implementation-plan.md#current-handoff-status).
 
 ## Boundary and proposed approach

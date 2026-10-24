@@ -47,7 +47,8 @@ Current cross-repository decisions:
 
 Azure follow-up planning:
 
-- [`azure-path.md`](azure-path.md) — proposed next writer and finite work plan.
+- [`azure-path.md`](azure-path.md) — PATH writer rationale and finite work plan;
+  command rules are owned by the linked command specification.
 - [`azure-secret-boundary.md`](azure-secret-boundary.md) — unresolved secret
   protection boundary; no secret implementation is authorized by this record.
 

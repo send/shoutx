@@ -2,6 +2,7 @@
 import json
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 import time
@@ -15,6 +16,77 @@ CODE = "SHOUTX;]%0A"
 LOCATION_FILE = "README.md"
 LOCATION_MESSAGE = "shoutx location smoke"
 LOCATION_CODE = "SHOUTX_LOCATION"
+
+
+def path_root():
+    return Path(os.environ["AGENT_TEMPDIRECTORY"]) / (
+        "shoutx-path-" + os.environ["SYSTEM_JOBID"] + "-" + os.environ["SYSTEM_JOBATTEMPT"])
+
+
+def path_entries(root):
+    special = "unicode αไทย日本語😀 %0A]" + ("" if os.name == "nt" else ';"\\')
+    return [root / "alpha", root / "bravo", root / special]
+
+
+def prepare_paths():
+    root = path_root()
+    root.mkdir(exist_ok=False)
+    paths = path_entries(root)
+    baseline = os.environ["PATH"]
+    if str(root) in baseline:
+        raise RuntimeError("fixture already in PATH")
+    (root / "baseline.json").write_text(json.dumps(baseline), encoding="utf-8")
+    suffix = ".exe" if os.name == "nt" else ""
+    for path in paths:
+        path.mkdir()
+    shutil.copy2(Path("target/release/shoutx" + suffix), paths[2] / ("shoutx-path-probe" + suffix))
+
+
+def emit_paths():
+    paths = path_entries(path_root())
+    # Repeat alpha: expected final order is special, alpha, bravo.
+    for index in [0, 1, 0, 2]:
+        sys.stdout.buffer.write(invoke(["azure-pipelines:path"], str(paths[index])))
+    sys.stdout.buffer.flush()
+
+
+def check_path_value(actual, baseline, paths, separator):
+    expected = separator.join(str(paths[i]) for i in [2, 0, 1])
+    if baseline:
+        expected += separator + baseline
+    if actual != expected:
+        raise RuntimeError("PATH effect mismatch")
+
+
+def verify_paths():
+    root = path_root()
+    paths = path_entries(root)
+    baseline = json.loads((root / "baseline.json").read_text(encoding="utf-8"))
+    actual_path = os.environ["PATH"]
+    entries = actual_path.split(os.pathsep)
+    print(json.dumps({"pathObservation": {
+        "entryCount": len(entries), "baselineEntryCount": len(baseline.split(os.pathsep)),
+        "fixtureCounts": [entries.count(str(path)) for path in paths],
+        "prefixMatches": entries[:3] == [str(paths[i]) for i in [2, 0, 1]],
+        "baselineTailMatches": os.pathsep.join(entries[3:]) == baseline,
+    }}), flush=True)
+    check_path_value(actual_path, baseline, paths, os.pathsep)
+    print("Azure PATH comparison passed", flush=True)
+    suffix = ".exe" if os.name == "nt" else ""
+    expected = paths[2] / ("shoutx-path-probe" + suffix)
+    found = shutil.which("shoutx-path-probe" + suffix)
+    if found != str(expected):
+        raise RuntimeError("executable lookup mismatch")
+    print("Azure PATH executable discovery passed", flush=True)
+    # Execute the caller-owned native binary, never an input-derived script.
+    actual = subprocess.run(["shoutx-path-probe" + suffix, "--version"],
+                            capture_output=True, timeout=30)
+    source = subprocess.run([str(Path("target/release/shoutx" + suffix).resolve()), "--version"],
+                            capture_output=True, timeout=30)
+    if (actual.returncode or source.returncode or actual.stderr or source.stderr
+            or actual.stdout != source.stdout):
+        raise RuntimeError("executable effect mismatch")
+    print("Azure next-step PATH bytes, repeat registration, order and executable lookup passed")
 
 
 def invoke(args, value):
@@ -118,6 +190,12 @@ def main():
     phase = sys.argv[1]
     if phase == "emit-variables":
         emit_variables()
+    elif phase == "emit-paths":
+        emit_paths()
+    elif phase == "prepare-paths":
+        prepare_paths()
+    elif phase == "verify-paths":
+        verify_paths()
     elif phase == "verify-variables":
         verify_variables(os.environ)
         print("Azure next-step variable effects passed")

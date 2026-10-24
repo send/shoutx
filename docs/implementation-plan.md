@@ -374,10 +374,15 @@ and hosted verification are complete in PRs #137–#139. The
 On 2026-10-24 the maintainer put release preparation on hold and selected PATH
 as the next bounded increment. Within the
 [design-owned Azure scope](design.md#azure-pipelines-profile), first complete
-the contract work in the [proposed PATH plan](decisions/azure-path.md), then
+the contract work in the [PATH plan](decisions/azure-path.md), then
 proceed to implementation, parser tests and Linux/Windows hosted effects.
 Do not add secret commands or resume version changes, tagging or publication as
 part of PATH. No release version is approved by this handoff.
+
+PR #142 implements the PATH contract and tests; scoped native hosted effects
+have passed as recorded in the [Azure evidence](compatibility/azure-pipelines.md#path-hosted-observations).
+The remaining handoff is latest-head CI/review convergence and maintainer
+merge direction, not another PATH investigation or release preparation.
 
 Secret support requires a separate boundary discussion before implementation.
 Its discussion context, investigation principles and unresolved questions have

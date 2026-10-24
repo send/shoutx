@@ -179,17 +179,19 @@ The supported environment-file destinations are:
 | `$GITHUB_PATH` | Included | One path entry per line, then PATH-separator joining |
 | `$GITHUB_STATE` | Included | Named intra-action state records for `pre:`, `main:`, and `post:` phases |
 
-Other recognized boundaries are deferred, candidates, or out of scope:
+Other recognized boundaries are listed below. The
+[coverage inventory](design.md#v1-readiness) owns coverage decisions and links
+version availability; this table describes their security boundaries.
 
 | Boundary | Status | Primary concern |
 | --- | --- | --- |
 | `$GITHUB_STEP_SUMMARY` | Out of scope | GitHub-rendered Markdown has no runner command-file record structure to inject into; rendered HTML is sanitized, while content integrity remains the producer's responsibility |
-| stdout `add-mask` workflow command | Implemented within the design-owned profile; publication separately gated | Register one faithfully decoded value for subsequent runner log masking |
-| stdout annotation workflow commands | Implemented within the design-owned profile; publication separately gated | Emit one faithfully decoded notice, warning, or error with validated location metadata |
+| stdout `add-mask` workflow command | [Command contract](commands/github-actions-mask.md) | Register one faithfully decoded value for subsequent runner log masking |
+| stdout annotation workflow commands | [Command contract](commands/github-actions-annotations.md) | Emit one faithfully decoded notice, warning, or error with validated location metadata |
 | debug/group log commands | [Command contract](commands/github-actions-log-commands.md) | Data must not select another command; group data must not introduce continuation records, while requested debug lines retain their debug tag |
 | add/remove problem matcher commands | [Command contract](commands/github-actions-problem-matchers.md) | A path must remain command data and an owner must remain its single property; authorization of the selected file, configuration and owner remains caller-owned |
 | other stdout workflow commands | Not implemented; dispositions in the [coverage inventory](design.md#v1-readiness) | Lines such as `::stop-commands::` are runner control messages |
-| `$GITHUB_ARTIFACTS` | Implemented in source; unreleased | One typed declaration; see [contract](commands/github-actions-artifacts.md) |
+| `$GITHUB_ARTIFACTS` | [Command contract](commands/github-actions-artifacts.md) | One typed declaration |
 | `$GITHUB_ARTIFACTS_LIST` | Out of scope | Runner-managed, read-only JSON input |
 
 Inventorying a boundary does not commit `shoutx` to supporting it. It prevents

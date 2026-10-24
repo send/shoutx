@@ -137,6 +137,9 @@ generate-notes | shoutx github-actions:output --multiline notes >> "$GITHUB_OUTP
 
 ## Commands
 
+See [what each command protects](docs/command-protection.md) for a command-by-command
+guide to prevented injection paths, examples, caller responsibilities and limits.
+
 <!-- stable-command-surface:start -->
 ```text
 shoutx - safe CI output writers
@@ -438,7 +441,8 @@ apply only to commands that expose that input form.
 - A non-zero `shoutx` status must also be propagated by the workflow shell.
   PowerShell callers must enable native-command error propagation or check
   `$LASTEXITCODE` immediately after each invocation.
-- Success emits exactly one value or record and exits with status 0.
+- Success emits the selected record, or the explicitly selected Azure mask
+  batch, and exits with status 0. This does not acknowledge consumer processing.
 - Invalid input emits no partial record and exits with status 1. Command-line
   usage errors exit with status 2.
 - An I/O failure exits with status 1 and may leave a partial record if output

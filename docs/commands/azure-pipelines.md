@@ -18,8 +18,9 @@ These are typed writers for `task.setvariable`, `task.logissue` and
 `task.prependpath`, not a generic command builder. No raw properties, secret option, masking,
 artifact operation, or command-name operand is provided by these four writers.
 The separate [mask registration contract](azure-pipelines-mask.md) defines the
-accepted stdin-only mask increment and its explicit line mode; implementation
-and hosted admission are in progress.
+stdin-only mask command and its explicit line mode; the
+[compatibility record](../compatibility/azure-pipelines.md#mask-hosted-observations)
+owns hosted admission results.
 
 Options precede NAME or MESSAGE. `--` ends option parsing. Help/version in
 option position have the shared behavior. Options take separate operands,

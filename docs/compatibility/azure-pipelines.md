@@ -75,6 +75,11 @@ not an implemented command or a hosted secrecy guarantee.
   threshold removal. They are source expectations for backend fixtures, not
   tests executed by this investigation. The top-level helper checks null/empty,
   not null/whitespace; a universal whitespace rejection is not established.
+  The same upstream test fixture has both legacy and OSS subclasses. Its
+  `MinLengthSetThroughProperty`/`MinLengthSetThroughConstructor` tests set a
+  threshold before `AddValue` and expect shorter values to remain visible;
+  this is not merely an initialization-time removal expectation. It remains
+  source evidence, not an executed backend or hosted result.
   [CompositeKnobSource](https://github.com/microsoft/azure-pipelines-agent/blob/efa064fee06c75b31cabc0451857ad1e294649c7/src/Agent.Sdk/Knob/CompositeKnobSource.cs)
   chooses the first non-null source in declared order: this knob lists runtime,
   environment, then default. `RuntimeKnobSource` reads the execution context's
@@ -88,6 +93,11 @@ not an implemented command or a hosted secrecy guarantee.
   representations follows from that list. The adapters delegate registration
   and redaction to their respective libraries; neither backend was executed
   during this inspection and the hosted backend remains unobserved.
+  The pinned [OSS adapter](https://github.com/microsoft/azure-pipelines-agent/blob/efa064fee06c75b31cabc0451857ad1e294649c7/src/Agent.Sdk/SecretMasking/OssSecretMasker.cs)
+  passes `defaultRegexRedactionToken: "***"`, delegates `AddValue` and the
+  minimum-length property, and documents immediate threshold behavior rather
+  than an explicit removal call. Regex-token configuration alone is not proof
+  of literal-value redaction; the shared upstream tests supply that expectation.
 - [ExecutionContext.Write](https://github.com/microsoft/azure-pipelines-agent/blob/efa064fee06c75b31cabc0451857ad1e294649c7/src/Agent.Worker/ExecutionContext.cs)
   normally calls the host masker before writing log messages, with an explicit
   `canMaskSecrets` bypass parameter. The

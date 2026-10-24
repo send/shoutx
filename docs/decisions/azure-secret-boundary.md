@@ -14,6 +14,10 @@ justified, explicit sanitization. That agreement sets the investigation
 direction; this record remains Proposed because the accepted input rules,
 interface and protection boundary have not been decided.
 
+The maintainer subsequently selected explicit line registration for the first
+increment. That scope choice is agreed; the detailed rules below still need
+approval and consumer verification before implementation/adoption.
+
 ## Decision drivers
 
 Provider limitations alone do not justify accepting a value that cannot receive
@@ -65,7 +69,8 @@ altered value was registered.
 ## Recommended boundary for maintainer approval
 
 This is a proposal, not an accepted command contract. Start with explicit
-registration of an opaque value for subsequent ordinary Agent-captured job
+registration of an opaque value, or explicitly selected complete lines, for
+subsequent ordinary Agent-captured job
 stdout/stderr logs. Protect faithful delivery to registration and redaction of
 the entire registered value, including when embedded in a longer line. Do not
 equate that with redaction of every fragment, every serialization, uploaded
@@ -78,7 +83,7 @@ infrastructure, not evidence of successful secret registration or secrecy.
 
 ### Candidate interface and input rules
 
-Prefer `shoutx azure-pipelines:mask` with bounded, non-terminal stdin only.
+Prefer `shoutx azure-pipelines:mask [--each-line]` with bounded, non-terminal stdin only.
 No positional secret, raw command/properties, variable flags or implicit
 transformations. This avoids introducing an argv route that process inspection
 or command logging could expose. The exact interface remains subject to approval.
@@ -92,7 +97,7 @@ include the value. Successful writing is not an acknowledgment from the Agent.
 | --- | --- | --- |
 | Empty, malformed UTF-8, NUL, over producer limit | Reject before stdout | No useful registration or lossless supported text transport |
 | Nonempty short values | Candidate acceptance with the job's short-secret threshold explicitly set to zero | Do not impose a six-character minimum merely because Azure allows configuring one; test short ASCII and supplementary values and require the stated consumer setting |
-| CR/LF anywhere, including a final producer newline | Reject before stdout | Ordinary logs are processed as lines; registering only the combined original must not be mistaken for protection of separate emitted lines |
+| CR/LF anywhere, including a final producer newline | Default rejects; explicit `--each-line` uses the rules below | Combined-value registration alone does not establish protection of separate emitted lines |
 | Unicode, spaces, literal escape text and header delimiters | Preserve; candidate acceptance after finite checks | No language allowlist, trimming, normalization or decoration; include whitespace-only values and warn about caller-authorized overmasking |
 | Structured single-line value, such as JSON | Treat as one opaque secret, with explicit caller precondition | Full serialized value and independently logged field values are different protected assets; do not claim field coverage from whole-value registration |
 | Known derived representation or confidential field | Register separately before use, applying the same input rules | Preserve the original registration; reject an unsupported representation rather than imply coverage |
@@ -140,16 +145,76 @@ and the real consumer use that same replacement; collision/semantic effects and
 secure delivery need their own interface. No such transformation is proposed
 implicitly here. Lossless protocol encoding is distinct from all these changes.
 
-Multiline credentials are a real use case, not abandoned scope: compare rejecting
-them in the first primitive with an explicit line-registration mode. The latter
-would treat every nonempty emitted segment as caller-authorized for masking,
-reject the entire request before output if any segment is unsupported, define CR/LF segmentation and
-limits, and test blank lines, overmasking and terminal-boundary behavior. It does
-not change the credential. Its extra contract and false-positive cost should be
-approved separately; simply escaping a combined multiline value is insufficient
-evidence of line-by-line secrecy. It would also mask non-confidential PEM header
-lines; no automatic classifier is implied. A caller-selected segment interface
-is another option, with additional caller responsibility and interface cost.
+### Explicit line registration
+
+The selected first-increment scope includes `--each-line`; default mode remains
+single-value registration. The option changes the set of mask entries, not the
+credential or its delivery to the real service. No reconstructed credential is
+returned. Callers retain the original bytes themselves.
+
+The zero-threshold profile above is mandatory for this mode too: even a long
+credential can have a short final line. Successful producer output cannot detect
+a consumer setting that leaves that line unmasked. Do not infer runtime
+registration behavior solely from initialization-time dictionary cleanup.
+
+Proposed rules, applied identically on both native OS profiles:
+
+1. Validate the entire bounded stdin as strict UTF-8 without NUL before
+   constructing output. Apply raw-size acquisition rejection first, then UTF-8,
+   then NUL validation, then segmentation/count checks. No first-line truncation,
+   trimming or normalization. Diagnostics are fixed messages: no segment index,
+   length, count or input-derived text.
+2. Split on CRLF as one boundary, then standalone CR or LF. Only these ASCII
+   boundaries split; other Unicode characters remain data. Leading, internal
+   and trailing zero-byte segments produce no entry. Reject if no nonempty
+   segment remains. A space or tab is nonempty and must not be skipped.
+3. Preserve each nonempty segment exactly, in encounter order, including
+   duplicates. Do not register the combined multiline original as an extra
+   entry: the protected assets are complete nonempty lines. Extra combined
+   registration does not establish coverage of arbitrary serialized or rewrapped
+   representations and adds an unnecessary registration path.
+4. Allow at most 1,024 nonempty segments per invocation, counting duplicates;
+   retain the 1 MiB raw input ceiling. This proposed workload limit bounds Agent
+   registration operations without a deduplication algorithm or new dependency.
+   It is a product resource choice, not a measured Azure service limit.
+5. Encode each segment with the existing Azure lossless encoding into one fixed
+   `##vso[task.setsecret]DATA` record followed by LF, with no properties. Cap the
+   **entire output batch**, including all headers and LFs, at 8 MiB. Validate
+   all segments and checked aggregate lengths before allocating/preparing the
+   complete output buffer, then write it. Rejection anywhere produces no stdout;
+   an I/O failure after writing starts can leave a prefix and some registrations.
+   Neither batch writing nor producer success promises atomic Agent processing.
+
+The total-output cap is defensive: with the proposed raw/count caps and this
+encoder's maximum sixfold expansion, valid input cannot reach 8 MiB. Test that
+bound and checked arithmetic, rather than inventing a CLI input that supposedly
+exceeds it while satisfying the other limits. Resource limits are per invocation,
+not a bound on total job registrations from arbitrary repeated invocations.
+
+For example, bytes `alpha\r\n\r\nbeta\n` register `alpha` and `beta`, in that
+order. `alpha\nalpha` registers two identical entries; `\n\r\n` fails rather
+than succeeding with no entries. A single-line input in this mode registers one
+entry. Default mode still rejects even one final CR/LF. Duplicate flags, unknown
+options and positional values are usage errors (2); invalid input or segment
+count is an input error (1), with value-free diagnostics. `--each-line --` is
+valid; `-- --each-line` is a forbidden operand. Shared help/version behavior
+remains unchanged and does not read stdin.
+
+All nonempty segments are caller-authorized masks, including non-confidential
+PEM headers, delimiters and short/whitespace lines. Hiding identical text
+elsewhere is an explicit usability cost, not something a secret classifier can
+silently avoid. A caller-selected segment interface could reduce that cost but
+would transfer omission risk to the caller and is not needed in this increment.
+
+The intended protection covers complete registered segments appearing alone or
+inside a later ordinary log line. It does not hide the number of blank lines,
+line boundaries or ordering, nor guarantee secrecy of a segment's substring,
+a differently wrapped body, escaped newlines or an encoded whole credential.
+Known confidential representations must receive their own explicit registration
+before use; if they fail validation, stop that use. Tests must distinguish these
+paths instead of treating acceptance of a multiline input as proof that every
+rendering is safe. The original credential must never be silently sanitized to
+fit registration.
 
 ### Caller preconditions and operation separation
 
@@ -178,15 +243,23 @@ This is a concrete framing/registration disclosure path, not an invitation to
 audit arbitrary Agent internals.
 
 For Bash, a quoted `printf '%s' "$SECRET"` pipe is the intended no-newline
-delivery form, with tracing disabled and failure propagation. For PowerShell,
+delivery form, with tracing disabled and failure propagation.
+`--each-line` is not merely a way to tolerate `echo`: it registers every nonempty
+segment, including those separated by internal CR. For PowerShell,
 do not present `$env:SECRET | shoutx ...` as supported byte delivery. The initial
 recipe uses a small reviewed helper example reading the environment and writing UTF-8
-bytes to the child's redirected stdin (as the existing Python fixture does),
+bytes without an added BOM to the child's redirected stdin (as the existing Python fixture does),
 forwarding only native stdout and propagating failure. Both recipes need the
 real-shell tests below. Stdin-only therefore carries a Windows ergonomics cost;
 an explicit environment-variable-name input could be considered later, without
 accepting the secret itself in argv. Rejecting argv cannot undo its prior exposure.
 Prefer a documented, tested helper example, not a new shipped executable.
+Environment delivery is only an example for values that fit the OS environment;
+it is not the transport for limit-sized fixtures. For those, generate synthetic
+bytes in a trusted helper and write directly to redirected child stdin, without
+embedding the value in argv/environment or persisting the registration wire.
+The documented helper should also demonstrate a bounded byte-stream input for
+larger credentials, while leaving secure acquisition to the caller.
 Shipping a helper as product or relying on user-written helpers are alternatives
 requiring explicit approval; the latter cannot inherit byte-fidelity evidence
 from the tested example without equivalent behavior.
@@ -207,9 +280,21 @@ do not add new OS profiles or dependency-internal proof obligations.
    1–7 (ASCII and supplementary Unicode), invalid UTF-8/NUL, CR/LF/CRLF in the
    middle and at the end, raw cap and cap+1, literal escapes/delimiters, and
    Unicode/space-preserving cases. Assert status, value-free diagnostics and
-   empty stdout for every rejected case. Assert a single fixed command and no
-   extra operation for every successful case. Test terminal stdin and forbidden
-   argv separately: extra operands return usage status 2, empty stdout and no
+   empty stdout for every rejected case. Assert a single fixed command in default
+   mode, or the exact ordered segment records in line mode, with no extra
+   operation. Cover mixed boundaries, leading/repeated/trailing boundaries,
+   blank-only rejection, whitespace retention, duplicate order, one-line parity,
+   1,024 and 1,025 nonempty segments, and invalid UTF-8/NUL in the final segment
+   after otherwise valid segments. Include boundaries immediately around the raw
+   cap, an over-cap input containing invalid UTF-8, and an over-count input with
+   a late invalid UTF-8/NUL byte; assert the fixed diagnostic selected by the
+   validation order, not merely status 1. Directly test the Windows input helper's
+   exact byte delivery with no added BOM using a synthetic stdin-capturing stub.
+   Count empty segments separately from the operation limit. Assert the
+   aggregate expansion bound and injected output failure without promising
+   rollback. Test option duplication/placement, help/version without stdin reads,
+   terminal stdin and forbidden argv separately: extra operands return usage
+   status 2, empty stdout and no
    operand in diagnostics; bare `--` selects stdin, `-- VALUE` is an error.
    No public production command is added by this design task.
 2. **Parser and registration:** extend the upstream parser corpus with the
@@ -229,8 +314,14 @@ do not add new OS profiles or dependency-internal proof obligations.
    whole values alone and within fixed harmless prefixes/suffixes to stdout
    and stderr. The expected literal-value replacement is `***`, grounded in
    upstream tests and to be confirmed live: require exactly `PREFIX***SUFFIX`,
-   not partial or displaced redaction. Assert exact surrounding text, absence
-   of extra commands. For unique long canaries, scan completed job logs for
+   not partial or displaced redaction. Assert exact surrounding text; this is
+   an indirect helper-fidelity check, while step 1 directly checks input bytes.
+   Include a literal `%` in the escape case. Percent decoding must be enabled
+   as required by the Azure profile;
+   otherwise the registered escaped value can differ from the original. A
+   different complete replacement token fails the exact expectation but is
+   diagnosed separately from exposed secret content; do not silently accept it.
+   Assert absence of extra commands. For unique long canaries, scan completed job logs for
    original and registration-wire escaped representations, including the
    registration step itself. For short/whitespace cases, incidental characters
    in unrelated setup logs are not identifiable disclosures: require exact
@@ -250,6 +341,42 @@ do not add new OS profiles or dependency-internal proof obligations.
    the expected empty issue inventory, avoiding ambiguous character searches.
    Keep short/boundary cases isolated from other registrations so
    accidental masking cannot yield a false pass.
+
+   Add four isolated line-mode positive jobs per OS: (a) synthetic PEM-shaped
+   LF input with terminal newline, obviously synthetic non-secret headers
+   (`SHOUTX SYNTHETIC BLOCK`, not a real private-key label), repeated body lines
+   and a short ASCII/base64-like final body line;
+   (b) mixed CRLF/CR/LF input with leading/internal/trailing empty segments,
+   Unicode and literal escapes/header delimiters; (c) short Unicode and tab-only
+   segments with non-colliding markers; (d) 1,024 distinct nonempty segments at
+   the raw cap, with a raw-cap+1 and 1,025-segment rejection probe in the same job.
+   Each positive job prints the original line layout and each complete segment
+   separately inside markers on later-task stdout/stderr. Require exact masked
+   nonempty segments and preserved empty boundaries in normalized log records;
+   define the log transport's CR/LF normalization separately from producer-byte
+   equality. Check every segment, including the first and last, not only samples.
+   Run rejection probes before positive registration, capturing their stdout
+   locally and never forwarding it to the Agent even on defective acceptance.
+   Reject probes must show empty captured stdout locally; log only pass/fail,
+   never captured wire. Scan registration-step logs and issues as above, including
+   each distinct long segment and its wire form. For short/tab entries use exact
+   fixture blocks and the empty issue inventory, not whole-log character scans.
+   Test known non-secret headers becoming masked and unrelated text staying
+   visible; that demonstrates the acknowledged overmasking tradeoff. These jobs
+   use Bash on Ubuntu and PowerShell Core on Windows, not both shells per OS,
+   with the documented delivery recipes and byte-for-byte
+   input fixtures with CR preserved (not shell text-mode reconstruction).
+   Inside each line-mode positive job, before registration, run a small,
+   separately delimited unregistered non-secret framing probe (no extra jobs) to
+   determine how each task host delivers blank/CR boundaries; freeze the expected
+   log-record projection before checking secret blocks. Do not accept arbitrary
+   whitespace trimming or missing payload records as transport normalization.
+   Use trusted generated stdin for cap-sized cases, not environment variables.
+   Command-delimiter examples must not contain a live nested logging-command
+   prefix in later plaintext emissions: a mask is not a command neutralizer,
+   and a harmless text prefix alone need not disable command scanning. Reserve
+   actual nested-prefix injection cases for producer/parser tests; hosted output
+   uses inert delimiters while retaining the sentinel-operation checks.
 4. **Discriminating controls:** in isolated synthetic jobs, omit registration,
    register a different value, and compare original-only with original-plus-derived
    registration. First calibrate the unregistered canary in a clean job: it must
@@ -267,15 +394,36 @@ do not add new OS profiles or dependency-internal proof obligations.
    fixture blocks. Include offline truncated-log, missing-job,
    changed-field and wrong-source/attempt controls. A missing or partial log
    cannot pass. Deliberately visible control values must never be real secrets.
-5. **Execution budget and completed-log verifier:** run 11 producer jobs per OS:
+   Add one isolated line-mode omission control per OS: register all but a chosen
+   distinct synthetic segment, print all segments later and require precisely
+   that segment to remain visible. Choose it to avoid overlap with other entries
+   or their encoder variants. Offline mutations must also detect a missing last
+   registration, duplicated/wrong/reordered decoded records, partial masking,
+   unmasked first/last segment and an unexpected operation. Keep negative-control
+   outcomes distinct from positive secrecy evidence.
+   In that control job, first print unregistered synthetic blocks covering the
+   positive jobs' header/body/short/tab shapes, including their actual canary
+   values, and require visibility before any registration. Those intentionally
+   visible blocks are control evidence only; never use real key labels/material.
+   Then register the omission-case subset and check the later-task result.
+   Limit permitted plaintext to those exact control blocks; scan the subsequent
+   registration step and post-registration blocks independently. Automatic
+   masking of a calibration value invalidates that case, requiring replacement
+   with a discriminating synthetic value, not a false pass.
+5. **Execution budget and completed-log verifier:** run 16 producer jobs per OS:
    six ordinary cases, one whitespace-only case, one near-limit case, and three
-   isolated controls from step 4. That is 22 producer jobs plus one downstream
-   verifier job, 23 total, each capped at 15 minutes; not 23 parallel jobs or a
+   original isolated controls, plus four line-mode cases and one omission control.
+   That is 32 producer jobs plus one downstream verifier job, 33 total,
+   each capped at 15 minutes; not 33 parallel jobs or a
    promised wall time. Build once per OS in its first producer job and pass the
-   source-bound native binary via a pipeline artifact to the remaining ten
+   source-bound native binary via a pipeline artifact to the remaining fifteen
    jobs, with source/run identity and digest checks; never put secret inputs
    or captured registration wires in that artifact. No extra build jobs are
-   counted. A build/artifact failure means incomplete evidence, not skipped
+   needed; publish the binary artifact before any registration step. No other
+   files from the producer workspace belong in it. Workload timeouts, including
+   the 1,024-entry case, leave the proposed cap unadmitted; propose a lower cap
+   for approval with a bounded retest instead of relaxing the secrecy check.
+   A build/artifact failure means incomplete evidence, not skipped
    passing cases. The producer jobs use real Bash/PowerShell delivery,
    the zero short-secret threshold and debug-off settings. Source/producer
    tests cover the wider 1–7 length matrix without multiplying hosted jobs.
@@ -307,13 +455,13 @@ case or profile condition, not by silently assuming a preferred backend.
 
 - Approve or revise the whole-value, subsequent ordinary job-log boundary, with
   explicit separate registration of known confidential fields/representations.
-- Approve or revise stdin-only input, zero-threshold short-value support and
-  initial multiline rejection; decide whether multiline line-registration belongs in the first
-  implementation instead. Retaining a multiline requirement means expanding
-  that explicit contract and its finite tests, not silently dropping the case.
+- Line registration in the first increment is selected. Approve or revise its
+  proposed `--each-line` interface, segmentation/empty-line policy, duplicate
+  handling and workload limits, together with stdin-only input and zero-threshold
+  short-value support. Do not silently revert the selected scope to rejection.
 - Approve or revise the explicit configuration and later-task sequencing cost,
   Windows input-helper requirement (recommended tested documentation example,
-  versus a shipped helper or user-written helper) and 23-job admission matrix. The alternative
+  versus a shipped helper or user-written helper) and 33-job admission matrix. The alternative
   six-scalar floor trades short-value utility for tolerance of threshold changes.
 - Keep secret-variable assignment and credential replacement separate unless a
   concrete use case makes either necessary for the first increment.
@@ -339,10 +487,33 @@ The follow-up Fable review completed successfully on the same date with the
 same model and no denied inspections, finding no blocking design flaws. Its
 nonblocking clarifications were incorporated: knob precedence and pipeline
 setting, timeline message checks, non-colliding short-value markers, build-once
-artifact reuse within the 23-job count, accurate token-permission wording,
+artifact reuse within the then-proposed 23-job count (before line-mode expansion), accurate token-permission wording,
 consistent profile naming, and helper-delivery options. Source observations
 remain distinct from unexecuted tests. These clarifications do not change the
 proposed security boundary and do not require another review round.
+
+The subsequent line-mode review on 2026-10-24 completed successfully with Fable
+and no denied inspections; it found no blocking design flaw. Both medium
+findings were accepted: make the zero-threshold condition explicit for short
+final lines and calibrate synthetic blocks before crediting line registration.
+The low findings were addressed with fixed diagnostics and validation order,
+BOM-free delivery, pre-registration binary publication, percent-decoding checks,
+captured rejection probes and native-shell scope. The earlier 23-job count is
+labeled historical. Workload limits and overmasking remain explicit adoption
+decisions. The review's suggestion that the redaction expectation was based
+only on legacy tests was corrected against the shared upstream test fixture;
+the compatibility record distinguishes that source expectation from live results.
+Additional self-review clarified limit-sized stdin transport, inert hosted
+delimiters and a bounded transport-normalization probe.
+
+The focused follow-up completed successfully with `claude-fable-5-1` and no
+denied inspections. It confirmed both medium findings and the low clarifications
+were addressed. Its three remaining wording gaps were fixed: framing probes run
+inside existing jobs, BOM bytes are directly checked in helper tests rather than
+inferred from hosted wire visibility, and combined-error tests assert validation
+precedence. These are test-plan clarifications, not a boundary change; no further
+review round is required. Secret implementation and hosted execution remain
+unperformed.
 
 ## Decision gate
 
@@ -355,6 +526,7 @@ specification and observations in the compatibility record after approval.
 At adoption, move accepted input/CLI rules out of this proposal into
 `docs/commands/azure-pipelines.md`, replacing the current no-masking statement;
 add the registration-channel disclosure path to the Azure threat inventory;
+include caller-authorized overmasking amplified by multiple short entries;
 update the design profile's unresolved-secret status and conditions. Keep only
 rationale/alternatives here, avoiding two normative input tables.
 

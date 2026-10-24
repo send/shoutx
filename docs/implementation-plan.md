@@ -385,8 +385,10 @@ PATH CI/review and merge are complete. Do not resume PATH investigation or
 release preparation as part of the next task.
 
 Secret support requires a separate boundary discussion before implementation.
-The reviewed mask-registration proposal and finite verification plan are ready
-for maintainer discussion. The next gate is approval of the proposed boundary
+The maintainer selected explicit line registration for the first secret increment.
+Its detailed proposal and finite verification plan have passed independent
+Fable review and are ready for maintainer approval in the linked discussion
+record. The next gate is approval of the proposed boundary
 and tradeoffs, not a secret implementation or release action. No secret hosted
 measurements have been claimed; the linked proposal specifies the adoption tests.
 Its discussion context, investigation principles and unresolved questions have

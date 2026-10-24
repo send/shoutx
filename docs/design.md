@@ -122,7 +122,7 @@ shoutx github-actions:error   [ANNOTATION OPTIONS] [MESSAGE]
 ```
 
 All fourteen GitHub commands are included in default and `--no-default-features` builds,
-alongside the four unreleased Azure commands.
+alongside the five unreleased Azure commands.
 The former research feature is removed. Stdout consumer compatibility is scoped
 by the adoption contract below; binary availability does not broaden it.
 
@@ -154,8 +154,10 @@ No reusable context encoder is currently planned for v1.0. The former
     supported runner parser and do not rely on host text-mode translation.
 13. Every input field has a documented hard size limit; a destination's encoded
     record limit may impose a smaller effective maximum after framing.
-14. A stdout workflow-command writer must emit exactly one selected command
+14. A stdout workflow-command writer must emit exactly the selected command
     line whose decoded data and properties equal the accepted semantic fields.
+    An explicit batch mode may select multiple records only as specified by its
+    destination contract; no unrequested record may be added.
     Fixed commands have no value fields. This does not claim that runner log
     masking prevents every disclosure of a value.
 15. Syntax defined by shoutx uses only ASCII code points. Matching is exact
@@ -270,7 +272,21 @@ in v1.0.0. The command contract owns destination-specific input and newline
 rules. PATH uses the native producer OS dialect, without extending this profile
 to cross-OS producers or containers. Work ordering is owned by the
 [current handoff](implementation-plan.md#current-handoff-status).
-Secret support remains a separate unresolved design discussion.
+The accepted [mask contract](commands/azure-pipelines-mask.md) is being
+implemented; its hosted admission remains pending in the compatibility record.
+
+Mask registration additionally requires trusted pipeline/job `variables:`
+configuration `AZP_IGNORE_SECRETS_SHORTER_THAN: '0'` before job startup,
+`system.debug=false`, and secret-using processes in a later task of the same
+job, with no racing producers. The threshold is mandatory even for long
+multiline credentials, whose final line may be short. A child environment
+variable does not establish the Agent setting. Keep shell tracing and verbose
+command logging off. Same-task register-then-run and debug-on use are not
+admitted by this initial profile. These conditions cannot undo prior disclosure.
+The producer does not inspect hidden Agent state or certify acknowledgment.
+Percent-decoding mismatch can register a different value; it is not a harmless
+display change for masks. The required profile must pass actual registration
+and completed-log checks before hosted support is claimed.
 
 The initial verification target is native Microsoft-hosted Ubuntu 24.04 x64
 with Bash and Windows 2025 x64 with PowerShell Core 7.4+, normal command
@@ -382,6 +398,7 @@ verification plan:
 - [GitHub Actions debug and group commands](commands/github-actions-log-commands.md)
 - [GitHub Actions problem matcher commands](commands/github-actions-problem-matchers.md)
 - [Azure Pipelines commands](commands/azure-pipelines.md)
+- [Azure Pipelines mask registration](commands/azure-pipelines-mask.md)
 
 ## Design decisions
 

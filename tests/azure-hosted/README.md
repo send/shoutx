@@ -1,5 +1,37 @@
 # Azure hosted smoke
 
+## Mask registration admission
+
+The separate manual pipeline `azure-mask.yml` implements the
+[finite mask admission plan](../../docs/commands/azure-pipelines-mask.md#finite-verification-plan).
+It has 32 producer jobs and one completed-log verifier, with 15-minute job caps.
+The first producer builds once per OS and publishes only the native binary and
+its source/run/digest identity before registration. Other producers reuse it.
+Only the downstream verifier receives the project-scoped read token; configure
+project-limited job authorization and least-privilege build-read permissions
+before queueing a trusted revision. Do not supply unreviewed parameter overrides.
+
+Producer values are public synthetic test data. Omission/calibration controls
+deliberately leave specified values visible and are never positive secrecy
+evidence. All other expected payloads are compared exactly; short/whitespace
+values use delimited blocks, while long registered values also use whole-job
+disclosure searches. Raw completed logs are held only in verifier memory, capped
+at 32 MiB per job, and are never saved or printed. Its final report contains
+source/run/job/attempt/image/Agent identities, binary/log digests and counts.
+
+Run offline tests before queueing:
+
+```sh
+python3 -B tests/azure-hosted/test_mask_stdin.py
+python3 -B tests/azure-hosted/test_mask_cases.py
+python3 -B tests/azure-hosted/test_mask_verify.py
+```
+
+Passing offline tests or defining this pipeline does not establish masking on
+Azure. Record actual results in the compatibility record before admission.
+
+## Existing variable issue and PATH smoke
+
 Results and tested identities live in the
 [compatibility record](../../docs/compatibility/azure-pipelines.md).
 Create a YAML pipeline using

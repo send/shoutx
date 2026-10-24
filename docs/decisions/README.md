@@ -49,8 +49,8 @@ Azure follow-up planning:
 
 - [`azure-path.md`](azure-path.md) — PATH writer rationale and finite work plan;
   command rules are owned by the linked command specification.
-- [`azure-secret-boundary.md`](azure-secret-boundary.md) — unresolved secret
-  protection boundary; no secret implementation is authorized by this record.
+- [`azure-secret-boundary.md`](azure-secret-boundary.md) — accepted mask-registration
+  rationale; input rules and admission tests live in the linked specification.
 
 GitHub Actions stdout adoption and research history:
 

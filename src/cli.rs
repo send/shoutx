@@ -109,6 +109,9 @@ pub struct AnnotationRequest {
 
 #[derive(Debug)]
 pub enum Action {
+    AzureMask {
+        each_line: bool,
+    },
     AzurePath(PathRequest),
     AzureVariable(crate::azure_pipelines::Variable),
     AzureIssue(crate::azure_pipelines::Issue),
@@ -132,6 +135,7 @@ pub enum Action {
 
 #[derive(Clone, Copy)]
 enum Command {
+    AzureMask,
     AzurePath,
     AzureVariable,
     AzureWarning,
@@ -153,6 +157,7 @@ enum Command {
 }
 
 const COMMANDS: &[(&str, Command)] = &[
+    ("azure-pipelines:mask", Command::AzureMask),
     ("azure-pipelines:variable", Command::AzureVariable),
     ("azure-pipelines:warning", Command::AzureWarning),
     ("azure-pipelines:error", Command::AzureError),
@@ -175,6 +180,21 @@ const COMMANDS: &[(&str, Command)] = &[
 
 pub fn command_names() -> impl Iterator<Item = &'static str> {
     COMMANDS.iter().map(|(name, _)| *name)
+}
+
+fn parse_azure_mask(tokens: Vec<OsString>) -> Result<Action, ShoutxError> {
+    let mut each_line = false;
+    let mut options = true;
+    for token in tokens {
+        match (options, token.to_str()) {
+            (true, Some("--help")) => return Ok(Action::Help),
+            (true, Some("--version")) => return Ok(Action::Version),
+            (true, Some("--")) => options = false,
+            (true, Some("--each-line")) if !each_line => each_line = true,
+            _ => return Err(ShoutxError::usage("invalid Azure mask argument")),
+        }
+    }
+    Ok(Action::AzureMask { each_line })
 }
 
 fn text(value: &OsStr) -> Result<&str, ShoutxError> {
@@ -200,6 +220,7 @@ pub fn parse(args: Vec<OsString>) -> Result<Action, ShoutxError> {
         .find_map(|(name, kind)| (*name == command).then_some(*kind))
         .ok_or_else(|| ShoutxError::usage("unknown command"))?;
     let destination = match command {
+        Command::AzureMask => return parse_azure_mask(it.collect()),
         Command::AzurePath => {
             return parse_path(it.collect(), true);
         }

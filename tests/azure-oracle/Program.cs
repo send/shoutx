@@ -19,6 +19,18 @@ namespace Microsoft.VisualStudio.Services.Agent.Util
 
 class Program
 {
+    static bool Matches(string line, JsonElement expected, bool decode)
+    {
+        if (!Command.TryParse(line, decode, out var command)) return false;
+        var properties = expected.GetProperty("properties").EnumerateObject().ToArray();
+        return command.Area == "task"
+            && command.Event == expected.GetProperty("event").GetString()
+            && command.Data == expected.GetProperty("data").GetString()
+            && command.Properties.Count == properties.Length
+            && properties.All(p => command.Properties.Any(
+                q => q.Key == p.Name && q.Value == p.Value.GetString()));
+    }
+
     static int Main()
     {
         int count = 0;
@@ -32,20 +44,14 @@ class Program
                 var item = document.RootElement;
                 var bytes = Convert.FromBase64String(item.GetProperty("record").GetString());
                 var line = new UTF8Encoding(false, true).GetString(bytes);
-                bool framing = line.EndsWith("\n", StringComparison.Ordinal)
-                    && line.Count(c => c == '\n') == 1 && !line.Contains('\r');
-                bool matched = false;
-                if (framing && Command.TryParse(line.Substring(0, line.Length - 1),
-                        item.GetProperty("decode").GetBoolean(), out var command))
-                {
-                    var expected = item.GetProperty("properties").EnumerateObject().ToArray();
-                    matched = command.Area == "task"
-                        && command.Event == item.GetProperty("event").GetString()
-                        && command.Data == item.GetProperty("data").GetString()
-                        && command.Properties.Count == expected.Length
-                        && expected.All(p => command.Properties.Any(
-                            q => q.Key == p.Name && q.Value == p.Value.GetString()));
-                }
+                var expected = item.TryGetProperty("records", out var records)
+                    ? records.EnumerateArray().ToArray() : new[] { item };
+                var lines = line.Split('\n');
+                bool matched = expected.Length > 0
+                    && line.EndsWith("\n", StringComparison.Ordinal)
+                    && !line.Contains('\r') && lines.Length == expected.Length + 1
+                    && expected.Select((entry, index) => Matches(lines[index], entry,
+                        item.GetProperty("decode").GetBoolean())).All(value => value);
                 var wanted = item.GetProperty("match").GetBoolean();
                 if (matched != wanted) throw new Exception("case mismatch");
                 if (!wanted) negative++;

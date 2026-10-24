@@ -30,6 +30,10 @@ fn output(bytes: &[u8]) -> Result<(), ShoutxError> {
 fn run() -> Result<(), ShoutxError> {
     let args: Vec<OsString> = std::env::args_os().skip(1).collect();
     match shoutx::prepare(args)? {
+        Action::AzureMask { each_line } => {
+            let value = read_value(None)?;
+            output(&shoutx::azure_pipelines::encode_mask(&value, each_line)?)
+        }
         Action::AzurePath(request) => {
             let value = read_value(request.value.as_ref())?;
             output(&shoutx::azure_pipelines::encode_path(&value)?)

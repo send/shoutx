@@ -384,17 +384,16 @@ have passed as recorded in the [Azure evidence](compatibility/azure-pipelines.md
 PATH CI/review and merge are complete. Do not resume PATH investigation or
 release preparation as part of the next task.
 
-Secret support requires a separate boundary discussion before implementation.
-The maintainer selected explicit line registration for the first secret increment.
-Its detailed proposal and finite verification plan have passed independent
-Fable review and are ready for maintainer approval in the linked discussion
-record. The next gate is approval of the proposed boundary
-and tradeoffs, not a secret implementation or release action. No secret hosted
-measurements have been claimed; the linked proposal specifies the adoption tests.
-Its discussion context, investigation principles and unresolved questions have
-one home in [the secret discussion record](decisions/azure-secret-boundary.md). Read that
-record when resuming secret work; do not reconstruct the decision from chat or
-treat the provider's limitations alone as an accepted exclusion.
+On 2026-10-24 the maintainer approved the reviewed secret design at `cb20337`,
+including explicit line registration. Implement the
+[mask contract and finite verification plan](commands/azure-pipelines-mask.md);
+the [decision record](decisions/azure-secret-boundary.md) owns rationale.
+Complete producer/parser/helper tests, scoped hosted effects, independent Fable
+review and latest-head CI/Codex convergence, then present a merge-ready PR.
+Implementation and hosted admission are in progress; no secret hosted result
+has been claimed. Do not silently reduce accepted scope or waive failed
+secrecy checks. A cap/profile change requires evidence and maintainer approval.
+Merge still requires explicit direction, and release preparation remains on hold.
 
 Follow the ordered [release-preparation gates](release.md#next-release-preparation)
 for packaging checks and exact-source evidence when release preparation resumes

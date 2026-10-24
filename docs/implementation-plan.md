@@ -385,16 +385,16 @@ PATH CI/review and merge are complete. Do not resume PATH investigation or
 release preparation as part of the next task.
 
 On 2026-10-24 the maintainer approved the reviewed secret design at `cb20337`,
-including explicit line registration. Implement the
+including explicit line registration. PR #143 implemented the
 [mask contract and finite verification plan](commands/azure-pipelines-mask.md);
 the [decision record](decisions/azure-secret-boundary.md) owns rationale.
-Complete producer/parser/helper tests, scoped hosted effects, independent Fable
-review and latest-head CI/Codex convergence, then present a merge-ready PR.
+Producer/parser/helper tests, scoped hosted effects, independent Fable review
+and latest-head CI/Codex convergence completed before merge as `7856514`.
 Implementation and scoped hosted admission are complete; the
 [compatibility record](compatibility/azure-pipelines.md#mask-hosted-observations)
 owns the observed results. Do not silently reduce accepted scope or waive failed
 secrecy checks. A future cap/profile change requires evidence and maintainer approval.
-Merge still requires explicit direction, and release preparation remains on hold.
+Release preparation remains on hold.
 
 Implementation is tracked in PR #143. The first implementation Fable review completed
 with `claude-fable-5-1`, success and no denied inspections. Its three medium
@@ -412,9 +412,18 @@ denied inspections. It confirmed the findings addressed and found no false-pass
 regression. Its remaining runtime assumptions (log counts/final LF and system
 task log availability) passed the hosted gate; cosmetic comments and offline
 fixture ordering did not affect correctness. No third implementation review is
-needed for evidence-only documentation. For PR #143, latest-head CI/Codex
-convergence is the final merge-readiness gate; it does not
-authorize merging or publishing without maintainer direction.
+needed for evidence-only documentation. PR #143 merged with explicit maintainer
+direction; that merge does not authorize publication.
+
+The next bounded task is issue #141: the user-facing
+[command protection guide](command-protection.md). Cover every implemented
+command and variant, explain protected attack paths and caller responsibilities,
+distinguish published GitHub commands from unreleased Azure commands, and link
+to existing contracts rather than duplicating normative input rules. Review for
+overstated guarantees and verify documentation-only CI plus latest-head Codex
+before presenting a merge-ready PR. Do not add commands, broaden guarantees,
+restart completed runtime investigations or resume release work. New sensitive
+attack paths follow SECURITY.md, not public issue details.
 
 Follow the ordered [release-preparation gates](release.md#next-release-preparation)
 for packaging checks and exact-source evidence when release preparation resumes

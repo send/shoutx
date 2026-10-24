@@ -40,6 +40,8 @@ def check_job(case, job, records, logs, source, run):
                 and not record.get("warningCount", 0), "unexpected issue")
         require(record.get("state") == "completed", "incomplete task")
         require(record.get("attempt", 1) == job.get("attempt", 1), "wrong task attempt")
+        if record.get("type") == "Task" and record.get("result") != "skipped":
+            require(record.get("log"), "missing task log")
     by_name = {}
     all_raw = []
     for record in [job, *owned]:
@@ -49,16 +51,20 @@ def check_job(case, job, records, logs, source, run):
             all_raw.append(raw)
             by_name[record["name"]] = log_lines(raw)
     require(sum(map(len, all_raw)) <= LIMIT, "job logs too large")
-    for name in ("Prepare mask fixture", "Register masks", "Emit masked values"):
+    for name in ("Prepare mask fixture", "Calibrate stderr fixture", "Register masks",
+                 "Emit masked stdout", "Emit masked stderr"):
         require(name in by_name, "missing phase log")
-    prepare, register, emit = (by_name[name] for name in
-                              ("Prepare mask fixture", "Register masks", "Emit masked values"))
+    prepare, register = by_name["Prepare mask fixture"], by_name["Register masks"]
+    calibration = {"OUT": prepare, "ERR": by_name["Calibrate stderr fixture"]}
+    emissions = {"OUT": by_name["Emit masked stdout"], "ERR": by_name["Emit masked stderr"]}
+    emit = emissions["OUT"] + emissions["ERR"]
+    require(not any(line.startswith("##[debug]") for line in register + emit), "debug enabled")
     identities = [json.loads(line[len("SX_IDENTITY:"):]) for line in prepare
                   if line.startswith("SX_IDENTITY:")]
     require(len(identities) == 1, "identity missing")
     identity = identities[0]
     require(identity["source"] == source and identity["run"] == str(run)
-            and identity["job"] == job["id"]
+            and identity["job"].lower() == job["id"].lower()
             and identity["attempt"] == str(job.get("attempt", 1))
             and identity["case"] == case.name, "identity mismatch")
     require(all(identity.get(key) for key in ("agent", "image", "imageVersion", "digest")),
@@ -66,19 +72,21 @@ def check_job(case, job, records, logs, source, run):
     require(re.fullmatch(r"[0-9a-f]{64}", identity["digest"]), "invalid binary digest")
     require(prepare.count("SX_PREPARED") == 1 and register.count("SX_REGISTERED") == 1,
             "phase incomplete")
-    require(emit.count("SX_EMISSION_COMPLETE") == 1
-            and emit.count("SX_UNRELATED_VISIBLE") == 1, "emission incomplete")
-    for _, tag, expected in blocks(case, True):
-        exact_block(emit, tag, expected)
+    for stream in ("OUT", "ERR"):
+        require(emissions[stream].count("SX_EMISSION_COMPLETE") == 1
+                and emissions[stream].count("SX_UNRELATED_VISIBLE") == 1, "emission incomplete")
+        require(calibration[stream].count("SX_CALIBRATED") == 1, "calibration incomplete")
+    for stream, tag, expected in blocks(case, True):
+        exact_block(emissions[stream], tag, expected)
     if case.each_line:
         for stream in ("OUT", "ERR"):
-            exact_block(prepare, "SX_FRAMING_" + stream, ["AA", "", "BB", "", "CC", ""])
+            exact_block(calibration[stream], "SX_FRAMING_" + stream, ["AA", "", "BB", "", "CC", ""])
     if case.name == "lines_cap":
         require(prepare.count("SX_REJECTIONS_OK") == 1, "missing rejection checks")
     if case.name == "lines_omission":
-        for name in ("lines_pem", "lines_mixed", "lines_short"):
-            for _, tag, expected in blocks(cases()[name], False):
-                exact_block(prepare, "CAL_" + name.upper() + "_" + tag, expected)
+        for name in ("lines_pem", "lines_mixed", "lines_short", "lines_cap"):
+            for stream, tag, expected in blocks(cases()[name], False):
+                exact_block(calibration[stream], "CAL_" + name.upper() + "_" + tag, expected)
     joined = b"\n".join(all_raw).decode("utf-8")
     registration = "\n".join(register)
     for value in set(case.registered):
@@ -107,12 +115,13 @@ def fetch(path, token, base, limit):
         try:
             with opener.open(request, timeout=15) as response:
                 data = response.read(limit + 1)
-            require(len(data) <= limit, "response too large")
-            return data
         except Exception:
             if attempt == 5:
                 raise RuntimeError("read API failed") from None
             time.sleep(2)
+            continue
+        require(len(data) <= limit, "response too large")
+        return data
 
 
 def verify():
@@ -127,6 +136,9 @@ def verify():
     build = json.loads(fetch("?api-version=7.1", token, base, LIMIT))
     require(build["sourceVersion"] == source and str(build["id"]) == run, "wrong source/run")
     records = json.loads(fetch("/timeline?api-version=7.1", token, base, LIMIT))["records"]
+    inventory = json.loads(fetch("/logs?api-version=7.1", token, base, LIMIT))["value"]
+    log_counts = {entry["id"]: entry["lineCount"] for entry in inventory}
+    require(len(log_counts) == len(inventory), "duplicate log inventory")
     results = []
     matrix = cases()
     for platform in ("linux", "windows"):
@@ -144,6 +156,9 @@ def verify():
                 if ref and ref["id"] not in logs:
                     data = fetch("/logs/" + str(int(ref["id"])) + "?api-version=7.1",
                                  token, base, LIMIT - total)
+                    require(ref["id"] in log_counts, "log absent from inventory")
+                    require(data.endswith(b"\n") and data.count(b"\n") == log_counts[ref["id"]],
+                            "incomplete log response")
                     total += len(data)
                     logs[ref["id"]] = data
             result = check_job(case, job, records, logs, source, run)

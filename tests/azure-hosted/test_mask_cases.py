@@ -1,5 +1,7 @@
 """Offline corpus invariants and exact-block negative controls."""
 import unittest
+import json
+import urllib.parse
 
 from mask_cases import blocks, cases, entries, escaped, redact
 
@@ -27,6 +29,15 @@ class MaskCases(unittest.TestCase):
                 for marker in (tag + "_BEGIN", tag + "_END", "PREFIX", "SUFFIX",
                                "SX_UNRELATED_VISIBLE", "SX_EMISSION_COMPLETE"):
                     self.assertEqual(redact(marker, case.registered), marker)
+                    # Relevant short-value encodings installed by the inspected
+                    # Agent; not a universal transformation claim.
+                    for value in case.registered:
+                        if len(value) <= 2:
+                            for variant in (json.dumps(value, ensure_ascii=True)[1:-1],
+                                            json.dumps(value, ensure_ascii=False)[1:-1],
+                                            urllib.parse.quote(value, safe=""),
+                                            value.replace("\\", "\\\\")):
+                                self.assertNotIn(variant, marker)
         self.assertEqual(redact("abcdef", ("abc", "cde")), "***f")
         self.assertEqual(escaped("%0A;]\r\n"), "%AZP250A%3B%5D%0D%0A")
 

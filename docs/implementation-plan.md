@@ -395,6 +395,19 @@ has been claimed. Do not silently reduce accepted scope or waive failed
 secrecy checks. A cap/profile change requires evidence and maintainer approval.
 Merge still requires explicit direction, and release preparation remains on hold.
 
+Implementation PR #143 is draft. The first implementation Fable review completed
+with `claude-fable-5-1`, success and no denied inspections. Its three medium
+readiness findings were accepted: separate stdout/stderr tasks to avoid merged
+stream interleaving, calibrate cap-shaped values before registration (all entries,
+not only endpoints), and compare job GUIDs case-insensitively. Accepted low
+findings added final-segment/debug/encoder-variant controls and precise log-cap
+failure handling, and corrected stale evidence wording. Combined-error diagnostic
+tests had already been added while review ran. The sentinel's intentionally
+narrow purpose remains paired with exact parser records and an empty issue
+inventory; it is not a generic whole-Agent operation monitor. Source/runtime
+assumptions still require the scoped hosted experiment, not an expanded audit.
+A focused follow-up review of the changed fixture/verifier remains pending.
+
 Follow the ordered [release-preparation gates](release.md#next-release-preparation)
 for packaging checks and exact-source evidence when release preparation resumes
 with maintainer direction.

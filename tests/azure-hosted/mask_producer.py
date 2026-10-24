@@ -40,15 +40,7 @@ def prepare(case):
         "imageVersion": os.environ.get("ImageVersion") or os.environ.get("IMAGEVERSION"),
         "case": case.name,
     }, sort_keys=True), flush=True)
-    if case.each_line:
-        # Unregistered, non-secret framing probe: retained literally for verifier.
-        for name, stream in (("OUT", sys.stdout.buffer), ("ERR", sys.stderr.buffer)):
-            emit_block(stream, "SX_FRAMING_" + name, ["AA\r\n\rBB\n\nCC", ""])
-    if case.name == "lines_omission":
-        for name in ("lines_pem", "lines_mixed", "lines_short"):
-            for stream_name, tag, lines in blocks(cases()[name], False):
-                stream = sys.stdout.buffer if stream_name == "OUT" else sys.stderr.buffer
-                emit_block(stream, "CAL_" + name.upper() + "_" + tag, lines)
+    calibrate(case, "OUT")
     if case.name == "lines_cap":
         for invalid in [b"x" * 1_048_577, b"x\n" * 1025,
                         b"x\n" * 1024 + b"\xff", b"x\n" * 1024 + b"\0"]:
@@ -63,16 +55,32 @@ def prepare(case):
     print("SX_PREPARED", flush=True)
 
 
-def emit(case):
+def calibrate(case, selected):
+    stream = sys.stdout.buffer if selected == "OUT" else sys.stderr.buffer
+    if case.each_line:
+        emit_block(stream, "SX_FRAMING_" + selected, ["AA\r\n\rBB\n\nCC", ""])
+    if case.name == "lines_omission":
+        for name in ("lines_pem", "lines_mixed", "lines_short", "lines_cap"):
+            for stream_name, tag, lines in blocks(cases()[name], False):
+                if stream_name == selected:
+                    emit_block(stream, "CAL_" + name.upper() + "_" + tag, lines)
+    stream.write(b"SX_CALIBRATED\n")
+    stream.flush()
+
+
+def emit(case, selected):
     if os.environ.get("SHOUTX_INJECTED"):
         raise RuntimeError("unexpected sentinel operation")
-    print("SX_UNRELATED_VISIBLE", flush=True)
+    stream = sys.stdout.buffer if selected == "OUT" else sys.stderr.buffer
+    stream.write(b"SX_UNRELATED_VISIBLE\n")
     for stream_name, tag, lines in blocks(case, False):
-        stream = sys.stdout.buffer if stream_name == "OUT" else sys.stderr.buffer
+        if stream_name != selected:
+            continue
         if tag.endswith("_LAYOUT"):
             lines = [case.layout]
         emit_block(stream, tag, lines)
-    print("SX_EMISSION_COMPLETE", flush=True)
+    stream.write(b"SX_EMISSION_COMPLETE\n")
+    stream.flush()
 
 
 if __name__ == "__main__":
@@ -87,8 +95,10 @@ if __name__ == "__main__":
             }), encoding="utf-8")
         elif sys.argv[1] == "prepare":
             prepare(case)
-        elif sys.argv[1] == "emit":
-            emit(case)
+        elif sys.argv[1] == "calibrate-err":
+            calibrate(case, "ERR")
+        elif sys.argv[1] in ("emit-out", "emit-err"):
+            emit(case, "OUT" if sys.argv[1] == "emit-out" else "ERR")
         else:
             raise RuntimeError("invalid phase")
     except Exception:

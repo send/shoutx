@@ -72,6 +72,12 @@ jobs:
                   scriptSource: filePath
                   scriptPath: tests/azure-hosted/mask_producer.py
                   arguments: prepare
+              - task: PythonScript@0
+                displayName: Calibrate stderr fixture
+                inputs:
+                  scriptSource: filePath
+                  scriptPath: tests/azure-hosted/mask_producer.py
+                  arguments: calibrate-err
               - ${{ if eq(image.name, 'linux') }}:
                   - bash: |
                       set -euo pipefail
@@ -100,11 +106,17 @@ jobs:
                       Write-Output 'SX_REGISTERED'
                     displayName: Register masks
               - task: PythonScript@0
-                displayName: Emit masked values
+                displayName: Emit masked stdout
                 inputs:
                   scriptSource: filePath
                   scriptPath: tests/azure-hosted/mask_producer.py
-                  arguments: emit
+                  arguments: emit-out
+              - task: PythonScript@0
+                displayName: Emit masked stderr
+                inputs:
+                  scriptSource: filePath
+                  scriptPath: tests/azure-hosted/mask_producer.py
+                  arguments: emit-err
 
   - job: verify_masks
     displayName: Verify completed mask jobs

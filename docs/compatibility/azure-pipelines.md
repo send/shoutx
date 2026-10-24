@@ -50,8 +50,8 @@ Agents match it. PATH-specific hosted observations are recorded below.
 ## Secret source observations
 
 Inspected on 2026-10-24 at the same pinned Agent commit; these observations
-inform the [proposed secret boundary](../decisions/azure-secret-boundary.md),
-not an implemented command or a hosted secrecy guarantee.
+inform the [accepted secret boundary](../decisions/azure-secret-boundary.md).
+They do not establish hosted secrecy for the newly implemented command.
 
 - [Task command handlers](https://github.com/microsoft/azure-pipelines-agent/blob/efa064fee06c75b31cabc0451857ad1e294649c7/src/Agent.Worker/TaskCommandExtension.cs)
   send decoded `task.setsecret` data to `TaskCommandHelper.AddSecret`, which

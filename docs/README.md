@@ -19,6 +19,7 @@ appropriate owner and replace the duplicate with a link.
 | Intended implementation architecture and finite next-increment handoff | [`implementation-plan.md`](implementation-plan.md) |
 | Completed implementation sequence | [`implementation-history.md`](implementation-history.md) |
 | User-facing overview and examples | [`../README.md`](../README.md) |
+| User-facing command protection guide (summary, not additional guarantees) | [`command-protection.md`](command-protection.md), linking to the contracts above |
 
 The repository README is not a second command specification. It summarizes
 available behavior and links to the normative command and release documents.

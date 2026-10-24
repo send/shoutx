@@ -379,12 +379,16 @@ proceed to implementation, parser tests and Linux/Windows hosted effects.
 Do not add secret commands or resume version changes, tagging or publication as
 part of PATH. No release version is approved by this handoff.
 
-PR #142 implements the PATH contract and tests; scoped native hosted effects
+PR #142 merged as `0fe8114` with the PATH contract and tests; scoped native hosted effects
 have passed as recorded in the [Azure evidence](compatibility/azure-pipelines.md#path-hosted-observations).
-The remaining handoff is latest-head CI/review convergence and maintainer
-merge direction, not another PATH investigation or release preparation.
+PATH CI/review and merge are complete. Do not resume PATH investigation or
+release preparation as part of the next task.
 
 Secret support requires a separate boundary discussion before implementation.
+The reviewed mask-registration proposal and finite verification plan are ready
+for maintainer discussion. The next gate is approval of the proposed boundary
+and tradeoffs, not a secret implementation or release action. No secret hosted
+measurements have been claimed; the linked proposal specifies the adoption tests.
 Its discussion context, investigation principles and unresolved questions have
 one home in [the secret discussion record](decisions/azure-secret-boundary.md). Read that
 record when resuming secret work; do not reconstruct the decision from chat or

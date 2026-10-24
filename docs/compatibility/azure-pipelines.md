@@ -47,6 +47,68 @@ These are source observations, not a PATH acceptance
 contract or hosted verification. The pin does not establish that later hosted
 Agents match it. PATH-specific hosted observations are recorded below.
 
+## Secret source observations
+
+Inspected on 2026-10-24 at the same pinned Agent commit; these observations
+inform the [proposed secret boundary](../decisions/azure-secret-boundary.md),
+not an implemented command or a hosted secrecy guarantee.
+
+- [Task command handlers](https://github.com/microsoft/azure-pipelines-agent/blob/efa064fee06c75b31cabc0451857ad1e294649c7/src/Agent.Worker/TaskCommandExtension.cs)
+  send decoded `task.setsecret` data to `TaskCommandHelper.AddSecret`, which
+  ignores empty input and calls the host masker for nonempty data. The
+  `task.setvariable` secret branch is different: it checks multiline input
+  against `Environment.NewLine` and a knob, registers escaped command data,
+  and later applies variable restrictions and assignment.
+- [LoggedSecretMasker](https://github.com/microsoft/azure-pipelines-agent/blob/efa064fee06c75b31cabc0451857ad1e294649c7/src/Agent.Sdk/SecretMasking/LoggedSecretMasker.cs)
+  delegates value registration without logging the value. Its `MinSecretLength`
+  setter caps a requested threshold at 6. This is a wrapper observation, not
+  evidence of the active job threshold, underlying length semantics or hosted
+  acceptance of every six-scalar value.
+- [AgentKnobs](https://github.com/microsoft/azure-pipelines-agent/blob/efa064fee06c75b31cabc0451857ad1e294649c7/src/Agent.Sdk/Knob/AgentKnobs.cs)
+  defines `MaskedSecretMinLength` from runtime/environment
+  `AZP_IGNORE_SECRETS_SHORTER_THAN`, with built-in default `0`.
+  `ExecutionContext.InitializeJob` assigns this setting to the wrapper and
+  removes short entries. This disproves an inference that six is the default
+  minimum. The live job's selected value was not measured here.
+  [Upstream masker tests](https://github.com/microsoft/azure-pipelines-agent/blob/efa064fee06c75b31cabc0451857ad1e294649c7/src/Test/L0/SecretMaskerTests/SecretMaskerL0.cs)
+  specify `***` for registered short strings and spaces, and show configured
+  threshold removal. They are source expectations for backend fixtures, not
+  tests executed by this investigation. The top-level helper checks null/empty,
+  not null/whitespace; a universal whitespace rejection is not established.
+  [CompositeKnobSource](https://github.com/microsoft/azure-pipelines-agent/blob/efa064fee06c75b31cabc0451857ad1e294649c7/src/Agent.Sdk/Knob/CompositeKnobSource.cs)
+  chooses the first non-null source in declared order: this knob lists runtime,
+  environment, then default. `RuntimeKnobSource` reads the execution context's
+  variables; `ExecutionContext.GetVariableValueOrDefault` reads `Variables`.
+  Thus an explicit nonempty job variable `'0'` precedes the Agent environment
+  in this source path. This knob contract is source-derived here, not claimed
+  as an independently documented stable public interface or a live observation.
+- [HostContext](https://github.com/microsoft/azure-pipelines-agent/blob/efa064fee06c75b31cabc0451857ad1e294649c7/src/Microsoft.VisualStudio.Services.Agent/HostContext.cs)
+  selects legacy or OSS masker via a knob and installs JSON-string, URI-data
+  and backslash encoders. No general promise about arbitrary transformed
+  representations follows from that list. The adapters delegate registration
+  and redaction to their respective libraries; neither backend was executed
+  during this inspection and the hosted backend remains unobserved.
+- [ExecutionContext.Write](https://github.com/microsoft/azure-pipelines-agent/blob/efa064fee06c75b31cabc0451857ad1e294649c7/src/Agent.Worker/ExecutionContext.cs)
+  normally calls the host masker before writing log messages, with an explicit
+  `canMaskSecrets` bypass parameter. The
+  [process handler](https://github.com/microsoft/azure-pipelines-agent/blob/efa064fee06c75b31cabc0451857ad1e294649c7/src/Agent.Worker/Handlers/ProcessHandler/ProcessHandler.cs)
+  tries command processing before ordinary line output. This is a source
+  route example, not a measurement of every task host or log destination.
+- [WorkerCommandManager](https://github.com/microsoft/azure-pipelines-agent/blob/efa064fee06c75b31cabc0451857ad1e294649c7/src/Agent.Worker/WorkerCommandManager.cs)
+  returns false on parse failure and has warning/error paths containing command
+  input. Its processed-command debug message is in `finally`, after the handler
+  attempt, and unescapes the input. This bounded inspection does not show a
+  blanket setsecret echo-suppression rule or prove every task host's behavior;
+  it motivates registration-step log checks and the proposal's debug-off
+  precondition, not a claim of a newly reproduced vulnerability.
+
+The [official logging-command documentation](https://learn.microsoft.com/en-us/azure/devops/pipelines/scripts/logging-commands?view=azure-devops#setsecret-register-a-value-as-a-secret)
+describes job-duration registration and subsequent masking, excludes previous
+occurrences, and recommends registering transformed values explicitly. Its
+general guidance distinguishes complete secrets from fragments and warns
+against argv transport. No synthetic secret experiment has yet been run for
+this design; the finite proposed tests own the remaining measurements.
+
 ## Verification status
 
 Local checks on macOS arm64, 2026-10-20:

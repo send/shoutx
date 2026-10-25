@@ -7,10 +7,11 @@ appropriate owner and replace the duplicate with a link.
 
 | Information | Authoritative source |
 | --- | --- |
-| Product boundary, v1 readiness and coverage inventory, applicability profile, and accepted cross-cutting invariants | [`design.md`](design.md) |
+| Product boundary, GitHub v1 readiness and coverage inventory, applicability profile, and accepted cross-cutting invariants | [`design.md`](design.md) |
+| Azure coverage proposals, their row rationale and relative priorities, delegated by the design index | [`azure-coverage.md`](azure-coverage.md); the handoff records the maintainer-selected task |
 | Adversary, trust assumptions, assets, and attack inventory | [`threat-model.md`](threat-model.md) |
 | Observable CLI behavior for one destination | [`commands/`](commands/) |
-| Rationale, alternatives, and reconsideration conditions | [`decisions/`](decisions/) |
+| Contract decision rationale, alternatives, and reconsideration conditions | [`decisions/`](decisions/) |
 | Versioned observations about external parsers and runtimes, including minimal retained evidence projections | [`compatibility/`](compatibility/) and its [`evidence/`](compatibility/evidence/) subdirectory |
 | Shared verification policy | [`test-plan.md`](test-plan.md) |
 | Release eligibility, compatibility maintenance/incident response, and publication policy | [`release.md`](release.md) |

@@ -281,6 +281,16 @@ and its focused follow-up completed successfully without denied inspections.
 The follow-up confirmed the substantive findings were addressed. Scoped hosted
 admission is satisfied; release preparation and merge authorization are separate.
 
+## Coverage source observations
+
+On 2026-10-25, the coverage assessment made a limited check of
+[`TaskCommandExtension` at the existing source pin](https://github.com/microsoft/azure-pipelines-agent/blob/efa064fee06c75b31cabc0451857ad1e294649c7/src/Agent.Worker/TaskCommandExtension.cs).
+It registers `TaskDebugCommand`; its `debug` handler passes decoded command
+data to `context.Debug`. This task command is absent from the checked official
+logging-command inventory. This is source evidence for a candidate alternative,
+not hosted admission, formatter safety or an implemented shoutx command.
+No new hosted experiment was run for the coverage assessment.
+
 ## Official references
 
 - [Logging commands](https://learn.microsoft.com/en-us/azure/devops/pipelines/scripts/logging-commands?view=azure-devops)

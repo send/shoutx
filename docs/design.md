@@ -266,11 +266,16 @@ by this adoption contract.
 
 ## Azure Pipelines profile
 
+The [Azure practical coverage inventory](azure-coverage.md) owns Azure surface
+classifications and proposed priorities. It is a coverage assessment, not an
+extension of the command contracts or this applicability profile.
+
 The current source implements variable, warning/error and PATH writers described
 by the [Azure command contract](commands/azure-pipelines.md). It is not included
 in v1.0.0. The command contract owns destination-specific input and newline
 rules. PATH uses the native producer OS dialect, without extending this profile
-to cross-OS producers or containers. Work ordering is owned by the
+to cross-OS producers or containers. The coverage inventory proposes priorities;
+the maintainer-selected task is owned by the
 [current handoff](implementation-plan.md#current-handoff-status).
 The [mask contract](commands/azure-pipelines-mask.md) is implemented, with scoped
 hosted results in the [compatibility record](compatibility/azure-pipelines.md#mask-hosted-observations).

@@ -415,15 +415,19 @@ fixture ordering did not affect correctness. No third implementation review is
 needed for evidence-only documentation. PR #143 merged with explicit maintainer
 direction; that merge does not authorize publication.
 
-The next bounded task is issue #141: the user-facing
-[command protection guide](command-protection.md). Cover every implemented
-command and variant, explain protected attack paths and caller responsibilities,
-distinguish published GitHub commands from unreleased Azure commands, and link
-to existing contracts rather than duplicating normative input rules. Review for
-overstated guarantees and verify documentation-only CI plus latest-head Codex
-before presenting a merge-ready PR. Do not add commands, broaden guarantees,
-restart completed runtime investigations or resume release work. New sensitive
-attack paths follow SECURITY.md, not public issue details.
+Issue #141 completed in PR #144, merged as `f1e49d3`: the user-facing
+[command protection guide](command-protection.md) covers every implemented
+command and variant. Independent Fable clarifications were incorporated and
+latest-head CI/Codex passed. The maintainer also reviewed the Japanese reference
+translation; the English guide remains the public source.
+
+The current bounded task is the [Azure coverage assessment](azure-coverage.md).
+That inventory owns classifications, rationale and proposed follow-up ordering;
+do not duplicate its decisions here. Complete independent review, documentation
+checks and latest-head CI/Codex convergence, then present the assessment for
+merge and maintainer selection of the next implementation scope. No candidate
+implementation, profile expansion, new hosted matrix or release work is
+authorized by this task. New sensitive attack paths follow SECURITY.md.
 
 Follow the ordered [release-preparation gates](release.md#next-release-preparation)
 for packaging checks and exact-source evidence when release preparation resumes

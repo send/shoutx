@@ -322,6 +322,7 @@ jobs:
           python -B tests/azure-hosted/test_metadata.py
           python -B tests/azure-hosted/test_mask_stdin.py
           python -B tests/azure-hosted/test_secret_stdin.py
+          python -B tests/azure-hosted/test_secret_verify.py
           python -B tests/azure-hosted/test_mask_cases.py
           python -B tests/azure-hosted/test_mask_verify.py
       - name: Verify pinned .NET SDK

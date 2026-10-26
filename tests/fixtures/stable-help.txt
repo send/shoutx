@@ -30,3 +30,5 @@ Azure Pipelines commands (unreleased):
   shoutx azure-pipelines:error   [--file FILE] [--line N] [--column N] [--code CODE] [MESSAGE]
   shoutx azure-pipelines:path [PATH]
   shoutx azure-pipelines:mask [--each-line]
+  shoutx azure-pipelines:build-number [NUMBER]
+  shoutx azure-pipelines:build-tag [TAG]

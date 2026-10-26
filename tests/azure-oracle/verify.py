@@ -34,13 +34,13 @@ def run(args, **kwargs):
 def corpus(binary):
     cases = []
 
-    def add(args, data, event, properties):
+    def add(args, data, event, properties, area="task"):
         result = run([str(binary), *args], input=data.encode("utf-8"))
         if result.stderr:
             raise RuntimeError("producer wrote diagnostics")
         row = {"record": base64.b64encode(result.stdout).decode("ascii"),
                "decode": True, "event": event, "properties": properties,
-               "data": data, "match": True}
+               "data": data, "match": True, "area": area}
         cases.append(row)
 
     samples = ["", " ", "\r", "\n", "\r\n", "a\r\nb\rc\n\n",
@@ -78,6 +78,18 @@ def corpus(binary):
         # Native PATH policy, not the variable/issue newline policy.
         tail = sample.translate(str.maketrans("", "", '\r\n;"' if os.name == "nt" else "\r\n:"))
         add(["azure-pipelines:path"], root + tail, "prependpath", {})
+
+    for command, event in [("build-number", "updatebuildnumber"), ("build-tag", "addbuildtag")]:
+        values = ["v1.2.3", "日本語😀ไทย", "\u0301\u200b", "%0A%AZP25;]",
+                  "x" * 255, "😀" * 127 + "x", "##[error]data"]
+        for _ in range(100):
+            values.append("x" + "".join(chr(rng.choice([0x301, 0xFEFF, 0x4E00, 0x1F600, 0x627, 0x915])) for _ in range(30)))
+        for value in values:
+            add(["azure-pipelines:" + command], value, event, {}, "build")
+        original_metadata = cases[-1]
+        cases.append(dict(original_metadata, area="task", match=False))
+        cases.append(dict(original_metadata, data="wrong metadata", match=False))
+        cases.append(dict(original_metadata, properties={"unexpected": "yes"}, match=False))
 
     # Prove the matcher notices a configuration mismatch, wrong command,
     # property mismatch, payload mismatch, and an additional physical line.
@@ -150,7 +162,7 @@ def main():
         payload = "".join(json.dumps(c, ensure_ascii=True) + "\n" for c in cases).encode()
         result = run(["dotnet", str(work / "out/Oracle.dll")], input=payload, env=env)
         report = json.loads(result.stdout)
-        if report != {"cases": len(cases), "negativeControls": 11} or result.stderr:
+        if report != {"cases": len(cases), "negativeControls": 17} or result.stderr:
             raise RuntimeError("missing source-parser results")
         print(json.dumps({"agentCommit": COMMIT, "scope": "source-parser-only", **report}))
 

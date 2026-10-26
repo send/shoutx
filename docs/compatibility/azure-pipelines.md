@@ -291,6 +291,35 @@ logging-command inventory. This is source evidence for a candidate alternative,
 not hosted admission, formatter safety or an implemented shoutx command.
 No new hosted experiment was run for the coverage assessment.
 
+## Build metadata source observations
+
+Inspected on 2026-10-26 at the existing Agent source pin:
+
+- [`BuildCommandExtension`](https://github.com/microsoft/azure-pipelines-agent/blob/efa064fee06c75b31cabc0451857ad1e294649c7/src/Agent.Worker/Build/BuildCommandExtension.cs)
+  registers `updatebuildnumber` and `addbuildtag`. Number updates require
+  nonempty decoded data, update the job's build-number variable, and queue an
+  asynchronous backend update. Tag handling first calls `String.Trim()`, then
+  requires nonempty data and queues its backend operation. Its completion check
+  uses ordinal-insensitive tag membership, not exact spelling equality.
+- [`BuildServer`](https://github.com/microsoft/azure-pipelines-agent/blob/efa064fee06c75b31cabc0451857ad1e294649c7/src/Agent.Worker/Build/BuildServer.cs)
+  sends numbers as an update body. Tags use a one-element body array only when
+  `UseBuildTagsBodyApi` is enabled; the legacy URL-path route can alter reserved
+  characters. The pinned
+  [knob](https://github.com/microsoft/azure-pipelines-agent/blob/efa064fee06c75b31cabc0451857ad1e294649c7/src/Agent.Sdk/Knob/AgentKnobs.cs)
+  reads `AGENT_USE_BUILD_TAGS_BODY_API` from job variables, then environment,
+  and defaults to false. The fixture must configure the job variable explicitly.
+- The [official run-number rules](https://learn.microsoft.com/en-us/azure/devops/pipelines/process/run-number?view=azure-devops#how-large-can-a-run-number-be-and-what-characters-can-i-use)
+  specify a 255-character ceiling, disallowed punctuation and no final period.
+  The wording does not identify the counting unit for supplementary characters.
+- The [logging-command reference](https://learn.microsoft.com/en-us/azure/devops/pipelines/scripts/logging-commands?view=azure-devops#addbuildtag-add-a-tag-to-the-build)
+  disallows colon in the tag operation. This is separate from header encoding.
+
+These are source/documentation observations, not an accepted CLI contract or
+hosted admission. The implementation must reject identity-changing input rather
+than silently trim it. Verify service metadata independently of the job variable;
+the variable can be assigned before the asynchronous backend operation succeeds.
+No metadata hosted run has yet been executed for this increment.
+
 ## Official references
 
 - [Logging commands](https://learn.microsoft.com/en-us/azure/devops/pipelines/scripts/logging-commands?view=azure-devops)

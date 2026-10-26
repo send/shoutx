@@ -149,6 +149,8 @@ fn configured_command_table_is_the_complete_expected_surface() {
         );
     }
     const EXPECTED: &[&str] = &[
+        "azure-pipelines:build-number",
+        "azure-pipelines:build-tag",
         "azure-pipelines:mask",
         "azure-pipelines:variable",
         "azure-pipelines:warning",

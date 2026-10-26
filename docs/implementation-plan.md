@@ -421,13 +421,27 @@ command and variant. Independent Fable clarifications were incorporated and
 latest-head CI/Codex passed. The maintainer also reviewed the Japanese reference
 translation; the English guide remains the public source.
 
-The current bounded task is the [Azure coverage assessment](azure-coverage.md).
-That inventory owns classifications, rationale and proposed follow-up ordering;
-do not duplicate its decisions here. Complete independent review, documentation
-checks and latest-head CI/Codex convergence, then present the assessment for
-merge and maintainer selection of the next implementation scope. No candidate
-implementation, profile expansion, new hosted matrix or release work is
-authorized by this task. New sensitive attack paths follow SECURITY.md.
+The [Azure coverage assessment](azure-coverage.md) completed in PR #145,
+merged as `ea1efb8` after independent Fable review and latest-head CI/Codex
+convergence. That inventory retains proposed classifications and priorities.
+
+On 2026-10-26 the maintainer selected build metadata as the next bounded
+implementation: only dedicated writers for `build.updatebuildnumber` and
+`build.addbuildtag`. Specify their typed CLI and field rules before coding,
+reuse the existing Azure encoder and parser evidence, and verify the actual
+metadata effects on the existing native Ubuntu/Windows profile using dedicated
+synthetic verification runs. Producer success and local parser equality alone
+do not establish the service effect. Keep number and tag validation distinct;
+the [source observations](compatibility/azure-pipelines.md#build-metadata-source-observations)
+record their different handler behavior.
+
+Completion requires implementation, producer/parser and finite hosted checks,
+user-facing documentation, independent Fable review and latest-head CI/Codex
+convergence in a merge-ready PR. No silent renaming or sanitization, secret
+assignment, formatter, release-name operation, profile expansion, release work
+or merge is authorized by this task. New sensitive attack paths follow
+SECURITY.md; unrelated paths become confidential follow-up rather than expanding
+this increment.
 
 Follow the ordered [release-preparation gates](release.md#next-release-preparation)
 for packaging checks and exact-source evidence when release preparation resumes

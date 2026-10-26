@@ -30,6 +30,12 @@ fn output(bytes: &[u8]) -> Result<(), ShoutxError> {
 fn run() -> Result<(), ShoutxError> {
     let args: Vec<OsString> = std::env::args_os().skip(1).collect();
     match shoutx::prepare(args)? {
+        Action::AzureBuildMetadata { kind, value } => {
+            let value = read_value(value.as_ref())?;
+            output(&shoutx::azure_pipelines::encode_build_metadata(
+                kind, &value,
+            )?)
+        }
         Action::AzureMask { each_line } => {
             let value = read_value(None)?;
             output(&shoutx::azure_pipelines::encode_mask(&value, each_line)?)

@@ -162,7 +162,7 @@ Details: [matcher contract and tests](commands/github-actions-problem-matchers.m
 
 ## Azure Pipelines
 
-These five commands are implemented in the source tree but **unreleased and
+These commands are implemented in the source tree but **unreleased and
 absent from v1.0.0**. Use the [Azure profile](design.md#azure-pipelines-profile)
 and [hosted verification record](compatibility/azure-pipelines.md) when evaluating
 them. All write to the active Agent stdout command stream, not GitHub files.
@@ -204,6 +204,28 @@ tasks, not the producing process, and Agent restrictions can prevent it.
 
 Details: [PATH contract](commands/azure-pipelines.md#path),
 [hosted effects](compatibility/azure-pipelines.md#path-hosted-observations).
+
+### Build numbers and tags
+
+`azure-pipelines:build-number` requests a new run number;
+`azure-pipelines:build-tag` requests one tag addition. They reject line breaks
+instead of allowing a tool result to introduce another logging command, and
+preserve accepted literal escapes and delimiters as data. Tags with boundary
+whitespace are rejected rather than silently trimmed. These writers do not
+choose whether a label is truthful or safe for downstream selection.
+
+```sh
+shoutx azure-pipelines:build-number -- "$GENERATED_VERSION"
+shoutx azure-pipelines:build-tag -- "$CLASSIFICATION"
+```
+
+Supply values as quoted data and propagate failure. These are non-secret
+metadata channels, not secret storage. Callers authorize labels and coordinate
+number updates; Azure owns permissions, tag equivalence and display. A
+successful write does not acknowledge the server update. Tag use requires the
+additional job-level setting in the [Azure profile](design.md#azure-pipelines-profile).
+Hosted admission is pending; see the [metadata contract](commands/azure-pipelines.md#build-metadata)
+and [evidence record](compatibility/azure-pipelines.md#build-metadata-source-observations).
 
 ### Mask registration
 

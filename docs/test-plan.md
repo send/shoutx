@@ -55,7 +55,8 @@ compatibility. Required CI and release gates remain unchanged.
 Default and `--no-default-features` builds expose the same complete command
 table: `output`, `env`, `state`, `path`, `artifacts`, `mask`, `notice`, `warning`,
 `error`, `debug`, `group`, `endgroup`, `add-matcher`, and `remove-matcher` in
-the GitHub namespace, plus Azure `variable`, `warning`, `error`, and `path`.
+the GitHub namespace, plus Azure `variable`, `warning`, `error`, `path`, `mask`,
+`build-number` and `build-tag`.
 Cargo's only feature entry is an empty `default` set. The former research feature
 and test `required-features` are removed. CI and release builds run all contract
 tests, including mask and annotation, without a feature opt-in. Focused stdout

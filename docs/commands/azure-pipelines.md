@@ -79,6 +79,57 @@ attacker-selected executable lookup safe. Changes apply to subsequent tasks,
 not the producing process. Settable-variable restrictions and other Agent
 conditions can prevent the effect even after a successful write.
 
+### Build metadata
+
+These writers are implemented; hosted admission is pending.
+
+```text
+shoutx azure-pipelines:build-number [NUMBER]
+shoutx azure-pipelines:build-tag [TAG]
+```
+
+Each command takes one optional operand or bounded non-terminal stdin. Explicit
+operands ignore stdin. Only help/version and `--` are options; use `--` before
+dash-prefixed data. Extra operands and unknown options exit 2. Malformed text in
+the first operand position exits 1 before unknown-option classification, as for
+Azure PATH. There is no NAME, normalization option or batch mode.
+
+Input must be nonempty strict UTF-8 without NUL. The shared 1 MiB acquisition
+limit applies before validation; semantic values are limited to 255 UTF-16 code
+units (supplementary scalars count as two). Reject U+0000–U+001F and
+U+007F–U+009F, including CR/LF anywhere and final producer newlines. No final
+boundary is consumed. Use `printf '%s'`, not `echo`.
+
+NUMBER additionally rejects `"`, `/`, `\`, `:`, `<`, `>`, `'`, `|`, `?`, `@`,
+`*` and a final ASCII period. TAG rejects colon and leading/trailing whitespace
+in the fixed set U+0009–U+000D, U+0020, U+0085, U+00A0, U+1680,
+U+2000–U+200A, U+2028, U+2029, U+202F, U+205F and U+3000. The boundary check
+prevents Agent trimming; interior non-control whitespace remains data.
+Other Unicode, literal escape text and delimiters remain unchanged data.
+No trimming, case folding, normalization or decoration is performed.
+
+Emit exactly one fixed header, escaped data and LF:
+
+```text
+##vso[build.updatebuildnumber]NUMBER
+##vso[build.addbuildtag]TAG
+```
+
+Use the [wire escaping table](#wire-contract) without properties. Apply complete
+validation and checked record sizing before output, with the existing 8 MiB
+record ceiling. Validation failures exit 1 with empty stdout and fixed,
+value-free diagnostics; shared I/O behavior applies. The tag length ceiling is
+a producer policy, not an assertion of the provider's maximum.
+
+These are non-secret metadata operations. Callers authorize names, labels and
+their downstream use and coordinate concurrent updates. Azure owns permissions,
+quotas, duplicate/case identity and display. A number replaces run metadata; a
+tag requests one addition, not a new duplicate entity or replacement of earlier
+tag spelling. Producer success does not acknowledge asynchronous backend
+acceptance. The job's build-number variable alone is not proof of server state.
+The design-owned native profile and its additional tag API setting apply;
+setting only a child environment does not configure the consumer.
+
 ## Validation and limits
 
 All text must be strict UTF-8 without NUL. Values/messages have the shared
@@ -158,6 +209,14 @@ The writer does not sanitize other process output or authorize later shell use.
 
 ## Verification
 
+- Build metadata: exact wire and argv/stdin parity; Unicode and literal escapes;
+  every forbidden punctuation/control and tag whitespace boundary; empty,
+  malformed, NUL, 255/256 UTF-16-unit values (including supplementary scalars),
+  acquisition limits, fixed diagnostics and empty stdout on rejection. Check
+  the distinct build area in the pinned parser, including wrong-area controls.
+  The [dedicated hosted fixture](../../tests/azure-hosted/README.md#build-metadata-admission)
+  verifies serialized updates and exact service tags/numbers on both native OS
+  generations. Missing, wrong, extra and wrong-source API results must fail.
 - Exact CLI bytes, argv/stdin parity, missing/duplicate/unknown options, `--`,
   help/version, invalid UTF-8/NUL, all field limits and empty stdout on failure.
 - Literal escapes, CR/LF, header delimiters, embedded command prefixes, leading

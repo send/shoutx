@@ -109,6 +109,10 @@ pub struct AnnotationRequest {
 
 #[derive(Debug)]
 pub enum Action {
+    AzureBuildMetadata {
+        kind: crate::azure_pipelines::BuildMetadata,
+        value: Option<OsString>,
+    },
     AzureMask {
         each_line: bool,
     },
@@ -135,6 +139,8 @@ pub enum Action {
 
 #[derive(Clone, Copy)]
 enum Command {
+    AzureBuildNumber,
+    AzureBuildTag,
     AzureMask,
     AzurePath,
     AzureVariable,
@@ -157,6 +163,8 @@ enum Command {
 }
 
 const COMMANDS: &[(&str, Command)] = &[
+    ("azure-pipelines:build-number", Command::AzureBuildNumber),
+    ("azure-pipelines:build-tag", Command::AzureBuildTag),
     ("azure-pipelines:mask", Command::AzureMask),
     ("azure-pipelines:variable", Command::AzureVariable),
     ("azure-pipelines:warning", Command::AzureWarning),
@@ -220,6 +228,20 @@ pub fn parse(args: Vec<OsString>) -> Result<Action, ShoutxError> {
         .find_map(|(name, kind)| (*name == command).then_some(*kind))
         .ok_or_else(|| ShoutxError::usage("unknown command"))?;
     let destination = match command {
+        Command::AzureBuildNumber | Command::AzureBuildTag => {
+            let parsed = parse_path(it.collect(), true)?;
+            return Ok(match parsed {
+                Action::AzurePath(request) => Action::AzureBuildMetadata {
+                    kind: if matches!(command, Command::AzureBuildNumber) {
+                        crate::azure_pipelines::BuildMetadata::Number
+                    } else {
+                        crate::azure_pipelines::BuildMetadata::Tag
+                    },
+                    value: request.value,
+                },
+                other => other,
+            });
+        }
         Command::AzureMask => return parse_azure_mask(it.collect()),
         Command::AzurePath => {
             return parse_path(it.collect(), true);

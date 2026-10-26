@@ -47,6 +47,8 @@ pattern = re.compile(
 commands = [match.group(1) for match in pattern.finditer("\n".join(code))]
 stable = {
     "azure-pipelines:mask",
+    "azure-pipelines:build-number",
+    "azure-pipelines:build-tag",
     "azure-pipelines:variable",
     "azure-pipelines:warning",
     "azure-pipelines:error",

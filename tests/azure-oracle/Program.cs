@@ -23,7 +23,9 @@ class Program
     {
         if (!Command.TryParse(line, decode, out var command)) return false;
         var properties = expected.GetProperty("properties").EnumerateObject().ToArray();
-        return command.Area == "task"
+        var area = expected.TryGetProperty("area", out var requestedArea)
+            ? requestedArea.GetString() : "task";
+        return command.Area == area
             && command.Event == expected.GetProperty("event").GetString()
             && command.Data == expected.GetProperty("data").GetString()
             && command.Properties.Count == properties.Length

@@ -1,0 +1,66 @@
+# Manual, trusted source only. No queue-time parameter overrides.
+trigger: none
+pr: none
+name: shoutx-metadata-initial
+
+parameters:
+  - name: hosts
+    type: object
+    default:
+      - name: linux
+        image: ubuntu-24.04
+        depends: []
+      - name: windows
+        image: windows-2025
+        depends: [linux]
+  - name: cases
+    type: object
+    default: [0, 1, 2, 3]
+
+jobs:
+  - ${{ each host in parameters.hosts }}:
+      - job: ${{ host.name }}
+        dependsOn: ${{ host.depends }}
+        timeoutInMinutes: 15
+        pool:
+          vmImage: ${{ host.image }}
+        variables:
+          DECODE_PERCENTS: 'true'
+          AGENT_USE_BUILD_TAGS_BODY_API: 'true'
+        steps:
+          - checkout: self
+            persistCredentials: false
+          - pwsh: |
+              $ErrorActionPreference = 'Stop'
+              $PSNativeCommandUseErrorActionPreference = $true
+              cargo build --release --locked --no-default-features
+              python -B tests/azure-hosted/test_metadata.py
+            displayName: Build reviewed source and verify controls
+          - task: PythonScript@0
+            displayName: Verify unchanged metadata baseline
+            inputs:
+              scriptSource: filePath
+              scriptPath: tests/azure-hosted/metadata.py
+              arguments: verify ${{ host.name }} -1
+            env:
+              SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+          - ${{ each index in parameters.cases }}:
+              - ${{ if eq(host.name, 'linux') }}:
+                  - bash: |
+                      set -euo pipefail
+                      python3 -B tests/azure-hosted/metadata.py emit linux ${{ index }}
+                    displayName: Emit metadata ${{ index }}
+              - ${{ else }}:
+                  - pwsh: |
+                      $ErrorActionPreference = 'Stop'
+                      $PSNativeCommandUseErrorActionPreference = $true
+                      python -B tests/azure-hosted/metadata.py emit windows ${{ index }}
+                    displayName: Emit metadata ${{ index }}
+              - task: PythonScript@0
+                displayName: Verify metadata ${{ index }}
+                inputs:
+                  scriptSource: filePath
+                  scriptPath: tests/azure-hosted/metadata.py
+                  arguments: verify ${{ host.name }} ${{ index }}
+                env:
+                  SYSTEM_ACCESSTOKEN: $(System.AccessToken)

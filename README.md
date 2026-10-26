@@ -174,6 +174,8 @@ Azure Pipelines commands (unreleased):
   shoutx azure-pipelines:error   [--file FILE] [--line N] [--column N] [--code CODE] [MESSAGE]
   shoutx azure-pipelines:path [PATH]
   shoutx azure-pipelines:mask [--each-line]
+  shoutx azure-pipelines:build-number [NUMBER]
+  shoutx azure-pipelines:build-tag [TAG]
 ```
 <!-- stable-command-surface:end -->
 
@@ -219,6 +221,12 @@ in the [mask verification evidence](docs/compatibility/azure-pipelines.md#mask-h
 See the [Azure contract](docs/commands/azure-pipelines.md), including consumer
 configuration and output-variable scope, and the
 [hosted verification record](docs/compatibility/azure-pipelines.md).
+
+The source also implements `azure-pipelines:build-number [NUMBER]` and
+`azure-pipelines:build-tag [TAG]`; consult the verification record above. Use
+`--` before untrusted argv data, or newline-free stdin. They do not trim or
+rename values. See the [metadata contract](docs/commands/azure-pipelines.md#build-metadata)
+and the [profile's required tag setting](docs/design.md#azure-pipelines-profile).
 
 ## GitHub Actions writers
 

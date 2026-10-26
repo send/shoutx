@@ -122,7 +122,7 @@ shoutx github-actions:error   [ANNOTATION OPTIONS] [MESSAGE]
 ```
 
 All fourteen GitHub commands are included in default and `--no-default-features` builds,
-alongside the five unreleased Azure commands.
+alongside the seven unreleased Azure commands.
 The former research feature is removed. Stdout consumer compatibility is scoped
 by the adoption contract below; binary availability does not broaden it.
 
@@ -279,6 +279,10 @@ the maintainer-selected task is owned by the
 [current handoff](implementation-plan.md#current-handoff-status).
 The [mask contract](commands/azure-pipelines-mask.md) is implemented, with scoped
 hosted results in the [compatibility record](compatibility/azure-pipelines.md#mask-hosted-observations).
+The [build metadata writers](commands/azure-pipelines.md#build-metadata) are
+implemented; the compatibility record owns hosted admission. Tags require trusted
+job variable `AGENT_USE_BUILD_TAGS_BODY_API: 'true'` before Agent job startup;
+the legacy URL-path API is excluded. This does not expand the OS/shell profile.
 
 Mask registration additionally requires trusted pipeline/job `variables:`
 configuration `AZP_IGNORE_SECRETS_SHORTER_THAN: '0'` before job startup,
@@ -414,6 +418,7 @@ separately under the [decision-record policy](decisions/README.md):
 - [GitHub Actions debug and group writers](decisions/github-actions-log-commands.md)
 - [GitHub Actions problem matcher writers](decisions/github-actions-problem-matchers.md)
 - [v1 CLI review](decisions/v1-cli-review.md)
+- [Azure build metadata writers](decisions/azure-build-metadata.md)
 - [Unstable GitHub Actions stdout command isolation](decisions/unstable-github-actions-stdout.md)
 - [Markdown output](decisions/markdown-output.md)
 - [GitHub Actions artifact declarations](decisions/github-actions-artifacts.md)

@@ -1,5 +1,30 @@
 # Azure hosted smoke
 
+## Build metadata admission
+
+`azure-metadata.yml` is a dedicated manual fixture for the two metadata writers.
+Use a trusted reviewed revision without parameter overrides. It changes only
+its own synthetic run number and tags. Linux then Windows run serially, with
+four emission/verification pairs per OS, to avoid races on the shared number.
+Each job configures percent decoding and the body-based tag API explicitly.
+
+Baseline verification runs before any metadata emission on each OS. Cases cover
+ordinary labels, Unicode/literal escapes/reserved tag punctuation, and the
+255-UTF-16-unit cap and number boundary spaces. Rejected input stays captured
+off the Agent stream.
+After each producer task, read the exact number and full tag collection from the
+build API and compare the next-task number too. The token is mapped only to
+read-only verifier tasks; use project-limited job authorization. The verifier
+rejects redirects, bounds responses/retries, checks build/source identities,
+and outputs only hashes, counts and observed Agent/image/job identities.
+
+Run `python3 -B tests/azure-hosted/test_metadata.py` for offline missing, extra,
+changed and identity-mismatch controls. These tests run in GitHub CI and in each
+hosted job. The verifier also checks producer timeline tasks for clean success,
+without warnings or issues. Inspect all job/step results before recording
+admission; an emitted command or local parser pass alone does not establish
+backend acceptance. The compatibility record owns admission status.
+
 ## Mask registration admission
 
 The separate manual pipeline `azure-mask.yml` implements the

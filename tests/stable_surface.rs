@@ -77,6 +77,23 @@ fn packaged_binary_has_exact_help_and_version() {
 
 #[test]
 fn packaged_binary_exposes_complete_surface() {
+    for (command, event) in [
+        ("build-number", "updatebuildnumber"),
+        ("build-tag", "addbuildtag"),
+    ] {
+        verify(
+            &[&format!("azure-pipelines:{command}"), "α😀%0A;]"],
+            0,
+            format!("##vso[build.{event}]α😀%AZP250A%3B%5D\n").as_bytes(),
+            b"",
+        );
+        verify(
+            &[&format!("azure-pipelines:{command}"), "x\n"],
+            1,
+            b"",
+            b"error: Azure metadata contains a control character\n",
+        );
+    }
     let path = if cfg!(windows) { "C:\\tools" } else { "/tools" };
     verify(
         &["azure-pipelines:path", path],

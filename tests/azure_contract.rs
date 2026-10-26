@@ -38,6 +38,117 @@ fn check(command: &str, args: &[&str], input: &[u8], status: i32, expected: &[u8
 }
 
 #[test]
+fn build_metadata_exact_bytes_and_rejections() {
+    check(
+        "build-number",
+        &[" v1 interior "],
+        b"",
+        0,
+        b"##vso[build.updatebuildnumber] v1 interior \n",
+    );
+    for (command, wire) in [
+        ("build-number", "updatebuildnumber"),
+        ("build-tag", "addbuildtag"),
+    ] {
+        for value in [
+            "v1.2.3",
+            "日本語😀ไทย",
+            "\u{301}α",
+            "literal%0A%AZP25;]",
+            "-label",
+        ] {
+            let data = value
+                .replace('%', "%AZP25")
+                .replace(';', "%3B")
+                .replace(']', "%5D");
+            let expected = format!("##vso[build.{wire}]{data}\n");
+            check(command, &["--", value], b"ignored", 0, expected.as_bytes());
+            check(command, &[], value.as_bytes(), 0, expected.as_bytes());
+        }
+        for value in [
+            "",
+            "SECRET\n",
+            "SECRET\r",
+            "SECRET\r\n",
+            "x\nSECRET",
+            "x\tSECRET",
+            "x\u{7f}SECRET",
+            "x\u{85}SECRET",
+        ] {
+            check(command, &["--", value], b"", 1, b"");
+            check(command, &[], value.as_bytes(), 1, b"");
+        }
+        for input in [&b"SECRET\0"[..], &b"SECRET\xff"[..]] {
+            check(command, &[], input, 1, b"");
+        }
+        for code in (0..=0x1f).chain(0x7f..=0x9f) {
+            let value = format!("x{}SECRET", char::from_u32(code).unwrap());
+            check(command, &[], value.as_bytes(), 1, b"");
+            if code != 0 {
+                check(command, &["--", &value], b"", 1, b"");
+            }
+        }
+        for args in [
+            &["--unknown"][..],
+            &["x", "y"][..],
+            &["--first-line", "x"][..],
+        ] {
+            check(command, args, b"", 2, b"");
+        }
+        for value in ["x".repeat(255), format!("{}x", "😀".repeat(127))] {
+            check(
+                command,
+                &[],
+                value.as_bytes(),
+                0,
+                format!("##vso[build.{wire}]{value}\n").as_bytes(),
+            );
+        }
+        for value in [
+            "x".repeat(256),
+            "😀".repeat(128),
+            "x".repeat(VALUE_LIMIT + 1),
+        ] {
+            check(command, &[], value.as_bytes(), 1, b"");
+        }
+    }
+    for character in ['"', '/', '\\', ':', '<', '>', '\'', '|', '?', '@', '*'] {
+        check(
+            "build-number",
+            &[],
+            format!("SECRET{character}x").as_bytes(),
+            1,
+            b"",
+        );
+    }
+    check("build-number", &["SECRET."], b"", 1, b"");
+    check("build-tag", &["SECRET:x"], b"", 1, b"");
+    for scalar in [
+        ' ', '\u{a0}', '\u{1680}', '\u{2000}', '\u{200a}', '\u{2028}', '\u{2029}', '\u{202f}',
+        '\u{205f}', '\u{3000}',
+    ] {
+        for value in [format!("{scalar}SECRET"), format!("SECRET{scalar}")] {
+            check("build-tag", &[], value.as_bytes(), 1, b"");
+        }
+        let value = format!("x{scalar}y");
+        check(
+            "build-tag",
+            &[],
+            value.as_bytes(),
+            0,
+            format!("##vso[build.addbuildtag]{value}\n").as_bytes(),
+        );
+    }
+    check(
+        "build-tag",
+        &["--", "x/\\@?*,#y"],
+        b"",
+        0,
+        b"##vso[build.addbuildtag]x/\\@?*,#y\n",
+    );
+}
+
+#[test]
 fn mask_exact_values_and_line_selection() {
     for value in [" ", "\t", "\u{feff}日本語😀ไทย", "header", "a"] {
         let expected = format!("##vso[task.setsecret]{value}\n");

@@ -49,6 +49,13 @@ fn run() -> Result<(), ShoutxError> {
             let value = read_value(request.value.as_ref())?;
             output(&shoutx::azure_pipelines::encode_variable(&request, &value)?)
         }
+        Action::AzureSecretVariable(request) => {
+            shoutx::azure_pipelines::validate_variable(&request)?;
+            let value = read_value(None)?;
+            output(&shoutx::azure_pipelines::encode_secret_variable(
+                &request, &value,
+            )?)
+        }
         Action::AzureIssue(request) => {
             let value = read_value(request.message.as_ref())?;
             output(&shoutx::azure_pipelines::encode_issue(&request, &value)?)

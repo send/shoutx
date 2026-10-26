@@ -122,7 +122,7 @@ shoutx github-actions:error   [ANNOTATION OPTIONS] [MESSAGE]
 ```
 
 All fourteen GitHub commands are included in default and `--no-default-features` builds,
-alongside the seven unreleased Azure commands.
+alongside the eight unreleased Azure commands.
 The former research feature is removed. Stdout consumer compatibility is scoped
 by the adoption contract below; binary availability does not broaden it.
 
@@ -315,8 +315,8 @@ bounded security work; dependency-internal proofs are not admission gates.
 
 ### Proposed secret variable profile
 
-The [secret-variable proposal](commands/azure-pipelines-secret-variable.md) is
-not implemented. Its candidate profile reuses the native Azure profile and mask
+The [approved secret-variable contract](commands/azure-pipelines-secret-variable.md)
+is being implemented and is not yet admitted. Its candidate profile reuses the native Azure profile and mask
 prerequisites above, applying the settings to both producing and receiving jobs.
 Use ordinary script tasks and caller-authorized names permitted by task restrictions,
 without pre-existing read-only collisions, custom-task declared output overrides

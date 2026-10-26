@@ -35,6 +35,7 @@ pub const HELP: &str = concat!(
     "  shoutx github-actions:error   [--title TITLE] [--file FILE] [--line N] [--end-line N] [--column N] [--end-column N] [MESSAGE]\n",
     "\nAzure Pipelines commands (unreleased):\n",
     "  shoutx azure-pipelines:variable [--output] [--read-only] NAME [VALUE]\n",
+    "  shoutx azure-pipelines:secret-variable [--output] [--read-only] NAME\n",
     "  shoutx azure-pipelines:warning [--file FILE] [--line N] [--column N] [--code CODE] [MESSAGE]\n",
     "  shoutx azure-pipelines:error   [--file FILE] [--line N] [--column N] [--code CODE] [MESSAGE]\n",
     "  shoutx azure-pipelines:path [PATH]\n",

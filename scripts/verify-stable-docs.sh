@@ -50,6 +50,7 @@ stable = {
     "azure-pipelines:build-number",
     "azure-pipelines:build-tag",
     "azure-pipelines:variable",
+    "azure-pipelines:secret-variable",
     "azure-pipelines:warning",
     "azure-pipelines:error",
     "azure-pipelines:path",

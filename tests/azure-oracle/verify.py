@@ -73,6 +73,26 @@ def corpus(binary):
                 props.update(sourcepath=file, linenumber="1", columnnumber="2", code=code)
             add(args, data, "logissue", props)
 
+    secret_samples = [sample.replace("\r", "").replace("\n", "") for sample in samples]
+    secret_samples += ["x", "😀", " \t ", "$x(y))$", "x" * 16_384,
+                       "😀" * 4096, "%" * 16_384]
+    for output, read_only in [(False, False), (True, False), (False, True), (True, True)]:
+        flags = (["--output"] if output else []) + (["--read-only"] if read_only else [])
+        for data in secret_samples:
+            if data and "$(" not in data:
+                add(["azure-pipelines:secret-variable", *flags, "Credential"], data,
+                    "setvariable", {"variable": "Credential", "isSecret": "true",
+                                    "isOutput": str(output).lower(),
+                                    "isReadOnly": str(read_only).lower()})
+    secret_original = cases[-1]
+    for key in ["isSecret", "isOutput", "isReadOnly"]:
+        properties = dict(secret_original["properties"], **{key: "false"})
+        cases.append(dict(secret_original, properties=properties, match=False))
+    cases.append(dict(secret_original, match=False, properties=dict(
+        secret_original["properties"], unexpected="true")))
+    cases.append(dict(secret_original, match=False, record=base64.b64encode(
+        base64.b64decode(secret_original["record"]) + b"##vso[task.setsecret]extra\n").decode("ascii")))
+
     root = "C:\\" if os.name == "nt" else "/"
     for sample in samples:
         # Native PATH policy, not the variable/issue newline policy.
@@ -164,7 +184,7 @@ def main():
         payload = "".join(json.dumps(c, ensure_ascii=True) + "\n" for c in cases).encode()
         result = run(["dotnet", str(work / "out/Oracle.dll")], input=payload, env=env)
         report = json.loads(result.stdout)
-        if report != {"cases": len(cases), "negativeControls": 17} or result.stderr:
+        if report != {"cases": len(cases), "negativeControls": 22} or result.stderr:
             raise RuntimeError("missing source-parser results")
         print(json.dumps({"agentCommit": COMMIT, "scope": "source-parser-only", **report}))
 

@@ -217,6 +217,42 @@ pub fn encode_variable(request: &Variable, value: &[u8]) -> Result<Vec<u8>, Shou
     )
 }
 
+pub fn encode_secret_variable(request: &Variable, value: &[u8]) -> Result<Vec<u8>, ShoutxError> {
+    validate_variable(request)?;
+    validate_text(value, VALUE_LIMIT, true)?;
+    if value.len() > 16 * 1024 {
+        return Err(ShoutxError::failure(
+            "Azure secret value exceeds size limit",
+        ));
+    }
+    if value.is_empty() {
+        return Err(ShoutxError::failure("Azure secret value must not be empty"));
+    }
+    if value.iter().any(|b| matches!(b, b'\r' | b'\n')) {
+        return Err(ShoutxError::failure(
+            "Azure secret value contains a line boundary",
+        ));
+    }
+    if value.windows(2).any(|pair| pair == b"$(") {
+        return Err(ShoutxError::failure(
+            "Azure secret value contains variable syntax",
+        ));
+    }
+    record(
+        b"task.setvariable",
+        &[
+            (b"variable", os_bytes(&request.name)?),
+            (b"isSecret", b"true"),
+            (b"isOutput", if request.output { b"true" } else { b"false" }),
+            (
+                b"isReadOnly",
+                if request.read_only { b"true" } else { b"false" },
+            ),
+        ],
+        value,
+    )
+}
+
 fn number(value: &OsString) -> Result<Vec<u8>, ShoutxError> {
     let bytes = os_bytes(value)?;
     if bytes.is_empty() || bytes.len() > 10 || !bytes.iter().all(u8::is_ascii_digit) {

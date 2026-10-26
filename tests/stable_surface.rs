@@ -77,6 +77,54 @@ fn packaged_binary_has_exact_help_and_version() {
 
 #[test]
 fn packaged_binary_exposes_complete_surface() {
+    use std::io::Write;
+    for (flags, output, read_only) in [
+        (vec![], false, false),
+        (vec!["--output"], true, false),
+        (vec!["--read-only"], false, true),
+        (vec!["--output", "--read-only"], true, true),
+    ] {
+        let mut child = Command::new(binary())
+            .arg("azure-pipelines:secret-variable")
+            .args(flags)
+            .arg("Credential")
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .expect("failed to execute artifact");
+        child
+            .stdin
+            .take()
+            .unwrap()
+            .write_all("α😀%0A;]".as_bytes())
+            .unwrap();
+        let actual = child.wait_with_output().unwrap();
+        let expected = format!(
+            "##vso[task.setvariable variable=Credential;isSecret=true;isOutput={output};isReadOnly={read_only};]α😀%AZP250A%3B%5D\n"
+        );
+        assert!(
+            matches_result(
+                actual.status.code(),
+                &actual.stdout,
+                &actual.stderr,
+                0,
+                expected.as_bytes(),
+                b""
+            ),
+            "secret writer artifact mismatch"
+        );
+    }
+    verify(
+        &[
+            "azure-pipelines:secret-variable",
+            "Credential",
+            "forbidden-argv",
+        ],
+        2,
+        b"",
+        b"error: secret variable takes stdin only\n",
+    );
     for (command, event) in [
         ("build-number", "updatebuildnumber"),
         ("build-tag", "addbuildtag"),

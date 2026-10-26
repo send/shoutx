@@ -1,7 +1,7 @@
-# Azure Pipelines secret variable proposal
+# Azure Pipelines secret variable
 
-Status: Proposed, not implemented or admitted. Implementation requires maintainer
-approval. This proposal owns the candidate CLI, input rules and admission plan;
+Status: Design approved by the maintainer on 2026-10-27; implementation in progress,
+not admitted. This specification owns the CLI, input rules and admission plan;
 the [decision](../decisions/azure-secret-variable.md) owns rationale. Existing
 commands and the published release are unchanged.
 
@@ -109,7 +109,7 @@ metadata must not be dumped into a verifier's logs or artifacts.
 
 ## Finite implementation admission plan
 
-This goal designs the tests; it does not execute new hosted runs. Reuse the
+The approved implementation goal executes this finite plan. Reuse the
 existing parser, mask completed-log verifier and native fixtures rather than
 building an Agent test framework.
 

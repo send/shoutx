@@ -457,28 +457,29 @@ remain untested and are not part of the admission claim. Bounded API retries and
 the existing native-only profile were retained. PR #147 merged as `1c63099`
 after latest-head CI/Codex convergence and explicit maintainer direction.
 
-### Selected next design task
+### Current secret variable implementation
 
-The maintainer selected a proposal for dynamic secret-variable assignment
-through `task.setvariable` with `isSecret=true`. This is a design-only increment:
-produce a durable contract proposal, independent Fable review and a private
-Japanese review explanation before requesting implementation approval.
-Keep the existing public CLI and runtime unchanged.
+The maintainer approved dynamic secret-variable assignment through
+`task.setvariable` with `isSecret=true` on 2026-10-27. Design PR #148 merged as
+`7a47324`. The active implementation goal ends with a merge-ready PR, including
+the finite hosted admission, Fable review and latest-head CI/Codex convergence.
+Merge and release require separate maintainer direction.
 
-The [decision proposal](decisions/azure-secret-variable.md) links to the single
-candidate contract and finite admission plan. Review remains pending; neither
-the proposed interface nor its input/scope guarantees are implemented.
+The [accepted decision](decisions/azure-secret-variable.md) links to the single
+contract and finite admission plan. The writer and local tests are in progress;
+hosted admission is not yet established.
 
 Start from the [secret variable source observations](compatibility/azure-pipelines.md#secret-variable-source-observations)
 and [mask decision](decisions/azure-secret-boundary.md). Determine stdin-only
 delivery, name and flag authorization, exact-value admission/rejection, scope
 and mapping, registration-channel disclosure, and a finite native verification
-plan. Evaluate output/read-only combinations against actual useful workflows;
+plan. Verify output/read-only combinations against actual useful workflows;
 do not infer secret assignment or cross-job secrecy from mask registration.
 The selected boundary is command/field integrity and scoped confidentiality,
 not Agent internals, credential acquisition, vault integration or retrospective
-log cleanup. No implementation, hosted run, profile expansion, merge or release
-is authorized by this design task. New sensitive paths follow SECURITY.md.
+log cleanup. Execute the approved implementation and hosted plan without profile
+expansion. New sensitive paths follow SECURITY.md; unrelated findings become
+confidential follow-up rather than extending this increment.
 
 The first read-only `claude-fable-5-1` design review completed successfully with
 no denied inspections. Accepted findings clarified name authorization, macro
@@ -498,8 +499,17 @@ control continue after expected failure, eliminated duplicated profile rules,
 and explained that Azure's success condition alone does not gate on warnings.
 Source inspection confirmed secret values participate in macro recalculation.
 No third review is needed for these non-contract-changing clarifications.
-The remaining maintainer decision is approval of the proposed interface, scopes,
-input policy and admission plan; implementation remains a separate goal.
+The maintainer subsequently approved the interface, scopes, input policy and
+admission plan and started the implementation goal.
+
+The early implementation checkpoint received a successful read-only Fable
+review with no denied inspections. No concrete writer injection path was found.
+Accepted findings are README/help consistency, a successful escape-heavy test
+independent of macro rejection, fixed-diagnostic/precedence and CLI grammar
+coverage, and current document status. A focused follow-up remains required
+after the complete implementation and hosted fixtures are ready. Hosted
+verification, Windows helper adaptation, parser-corpus coverage, user guidance
+and latest-head CI/Codex convergence remain unfinished.
 
 Follow the ordered [release-preparation gates](release.md#next-release-preparation)
 for packaging checks and exact-source evidence when release preparation resumes

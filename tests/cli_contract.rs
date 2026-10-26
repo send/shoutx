@@ -153,6 +153,7 @@ fn configured_command_table_is_the_complete_expected_surface() {
         "azure-pipelines:build-tag",
         "azure-pipelines:mask",
         "azure-pipelines:variable",
+        "azure-pipelines:secret-variable",
         "azure-pipelines:warning",
         "azure-pipelines:error",
         "azure-pipelines:path",

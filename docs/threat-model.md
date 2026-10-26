@@ -234,8 +234,8 @@ not as public exploit-bearing follow-up issues.
 
 ### Proposed secret variable boundary
 
-The [secret-variable proposal](commands/azure-pipelines-secret-variable.md) is
-not implemented. Its adversary may supply value/name text, but the trusted caller
+The [approved secret-variable contract](commands/azure-pipelines-secret-variable.md)
+is being implemented and is not yet admitted. Its adversary may supply value/name text, but the trusted caller
 must authorize which validated NAME may be assigned. The adversary does not select
 the trusted workflow, destination, authorized flags or consumer configuration.
 It adds these distinct requirements to the existing Azure framing boundary:

@@ -118,6 +118,7 @@ pub enum Action {
     },
     AzurePath(PathRequest),
     AzureVariable(crate::azure_pipelines::Variable),
+    AzureSecretVariable(crate::azure_pipelines::Variable),
     AzureIssue(crate::azure_pipelines::Issue),
     Help,
     Version,
@@ -144,6 +145,7 @@ enum Command {
     AzureMask,
     AzurePath,
     AzureVariable,
+    AzureSecretVariable,
     AzureWarning,
     AzureError,
     AddMatcher,
@@ -167,6 +169,10 @@ const COMMANDS: &[(&str, Command)] = &[
     ("azure-pipelines:build-tag", Command::AzureBuildTag),
     ("azure-pipelines:mask", Command::AzureMask),
     ("azure-pipelines:variable", Command::AzureVariable),
+    (
+        "azure-pipelines:secret-variable",
+        Command::AzureSecretVariable,
+    ),
     ("azure-pipelines:warning", Command::AzureWarning),
     ("azure-pipelines:error", Command::AzureError),
     ("azure-pipelines:path", Command::AzurePath),
@@ -247,6 +253,17 @@ pub fn parse(args: Vec<OsString>) -> Result<Action, ShoutxError> {
             return parse_path(it.collect(), true);
         }
         Command::AzureVariable => return parse_azure_variable(it.collect()),
+        Command::AzureSecretVariable => {
+            return match parse_azure_variable(it.collect())? {
+                Action::AzureVariable(request) if request.value.is_none() => {
+                    Ok(Action::AzureSecretVariable(request))
+                }
+                Action::AzureVariable(_) => {
+                    Err(ShoutxError::usage("secret variable takes stdin only"))
+                }
+                other => Ok(other),
+            };
+        }
         Command::AzureWarning => {
             return parse_azure_issue(crate::azure_pipelines::Severity::Warning, it.collect());
         }

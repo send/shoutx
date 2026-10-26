@@ -75,7 +75,7 @@ CARGO_TARGET_DIR=target/stable cargo clippy --all-targets --no-default-features 
 scripts/verify-stable-docs.sh
 ```
 
-Default builds expose the fourteen GitHub commands and seven unreleased Azure
+Default builds expose the fourteen GitHub commands and eight unreleased Azure
 commands. The Azure compatibility record owns hosted verification status.
 There is no stdout
 research feature. Preserve explicit mask/annotation test targets and fresh

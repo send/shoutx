@@ -70,6 +70,10 @@ def check_job(case, job, records, logs, source, run):
         if case not in ("dependent", "stage"):
             register = named.get(f"Register {index}", [])
             require(register.count(f"SV_REGISTERED_{index}") == 1, "missing registration")
+            if not assignment.output:
+                registrations = [r for r in owned if r.get("name") == f"Register {index}"]
+                require(len(registrations) == 1 and not registrations[0].get("variables"),
+                        "unexpected output metadata")
         unmapped = named.get(f"Unmapped {index}", [])
         require(unmapped.count(f"SV_UNMAPPED_{index}_OK") == 1, "missing unmapped check")
         for stream in ("OUT", "ERR"):
@@ -107,6 +111,8 @@ def check_job(case, job, records, logs, source, run):
             exact_block(named.get("Control omission-check", []), tag, [CONTROL_OMITTED])
         require(named.get("Readonly followup", []).count("SV_READONLY_UNCHANGED") == 1,
                 "readonly changed or unchecked")
+        require(named.get("Expected readonly rejection", []).count("SV_OVERWRITE_REQUESTED") == 1,
+                "overwrite not requested")
         require(any(r.get("name") == "Expected readonly rejection" and r.get("issues") for r in owned),
                 "missing expected rejection issue")
         require(CONTROL_REPLACEMENT not in joined and CONTROL_WRONG not in joined,
@@ -169,5 +175,6 @@ def verify():
 if __name__ == "__main__":
     try:
         verify()
-    except Exception:
-        sys.exit("Secret-variable admission failed; logs and values withheld")
+    except Exception as error:
+        label = str(error) if type(error) is RuntimeError else "unexpected verifier failure"
+        sys.exit("Secret-variable admission failed: " + label)

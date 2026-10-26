@@ -34,7 +34,8 @@ class SecretStdinHelper(unittest.TestCase):
                 if read_only:
                     env["SHOUTX_STUB_READ_ONLY"] = "1"
                 if windows:
-                    script = """+$ErrorActionPreference = 'Stop'
+                    script = """
+$ErrorActionPreference = 'Stop'
 . $env:SHOUTX_TEST_HELPER
 $stream = [IO.File]::OpenRead($env:SHOUTX_TEST_INPUT)
 try {

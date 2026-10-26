@@ -73,7 +73,7 @@ def env_bytes(key):
 
 def unmapped(case, index):
     assignment = assignments(case)[index]
-    for key in (assignment.name.upper(), "PUBLISH_" + assignment.name.upper(),
+    for key in (assignment.name.upper(), f"PUBLISH{index}_" + assignment.name.upper(),
                 "FORWARDVALUE", "FORWARDREADONLY"):
         require(key not in os.environ)
     require(os.environ.get("CALLERSENTINEL") == SENTINEL)

@@ -48,7 +48,7 @@ def fixture(case):
         for tag in ("SV_OMISSION", "SV_WRONG"):
             block(lines, tag, [CONTROL_OMITTED])
         phases["Control omission-check"] = lines
-        phases["Expected readonly rejection"] = ["expected-rejection"]
+        phases["Expected readonly rejection"] = ["SV_OVERWRITE_REQUESTED"]
         phases["Readonly followup"] = ["SV_READONLY_UNCHANGED"]
     records, logs = [], {}
     for index, (name, lines) in enumerate(phases.items(), 1):
@@ -129,6 +129,10 @@ class SecretAdmission(unittest.TestCase):
         with patch.dict(os.environ, {"CREDENTIAL": "unexpected", "CALLERSENTINEL": SENTINEL}, clear=True):
             with self.assertRaises(RuntimeError):
                 unmapped("ordinary", 0)
+        for index, key in [(0, "PUBLISH0_OUTVALUE"), (1, "PUBLISH1_OUTREADONLY")]:
+            with patch.dict(os.environ, {key: "unexpected", "CALLERSENTINEL": SENTINEL}, clear=True):
+                with self.assertRaises(RuntimeError):
+                    unmapped("output", index)
 
     def test_control_evidence_cannot_be_skipped_or_masked(self):
         job, records, logs = fixture("control")
@@ -150,6 +154,13 @@ class SecretAdmission(unittest.TestCase):
             with self.assertRaises(RuntimeError):
                 check_job("control", job, records,
                           {**logs, log_id: logs[log_id].replace(plaintext.encode(), b"***")}, "source", "1")
+        log_id = next(r["log"]["id"] for r in records if r["name"] == "Expected readonly rejection")
+        with self.assertRaises(RuntimeError):
+            check_job("control", job, records, {**logs, log_id: b"unrelated failure\n"}, "source", "1")
+        job, records, logs = fixture("ordinary")
+        next(r for r in records if r["name"] == "Register 0")["variables"] = {"Credential": {"isSecret": True}}
+        with self.assertRaises(RuntimeError):
+            check_job("ordinary", job, records, logs, "source", "1")
 
 
 if __name__ == "__main__":

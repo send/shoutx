@@ -454,8 +454,52 @@ timeline cleanliness checks. The follow-up found no blocker; source attribution
 and threat-model wording were clarified. Its cross-job propagation question was
 resolved by the Windows baseline in the hosted run. Repeated fixed-name runs
 remain untested and are not part of the admission claim. Bounded API retries and
-the existing native-only profile were retained. Latest-head CI/Codex convergence
-is the remaining PR gate; merge still requires explicit direction.
+the existing native-only profile were retained. PR #147 merged as `1c63099`
+after latest-head CI/Codex convergence and explicit maintainer direction.
+
+### Selected next design task
+
+The maintainer selected a proposal for dynamic secret-variable assignment
+through `task.setvariable` with `isSecret=true`. This is a design-only increment:
+produce a durable contract proposal, independent Fable review and a private
+Japanese review explanation before requesting implementation approval.
+Keep the existing public CLI and runtime unchanged.
+
+The [decision proposal](decisions/azure-secret-variable.md) links to the single
+candidate contract and finite admission plan. Review remains pending; neither
+the proposed interface nor its input/scope guarantees are implemented.
+
+Start from the [secret variable source observations](compatibility/azure-pipelines.md#secret-variable-source-observations)
+and [mask decision](decisions/azure-secret-boundary.md). Determine stdin-only
+delivery, name and flag authorization, exact-value admission/rejection, scope
+and mapping, registration-channel disclosure, and a finite native verification
+plan. Evaluate output/read-only combinations against actual useful workflows;
+do not infer secret assignment or cross-job secrecy from mask registration.
+The selected boundary is command/field integrity and scoped confidentiality,
+not Agent internals, credential acquisition, vault integration or retrospective
+log cleanup. No implementation, hosted run, profile expansion, merge or release
+is authorized by this design task. New sensitive paths follow SECURITY.md.
+
+The first read-only `claude-fable-5-1` design review completed successfully with
+no denied inspections. Accepted findings clarified name authorization, macro
+rejection at any position, qualified output bindings, profile ownership,
+non-secret control attribution and Windows comparison units. Native environment
+limits replaced the knowingly oversized admission probe with a proposed semantic
+cap. Agent rejection is separate from successful registration, and clean-task
+conditions plus isolated rejection controls are explicit. Source reinspection
+corrected the review's read-only warning-path interpretation: warning can continue,
+while enforced rejection throws. The recollection that secret outputs are
+categorically unsupported was not established by official sources; scope remains
+conditional on the finite admission gate rather than silently narrowed.
+The focused follow-up completed successfully with the same Fable model and no
+denied inspections, finding no blockers. Its final plan clarifications removed
+an inapplicable unrestricted-task rejection probe, made the isolated read-only
+control continue after expected failure, eliminated duplicated profile rules,
+and explained that Azure's success condition alone does not gate on warnings.
+Source inspection confirmed secret values participate in macro recalculation.
+No third review is needed for these non-contract-changing clarifications.
+The remaining maintainer decision is approval of the proposed interface, scopes,
+input policy and admission plan; implementation remains a separate goal.
 
 Follow the ordered [release-preparation gates](release.md#next-release-preparation)
 for packaging checks and exact-source evidence when release preparation resumes

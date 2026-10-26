@@ -313,6 +313,18 @@ and content, deliver inputs as data and propagate process failures. The
 [Azure attack inventory](threat-model.md#azure-pipelines-boundary) defines the
 bounded security work; dependency-internal proofs are not admission gates.
 
+### Proposed secret variable profile
+
+The [secret-variable proposal](commands/azure-pipelines-secret-variable.md) is
+not implemented. Its candidate profile reuses the native Azure profile and mask
+prerequisites above, applying the settings to both producing and receiving jobs.
+Use ordinary script tasks and caller-authorized names permitted by task restrictions,
+without pre-existing read-only collisions, custom-task declared output overrides
+or changes to consumer settings. Producer completion must be clean, with no
+warning/error issues, before dependent use. These are deployment conditions,
+not hidden state that the writer can inspect or enforce. Admission of secret
+output mapping across jobs/stages remains a required implementation gate.
+
 ## Distribution integrations
 
 The official GitHub Action installs an exact released `shoutx` version from

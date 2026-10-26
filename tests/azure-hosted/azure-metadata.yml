@@ -15,7 +15,7 @@ parameters:
         depends: [linux]
   - name: cases
     type: object
-    default: [0, 1, 2]
+    default: [0, 1, 2, 3]
 
 jobs:
   - ${{ each host in parameters.hosts }}:

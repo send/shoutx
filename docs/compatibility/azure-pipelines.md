@@ -304,10 +304,13 @@ Inspected on 2026-10-26 at the existing Agent source pin:
 - [`BuildServer`](https://github.com/microsoft/azure-pipelines-agent/blob/efa064fee06c75b31cabc0451857ad1e294649c7/src/Agent.Worker/Build/BuildServer.cs)
   sends numbers as an update body. Tags use a one-element body array only when
   `UseBuildTagsBodyApi` is enabled; the legacy URL-path route can alter reserved
-  characters. The pinned
+  characters according to the upstream source comment; this legacy route was
+  not executed by this increment. The pinned
   [knob](https://github.com/microsoft/azure-pipelines-agent/blob/efa064fee06c75b31cabc0451857ad1e294649c7/src/Agent.Sdk/Knob/AgentKnobs.cs)
   reads `AGENT_USE_BUILD_TAGS_BODY_API` from job variables, then environment,
-  and defaults to false. The fixture must configure the job variable explicitly.
+  and defaults to false. Source precedence uses the same `CompositeKnobSource`
+  route linked in the secret observations above. The design profile owns the
+  selected configuration, rather than this evidence note.
 - The [official run-number rules](https://learn.microsoft.com/en-us/azure/devops/pipelines/process/run-number?view=azure-devops#how-large-can-a-run-number-be-and-what-characters-can-i-use)
   specify a 255-character ceiling, disallowed punctuation and no final period.
   The wording does not identify the counting unit for supplementary characters.

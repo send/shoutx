@@ -223,7 +223,7 @@ configuration and output-variable scope, and the
 [hosted verification record](docs/compatibility/azure-pipelines.md).
 
 The source also implements `azure-pipelines:build-number [NUMBER]` and
-`azure-pipelines:build-tag [TAG]`; their hosted admission is pending. Use
+`azure-pipelines:build-tag [TAG]`; consult the verification record above. Use
 `--` before untrusted argv data, or newline-free stdin. They do not trim or
 rename values. See the [metadata contract](docs/commands/azure-pipelines.md#build-metadata)
 and the [profile's required tag setting](docs/design.md#azure-pipelines-profile).

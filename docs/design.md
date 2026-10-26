@@ -280,7 +280,7 @@ the maintainer-selected task is owned by the
 The [mask contract](commands/azure-pipelines-mask.md) is implemented, with scoped
 hosted results in the [compatibility record](compatibility/azure-pipelines.md#mask-hosted-observations).
 The [build metadata writers](commands/azure-pipelines.md#build-metadata) are
-implemented with hosted admission pending. Tags additionally require trusted
+implemented; the compatibility record owns hosted admission. Tags require trusted
 job variable `AGENT_USE_BUILD_TAGS_BODY_API: 'true'` before Agent job startup;
 the legacy URL-path API is excluded. This does not expand the OS/shell profile.
 

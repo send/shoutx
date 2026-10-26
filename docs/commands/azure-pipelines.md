@@ -12,11 +12,15 @@ shoutx azure-pipelines:variable [--output] [--read-only] NAME [VALUE]
 shoutx azure-pipelines:warning [--file FILE] [--line N] [--column N] [--code CODE] [MESSAGE]
 shoutx azure-pipelines:error   [--file FILE] [--line N] [--column N] [--code CODE] [MESSAGE]
 shoutx azure-pipelines:path [PATH]
+shoutx azure-pipelines:build-number [NUMBER]
+shoutx azure-pipelines:build-tag [TAG]
 ```
 
 These are typed writers for `task.setvariable`, `task.logissue` and
 `task.prependpath`, not a generic command builder. No raw properties, secret option, masking,
-artifact operation, or command-name operand is provided by these four writers.
+artifact operation, or command-name operand is provided by these writers.
+The metadata writers select `build.updatebuildnumber` and `build.addbuildtag`;
+their field rules are specified below.
 The separate [mask registration contract](azure-pipelines-mask.md) defines the
 stdin-only mask command and its explicit line mode; the
 [compatibility record](../compatibility/azure-pipelines.md#mask-hosted-observations)
@@ -81,7 +85,7 @@ conditions can prevent the effect even after a successful write.
 
 ### Build metadata
 
-These writers are implemented; hosted admission is pending.
+These writers are implemented; the compatibility record owns hosted admission.
 
 ```text
 shoutx azure-pipelines:build-number [NUMBER]

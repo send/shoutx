@@ -202,8 +202,8 @@ an unsupported control channel from being mistaken for a protected one.
 The [Azure contract](commands/azure-pipelines.md) protects one selected
 `task.setvariable`, `task.logissue` or `task.prependpath` operation on the stdout command stream.
 The [build metadata contract](commands/azure-pipelines.md#build-metadata)
-adds fixed `build.updatebuildnumber` and `build.addbuildtag` operations, with
-hosted admission pending. Metadata validation rejects line breaks and known
+adds fixed `build.updatebuildnumber` and `build.addbuildtag` operations.
+Metadata validation rejects line breaks and known
 identity-changing inputs; number/tag authorization and downstream selection
 remain caller-owned. It is not a raw command or a secret channel.
 The same adversary and producer duties apply; the trusted consumer is Azure's

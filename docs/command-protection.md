@@ -224,7 +224,7 @@ metadata channels, not secret storage. Callers authorize labels and coordinate
 number updates; Azure owns permissions, tag equivalence and display. A
 successful write does not acknowledge the server update. Tag use requires the
 additional job-level setting in the [Azure profile](design.md#azure-pipelines-profile).
-Hosted admission is pending; see the [metadata contract](commands/azure-pipelines.md#build-metadata)
+See the [metadata contract](commands/azure-pipelines.md#build-metadata)
 and [evidence record](compatibility/azure-pipelines.md#build-metadata-source-observations).
 
 ### Mask registration

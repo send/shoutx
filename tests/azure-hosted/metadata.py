@@ -13,14 +13,15 @@ import urllib.request
 def values(host, index):
     prefix = "shoutx-" + host + "-"
     numbers = [prefix + "1.2.3", prefix + "αไทย日本語😀%0A;]",
-               prefix + "😀" * 115 + "x" * (255 - len(prefix) - 230)]
+               prefix + "😀" * 115 + "x" * (255 - len(prefix) - 230),
+               " " + prefix + "interior space "]
     tags = [prefix + "ready", prefix + "αไทย日本語😀%0A;]/@?*,#",
-            prefix + "😀" * 115 + "t" * (255 - len(prefix) - 230)]
+            prefix + "😀" * 115 + "t" * (255 - len(prefix) - 230), prefix + "interior space"]
     return numbers[index], tags[index]
 
 
 def expected_tags(host, index):
-    return ([values("linux", n)[1] for n in range(3)] if host == "windows" else []) + [
+    return ([values("linux", n)[1] for n in range(4)] if host == "windows" else []) + [
         values(host, n)[1] for n in range(index + 1)]
 
 
@@ -32,13 +33,28 @@ def check_metadata(actual, build_id, sha, number, tags):
         raise RuntimeError("metadata effect or identity mismatch")
 
 
-def get_build():
+def check_producers(timeline, job_id, index):
+    records = timeline.get("records", [])
+    for case in range(index + 1):
+        matches = [r for r in records if str(r.get("parentId", "")).lower() == job_id.lower()
+                   and r.get("name") == f"Emit metadata {case}" and r.get("type") == "Task"]
+        if len(matches) != 1:
+            raise RuntimeError("missing or duplicate producer task")
+        record = matches[0]
+        if (record.get("state") != "completed" or record.get("result") != "succeeded"
+                or record.get("errorCount", 0) or record.get("warningCount", 0)
+                or record.get("issues")):
+            raise RuntimeError("producer task did not succeed cleanly")
+
+
+def get_api(timeline=False):
     # Fixed organization prevents an environment-supplied origin receiving token.
     project = urllib.parse.quote(os.environ["SYSTEM_TEAMPROJECTID"], safe="")
     build_id = os.environ["BUILD_BUILDID"]
     if not build_id.isascii() or not build_id.isdigit():
         raise RuntimeError("invalid build identity")
-    url = f"https://dev.azure.com/kazjuly7/{project}/_apis/build/builds/{build_id}?api-version=7.1"
+    suffix = "/timeline" if timeline else ""
+    url = f"https://dev.azure.com/kazjuly7/{project}/_apis/build/builds/{build_id}{suffix}?api-version=7.1"
     request = urllib.request.Request(url, headers={
         "Authorization": "Bearer " + os.environ["SYSTEM_ACCESSTOKEN"]})
     class NoRedirect(urllib.request.HTTPRedirectHandler):
@@ -53,21 +69,23 @@ def get_build():
 
 def verify(host, index):
     if index < 0:
-        number = (values("linux", 2)[0] if host == "windows"
+        number = (values("linux", 3)[0] if host == "windows"
                   else "shoutx-metadata-initial")
     else:
         number = values(host, index)[0]
     tags = expected_tags(host, index)
     for attempt in range(6):
         try:
-            check_metadata(get_build(), os.environ["BUILD_BUILDID"],
+            check_metadata(get_api(), os.environ["BUILD_BUILDID"],
                            os.environ["BUILD_SOURCEVERSION"], number, tags)
+            if index >= 0:
+                check_producers(get_api(timeline=True), os.environ["SYSTEM_JOBID"], index)
             break
         except (RuntimeError, ValueError, OSError):
             if attempt == 5:
                 raise RuntimeError("metadata verification exhausted") from None
             time.sleep(2)
-    if index >= 0 and os.environ.get("BUILD_BUILDNUMBER") != number:
+    if os.environ.get("BUILD_BUILDNUMBER") != number:
         raise RuntimeError("next-task number mismatch")
     identity = {key: os.environ.get(key) for key in [
         "BUILD_BUILDID", "BUILD_SOURCEVERSION", "SYSTEM_JOBID", "SYSTEM_JOBATTEMPT",
@@ -99,7 +117,7 @@ def emit(host, index):
 def main():
     mode, host, raw_index = sys.argv[1:]
     index = int(raw_index)
-    if host not in ("linux", "windows") or index not in (-1, 0, 1, 2):
+    if host not in ("linux", "windows") or index not in (-1, 0, 1, 2, 3):
         raise RuntimeError("invalid fixture selection")
     if os.environ.get("SHOUTX_METADATA_INJECTED"):
         raise RuntimeError("unexpected sentinel operation")

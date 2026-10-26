@@ -84,6 +84,8 @@ def corpus(binary):
                   "x" * 255, "😀" * 127 + "x", "##[error]data"]
         for _ in range(100):
             values.append("x" + "".join(chr(rng.choice([0x301, 0xFEFF, 0x4E00, 0x1F600, 0x627, 0x915])) for _ in range(30)))
+        if command == "build-number":
+            values[0] = " v1 interior "
         for value in values:
             add(["azure-pipelines:" + command], value, event, {}, "build")
         original_metadata = cases[-1]

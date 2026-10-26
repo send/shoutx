@@ -1,6 +1,6 @@
 # Azure build metadata writers
 
-Status: Proposed; implementation authorized, final admission pending review and hosted checks.
+Status: Proposed; implementation authorized. Verification status belongs in the compatibility record.
 
 ## Context and decision
 
@@ -13,12 +13,13 @@ restrictions are not imported.
 
 Reject input that would require implicit trimming or renaming. Keep Unicode
 data rather than imposing an ASCII/language allowlist. Number validation follows
-the documented naming restrictions; its UTF-16 ceiling is a conservative
-interpretation of the documented character limit. The same bounded ceiling for
+the documented naming restrictions; its ceiling is exact under a UTF-16
+interpretation of the documented character limit, tested at the boundary in the
+hosted fixture. The same bounded ceiling for
 tags is a producer policy, not a claim about the service's maximum.
 
-Tag support uses the Agent's body-based API setting to preserve reserved URL
-characters. The legacy path API is not an alternative encoding target. The
+The design profile selects the Agent's body-based API because the legacy path
+route does not reliably preserve reserved URL characters. The
 [source observations](../compatibility/azure-pipelines.md#build-metadata-source-observations)
 own this evidence. Caller authorization and provider tag equivalence remain
 separate from lossless submission of one requested tag.

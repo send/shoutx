@@ -39,6 +39,13 @@ fn check(command: &str, args: &[&str], input: &[u8], status: i32, expected: &[u8
 
 #[test]
 fn build_metadata_exact_bytes_and_rejections() {
+    check(
+        "build-number",
+        &[" v1 interior "],
+        b"",
+        0,
+        b"##vso[build.updatebuildnumber] v1 interior \n",
+    );
     for (command, wire) in [
         ("build-number", "updatebuildnumber"),
         ("build-tag", "addbuildtag"),

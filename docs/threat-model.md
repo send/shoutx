@@ -232,6 +232,29 @@ variable scope, service limits and issue display/translation are separate
 consumer effects. Record new concrete security paths privately per SECURITY.md,
 not as public exploit-bearing follow-up issues.
 
+### Proposed secret variable boundary
+
+The [secret-variable proposal](commands/azure-pipelines-secret-variable.md) is
+not implemented. Its adversary may supply value/name text, but the trusted caller
+must authorize which validated NAME may be assigned. The adversary does not select
+the trusted workflow, destination, authorized flags or consumer configuration.
+It adds these distinct requirements to the existing Azure framing boundary:
+
+| Path | Protected asset and proposed control | Responsibility outside the writer |
+| --- | --- | --- |
+| Value/name changes command, flags or destination | Fixed secret assignment, validated name, escaped value and pre-output validation | Caller authorizes the chosen name, collisions and intended scope |
+| Credential is exposed during registration or remains unmasked later | Stdin-only transport, fixed diagnostics and separate registration/completed-log admission under explicit profile conditions | Acquisition, prior logs, process isolation, arbitrary transforms and uploaded files |
+| Variable expansion changes an accepted credential | Reject the ASCII sequence `$(` anywhere and test exact consumer values, distinct from parser equality | Later shell parsing or application-specific interpretation |
+| Output mapping exposes data beyond the intended recipient | Secret flag retained, explicit output request, no unintended auto-export, finite destination-job checks | Trusted workflow author controls dependencies, recipient tasks and service access; absent mapping is not an ACL |
+| Bad input emits an assignment before failure | Full validation and prepared bounded output before stdout | Mid-write I/O failure and Agent restrictions are not transactional |
+
+Azure owns secret storage, timeline output metadata, mapping and masking execution.
+These are not promises that shoutx can enforce isolation against a privileged
+workflow author or inspect hidden consumer state. The proposal's intended
+confidentiality is scoped to named channels and complete values; it does not
+make secrets safe for arbitrary later output. New concrete disclosure findings
+remain private under SECURITY.md.
+
 ## Protected and specified boundaries
 
 ### Stdout mask and annotation responsibility

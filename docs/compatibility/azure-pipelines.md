@@ -119,6 +119,67 @@ general guidance distinguishes complete secrets from fragments and warns
 against argv transport. These source observations are separate from the
 [mask hosted observations](#mask-hosted-observations) below.
 
+## Secret variable source observations
+
+Rechecked on 2026-10-26 at the existing Agent pin for the
+[design proposal](../decisions/azure-secret-variable.md), without a hosted run:
+
+- [TaskSetVariableCommand](https://github.com/microsoft/azure-pipelines-agent/blob/efa064fee06c75b31cabc0451857ad1e294649c7/src/Agent.Worker/TaskCommandExtension.cs#L589-L674)
+  checks an existing read-only variable before the secret branch. The branch
+  checks `Environment.NewLine` against the unsafe-multiline knob, registers
+  command-escaped data, then checks settable-variable restrictions and calls
+  `SetVariable`. An earlier rejection is not proof of original-value registration.
+  More precisely, the read-only enforcement branch throws; its warning-only
+  alternative continues. The
+  [restriction checker](https://github.com/microsoft/azure-pipelines-agent/blob/efa064fee06c75b31cabc0451857ad1e294649c7/src/Agent.Worker/TaskRestrictionsChecker.cs)
+  warns and returns false for a disallowed name. Thus a warning-tolerant task
+  success is not an assignment acknowledgment. Original-value registration in
+  `Variables.Set` is conditional on reaching that method.
+  With no failing configured restriction, the checker returns true; a name
+  rejection probe is not guaranteed to run in ordinary script tasks.
+- [ExecutionContext.SetVariable](https://github.com/microsoft/azure-pipelines-agent/blob/efa064fee06c75b31cabc0451857ad1e294649c7/src/Agent.Worker/ExecutionContext.cs#L398-L423)
+  sends output values with `IsSecret` in timeline metadata and stores a qualified
+  step/name variable. The output branch also activates for declared task output
+  names, not just the requested flag. Otherwise it stores the plain name.
+- [Variables.Set](https://github.com/microsoft/azure-pipelines-agent/blob/efa064fee06c75b31cabc0451857ad1e294649c7/src/Agent.Worker/Variables.cs#L416-L456)
+  registers the original nonempty secret and stores the value as-is.
+  [StepsRunner](https://github.com/microsoft/azure-pipelines-agent/blob/efa064fee06c75b31cabc0451857ad1e294649c7/src/Agent.Worker/StepsRunner.cs#L118-L123)
+  recalculates variable expansions before subsequent steps.
+  [RecalculateExpanded](https://github.com/microsoft/azure-pipelines-agent/blob/efa064fee06c75b31cabc0451857ad1e294649c7/src/Agent.Worker/Variables.cs#L478-L580)
+  looks up macro boundaries ordinally and recursively substitutes matching
+  variable names. Logging-command escaping does not stop this later expansion.
+  Secret variables are included: the loop visits all nonexpanded keys, records
+  the secret flag, and uses it to suppress trace details and propagate secrecy,
+  not to skip expansion.
+
+The [official variable guidance](https://learn.microsoft.com/en-us/azure/devops/pipelines/process/set-variables-scripts?view=azure-devops)
+describes secret, output and read-only properties, later-task use and dependency
+mapping for jobs/stages. Source assignment and a secret flag do not independently
+prove later-job masking, service capacity or exact environment delivery. Those
+effects remain explicit admission hypotheses in the proposal, separate from
+the existing mask observations.
+
+The official pages inspected describe secret flags and output mapping but do
+not explicitly settle combined secret-output propagation. They do not support
+the reviewer's recollection of a universal prohibition either; no conclusion
+about backend secrecy follows from absence of a prohibition. Preserve the
+cross-job/stage admission gate. The
+[secret guidance](https://learn.microsoft.com/en-us/azure/devops/pipelines/process/set-secret-variables?view=azure-devops)
+warns against logging-command secret configuration for production and recommends
+managed sources. The proposal addresses dynamically created values in trusted
+workflows, not a replacement credential store or a claim that masking removes
+that operational risk.
+
+For capacity, [Win32 GetEnvironmentVariable](https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-getenvironmentvariable)
+documents a 32,767-character per-variable ceiling including termination.
+[Linux's argument-string definition](https://github.com/torvalds/linux/blob/master/include/uapi/linux/binfmts.h)
+sets `MAX_ARG_STRLEN` to 32 pages. These native upper bounds do not establish
+Azure's usable capacity. The proposed byte cap keeps UTF-16 units below the
+Windows ceiling even for all-ASCII input, with room for overhead; actual task
+delivery remains unmeasured. Before hosted admission, record the live Agent
+version and recheck these bounded handler paths if it differs from the source
+pin (the latest metadata observation used Agent 5.281.1).
+
 ## Verification status
 
 Local checks on macOS arm64, 2026-10-20:

@@ -321,7 +321,35 @@ These are source/documentation observations, not an accepted CLI contract or
 hosted admission. The implementation must reject identity-changing input rather
 than silently trim it. Verify service metadata independently of the job variable;
 the variable can be assigned before the asynchronous backend operation succeeds.
-No metadata hosted run has yet been executed for this increment.
+
+### Build metadata hosted admission
+
+Dedicated [run 9](https://dev.azure.com/kazjuly7/shoutx/_build/results?buildId=9)
+completed successfully on 2026-10-26 at source
+`0d284728e3c736072213ed474323819352c8dd0d`. Pipeline 3 used
+`tests/azure-hosted/azure-metadata.yml`, project-scoped job authorization and the
+design-owned tag API setting. No existing shared run was modified.
+
+| Host | Image version | Agent | Job ID / attempt |
+| --- | --- | --- | --- |
+| Ubuntu 24.04 x64, Bash | `20261023.334.3` | `5.281.1` | `0da5d1d9-276d-5173-c4c4-9d4d4ed14fdb` / 1 |
+| Windows 2025 x64, PowerShell | `20261021.299.1` | `5.281.1` | `2d2b3007-3c5c-5840-9bb0-2b1ea49925f3` / 1 |
+
+Both baselines and all eight serialized cases passed. Each case compared the
+service build number exactly, the complete tag inventory including spelling and
+multiplicity, source/run identity, the next task's build-number variable, and
+completed producer tasks with no errors, warnings or issues. Windows inherited
+the final Linux number and four tags; its final inventory contained exactly eight
+tags. Samples covered ordinary values, Unicode, literal percent escapes and
+reserved tag URL characters, 255 UTF-16 units with supplementary characters,
+interior spaces, and leading/trailing spaces in numbers. These are finite effect
+observations, not admission of other environments or a tag service-limit claim.
+
+Rejected synthetic input was captured off the Agent stream. Offline controls
+reject altered/missing/extra metadata, duplicate or case-changed tags, identity
+mismatches and missing/unclean producer records. The pinned source-parser corpus
+also passed 1,891 cases, including 17 intentionally mismatched controls. The
+source pin and live Agent version are separate evidence, not claimed identical.
 
 ## Official references
 

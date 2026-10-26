@@ -443,6 +443,20 @@ or merge is authorized by this task. New sensitive attack paths follow
 SECURITY.md; unrelated paths become confidential follow-up rather than expanding
 this increment.
 
+Implementation is in PR #147. The
+[metadata evidence](compatibility/azure-pipelines.md#build-metadata-hosted-admission)
+owns the successful native admission record. Local Rust baseline checks,
+stable documentation checks and the pinned Azure parser corpus passed.
+Independent `claude-fable-5-1` review and one focused follow-up both completed
+successfully with no denied inspections. Findings led to single-owner status
+and profile requirements, boundary-space effect coverage and automatic producer
+timeline cleanliness checks. The follow-up found no blocker; source attribution
+and threat-model wording were clarified. Its cross-job propagation question was
+resolved by the Windows baseline in the hosted run. Repeated fixed-name runs
+remain untested and are not part of the admission claim. Bounded API retries and
+the existing native-only profile were retained. Latest-head CI/Codex convergence
+is the remaining PR gate; merge still requires explicit direction.
+
 Follow the ordered [release-preparation gates](release.md#next-release-preparation)
 for packaging checks and exact-source evidence when release preparation resumes
 with maintainer direction.

@@ -81,6 +81,13 @@ fn build_metadata_exact_bytes_and_rejections() {
         for input in [&b"SECRET\0"[..], &b"SECRET\xff"[..]] {
             check(command, &[], input, 1, b"");
         }
+        for code in (0..=0x1f).chain(0x7f..=0x9f) {
+            let value = format!("x{}SECRET", char::from_u32(code).unwrap());
+            check(command, &[], value.as_bytes(), 1, b"");
+            if code != 0 {
+                check(command, &["--", &value], b"", 1, b"");
+            }
+        }
         for args in [
             &["--unknown"][..],
             &["x", "y"][..],

@@ -1,6 +1,6 @@
 # Azure build metadata writers
 
-Status: Proposed; implementation authorized. Verification status belongs in the compatibility record.
+Status: Accepted. Verification status belongs in the compatibility record.
 
 ## Context and decision
 
@@ -18,8 +18,8 @@ interpretation of the documented character limit, tested at the boundary in the
 hosted fixture. The same bounded ceiling for
 tags is a producer policy, not a claim about the service's maximum.
 
-The design profile selects the Agent's body-based API because the legacy path
-route does not reliably preserve reserved URL characters. The
+The design profile selects the Agent's body-based API because the upstream
+source comment warns that the legacy path route can alter reserved URL characters. The
 [source observations](../compatibility/azure-pipelines.md#build-metadata-source-observations)
 own this evidence. Caller authorization and provider tag equivalence remain
 separate from lossless submission of one requested tag.

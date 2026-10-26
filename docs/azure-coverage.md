@@ -4,11 +4,11 @@ Status: proposed coverage assessment, 2026-10-25. This is the authoritative
 Azure coverage proposal delegated by the design index, not a command contract
 or implementation authorization. Release preparation remains on hold.
 
-The existing five writers cover basic non-secret variable exchange, diagnostics,
-PATH setup and scoped mask registration. They are useful, but do not yet cover
-all valuable script-to-Agent output boundaries. In particular, runtime build
-metadata and dynamic secret-variable assignment still require other mechanisms.
-Completing five implementations is not evidence of practical surface completeness.
+The existing writers cover basic non-secret variable exchange, diagnostics,
+PATH setup, scoped mask registration and build metadata. They are useful, but do
+not yet cover all valuable script-to-Agent output boundaries. In particular,
+dynamic secret-variable assignment still requires other mechanisms. Completing
+these implementations is not evidence of practical surface completeness.
 
 ## How to read the assessment
 
@@ -90,8 +90,8 @@ claimed covered merely because the current warning/error writers create issues.
 | `artifact.upload` — **Add value**, lower priority | Script selects an approved file, container folder and artifact name | Protect path and property fields against additional commands/changed destinations. Caller authorizes content, names and publication; Azure owns upload/storage. Prefer `PublishPipelineArtifact@1` for ordinary file/directory publishing on Services [3], or `PublishBuildArtifacts@1` where appropriate [4]. A wrapper may still help scripts requiring this specific logging-command channel; it is not a replacement artifact service. |
 | `artifact.associate` — **Outside** current scope | Link existing container/share/version-control subjects with a typed location and name | Type/name/location can cross command/property boundaries; caller/provider retain resource trust and association semantics. Unlike publishing newly generated build outputs, no concrete need to associate these existing-resource types is identified here. Prefer supported artifact tasks for normal publishing; they do not replace every association type. Reconsider on an existing-artifact association requirement rather than adding a raw arbitrary-type builder. |
 | `build.uploadlog` — **Add value**, lower priority | Attach a generated diagnostic log to the build | The path is a command-data boundary; protecting it does not redact the uploaded file or authorize disclosure. Caller owns file selection and races; Azure owns storage. Task-log attachments or a named artifact may meet the use case but use different destinations. |
-| `build.updatebuildnumber` — **Add value**, high priority | Build/version tooling derives a run identifier | Raw text can introduce extra commands; typed framing plus documented field restrictions can reject unsafe/invalid requests without silent renaming. Caller owns naming policy; Azure owns validation, update and display. YAML `name` handles preconfigured naming [5], not every runtime-derived version. |
-| `build.addbuildtag` — **Add value**, high priority | A scanner or build tool supplies a classification/version label | Keep one requested tag and no extra commands. Caller authorizes labels and downstream selection; Azure owns tag semantics and restrictions. Fixed configured labels or an authenticated API are alternatives; API authentication is outside this CLI. |
+| `build.updatebuildnumber` — **Covered** | Build/version tooling derives a run identifier | The [metadata contract](commands/azure-pipelines.md#build-metadata) protects the fixed operation and exact accepted number. Caller owns naming policy; Azure owns validation, update and display. YAML `name` handles preconfigured naming [5], not every runtime-derived version. |
+| `build.addbuildtag` — **Covered** | A scanner or build tool supplies a classification/version label | The [metadata contract](commands/azure-pipelines.md#build-metadata) keeps one requested tag under the design-owned tag API setting. Caller authorizes labels and downstream selection; Azure owns tag semantics. An authenticated API is an alternative; API authentication is outside this CLI. |
 | `release.updatereleasename` — **Outside** current profile | Rename a running Classic release from generated metadata | Text framing could help, but Classic release pipelines are outside the existing Azure profile. Caller owns naming and Azure owns lifecycle. Use configured release naming or a release-specific task/API. Reconsider only with explicit profile expansion; do not infer coverage from build-number support. |
 
 ## Priority and finite next tasks
@@ -100,18 +100,10 @@ These are proposed work packages, not commands added to the CLI or permission
 to execute them. No currently unclassified item blocks this inventory; candidate
 input/consumer contracts remain deliberately unimplemented.
 
-1. **Build metadata writers first.** After separate authorization, design and
-   implement only the two build-number/tag
-   operations, because they accept ordinary externally derived strings and
-   complement the existing variable/diagnostic workflow without introducing
-   credential storage or file publication. Completion: approved typed CLI and
-   field/line rules, fixed diagnostics and resource limits, exact producer and
-   pinned-parser tests, scoped actual metadata effects and negative controls on
-   the existing native profile, documentation and latest-head review/CI. No raw
-   build command, authentication API, release renaming or auto-sanitized labels.
-   If the service cannot accept a field losslessly, reject under an explicit
-   contract; do not silently rename it. This assessment does not claim those
-   handler/service rules have already been verified.
+1. **Build metadata writers selected and implemented.** The
+   [decision](decisions/azure-build-metadata.md) records rationale, the
+   [compatibility record](compatibility/azure-pipelines.md#build-metadata-hosted-admission)
+   owns finite handler/service evidence, and the handoff owns PR progress.
 2. **Dynamic secret-variable contract.** Address runtime-created credentials
    separately from mask registration. Completion of the design task: agreed
    stdin-only delivery, name/flag authorization, exact-value and rejection

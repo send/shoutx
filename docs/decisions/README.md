@@ -47,6 +47,8 @@ Current cross-repository decisions:
 
 Azure follow-up planning:
 
+- [`azure-build-metadata.md`](azure-build-metadata.md) — build-number and tag
+  writer rationale; field rules belong to the linked command specification.
 - [`azure-path.md`](azure-path.md) — PATH writer rationale and finite work plan;
   command rules are owned by the linked command specification.
 - [`azure-secret-boundary.md`](azure-secret-boundary.md) — accepted mask-registration

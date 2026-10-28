@@ -40,6 +40,55 @@ for consumers under the [candidate profile](../design.md#proposed-secret-variabl
 Never interpolate the secret into shell
 source or dump the environment. No automatic environment export is promised.
 
+## Usage examples
+
+These examples are for the source implementation under the admission status
+above. Apply the [deployment conditions](#protection-and-deployment-conditions)
+before using credentials. Credential acquisition and secure file lifecycle
+remain the caller's responsibility; `credential.bin` below is an existing
+private file containing the exact credential bytes, without a trailing newline.
+
+In a native Bash producer task, forward stdin directly to the writer:
+
+```bash
+set -euo pipefail
+set +x
+shoutx azure-pipelines:secret-variable -- Credential < credential.bin
+```
+
+Map `$(Credential)` into the later task's environment, not its script source:
+
+```yaml
+- bash: ./consume-credential
+  env:
+    CREDENTIAL: $(Credential)
+```
+
+Here `consume-credential` is the caller's program that reads `CREDENTIAL`
+without printing it. For output variables, use `--output` and the named-step,
+dependency and stage mappings in the
+[native fixture](../../tests/azure-hosted/azure-secret-variable.yml); do not
+reuse the plain-name mapping above for output mode.
+
+For native PowerShell, use the
+[byte-stream helper](../../tests/azure-hosted/secret-variable-stdin.ps1)
+from a reviewed checkout instead of piping text through the shell:
+
+```powershell
+$ErrorActionPreference = 'Stop'
+Set-PSDebug -Off
+. ./tests/azure-hosted/secret-variable-stdin.ps1
+$stream = [IO.File]::OpenRead('credential.bin')
+try {
+    Set-ShoutxSecretVariable -Binary './shoutx.exe' -InputStream $stream -Name 'Credential'
+} finally { $stream.Dispose() }
+```
+
+Do not capture or print the writer's output. A zero process exit means the
+records were emitted, not that Azure accepted the assignment. Follow the
+[failure handling and prior-mask side effects](#protection-and-deployment-conditions)
+below before dependent work.
+
 ## Candidate input and wire contract
 
 Validate bounded raw acquisition (1 MiB), strict UTF-8, NUL, a 16 KiB (16,384-byte)

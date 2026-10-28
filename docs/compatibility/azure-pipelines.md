@@ -210,6 +210,15 @@ helper or execution fixture changed between these runs. Run 15 remains a
 failed pipeline; run 16 is successful hosted revalidation, not a relabeling
 of that pipeline or a second execution of its producer jobs.
 
+Codex review subsequently identified a missing whole-log scan for the rejected
+value's wire representation outside calibrated marker blocks. The correction
+at `4029752b6294e5f355c1fc2730ab08814d663953` has 11 passing offline tests,
+including original/wire disclosure mutations in task and aggregate logs.
+Private hosted run 17, snapshot `66333fbc84f9a17b1a56c5c915b7e14302e3b4c0`,
+successfully revalidated the same 20 completed jobs with this stricter scan
+and a project-scoped job token. This supersedes run 16's verifier coverage;
+the producer binary and execution fixture remained unchanged.
+
 Observed Agent: `5.281.1`. Images: Ubuntu 24.04 `20261023.334.3` and
 `20261026.354.1`; Windows 2025 `20261021.299.1`. Binary SHA-256 values were
 `cb8cc43e0e5bee668e24ad35ffcfed57743ce9e9dd63dfe9832bab8e269553fa` on Linux

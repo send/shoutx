@@ -490,7 +490,10 @@ review service rejected it; do not count that attempt as approval or silently
 replace the reviewer. The maintainer explicitly authorized GPT-6.1 Sol as the
 replacement. Its independent read-only review of `a94171e` completed with no
 concrete findings; focused contract, packaged-surface, verifier and native Bash
-helper tests passed. Final status/documentation closeout follows that review.
+helper tests passed. Codex subsequently found a missing whole-log wire-form
+scan in the verifier; the scoped correction at `4029752` has a passing regression
+test and a no-findings GPT-6.1 Sol follow-up. Hosted revalidation is recorded
+in the compatibility record. Final status/documentation closeout follows that review.
 The goal controller remains blocked pending reconfiguration;
 the maintainer authorized manual implementation of the approved revision.
 

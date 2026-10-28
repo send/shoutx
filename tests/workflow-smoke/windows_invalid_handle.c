@@ -93,6 +93,10 @@ int wmain(int argc, wchar_t **argv) {
     if (status != 0) return status;
     status = run_child(argv[1], L"github-actions:debug", TRUE, FALSE, 1, "");
     if (status != 0) return status;
+    status = run_child(argv[1], L"azure-pipelines:secret-variable Credential", TRUE, FALSE, 1, "");
+    if (status != 0) return status;
+    status = run_child(argv[1], L"azure-pipelines:secret-variable Credential forbidden-argv", TRUE, FALSE, 2, "");
+    if (status != 0) return status;
     status = run_child(argv[1], L"github-actions:group", TRUE, FALSE, 1, "");
     if (status != 0) return status;
     status = run_child(argv[1], L"github-actions:debug value", TRUE, FALSE, 0, "::debug::value\n");

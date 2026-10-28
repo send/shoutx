@@ -1,7 +1,8 @@
-# Azure Pipelines secret variable proposal
+# Azure Pipelines secret variable
 
-Status: Proposed, not implemented or admitted. Implementation requires maintainer
-approval. This proposal owns the candidate CLI, input rules and admission plan;
+Status: Implemented, unreleased. Design approved on 2026-10-27 and prior-mask
+revision approved on 2026-10-28; [scoped hosted evidence](../compatibility/azure-pipelines.md#secret-variable-hosted-admission)
+records admission. This specification owns the CLI, input rules and admission plan;
 the [decision](../decisions/azure-secret-variable.md) owns rationale. Existing
 commands and the published release are unchanged.
 
@@ -40,6 +41,55 @@ for consumers under the [candidate profile](../design.md#proposed-secret-variabl
 Never interpolate the secret into shell
 source or dump the environment. No automatic environment export is promised.
 
+## Usage examples
+
+These examples are for the source implementation under the admission status
+above. Apply the [deployment conditions](#protection-and-deployment-conditions)
+before using credentials. Credential acquisition and secure file lifecycle
+remain the caller's responsibility; `credential.bin` below is an existing
+private file containing the exact credential bytes, without a trailing newline.
+
+In a native Bash producer task, forward stdin directly to the writer:
+
+```bash
+set -euo pipefail
+set +x
+shoutx azure-pipelines:secret-variable -- Credential < credential.bin
+```
+
+Map `$(Credential)` into the later task's environment, not its script source:
+
+```yaml
+- bash: ./consume-credential
+  env:
+    CREDENTIAL: $(Credential)
+```
+
+Here `consume-credential` is the caller's program that reads `CREDENTIAL`
+without printing it. For output variables, use `--output` and the named-step,
+dependency and stage mappings in the
+[native fixture](../../tests/azure-hosted/azure-secret-variable.yml); do not
+reuse the plain-name mapping above for output mode.
+
+For native PowerShell, use the
+[byte-stream helper](../../tests/azure-hosted/secret-variable-stdin.ps1)
+from a reviewed checkout instead of piping text through the shell:
+
+```powershell
+$ErrorActionPreference = 'Stop'
+Set-PSDebug -Off
+. ./tests/azure-hosted/secret-variable-stdin.ps1
+$stream = [IO.File]::OpenRead('credential.bin')
+try {
+    Set-ShoutxSecretVariable -Binary './shoutx.exe' -InputStream $stream -Name 'Credential'
+} finally { $stream.Dispose() }
+```
+
+Do not capture or print the writer's output. A zero process exit means the
+records were emitted, not that Azure accepted the assignment. Follow the
+[failure handling and prior-mask side effects](#protection-and-deployment-conditions)
+below before dependent work.
+
 ## Candidate input and wire contract
 
 Validate bounded raw acquisition (1 MiB), strict UTF-8, NUL, a 16 KiB (16,384-byte)
@@ -55,19 +105,27 @@ Do not trim, consume producer framing, normalize, case-fold or sanitize.
 Single-character and whitespace-only values are permitted subject to the
 profile and explicit acceptance of their overmasking cost.
 
-Prepare exactly one record, with fixed properties and ordering:
+Let `E` be the existing [Azure wire encoding](azure-pipelines.md#wire-contract),
+`V` the unchanged input value, and `W = E(V)`. Prepare exactly three records,
+with fixed properties and ordering, even when `V` and `W` are identical:
 
 ```text
-##vso[task.setvariable variable=NAME;isSecret=true;isOutput=BOOL;isReadOnly=BOOL;]VALUE
+##vso[task.setsecret]E(V)
+##vso[task.setsecret]E(W)
+##vso[task.setvariable variable=NAME;isSecret=true;isOutput=BOOL;isReadOnly=BOOL;]W
 ```
 
-BOOL is the selected flag's lowercase boolean. Encode VALUE with the existing
-[Azure wire escaping](azure-pipelines.md#wire-contract), then append LF. Validate
-the complete input and checked record length before output; the producer's
-8 MiB record cap applies. Every input/limit/encoding failure exits 1 with empty
-stdout and value-free diagnostics. Do not add a preliminary `setsecret` record:
-one invocation requests one assignment, not a hidden multi-command transaction.
-Output I/O failure may leave a prefix; producer success is not Agent acknowledgment.
+The notation above denotes encoded bytes, not literal function names. BOOL is
+the selected flag's lowercase boolean. Append LF to each record. The second
+mask encodes its own payload once: it registers `W`, not a recursively decoded
+version of `V`. Validate all input and checked lengths before any output;
+each record and the combined output must fit within 8 MiB. Every input/limit/
+encoding failure exits 1 with empty stdout and value-free diagnostics.
+
+This is an explicit non-transactional sequence requesting two mask registrations
+and one assignment. Prior masks may remain when assignment is rejected or output
+is interrupted. Output I/O failure may leave a prefix; there is no rollback,
+and producer success is not Agent acknowledgment.
 
 The raw acquisition cap is separate from the semantic cap. The proposed semantic
 ceiling leaves room below native environment-string limits; it is not a service
@@ -92,11 +150,14 @@ flags without exposing the value in arguments. This remains a documented helper,
 not a new credential client. Stop dependent work on producer failure. The
 profile's clean-task condition is not automatically enforced by a successful
 shell exit or Azure's ordinary success condition: warnings need not fail a task.
-Any producer warning/error means the value may be unmasked and must not be
-logged or used; the post-approval guide must make that operational limitation
-explicit. The writer does not inspect issue inventories or hidden Agent state.
-A blocked/rejected Agent command has no assignment or original-value masking
-guarantee; do not proceed to log/use the attempted value.
+Any producer warning/error means assignment is not established: do not proceed
+to use or log the attempted value. The writer does not inspect issue inventories
+or hidden Agent state. With normal command processing and successful prior mask
+registration under the profile, a read-only assignment rejection must protect
+both `V` and `W` in its diagnostic and subsequent ordinary captured output.
+This is confidentiality of that rejection route, not successful assignment.
+Failure of mask processing itself, disabled command processing, debug-on use,
+pre-interception tracing and arbitrary Agent exceptions are not covered.
 
 The intended secrecy claim covers the registration channel and subsequent
 ordinary Agent-captured stdout/stderr containing the complete value, within the
@@ -109,7 +170,7 @@ metadata must not be dumped into a verifier's logs or artifacts.
 
 ## Finite implementation admission plan
 
-This goal designs the tests; it does not execute new hosted runs. Reuse the
+The approved implementation goal executes this finite plan. Reuse the
 existing parser, mask completed-log verifier and native fixtures rather than
 building an Agent test framework.
 
@@ -120,9 +181,9 @@ building an Agent test framework.
    cap/cap+1. Include `$`, parentheses, literal escapes,
    delimiter and nested-command-looking data as parser-only cases, Unicode,
    one-character and whitespace-only values. Assert exact status/diagnostic,
-   empty stdout on every rejection, one record on success, checked sizing and
+   empty stdout on every rejection, the exact three ordered records on success, checked sizing and
    stdout failure behavior. Directly verify Windows byte delivery. Wrong flags,
-   extra properties/records and changed data must fail negative controls.
+   extra properties/records, omitted or reordered masks and changed data must fail negative controls.
 2. **Same-job positive effects.** On each existing native OS, use six isolated
    jobs: ordinary single-line credential; Unicode plus literal escapes and inert
    delimiters; one ASCII character; one supplementary scalar; whitespace-only;
@@ -164,11 +225,13 @@ building an Agent test framework.
    rejection issue explicitly. Configure that task with continue-on-error and
    run the bounded follow-up checks even after its expected failure, without
    treating the resulting success-with-issues as a positive admission result.
-   The read-only value
-   must remain unchanged for its flag to be admitted. Do not require a blocked
-   new value to be masked or visible: its registration can be partial and these
-   controls are not positive secrecy evidence. Any observed value-bearing
-   rejection diagnostic is a security finding, handled privately before admission.
+   The read-only value must remain unchanged. Match the specific read-only
+   rejection route, require both representations of the new value to be masked
+   in its issues and subsequent stdout/stderr, and inspect the prior-mask
+   registration logs. Use the actual binary and native input helpers, not only
+   a protocol simulator. This proves rejection-route confidentiality, not
+   successful assignment. Any observed value-bearing rejection diagnostic is a
+   security finding, handled privately before admission.
    Do not add a hosted disallowed-name probe to ordinary unrestricted script
    tasks: without configured restrictions that checker allows assignment.
    The source-derived rejection limitation is retained, but that out-of-profile
@@ -193,7 +256,7 @@ building an Agent test framework.
 
 ## Admission decisions and implementation boundary
 
-Source evidence supports the intended routes, not measured secret-output
+Source evidence alone supports the intended routes, not measured secret-output
 propagation or capacity. Implementation must resolve exact delivery, secrecy in
 each destination job, read-only behavior and size admission using the finite
 plan. A mismatch is a failed gate: correct a demonstrated fixture error or

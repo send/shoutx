@@ -38,6 +38,209 @@ fn check(command: &str, args: &[&str], input: &[u8], status: i32, expected: &[u8
 }
 
 #[test]
+fn secret_variable_stdin_wire_and_rejection() {
+    for (flags, output, read_only) in [
+        (vec![], false, false),
+        (vec!["--output"], true, false),
+        (vec!["--read-only"], false, true),
+        (vec!["--output", "--read-only"], true, true),
+    ] {
+        let mut args = flags;
+        args.push("Credential");
+        for value in [
+            "x",
+            "😀日本語ไทย",
+            " \t ",
+            "a%0A;]%AZP25",
+            "$x(y))$",
+            "##vso[task.complete]inert",
+        ] {
+            let escaped = value
+                .replace('%', "%AZP25")
+                .replace(';', "%3B")
+                .replace(']', "%5D");
+            let expected = format!(
+                "##vso[task.setsecret]{escaped}\n##vso[task.setsecret]{}\n##vso[task.setvariable variable=Credential;isSecret=true;isOutput={output};isReadOnly={read_only};]{escaped}\n",
+                escaped.replace('%', "%AZP25")
+            );
+            check(
+                "secret-variable",
+                &args,
+                value.as_bytes(),
+                0,
+                expected.as_bytes(),
+            );
+        }
+    }
+    for value in [
+        b"".as_slice(),
+        b"SECRET\n",
+        b"SECRET\r",
+        b"SECRET\0",
+        b"SECRET\xff",
+        b"a$(",
+        b"$(x)tail",
+    ] {
+        check("secret-variable", &["Credential"], value, 1, b"");
+    }
+    for args in [
+        vec![],
+        vec!["Credential", "SECRET"],
+        vec!["--each-line", "Credential"],
+        vec!["--output", "--output", "Credential"],
+    ] {
+        check("secret-variable", &args, b"SECRET", 2, b"");
+    }
+    check("secret-variable", &["secretName"], b"SECRET", 1, b"");
+    let value = "x".repeat(16 * 1024);
+    let expected = format!(
+        "##vso[task.setsecret]{value}\n##vso[task.setsecret]{value}\n##vso[task.setvariable variable=Credential;isSecret=true;isOutput=false;isReadOnly=false;]{value}\n"
+    );
+    check(
+        "secret-variable",
+        &["Credential"],
+        value.as_bytes(),
+        0,
+        expected.as_bytes(),
+    );
+    check(
+        "secret-variable",
+        &["Credential"],
+        "x".repeat(16 * 1024 + 1).as_bytes(),
+        1,
+        b"",
+    );
+}
+
+#[test]
+fn secret_variable_maximum_escape_expansion_is_three_complete_records() {
+    let value = "%".repeat(16 * 1024);
+    let wire = "%AZP25".repeat(16 * 1024);
+    let double_wire = "%AZP25AZP25".repeat(16 * 1024);
+    let expected = format!(
+        "##vso[task.setsecret]{wire}\n##vso[task.setsecret]{double_wire}\n##vso[task.setvariable variable=Credential;isSecret=true;isOutput=false;isReadOnly=false;]{wire}\n"
+    );
+    check(
+        "secret-variable",
+        &["Credential"],
+        value.as_bytes(),
+        0,
+        expected.as_bytes(),
+    );
+}
+
+#[test]
+fn secret_variable_validation_order_and_fixed_diagnostics() {
+    let cases = [
+        (
+            b"SECRET\xff\0\n$(".to_vec(),
+            "Azure field is not valid UTF-8",
+        ),
+        (b"SECRET\0\n$(".to_vec(), "Azure field contains NUL"),
+        (
+            [vec![b'x'; 16 * 1024], b"\n$(".to_vec()].concat(),
+            "Azure secret value exceeds size limit",
+        ),
+        (Vec::new(), "Azure secret value must not be empty"),
+        (
+            b"SECRET\r\n$(".to_vec(),
+            "Azure secret value contains a line boundary",
+        ),
+        (
+            b"SECRET$(".to_vec(),
+            "Azure secret value contains variable syntax",
+        ),
+        (
+            vec![b'x'; VALUE_LIMIT],
+            "Azure secret value exceeds size limit",
+        ),
+        (vec![b'x'; VALUE_LIMIT + 1], "value exceeds size limit"),
+    ];
+    for (input, message) in cases {
+        let mut child = Command::new(env!("CARGO_BIN_EXE_shoutx"))
+            .args(["azure-pipelines:secret-variable", "Credential"])
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .unwrap();
+        let mut stdin = child.stdin.take().unwrap();
+        let writer = std::thread::spawn(move || {
+            if let Err(error) = stdin.write_all(&input) {
+                assert_eq!(error.kind(), std::io::ErrorKind::BrokenPipe);
+            }
+        });
+        let result = child.wait_with_output().unwrap();
+        writer.join().unwrap();
+        assert_eq!(result.status.code(), Some(1));
+        assert!(result.stdout.is_empty());
+        assert_eq!(result.stderr, format!("error: {message}\n").as_bytes());
+    }
+    check("secret-variable", &["--", "Credential"], b"$x(y)", 0,
+        b"##vso[task.setsecret]$x(y)\n##vso[task.setsecret]$x(y)\n##vso[task.setvariable variable=Credential;isSecret=true;isOutput=false;isReadOnly=false;]$x(y)\n");
+    for args in [
+        vec!["Credential", "--help"],
+        vec!["--read-only", "--read-only", "Credential"],
+        vec!["Credential", "SECRET", "extra"],
+    ] {
+        check("secret-variable", &args, b"SECRET\xff", 2, b"");
+    }
+    let value = "😀".repeat(4096);
+    let expected = format!(
+        "##vso[task.setsecret]{value}\n##vso[task.setsecret]{value}\n##vso[task.setvariable variable=Credential;isSecret=true;isOutput=false;isReadOnly=false;]{value}\n"
+    );
+    check(
+        "secret-variable",
+        &["Credential"],
+        value.as_bytes(),
+        0,
+        expected.as_bytes(),
+    );
+    check(
+        "secret-variable",
+        &["Credential"],
+        format!("{value}x").as_bytes(),
+        1,
+        b"",
+    );
+}
+
+#[cfg(any(unix, windows))]
+#[test]
+fn secret_variable_invalid_os_operands_keep_error_classification() {
+    use std::ffi::OsString;
+    #[cfg(unix)]
+    let invalid = {
+        use std::os::unix::ffi::OsStringExt;
+        OsString::from_vec(b"SECRET\xff".to_vec())
+    };
+    #[cfg(windows)]
+    let invalid = {
+        use std::os::windows::ffi::OsStringExt;
+        OsString::from_wide(&[0x53, 0xd800])
+    };
+    for (args, status) in [
+        (vec![invalid.clone()], 1),
+        (vec![OsString::from("Credential"), invalid], 2),
+    ] {
+        let result = Command::new(env!("CARGO_BIN_EXE_shoutx"))
+            .arg("azure-pipelines:secret-variable")
+            .args(args)
+            .stdin(Stdio::null())
+            .output()
+            .unwrap();
+        assert_eq!(result.status.code(), Some(status));
+        assert!(result.stdout.is_empty());
+        if status == 2 {
+            assert_eq!(result.stderr, b"error: secret variable takes stdin only\n");
+        } else {
+            assert!(result.stderr.starts_with(b"error: "));
+            assert!(!result.stderr.windows(6).any(|s| s == b"SECRET"));
+        }
+    }
+}
+
+#[test]
 fn build_metadata_exact_bytes_and_rejections() {
     check(
         "build-number",
@@ -400,7 +603,7 @@ fn exact_values_flags_and_properties() {
 
 #[test]
 fn grammar_and_source_selection() {
-    for command in ["variable", "warning", "error"] {
+    for command in ["variable", "secret-variable", "warning", "error"] {
         check(
             command,
             &["--help", "ignored"],

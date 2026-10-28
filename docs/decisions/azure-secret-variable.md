@@ -1,24 +1,30 @@
 # Azure secret variable design
 
-Status: Proposed. The maintainer selected design work, not implementation.
+Status: Accepted on 2026-10-27; prior-mask revision accepted on 2026-10-28.
+Implementation is unreleased; the [compatibility record](../compatibility/azure-pipelines.md#secret-variable-hosted-admission)
+owns hosted admission status.
 
 ## Purpose and ownership
 
 Runtime credentials need both a named value for later tasks and a secret flag;
-mask registration alone does not provide assignment. Propose a dedicated writer
-whose [candidate contract](../commands/azure-pipelines-secret-variable.md) owns
+mask registration alone does not provide assignment. Use a dedicated writer
+whose [contract](../commands/azure-pipelines-secret-variable.md) owns
 CLI rules and the finite admission plan. The existing
 [mask decision](azure-secret-boundary.md) remains authoritative for registration
 rationale; [source observations](../compatibility/azure-pipelines.md#secret-variable-source-observations)
 own external behavior. No existing CLI is changed by this decision.
 
-## Proposed choices and alternatives
+## Choices and alternatives
 
 A dedicated destination makes the secret boundary explicit and keeps values out
 of argv. Adding a toggle to the existing argv-capable variable writer would make
 the input channel depend on a flag and complicate misuse diagnostics. An implicit
 mask-plus-variable sequence adds partial effects and is not a substitute for
-verifying the actual secret assignment handler.
+verifying the actual secret assignment handler. The approved revision makes
+prior masking explicit in the command contract: protect both the original and
+wire representations before assignment, while retaining separate assignment
+and propagation gates. Partial masking effects are accepted without promising
+a transaction or changing the credential.
 
 Include explicit output and read-only options: runtime credentials are useful
 across authorized jobs/stages, and callers may request protection from accidental
@@ -45,8 +51,8 @@ runtime-created credential use case.
 
 ## Approval and reconsideration
 
-Approve the dedicated interface, scope options, rejection policy and finite
-admission plan before implementation. A confirmed inability to preserve a value
+The maintainer approved the dedicated interface, scope options, rejection policy
+and finite admission plan. A confirmed inability to preserve a value
 or protect a claimed channel requires evidence and an explicit design change.
 Sanitizing a credential without issuer/consumer agreement changes the credential,
 not its confidentiality. Alternate representations or multiline support need a

@@ -1,5 +1,46 @@
 # Azure hosted smoke
 
+## Secret variable admission
+
+`azure-secret-variable.yml` and `secret-steps.yml` implement the approved
+[finite admission plan](../../docs/commands/azure-pipelines-secret-variable.md#finite-implementation-admission-plan).
+Queue an exact, reviewed full commit SHA without parameter overrides. Configure
+project-limited job authorization before the first run; the CLI's new-pipeline
+default can be collection-wide. Only the final verifier receives the job token.
+Use the existing GitHub read connection and native Azure profile.
+
+The pipeline expands to 21 jobs with a 15-minute cap each. Per OS, the ordinary
+job builds and publishes only a source-bound binary before registration. Other
+jobs download that binary and verify its digest and source/run identity. Secret
+input files contain only public synthetic samples, are created in the temporary
+job directory and are not uploaded. Bash and PowerShell invoke the documented
+stdin helpers without placing the values in argv or capturing successful wire.
+The PowerShell helper is exercised with a native byte sink before packaging.
+
+Each assignment has a separate unmapped task and two explicitly mapped tasks,
+one for stdout and one for stderr. Consumers compare exact values before logging
+calibrated samples. Output assignments additionally cross a job and a stage;
+the final verifier inspects the secret flag and value in source timeline metadata
+only in memory. Control jobs deliberately expose synthetic calibration, omitted
+and non-secret samples; those are not positive secrecy evidence. The isolated
+readonly overwrite must actually be emitted, produce an issue, and leave the
+original value unchanged in a later task.
+
+The completed-log verifier reuses the mask verifier's bounded, read-only API
+retrieval. It rejects missing jobs/tasks/logs, wrong source/job/attempt, incomplete
+blocks, unexpected issues or output metadata, changed values and partial masking.
+It prints only public identities and counts, never raw logs, wire, secret output
+metadata or value hashes. A fixed failure label identifies the failed gate without
+revealing the value. Its final success, not individual green producer tasks,
+is required for admission; results belong in the compatibility record.
+
+Run the offline controls before queueing:
+
+```sh
+python3 -B tests/azure-hosted/test_secret_stdin.py
+python3 -B tests/azure-hosted/test_secret_verify.py
+```
+
 ## Build metadata admission
 
 `azure-metadata.yml` is a dedicated manual fixture for the two metadata writers.

@@ -234,8 +234,9 @@ not as public exploit-bearing follow-up issues.
 
 ### Proposed secret variable boundary
 
-The [secret-variable proposal](commands/azure-pipelines-secret-variable.md) is
-not implemented. Its adversary may supply value/name text, but the trusted caller
+The [approved secret-variable contract](commands/azure-pipelines-secret-variable.md)
+has [scoped hosted evidence](compatibility/azure-pipelines.md#secret-variable-hosted-admission)
+and remains unreleased. Its adversary may supply value/name text, but the trusted caller
 must authorize which validated NAME may be assigned. The adversary does not select
 the trusted workflow, destination, authorized flags or consumer configuration.
 It adds these distinct requirements to the existing Azure framing boundary:
@@ -244,6 +245,7 @@ It adds these distinct requirements to the existing Azure framing boundary:
 | --- | --- | --- |
 | Value/name changes command, flags or destination | Fixed secret assignment, validated name, escaped value and pre-output validation | Caller authorizes the chosen name, collisions and intended scope |
 | Credential is exposed during registration or remains unmasked later | Stdin-only transport, fixed diagnostics and separate registration/completed-log admission under explicit profile conditions | Acquisition, prior logs, process isolation, arbitrary transforms and uploaded files |
+| Read-only assignment rejection discloses the attempted credential | The command contract's ordered prior masks and rejection-route admission protect original and wire representations | Successful mask processing and normal Agent command processing; assignment remains rejected |
 | Variable expansion changes an accepted credential | Reject the ASCII sequence `$(` anywhere and test exact consumer values, distinct from parser equality | Later shell parsing or application-specific interpretation |
 | Output mapping exposes data beyond the intended recipient | Secret flag retained, explicit output request, no unintended auto-export, finite destination-job checks | Trusted workflow author controls dependencies, recipient tasks and service access; absent mapping is not an ACL |
 | Bad input emits an assignment before failure | Full validation and prepared bounded output before stdout | Mid-write I/O failure and Agent restrictions are not transactional |

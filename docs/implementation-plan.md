@@ -457,28 +457,57 @@ remain untested and are not part of the admission claim. Bounded API retries and
 the existing native-only profile were retained. PR #147 merged as `1c63099`
 after latest-head CI/Codex convergence and explicit maintainer direction.
 
-### Selected next design task
+### Current secret variable implementation
 
-The maintainer selected a proposal for dynamic secret-variable assignment
-through `task.setvariable` with `isSecret=true`. This is a design-only increment:
-produce a durable contract proposal, independent Fable review and a private
-Japanese review explanation before requesting implementation approval.
-Keep the existing public CLI and runtime unchanged.
+The maintainer approved dynamic secret-variable assignment through
+`task.setvariable` with `isSecret=true` on 2026-10-27. Design PR #148 merged as
+`7a47324`. The active implementation goal ends with a merge-ready PR, including
+the finite hosted admission, independent review and latest-head CI/Codex convergence.
+Merge and release require separate maintainer direction.
 
-The [decision proposal](decisions/azure-secret-variable.md) links to the single
-candidate contract and finite admission plan. Review remains pending; neither
-the proposed interface nor its input/scope guarantees are implemented.
+The [accepted decision](decisions/azure-secret-variable.md) links to the single
+contract and finite admission plan. The writer, local tests and user guidance
+are implemented; the [compatibility record](compatibility/azure-pipelines.md#secret-variable-hosted-admission)
+owns the completed hosted evidence and its limitations.
+
+On 2026-10-28 the maintainer approved the contract's explicit prior-mask revision.
+The command specification is authoritative for the revised output sequence;
+earlier single-record goal text is superseded, not an alternative implementation
+target. Keep the same merge-ready endpoint, CLI/input policy, output scopes and
+normal-path admission. Merge and publication remain separately authorized.
+The local writer, exact-output/artifact tests and upstream-parser corpus now
+implement the revision. The corpus passed 3,244 cases including 26 negative
+controls; local all-target tests, Clippy and stable-doc checks passed. The hosted
+fixture now routes the rejection attempt through the native stdin helpers and
+checks the specific rejection, both representations and the unchanged binding.
+The scoped verifier correction and hosted revalidation are recorded in that
+single compatibility record, without relabeling the original failed run.
+
+Remaining work is exact-head CI/Codex convergence for
+PR #149. Keep confidential experiment details outside the public worktree per
+SECURITY.md. The focused independent follow-up could not complete because the
+review service rejected it; do not count that attempt as approval or silently
+replace the reviewer. The maintainer explicitly authorized GPT-6.1 Sol as the
+replacement. Its independent read-only review of `a94171e` completed with no
+concrete findings; focused contract, packaged-surface, verifier and native Bash
+helper tests passed. Codex subsequently found a missing whole-log wire-form
+scan in the verifier; the scoped correction at `4029752` has a passing regression
+test and a no-findings GPT-6.1 Sol follow-up. Hosted revalidation is recorded
+in the compatibility record. Final status/documentation closeout follows that review.
+The goal controller remains blocked pending reconfiguration;
+the maintainer authorized manual implementation of the approved revision.
 
 Start from the [secret variable source observations](compatibility/azure-pipelines.md#secret-variable-source-observations)
 and [mask decision](decisions/azure-secret-boundary.md). Determine stdin-only
 delivery, name and flag authorization, exact-value admission/rejection, scope
 and mapping, registration-channel disclosure, and a finite native verification
-plan. Evaluate output/read-only combinations against actual useful workflows;
+plan. Verify output/read-only combinations against actual useful workflows;
 do not infer secret assignment or cross-job secrecy from mask registration.
 The selected boundary is command/field integrity and scoped confidentiality,
 not Agent internals, credential acquisition, vault integration or retrospective
-log cleanup. No implementation, hosted run, profile expansion, merge or release
-is authorized by this design task. New sensitive paths follow SECURITY.md.
+log cleanup. Execute the approved implementation and hosted plan without profile
+expansion. New sensitive paths follow SECURITY.md; unrelated findings become
+confidential follow-up rather than extending this increment.
 
 The first read-only `claude-fable-5-1` design review completed successfully with
 no denied inspections. Accepted findings clarified name authorization, macro
@@ -498,8 +527,28 @@ control continue after expected failure, eliminated duplicated profile rules,
 and explained that Azure's success condition alone does not gate on warnings.
 Source inspection confirmed secret values participate in macro recalculation.
 No third review is needed for these non-contract-changing clarifications.
-The remaining maintainer decision is approval of the proposed interface, scopes,
-input policy and admission plan; implementation remains a separate goal.
+The maintainer subsequently approved the interface, scopes, input policy and
+admission plan and started the implementation goal.
+
+The early implementation checkpoint received a successful read-only Fable
+review with no denied inspections. No concrete writer injection path was found.
+Accepted findings are README/help consistency, a successful escape-heavy test
+independent of macro rejection, fixed-diagnostic/precedence and CLI grammar
+coverage, and current document status. These findings were corrected. The local
+Rust baseline, native Bash helper, process-I/O and artifact checks passed;
+the pinned Azure parser corpus passed with the new secret-variable cases.
+
+The full implementation/hosted-fixture Fable review completed successfully with
+`claude-fable-5-1` and no denied inspections. Accepted findings corrected a
+PowerShell test typo, required evidence that the readonly overwrite was actually
+emitted, checked the indexed output-variable environment names, and rejected
+unexpected output metadata on default-scope assignments. Fixed verifier failure
+labels were added without emitting captured data. A focused follow-up completed
+successfully with no new substantive blocker. Timeline value representation,
+readonly behavior and cross-scope secrecy remain live hypotheses to measure,
+not reasons to silently loosen the gate. The 21-job fixture is in draft PR #149.
+The current admission and review status is recorded above; latest-head
+CI/Codex convergence remains unfinished. Do not merge or publish as part of this goal.
 
 Follow the ordered [release-preparation gates](release.md#next-release-preparation)
 for packaging checks and exact-source evidence when release preparation resumes

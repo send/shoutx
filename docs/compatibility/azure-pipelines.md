@@ -180,6 +180,52 @@ delivery remains unmeasured. Before hosted admission, record the live Agent
 version and recheck these bounded handler paths if it differs from the source
 pin (the latest metadata observation used Agent 5.281.1).
 
+## Secret variable hosted admission
+
+On 2026-10-28 the [finite secret-variable plan](../commands/azure-pipelines-secret-variable.md#finite-implementation-admission-plan)
+passed completed-log verification for all 20 native execution jobs under the
+[specified profile](../design.md#proposed-secret-variable-profile). This is
+unreleased source behavior, not an Azure-wide confidentiality guarantee.
+
+Private Azure run 15 used snapshot `f2195d4cb530651d10f3bb8566d6d668a482a1f0`.
+All 253 tracked file blobs matched local implementation commit
+`3a5e8021ebdf4f3e7f7b331023695e559935855c`; executable modes were not compared.
+The snapshot additionally retained a private source manifest. Both OSes built
+the actual binary and used native byte-stream helpers. Eighteen positive jobs
+succeeded and two isolated rejection-control jobs returned expected issues.
+The observations cover exact same-job, dependent-job and dependent-stage
+delivery, explicit mapping, absence of automatic secret export, secret output
+metadata, ordinary captured stdout/stderr masking, read-only behavior, and the
+16 KiB ASCII/Unicode receiving-path cases. Negative controls distinguished
+unregistered and incorrectly registered values.
+
+Run 15's final verifier failed because Azure copied an expected masked task
+error into the job aggregate log. The correction at
+`a94171e7491b7b95c6a6166645bfa91f39c82ddc` accepts only an exact copy from the
+separately checked rejection task; ten offline tests include altered copies
+and unexpected command output. Private run 16, verifier snapshot
+`3525433c324e44d2ce6712f3028511fd2993a4ca`, succeeded using a project-scoped
+job token to recheck all 20 completed jobs from run 15. No producer, native
+helper or execution fixture changed between these runs. Run 15 remains a
+failed pipeline; run 16 is successful hosted revalidation, not a relabeling
+of that pipeline or a second execution of its producer jobs.
+
+Codex review subsequently identified a missing whole-log scan for the rejected
+value's wire representation outside calibrated marker blocks. The correction
+at `4029752b6294e5f355c1fc2730ab08814d663953` has 11 passing offline tests,
+including original/wire disclosure mutations in task and aggregate logs.
+Private hosted run 17, snapshot `66333fbc84f9a17b1a56c5c915b7e14302e3b4c0`,
+successfully revalidated the same 20 completed jobs with this stricter scan
+and a project-scoped job token. This supersedes run 16's verifier coverage;
+the producer binary and execution fixture remained unchanged.
+
+Observed Agent: `5.281.1`. Images: Ubuntu 24.04 `20261023.334.3` and
+`20261026.354.1`; Windows 2025 `20261021.299.1`. Binary SHA-256 values were
+`cb8cc43e0e5bee668e24ad35ffcfed57743ce9e9dd63dfe9832bab8e269553fa` on Linux
+and `4343348716060d4b281e3502aa902010a27aeb12edb410df3f85c9dad06d740e` on
+Windows, unchanged across receiving jobs on each OS. Private evidence retains
+source mappings and bounded outcomes, not captured credential logs or values.
+
 ## Verification status
 
 Local checks on macOS arm64, 2026-10-20:

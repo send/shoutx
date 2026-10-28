@@ -170,6 +170,7 @@ GitHub Actions stdout commands:
 
 Azure Pipelines commands (unreleased):
   shoutx azure-pipelines:variable [--output] [--read-only] NAME [VALUE]
+  shoutx azure-pipelines:secret-variable [--output] [--read-only] NAME
   shoutx azure-pipelines:warning [--file FILE] [--line N] [--column N] [--code CODE] [MESSAGE]
   shoutx azure-pipelines:error   [--file FILE] [--line N] [--column N] [--code CODE] [MESSAGE]
   shoutx azure-pipelines:path [PATH]
@@ -227,6 +228,11 @@ The source also implements `azure-pipelines:build-number [NUMBER]` and
 `--` before untrusted argv data, or newline-free stdin. They do not trim or
 rename values. See the [metadata contract](docs/commands/azure-pipelines.md#build-metadata)
 and the [profile's required tag setting](docs/design.md#azure-pipelines-profile).
+
+The source includes an unreleased `azure-pipelines:secret-variable` writer.
+See its [stdin-only interface and usage examples](docs/commands/azure-pipelines-secret-variable.md)
+and [scoped hosted evidence](docs/compatibility/azure-pipelines.md#secret-variable-hosted-admission).
+Apply the documented deployment conditions before using credentials.
 
 ## GitHub Actions writers
 

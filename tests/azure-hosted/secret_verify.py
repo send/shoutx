@@ -88,7 +88,12 @@ def check_job(case, job, records, logs, source, run):
     for name, lines in named.items():
         for line in lines:
             if "##vso[task.setvariable " in line:
-                require(control and name == "Expected readonly rejection"
+                # Azure also copies the task error into the job aggregate log.
+                # Accept only an exact copy from the separately checked task.
+                rejection_origin = name == "Expected readonly rejection"
+                aggregate_copy = (name == job["name"]
+                                  and line in named.get("Expected readonly rejection", []))
+                require(control and (rejection_origin or aggregate_copy)
                         and MASKED_REJECTION_COMMAND in line
                         and line.count("##vso[task.setvariable ") == 1,
                         "registration wire visible")

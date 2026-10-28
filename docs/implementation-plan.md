@@ -479,10 +479,16 @@ implement the revision. The corpus passed 3,244 cases including 26 negative
 controls; local all-target tests, Clippy and stable-doc checks passed. The hosted
 fixture now routes the rejection attempt through the native stdin helpers and
 checks the specific rejection, both representations and the unchanged binding.
-These fixture edits are not yet hosted evidence for the revised binary.
+The revised binary has now executed the finite native fixture on both OSes.
+All 18 positive jobs succeeded; the two rejection controls produced their
+expected issues. The final hosted verifier rejected Azure's job-log copy of an
+already checked, masked task error. A scoped verifier correction accepts only
+that exact copy; ten offline tests, including altered/unexpected copies, pass.
+Rechecking all 20 completed jobs with the corrected verifier passed. This is
+completed-run revalidation, not a successful hosted pipeline result; retain
+the failed run and private source mapping as evidence rather than relabeling it.
 
-Remaining work is real-binary/native-helper hosted admission on both OSes,
-final user guidance, independent review and exact-head CI/Codex convergence for
+Remaining work is hosted verifier convergence, independent review and exact-head CI/Codex convergence for
 PR #149. Keep confidential experiment details outside the public worktree per
 SECURITY.md. The focused independent follow-up could not complete because the
 review service rejected it; do not count that attempt as approval or silently

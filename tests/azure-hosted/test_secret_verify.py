@@ -109,6 +109,25 @@ class SecretAdmission(unittest.TestCase):
             with self.assertRaises(RuntimeError):
                 check_job(case, job, changed, logs, "source", "1")
 
+    def test_readonly_aggregate_copy(self):
+        job, records, logs = fixture("control")
+        rejection = next(r for r in records if r["name"] == "Expected readonly rejection")
+        error = next(line for line in logs[rejection["log"]["id"]].splitlines()
+                     if b"##vso[task.setvariable " in line)
+        job["log"] = {"id": 1000}
+        logs[1000] = error + b"\n"
+        check_job("control", job, records, logs, "source", "1")
+        for changed in (b"changed prefix " + error + b"\n",
+                        error.replace(b"***", b"visible") + b"\n",
+                        error + b"\n##vso[task.setvariable variable=Extra;]x\n"):
+            with self.assertRaises(RuntimeError):
+                check_job("control", job, records, {**logs, 1000: changed}, "source", "1")
+        consume = next(r for r in records if r["name"] == "Consume 0 OUT")
+        with self.assertRaises(RuntimeError):
+            check_job("control", job, records,
+                      {**logs, consume["log"]["id"]: logs[consume["log"]["id"]] + error + b"\n"},
+                      "source", "1")
+
     def test_output_flags_data_and_missing_consumers(self):
         job, records, logs = fixture("output")
         redacted = copy.deepcopy(records)

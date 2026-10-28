@@ -66,8 +66,8 @@ not silently turn intended coverage into a zero-test success.
 
 Source-configuration tests check the exact enumerable command table and
 exhaustive dispatch. The independently specified LF help golden and version
-bytes must match each native artifact. The artifact verifier executes all seventeen
-writers, including Unicode mask/message/metadata cases, and checks exact stdout,
+bytes must match each native artifact. The artifact verifier exercises the
+implemented surface, including Unicode mask/message/metadata cases, and checks exact stdout,
 stderr and status. It also checks unsupported commands and rejected input with
 empty stdout. Negative controls corrupt status, output bytes and diagnostics
 to verify the result checker rejects them. Binary marker absence is no longer

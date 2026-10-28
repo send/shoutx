@@ -8,7 +8,7 @@ import subprocess
 import sys
 
 from mask_producer import emit_block
-from secret_cases import (ALL_JOBS, SAME_JOB, SENTINEL, assignments, expected_blocks,
+from secret_cases import (ALL_JOBS, SAME_JOB, SENTINEL, assignments, expected_blocks, escaped,
                           CONTROL_PLAIN, CONTROL_OMITTED, CONTROL_WRONG,
                           CONTROL_ORIGINAL, CONTROL_REPLACEMENT)
 
@@ -55,6 +55,10 @@ def prepare(case):
         with path.open("xb") as stream:
             os.chmod(path, 0o600)
             stream.write(assignment.value.encode("utf-8"))
+    if case == "control":
+        with input_path("replacement").open("xb") as stream:
+            os.chmod(input_path("replacement"), 0o600)
+            stream.write(CONTROL_REPLACEMENT.encode("utf-8"))
     if case in ("size", "control"):
         for value in (b"x" * 16_385, "😀".encode() * 4096 + b"x", b"x\n", b"x$("):
             result = subprocess.run([str(binary()), "azure-pipelines:secret-variable", "Rejected"],
@@ -121,12 +125,12 @@ def control(phase):
     elif phase == "omission-check":
         print("SV_OMISSION_BEGIN\n" + CONTROL_OMITTED + "\nSV_OMISSION_END", flush=True)
         print("SV_WRONG_BEGIN\n" + CONTROL_OMITTED + "\nSV_WRONG_END", flush=True)
-    elif phase == "overwrite":
-        command(["azure-pipelines:secret-variable", "Locked"], CONTROL_REPLACEMENT)
-        print("SV_OVERWRITE_REQUESTED", flush=True)
     elif phase == "readonly-check":
         require(env_bytes("SV_MAPPED") == CONTROL_ORIGINAL.encode())
         print("SV_READONLY_UNCHANGED", flush=True)
+        for stream, target in (("OUT", sys.stdout.buffer), ("ERR", sys.stderr.buffer)):
+            for form, value in (("RAW", CONTROL_REPLACEMENT), ("WIRE", escaped(CONTROL_REPLACEMENT))):
+                emit_block(target, "SV_REJECTED_" + stream + "_" + form, [value])
     else:
         raise RuntimeError("unknown control phase")
 

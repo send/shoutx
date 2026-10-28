@@ -8,7 +8,8 @@ from unittest.mock import patch
 from secret_cases import (ALL_JOBS, SAME_JOB, SENTINEL, assignments, expected_blocks,
                           CONTROL_PLAIN, CONTROL_OMITTED)
 from secret_producer import consume, unmapped
-from secret_verify import check_inventory, check_job
+from secret_verify import (attach_task_metadata, check_inventory, check_job,
+                           READONLY_ISSUE, MASKED_REJECTION_COMMAND)
 
 
 def fixture(case):
@@ -50,12 +51,17 @@ def fixture(case):
         phases["Control omission-check"] = lines
         phases["Expected readonly rejection"] = ["SV_OVERWRITE_REQUESTED"]
         phases["Readonly followup"] = ["SV_READONLY_UNCHANGED"]
+        for stream in ("OUT", "ERR"):
+            for form in ("RAW", "WIRE"):
+                block(phases["Readonly followup"], "SV_REJECTED_" + stream + "_" + form, ["***"])
     records, logs = [], {}
     for index, (name, lines) in enumerate(phases.items(), 1):
         record = {"id": str(index), "parentId": "job", "type": "Task", "name": name,
                   "state": "completed", "result": "succeeded", "attempt": 1, "log": {"id": index}}
         if name == "Expected readonly rejection":
-            record["issues"] = [{"type": "error", "message": "readonly variable rejected"}]
+            record["issues"] = [{"type": "error", "message": READONLY_ISSUE},
+                                {"type": "error", "message": "Unable to process command '" + MASKED_REJECTION_COMMAND}]
+            lines.append("##[error]Unable to process command '" + MASKED_REJECTION_COMMAND)
             record["result"] = "succeededWithIssues"
         if case == "output" and name.startswith("Register "):
             item = assignments(case)[int(name.split()[1])]
@@ -105,6 +111,11 @@ class SecretAdmission(unittest.TestCase):
 
     def test_output_flags_data_and_missing_consumers(self):
         job, records, logs = fixture("output")
+        redacted = copy.deepcopy(records)
+        for record in redacted:
+            for variable in record.get("variables", {}).values():
+                variable["value"] = None
+        check_job("output", job, redacted, logs, "source", "1")
         for variable in [{"value": assignments("output")[0].value, "isSecret": False},
                          {"value": "changed", "isSecret": True},
                          {"value": assignments("output")[0].value[:-1], "isSecret": True}]:
@@ -120,6 +131,51 @@ class SecretAdmission(unittest.TestCase):
         next(r for r in changed if r["name"] == "Register 0")["variables"] = {}
         with self.assertRaises(RuntimeError):
             check_job("output", job, changed, logs, "source", "1")
+
+    def test_metadata_association_cannot_switch_task_or_attempt(self):
+        _, records, _ = fixture("output")
+        metadata = copy.deepcopy(records)
+        for record in records:
+            record.pop("variables", None)
+        attach_task_metadata(records, metadata)
+        self.assertTrue(any(r.get("variables") for r in records))
+        for field, value in [("id", "wrong"), ("parentId", "wrong"), ("attempt", 2)]:
+            changed = copy.deepcopy(metadata)
+            next(r for r in changed if r["name"] == "Register 0")[field] = value
+            with self.assertRaises(RuntimeError):
+                attach_task_metadata(records, changed)
+        with self.assertRaises(RuntimeError):
+            attach_task_metadata(records, metadata + [metadata[0]])
+
+    def test_agent_metadata_is_not_an_assignment(self):
+        for case in ("ordinary", "output"):
+            job, records, logs = fixture(case)
+            for record in records:
+                if record["name"].startswith("Register "):
+                    record.setdefault("variables", {})["agent.version"] = {"value": "5.280.0"}
+            check_job(case, job, records, logs, "source", "1")
+            for key, value in [("agent.version", {"value": "wrong"}),
+                               ("agent.version", {"value": "5.280.0", "isSecret": True}),
+                               ("Extra", {"value": "unexpected"})]:
+                changed = copy.deepcopy(records)
+                next(r for r in changed if r["name"] == "Register 0")["variables"][key] = value
+                with self.assertRaises(RuntimeError):
+                    check_job(case, job, changed, logs, "source", "1")
+
+    def test_rejection_route_and_masking_are_required(self):
+        job, records, logs = fixture("control")
+        for message in ("wrong rejection", assignments("control")[0].value):
+            changed = copy.deepcopy(records)
+            next(r for r in changed if r["name"] == "Expected readonly rejection")["issues"][0]["message"] = message
+            with self.assertRaises(RuntimeError):
+                check_job("control", job, changed, logs, "source", "1")
+        follow = next(r["log"]["id"] for r in records if r["name"] == "Readonly followup")
+        with self.assertRaises(RuntimeError):
+            check_job("control", job, records, {**logs, follow: logs[follow].replace(b"***", b"**", 1)}, "source", "1")
+        reject = next(r["log"]["id"] for r in records if r["name"] == "Expected readonly rejection")
+        for leaked in (b"##vso[task.setsecret]unexpected\n", b"##vso[task.setvariable variable=Extra;]x\n"):
+            with self.assertRaises(RuntimeError):
+                check_job("control", job, records, {**logs, reject: logs[reject] + leaked}, "source", "1")
 
     def test_wrong_or_truncated_consumer_value_fails_before_logging(self):
         for value in ("wrong", assignments("ordinary")[0].value[:-1]):

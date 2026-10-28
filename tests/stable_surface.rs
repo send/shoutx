@@ -101,7 +101,7 @@ fn packaged_binary_exposes_complete_surface() {
             .unwrap();
         let actual = child.wait_with_output().unwrap();
         let expected = format!(
-            "##vso[task.setvariable variable=Credential;isSecret=true;isOutput={output};isReadOnly={read_only};]α😀%AZP250A%3B%5D\n"
+            "##vso[task.setsecret]α😀%AZP250A%3B%5D\n##vso[task.setsecret]α😀%AZP25AZP250A%AZP253B%AZP255D\n##vso[task.setvariable variable=Credential;isSecret=true;isOutput={output};isReadOnly={read_only};]α😀%AZP250A%3B%5D\n"
         );
         assert!(
             matches_result(

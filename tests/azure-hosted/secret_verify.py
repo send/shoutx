@@ -4,11 +4,27 @@ import os
 import re
 import sys
 import urllib.parse
+import uuid
 
 from mask_verify import LIMIT, exact_block, fetch, log_lines, require
 from secret_cases import (ALL_JOBS, SAME_JOB, assignments, expected_blocks, escaped,
                           CONTROL_PLAIN, CONTROL_OMITTED, CONTROL_WRONG,
                           CONTROL_REPLACEMENT)
+
+READONLY_ISSUE = "Overwriting readonly variable 'Locked' is not permitted. See https://github.com/microsoft/azure-pipelines-yaml/blob/master/design/readonly-variables.md for details."
+MASKED_REJECTION_COMMAND = "##vso[task.setvariable variable=Locked;isSecret=true;isOutput=false;isReadOnly=false;]***'"
+
+
+def output_variables(record, identity):
+    variables = dict(record.get("variables", {}))
+    # Task Timeline also publishes this Agent-owned runtime identity. Exclude
+    # only this exact key, after matching it to the producing job's identity.
+    if "agent.version" in variables:
+        version = variables.pop("agent.version")
+        require(version.get("value") == identity["agent"]
+                and version.get("isSecret", False) is False,
+                "agent metadata mismatch")
+    return variables
 
 
 def check_job(case, job, records, logs, source, run):
@@ -25,8 +41,12 @@ def check_job(case, job, records, logs, source, run):
         require(record.get("attempt", 1) == job.get("attempt", 1), "wrong task attempt")
         issues = record.get("issues", [])
         if expected_rejection:
-            require(issues and record.get("result") in ("succeededWithIssues", "failed", "succeeded"),
+            require(len(issues) == 2 and record.get("result") in ("succeededWithIssues", "failed"),
                     "missing readonly rejection")
+            messages = [issue.get("message", "") for issue in issues]
+            require(messages.count(READONLY_ISSUE) == 1, "wrong rejection route")
+            require(sum(MASKED_REJECTION_COMMAND in message for message in messages) == 1,
+                    "wrong rejection redaction")
             for issue in issues:
                 message = issue.get("message", "")
                 for value in (CONTROL_REPLACEMENT, *(a.value for a in assignments(case))):
@@ -65,14 +85,23 @@ def check_job(case, job, records, logs, source, run):
             "wrong image generation")
     joined = b"\n".join(raw_parts).decode("utf-8", errors="strict")
     require("##[debug]" not in joined, "debug enabled")
-    require("##vso[task.setvariable " not in joined, "registration wire visible")
+    for name, lines in named.items():
+        for line in lines:
+            if "##vso[task.setvariable " in line:
+                require(control and name == "Expected readonly rejection"
+                        and MASKED_REJECTION_COMMAND in line
+                        and line.count("##vso[task.setvariable ") == 1,
+                        "registration wire visible")
+    # The expected rejection contains the masked assignment line, but a prior
+    # mask registration must never become ordinary log output.
+    require("##vso[task.setsecret]" not in joined, "mask registration wire visible")
     for index, assignment in enumerate(assignments(case)):
         if case not in ("dependent", "stage"):
             register = named.get(f"Register {index}", [])
             require(register.count(f"SV_REGISTERED_{index}") == 1, "missing registration")
             if not assignment.output:
                 registrations = [r for r in owned if r.get("name") == f"Register {index}"]
-                require(len(registrations) == 1 and not registrations[0].get("variables"),
+                require(len(registrations) == 1 and not output_variables(registrations[0], identity),
                         "unexpected output metadata")
         unmapped = named.get(f"Unmapped {index}", [])
         require(unmapped.count(f"SV_UNMAPPED_{index}_OK") == 1, "missing unmapped check")
@@ -87,10 +116,13 @@ def check_job(case, job, records, logs, source, run):
         if case == "output":
             registrations = [record for record in owned if record.get("name") == f"Register {index}"]
             require(len(registrations) == 1, "missing output source")
-            variables = registrations[0].get("variables", {})
+            variables = output_variables(registrations[0], identity)
             require(set(variables) == {assignment.name}, "wrong output variables")
             variable = variables[assignment.name]
-            require(variable.get("isSecret") is True and variable.get("value") == assignment.value,
+            # Task Timeline retains the secret flag but returns null for the
+            # value. Exact bytes are checked in each actual receiving task.
+            require(variable.get("isSecret") is True and "value" in variable
+                    and variable["value"] in (None, assignment.value),
                     "output metadata mismatch")
     if case in ("size", "control"):
         require(prepare.count("SV_REJECTIONS_OK") == 1, "missing rejection probes")
@@ -111,6 +143,9 @@ def check_job(case, job, records, logs, source, run):
             exact_block(named.get("Control omission-check", []), tag, [CONTROL_OMITTED])
         require(named.get("Readonly followup", []).count("SV_READONLY_UNCHANGED") == 1,
                 "readonly changed or unchecked")
+        for stream in ("OUT", "ERR"):
+            for form in ("RAW", "WIRE"):
+                exact_block(named.get("Readonly followup", []), "SV_REJECTED_" + stream + "_" + form, ["***"])
         require(named.get("Expected readonly rejection", []).count("SV_OVERWRITE_REQUESTED") == 1,
                 "overwrite not requested")
         require(any(r.get("name") == "Expected readonly rejection" and r.get("issues") for r in owned),
@@ -128,6 +163,20 @@ def check_inventory(records):
     require(len(names) == 21 and set(names) == expected, "unexpected job inventory")
 
 
+def attach_task_metadata(records, metadata):
+    by_id = {record["id"]: record for record in metadata}
+    require(len(by_id) == len(metadata), "duplicate task metadata")
+    for record in records:
+        if record.get("type") != "Task" or not record.get("name", "").startswith("Register "):
+            continue
+        require(record["id"] in by_id, "missing task metadata")
+        source = by_id[record["id"]]
+        require(source.get("parentId") == record.get("parentId")
+                and source.get("name") == record.get("name")
+                and source.get("attempt", 1) == record.get("attempt", 1), "task metadata mismatch")
+        record["variables"] = source.get("variables", {})
+
+
 def verify():
     collection = os.environ["SYSTEM_COLLECTIONURI"]
     require(collection.startswith("https://dev.azure.com/"), "unexpected API origin")
@@ -138,8 +187,20 @@ def verify():
     token = os.environ["SYSTEM_ACCESSTOKEN"]
     build = json.loads(fetch("?api-version=7.1", token, base, LIMIT))
     require(build["sourceVersion"] == source and str(build["id"]) == run, "wrong source/run")
-    records = json.loads(fetch("/timeline?api-version=7.1", token, base, LIMIT))["records"]
+    timeline = json.loads(fetch("/timeline?api-version=7.1", token, base, LIMIT))
+    records = timeline["records"]
     check_inventory(records)
+    # Build Timeline omits variables entirely. Read the matching Task Timeline
+    # in the same project and orchestration plan, without persisting its body.
+    plan_id = str(uuid.UUID(build["orchestrationPlan"]["planId"]))
+    timeline_id = str(uuid.UUID(timeline["id"]))
+    task_base = (collection.rstrip("/") + "/" + project
+                 + "/_apis/distributedtask/hubs/build/plans/" + plan_id
+                 + "/timelines/" + timeline_id)
+    metadata = json.loads(fetch("/records?api-version=7.1", token, task_base, LIMIT))
+    require(metadata.get("count") == len(metadata["value"])
+            and not metadata.get("continuationToken"), "incomplete task metadata")
+    attach_task_metadata(records, metadata["value"])
     inventory = json.loads(fetch("/logs?api-version=7.1", token, base, LIMIT))["value"]
     counts = {entry["id"]: entry["lineCount"] for entry in inventory}
     require(len(counts) == len(inventory), "duplicate log inventory")

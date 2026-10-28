@@ -319,8 +319,10 @@ The [approved secret-variable contract](commands/azure-pipelines-secret-variable
 is being implemented and is not yet admitted. Its candidate profile reuses the native Azure profile and mask
 prerequisites above, applying the settings to both producing and receiving jobs.
 Use ordinary script tasks and caller-authorized names permitted by task restrictions,
-without pre-existing read-only collisions, custom-task declared output overrides
-or changes to consumer settings. Producer completion must be clean, with no
+without custom-task declared output overrides or changes to consumer settings.
+Successful assignment additionally requires no pre-existing read-only collision;
+the command contract separately specifies confidentiality for that rejection route.
+Producer completion must be clean, with no
 warning/error issues, before dependent use. These are deployment conditions,
 not hidden state that the writer can inspect or enforce. Admission of secret
 output mapping across jobs/stages remains a required implementation gate.

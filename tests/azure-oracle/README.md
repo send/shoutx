@@ -12,12 +12,16 @@ files into a temporary directory, compiles them unchanged with a constructor
 assertion stub, and compares actual CLI output with independently supplied
 command/property/data expectations. No production dependency is added.
 
-It checks 1,874 successful cases (including 333 native PATH cases) and seventeen
+It checks 3,218 successful cases (including 333 native PATH cases) and twenty-six
 discriminating negative controls. PATH cases require the fixed `prependpath`
 event, no properties and exact decoded input; native validation precedes them.
 Metadata cases check the distinct `build` area, fixed event, empty properties
 and exact data, including Unicode, literal escapes and UTF-16 length boundaries.
 Wrong-area controls ensure task and build commands are not interchangeable.
+Secret-variable cases cover all four output/read-only flag combinations, exact
+secret properties, Unicode, literal escapes, inert command-like data and the
+semantic cap. Negative controls flip each boolean, add a property or add a
+second command. Consumer assignment, scope and masking are separate hosted gates.
 Randomized cases use a fixed seed across Unicode scalar values; this is a
 regression corpus, not a character-set proof. Only bounded counts and source
 identity are printed. Fetch/build/process failures fail the test.

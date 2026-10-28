@@ -60,7 +60,8 @@ fn secret_variable_stdin_wire_and_rejection() {
                 .replace(';', "%3B")
                 .replace(']', "%5D");
             let expected = format!(
-                "##vso[task.setvariable variable=Credential;isSecret=true;isOutput={output};isReadOnly={read_only};]{escaped}\n"
+                "##vso[task.setsecret]{escaped}\n##vso[task.setsecret]{}\n##vso[task.setvariable variable=Credential;isSecret=true;isOutput={output};isReadOnly={read_only};]{escaped}\n",
+                escaped.replace('%', "%AZP25")
             );
             check(
                 "secret-variable",
@@ -93,7 +94,7 @@ fn secret_variable_stdin_wire_and_rejection() {
     check("secret-variable", &["secretName"], b"SECRET", 1, b"");
     let value = "x".repeat(16 * 1024);
     let expected = format!(
-        "##vso[task.setvariable variable=Credential;isSecret=true;isOutput=false;isReadOnly=false;]{value}\n"
+        "##vso[task.setsecret]{value}\n##vso[task.setsecret]{value}\n##vso[task.setvariable variable=Credential;isSecret=true;isOutput=false;isReadOnly=false;]{value}\n"
     );
     check(
         "secret-variable",
@@ -108,6 +109,23 @@ fn secret_variable_stdin_wire_and_rejection() {
         "x".repeat(16 * 1024 + 1).as_bytes(),
         1,
         b"",
+    );
+}
+
+#[test]
+fn secret_variable_maximum_escape_expansion_is_three_complete_records() {
+    let value = "%".repeat(16 * 1024);
+    let wire = "%AZP25".repeat(16 * 1024);
+    let double_wire = "%AZP25AZP25".repeat(16 * 1024);
+    let expected = format!(
+        "##vso[task.setsecret]{wire}\n##vso[task.setsecret]{double_wire}\n##vso[task.setvariable variable=Credential;isSecret=true;isOutput=false;isReadOnly=false;]{wire}\n"
+    );
+    check(
+        "secret-variable",
+        &["Credential"],
+        value.as_bytes(),
+        0,
+        expected.as_bytes(),
     );
 }
 
@@ -159,7 +177,7 @@ fn secret_variable_validation_order_and_fixed_diagnostics() {
         assert_eq!(result.stderr, format!("error: {message}\n").as_bytes());
     }
     check("secret-variable", &["--", "Credential"], b"$x(y)", 0,
-        b"##vso[task.setvariable variable=Credential;isSecret=true;isOutput=false;isReadOnly=false;]$x(y)\n");
+        b"##vso[task.setsecret]$x(y)\n##vso[task.setsecret]$x(y)\n##vso[task.setvariable variable=Credential;isSecret=true;isOutput=false;isReadOnly=false;]$x(y)\n");
     for args in [
         vec!["Credential", "--help"],
         vec!["--read-only", "--read-only", "Credential"],
@@ -169,7 +187,7 @@ fn secret_variable_validation_order_and_fixed_diagnostics() {
     }
     let value = "😀".repeat(4096);
     let expected = format!(
-        "##vso[task.setvariable variable=Credential;isSecret=true;isOutput=false;isReadOnly=false;]{value}\n"
+        "##vso[task.setsecret]{value}\n##vso[task.setsecret]{value}\n##vso[task.setvariable variable=Credential;isSecret=true;isOutput=false;isReadOnly=false;]{value}\n"
     );
     check(
         "secret-variable",

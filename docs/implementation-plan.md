@@ -469,6 +469,26 @@ The [accepted decision](decisions/azure-secret-variable.md) links to the single
 contract and finite admission plan. The writer and local tests are in progress;
 hosted admission is not yet established.
 
+On 2026-10-28 the maintainer approved the contract's explicit prior-mask revision.
+The command specification is authoritative for the revised output sequence;
+earlier single-record goal text is superseded, not an alternative implementation
+target. Keep the same merge-ready endpoint, CLI/input policy, output scopes and
+normal-path admission. Merge and publication remain separately authorized.
+The local writer, exact-output/artifact tests and upstream-parser corpus now
+implement the revision. The corpus passed 3,244 cases including 26 negative
+controls; local all-target tests, Clippy and stable-doc checks passed. The hosted
+fixture now routes the rejection attempt through the native stdin helpers and
+checks the specific rejection, both representations and the unchanged binding.
+These fixture edits are not yet hosted evidence for the revised binary.
+
+Remaining work is real-binary/native-helper hosted admission on both OSes,
+final user guidance, independent review and exact-head CI/Codex convergence for
+PR #149. Keep confidential experiment details outside the public worktree per
+SECURITY.md. The focused independent follow-up could not complete because the
+review service rejected it; do not count that attempt as approval or silently
+replace the reviewer. The goal controller remains blocked pending reconfiguration;
+the maintainer authorized manual implementation of the approved revision.
+
 Start from the [secret variable source observations](compatibility/azure-pipelines.md#secret-variable-source-observations)
 and [mask decision](decisions/azure-secret-boundary.md). Determine stdin-only
 delivery, name and flag authorization, exact-value admission/rejection, scope
@@ -506,10 +526,21 @@ The early implementation checkpoint received a successful read-only Fable
 review with no denied inspections. No concrete writer injection path was found.
 Accepted findings are README/help consistency, a successful escape-heavy test
 independent of macro rejection, fixed-diagnostic/precedence and CLI grammar
-coverage, and current document status. A focused follow-up remains required
-after the complete implementation and hosted fixtures are ready. Hosted
-verification, Windows helper adaptation, parser-corpus coverage, user guidance
-and latest-head CI/Codex convergence remain unfinished.
+coverage, and current document status. These findings were corrected. The local
+Rust baseline, native Bash helper, process-I/O and artifact checks passed;
+the pinned Azure parser corpus passed with the new secret-variable cases.
+
+The full implementation/hosted-fixture Fable review completed successfully with
+`claude-fable-5-1` and no denied inspections. Accepted findings corrected a
+PowerShell test typo, required evidence that the readonly overwrite was actually
+emitted, checked the indexed output-variable environment names, and rejected
+unexpected output metadata on default-scope assignments. Fixed verifier failure
+labels were added without emitting captured data. A focused follow-up completed
+successfully with no new substantive blocker. Timeline value representation,
+readonly behavior and cross-scope secrecy remain live hypotheses to measure,
+not reasons to silently loosen the gate. The 21-job fixture is in draft PR #149.
+Hosted admission, final user guidance and latest-head CI/Codex convergence remain
+unfinished. Do not merge or publish as part of this goal.
 
 Follow the ordered [release-preparation gates](release.md#next-release-preparation)
 for packaging checks and exact-source evidence when release preparation resumes

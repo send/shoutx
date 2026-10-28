@@ -1,6 +1,6 @@
 # Azure Pipelines secret variable
 
-Status: Design approved by the maintainer on 2026-10-27; implementation in progress,
+Status: Design approved on 2026-10-27, prior-mask revision approved on 2026-10-28; implementation in progress,
 not admitted. This specification owns the CLI, input rules and admission plan;
 the [decision](../decisions/azure-secret-variable.md) owns rationale. Existing
 commands and the published release are unchanged.
@@ -55,19 +55,27 @@ Do not trim, consume producer framing, normalize, case-fold or sanitize.
 Single-character and whitespace-only values are permitted subject to the
 profile and explicit acceptance of their overmasking cost.
 
-Prepare exactly one record, with fixed properties and ordering:
+Let `E` be the existing [Azure wire encoding](azure-pipelines.md#wire-contract),
+`V` the unchanged input value, and `W = E(V)`. Prepare exactly three records,
+with fixed properties and ordering, even when `V` and `W` are identical:
 
 ```text
-##vso[task.setvariable variable=NAME;isSecret=true;isOutput=BOOL;isReadOnly=BOOL;]VALUE
+##vso[task.setsecret]E(V)
+##vso[task.setsecret]E(W)
+##vso[task.setvariable variable=NAME;isSecret=true;isOutput=BOOL;isReadOnly=BOOL;]W
 ```
 
-BOOL is the selected flag's lowercase boolean. Encode VALUE with the existing
-[Azure wire escaping](azure-pipelines.md#wire-contract), then append LF. Validate
-the complete input and checked record length before output; the producer's
-8 MiB record cap applies. Every input/limit/encoding failure exits 1 with empty
-stdout and value-free diagnostics. Do not add a preliminary `setsecret` record:
-one invocation requests one assignment, not a hidden multi-command transaction.
-Output I/O failure may leave a prefix; producer success is not Agent acknowledgment.
+The notation above denotes encoded bytes, not literal function names. BOOL is
+the selected flag's lowercase boolean. Append LF to each record. The second
+mask encodes its own payload once: it registers `W`, not a recursively decoded
+version of `V`. Validate all input and checked lengths before any output;
+each record and the combined output must fit within 8 MiB. Every input/limit/
+encoding failure exits 1 with empty stdout and value-free diagnostics.
+
+This is an explicit non-transactional sequence requesting two mask registrations
+and one assignment. Prior masks may remain when assignment is rejected or output
+is interrupted. Output I/O failure may leave a prefix; there is no rollback,
+and producer success is not Agent acknowledgment.
 
 The raw acquisition cap is separate from the semantic cap. The proposed semantic
 ceiling leaves room below native environment-string limits; it is not a service
@@ -92,11 +100,14 @@ flags without exposing the value in arguments. This remains a documented helper,
 not a new credential client. Stop dependent work on producer failure. The
 profile's clean-task condition is not automatically enforced by a successful
 shell exit or Azure's ordinary success condition: warnings need not fail a task.
-Any producer warning/error means the value may be unmasked and must not be
-logged or used; the post-approval guide must make that operational limitation
-explicit. The writer does not inspect issue inventories or hidden Agent state.
-A blocked/rejected Agent command has no assignment or original-value masking
-guarantee; do not proceed to log/use the attempted value.
+Any producer warning/error means assignment is not established: do not proceed
+to use or log the attempted value. The writer does not inspect issue inventories
+or hidden Agent state. With normal command processing and successful prior mask
+registration under the profile, a read-only assignment rejection must protect
+both `V` and `W` in its diagnostic and subsequent ordinary captured output.
+This is confidentiality of that rejection route, not successful assignment.
+Failure of mask processing itself, disabled command processing, debug-on use,
+pre-interception tracing and arbitrary Agent exceptions are not covered.
 
 The intended secrecy claim covers the registration channel and subsequent
 ordinary Agent-captured stdout/stderr containing the complete value, within the
@@ -120,9 +131,9 @@ building an Agent test framework.
    cap/cap+1. Include `$`, parentheses, literal escapes,
    delimiter and nested-command-looking data as parser-only cases, Unicode,
    one-character and whitespace-only values. Assert exact status/diagnostic,
-   empty stdout on every rejection, one record on success, checked sizing and
+   empty stdout on every rejection, the exact three ordered records on success, checked sizing and
    stdout failure behavior. Directly verify Windows byte delivery. Wrong flags,
-   extra properties/records and changed data must fail negative controls.
+   extra properties/records, omitted or reordered masks and changed data must fail negative controls.
 2. **Same-job positive effects.** On each existing native OS, use six isolated
    jobs: ordinary single-line credential; Unicode plus literal escapes and inert
    delimiters; one ASCII character; one supplementary scalar; whitespace-only;
@@ -164,11 +175,13 @@ building an Agent test framework.
    rejection issue explicitly. Configure that task with continue-on-error and
    run the bounded follow-up checks even after its expected failure, without
    treating the resulting success-with-issues as a positive admission result.
-   The read-only value
-   must remain unchanged for its flag to be admitted. Do not require a blocked
-   new value to be masked or visible: its registration can be partial and these
-   controls are not positive secrecy evidence. Any observed value-bearing
-   rejection diagnostic is a security finding, handled privately before admission.
+   The read-only value must remain unchanged. Match the specific read-only
+   rejection route, require both representations of the new value to be masked
+   in its issues and subsequent stdout/stderr, and inspect the prior-mask
+   registration logs. Use the actual binary and native input helpers, not only
+   a protocol simulator. This proves rejection-route confidentiality, not
+   successful assignment. Any observed value-bearing rejection diagnostic is a
+   security finding, handled privately before admission.
    Do not add a hosted disallowed-name probe to ordinary unrestricted script
    tasks: without configured restrictions that checker allows assignment.
    The source-derived rejection limitation is retained, but that out-of-profile

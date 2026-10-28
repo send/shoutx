@@ -1,6 +1,7 @@
 # Azure secret variable design
 
-Status: Accepted on 2026-10-27. Implementation and hosted admission are in progress.
+Status: Accepted on 2026-10-27; prior-mask revision accepted on 2026-10-28.
+Implementation and hosted admission are in progress.
 
 ## Purpose and ownership
 
@@ -18,7 +19,11 @@ A dedicated destination makes the secret boundary explicit and keeps values out
 of argv. Adding a toggle to the existing argv-capable variable writer would make
 the input channel depend on a flag and complicate misuse diagnostics. An implicit
 mask-plus-variable sequence adds partial effects and is not a substitute for
-verifying the actual secret assignment handler.
+verifying the actual secret assignment handler. The approved revision makes
+prior masking explicit in the command contract: protect both the original and
+wire representations before assignment, while retaining separate assignment
+and propagation gates. Partial masking effects are accepted without promising
+a transaction or changing the credential.
 
 Include explicit output and read-only options: runtime credentials are useful
 across authorized jobs/stages, and callers may request protection from accidental

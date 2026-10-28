@@ -19,7 +19,7 @@ CONTROL_PLAIN = "synthetic-visible-plain-cf28"
 CONTROL_OMITTED = "synthetic-omitted-45ae"
 CONTROL_WRONG = "synthetic-wrong-registration-97fe"
 CONTROL_ORIGINAL = "synthetic-readonly-original-60bf"
-CONTROL_REPLACEMENT = "synthetic-readonly-replacement-4c81"
+CONTROL_REPLACEMENT = "synthetic-readonly-replacement-α😀-%0A;]-4c81"
 
 
 def assignments(case):

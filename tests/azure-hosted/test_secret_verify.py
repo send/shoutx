@@ -6,7 +6,7 @@ import unittest
 from unittest.mock import patch
 
 from secret_cases import (ALL_JOBS, SAME_JOB, SENTINEL, assignments, expected_blocks,
-                          CONTROL_PLAIN, CONTROL_OMITTED)
+                          CONTROL_PLAIN, CONTROL_OMITTED, CONTROL_REPLACEMENT, escaped)
 from secret_producer import consume, unmapped
 from secret_verify import (attach_task_metadata, check_inventory, check_job,
                            READONLY_ISSUE, MASKED_REJECTION_COMMAND)
@@ -127,6 +127,19 @@ class SecretAdmission(unittest.TestCase):
             check_job("control", job, records,
                       {**logs, consume["log"]["id"]: logs[consume["log"]["id"]] + error + b"\n"},
                       "source", "1")
+
+    def test_rejected_value_outside_markers(self):
+        job, records, logs = fixture("control")
+        job["log"] = {"id": 1000}
+        logs[1000] = b"aggregate\n"
+        followup = next(r["log"]["id"] for r in records if r["name"] == "Readonly followup")
+        for log_id in (1000, followup):
+            for value in (CONTROL_REPLACEMENT, escaped(CONTROL_REPLACEMENT)):
+                with self.subTest(log_id=log_id, wire=value != CONTROL_REPLACEMENT):
+                    with self.assertRaises(RuntimeError):
+                        check_job("control", job, records,
+                                  {**logs, log_id: logs[log_id] + value.encode() + b"\n"},
+                                  "source", "1")
 
     def test_output_flags_data_and_missing_consumers(self):
         job, records, logs = fixture("output")

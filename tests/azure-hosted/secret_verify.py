@@ -155,7 +155,8 @@ def check_job(case, job, records, logs, source, run):
                 "overwrite not requested")
         require(any(r.get("name") == "Expected readonly rejection" and r.get("issues") for r in owned),
                 "missing expected rejection issue")
-        require(CONTROL_REPLACEMENT not in joined and CONTROL_WRONG not in joined,
+        require(all(value not in joined for value in
+                    (CONTROL_REPLACEMENT, escaped(CONTROL_REPLACEMENT), CONTROL_WRONG)),
                 "control registration disclosed")
     # Only public identities/results leave the verifier, not values or their hashes.
     return {**identity, "assignments": len(assignments(case)), "control": control}

@@ -462,12 +462,13 @@ after latest-head CI/Codex convergence and explicit maintainer direction.
 The maintainer approved dynamic secret-variable assignment through
 `task.setvariable` with `isSecret=true` on 2026-10-27. Design PR #148 merged as
 `7a47324`. The active implementation goal ends with a merge-ready PR, including
-the finite hosted admission, Fable review and latest-head CI/Codex convergence.
+the finite hosted admission, independent review and latest-head CI/Codex convergence.
 Merge and release require separate maintainer direction.
 
 The [accepted decision](decisions/azure-secret-variable.md) links to the single
-contract and finite admission plan. The writer and local tests are in progress;
-hosted admission is not yet established.
+contract and finite admission plan. The writer, local tests and user guidance
+are implemented; the [compatibility record](compatibility/azure-pipelines.md#secret-variable-hosted-admission)
+owns the completed hosted evidence and its limitations.
 
 On 2026-10-28 the maintainer approved the contract's explicit prior-mask revision.
 The command specification is authoritative for the revised output sequence;
@@ -479,20 +480,18 @@ implement the revision. The corpus passed 3,244 cases including 26 negative
 controls; local all-target tests, Clippy and stable-doc checks passed. The hosted
 fixture now routes the rejection attempt through the native stdin helpers and
 checks the specific rejection, both representations and the unchanged binding.
-The revised binary has now executed the finite native fixture on both OSes.
-All 18 positive jobs succeeded; the two rejection controls produced their
-expected issues. The final hosted verifier rejected Azure's job-log copy of an
-already checked, masked task error. A scoped verifier correction accepts only
-that exact copy; ten offline tests, including altered/unexpected copies, pass.
-Rechecking all 20 completed jobs with the corrected verifier passed. This is
-completed-run revalidation, not a successful hosted pipeline result; retain
-the failed run and private source mapping as evidence rather than relabeling it.
+The scoped verifier correction and hosted revalidation are recorded in that
+single compatibility record, without relabeling the original failed run.
 
-Remaining work is hosted verifier convergence, independent review and exact-head CI/Codex convergence for
+Remaining work is exact-head CI/Codex convergence for
 PR #149. Keep confidential experiment details outside the public worktree per
 SECURITY.md. The focused independent follow-up could not complete because the
 review service rejected it; do not count that attempt as approval or silently
-replace the reviewer. The goal controller remains blocked pending reconfiguration;
+replace the reviewer. The maintainer explicitly authorized GPT-6.1 Sol as the
+replacement. Its independent read-only review of `a94171e` completed with no
+concrete findings; focused contract, packaged-surface, verifier and native Bash
+helper tests passed. Final status/documentation closeout follows that review.
+The goal controller remains blocked pending reconfiguration;
 the maintainer authorized manual implementation of the approved revision.
 
 Start from the [secret variable source observations](compatibility/azure-pipelines.md#secret-variable-source-observations)
@@ -545,8 +544,8 @@ labels were added without emitting captured data. A focused follow-up completed
 successfully with no new substantive blocker. Timeline value representation,
 readonly behavior and cross-scope secrecy remain live hypotheses to measure,
 not reasons to silently loosen the gate. The 21-job fixture is in draft PR #149.
-Hosted admission, final user guidance and latest-head CI/Codex convergence remain
-unfinished. Do not merge or publish as part of this goal.
+The current admission and review status is recorded above; latest-head
+CI/Codex convergence remains unfinished. Do not merge or publish as part of this goal.
 
 Follow the ordered [release-preparation gates](release.md#next-release-preparation)
 for packaging checks and exact-source evidence when release preparation resumes

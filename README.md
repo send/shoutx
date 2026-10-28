@@ -229,10 +229,10 @@ The source also implements `azure-pipelines:build-number [NUMBER]` and
 rename values. See the [metadata contract](docs/commands/azure-pipelines.md#build-metadata)
 and the [profile's required tag setting](docs/design.md#azure-pipelines-profile).
 
-The source includes an in-progress `azure-pipelines:secret-variable` writer;
-it is not yet admitted for hosted use. Its [approved contract and admission
-plan](docs/commands/azure-pipelines-secret-variable.md) define the stdin-only
-interface and the verification required before use with credentials.
+The source includes an unreleased `azure-pipelines:secret-variable` writer.
+See its [stdin-only interface and usage examples](docs/commands/azure-pipelines-secret-variable.md)
+and [scoped hosted evidence](docs/compatibility/azure-pipelines.md#secret-variable-hosted-admission).
+Apply the documented deployment conditions before using credentials.
 
 ## GitHub Actions writers
 

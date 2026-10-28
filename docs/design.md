@@ -316,7 +316,8 @@ bounded security work; dependency-internal proofs are not admission gates.
 ### Proposed secret variable profile
 
 The [approved secret-variable contract](commands/azure-pipelines-secret-variable.md)
-is being implemented and is not yet admitted. Its candidate profile reuses the native Azure profile and mask
+has [scoped hosted evidence](compatibility/azure-pipelines.md#secret-variable-hosted-admission)
+and remains unreleased. Its profile reuses the native Azure profile and mask
 prerequisites above, applying the settings to both producing and receiving jobs.
 Use ordinary script tasks and caller-authorized names permitted by task restrictions,
 without custom-task declared output overrides or changes to consumer settings.

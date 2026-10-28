@@ -1,7 +1,8 @@
 # Azure Pipelines secret variable
 
-Status: Design approved on 2026-10-27, prior-mask revision approved on 2026-10-28; implementation in progress,
-not admitted. This specification owns the CLI, input rules and admission plan;
+Status: Implemented, unreleased. Design approved on 2026-10-27 and prior-mask
+revision approved on 2026-10-28; [scoped hosted evidence](../compatibility/azure-pipelines.md#secret-variable-hosted-admission)
+records admission. This specification owns the CLI, input rules and admission plan;
 the [decision](../decisions/azure-secret-variable.md) owns rationale. Existing
 commands and the published release are unchanged.
 
@@ -255,7 +256,7 @@ building an Agent test framework.
 
 ## Admission decisions and implementation boundary
 
-Source evidence supports the intended routes, not measured secret-output
+Source evidence alone supports the intended routes, not measured secret-output
 propagation or capacity. Implementation must resolve exact delivery, secrecy in
 each destination job, read-only behavior and size admission using the finite
 plan. A mismatch is a failed gate: correct a demonstrated fixture error or

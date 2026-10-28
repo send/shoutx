@@ -1,7 +1,8 @@
 # Azure secret variable design
 
 Status: Accepted on 2026-10-27; prior-mask revision accepted on 2026-10-28.
-Implementation and hosted admission are in progress.
+Implementation is unreleased; the [compatibility record](../compatibility/azure-pipelines.md#secret-variable-hosted-admission)
+owns hosted admission status.
 
 ## Purpose and ownership
 

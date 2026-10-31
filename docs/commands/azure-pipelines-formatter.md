@@ -1,8 +1,9 @@
-# Azure diagnostic and group writer draft
+# Azure diagnostic and group writers
 
-Status: Proposed. Not implemented or approved. The
-[decision](../decisions/azure-formatter.md) owns rationale and choices requiring
-maintainer approval. This document is the single candidate CLI/admission contract.
+Status: Approved on 2026-10-31; source implementation added, admission in progress. The
+[decision](../decisions/azure-formatter.md) owns rationale and the accepted
+tradeoffs. This document is the single CLI/admission contract. It does not
+claim hosted admission or release availability.
 
 ## Interface and input
 
@@ -18,10 +19,11 @@ Use `--` for an operand beginning with a dash. Apply the existing Azure
 value-command option grammar: help/version return without reading stdin;
 unknown options, extra operands and terminal stdin are usage failures (exit 2).
 There are no properties, severity switches, multiline mode or raw escape mode.
-Endgroup takes no operands, does not read stdin and emits only its fixed record;
+Endgroup accepts an optional standalone `--`, takes no operands, does not read
+stdin and emits only its fixed record;
 extra operands/options fail as usage errors, except normal help/version.
 
-## Proposed value rules
+## Value rules
 
 Acquire at most 1 MiB, validate strict UTF-8 and reject NUL. Reject CR and LF at
 any position, including the final producer boundary. Reject an empty group
@@ -43,7 +45,7 @@ record before writing stdout. Input/representation/size failures return 1 with
 empty stdout and fixed value-free diagnostics. The record limit is 8 MiB,
 including the trailing LF. No rejected input is echoed or silently transformed.
 
-## Proposed wire and semantics
+## Wire and semantics
 
 Let `E` be the existing [Azure data encoding](azure-pipelines.md#wire-contract).
 Debug writes `##vso[task.debug]E(MESSAGE)` plus LF. Group writes
@@ -86,7 +88,7 @@ are added by this proposal.
 
 ## Finite implementation admission
 
-Execute only after approval. Reuse existing fixtures and the pinned actual
+Implementation is authorized. Reuse existing fixtures and the pinned actual
 Agent parser instead of building a new logging framework.
 
 1. **Producer contract:** assert exact bytes, status and fixed diagnostics for

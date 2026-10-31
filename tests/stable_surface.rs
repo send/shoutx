@@ -78,6 +78,39 @@ fn packaged_binary_has_exact_help_and_version() {
 #[test]
 fn packaged_binary_exposes_complete_surface() {
     use std::io::Write;
+    verify(
+        &["azure-pipelines:debug", "α%0A;]"],
+        0,
+        "##vso[task.debug]α%AZP250A%3B%5D\n".as_bytes(),
+        b"",
+    );
+    verify(
+        &["azure-pipelines:group", "α%0A;]"],
+        0,
+        "##[group]α%0A;]\n".as_bytes(),
+        b"",
+    );
+    verify(&["azure-pipelines:endgroup"], 0, b"##[endgroup]\n", b"");
+    for command in ["azure-pipelines:debug", "azure-pipelines:group"] {
+        verify(
+            &[command, "x\n"],
+            1,
+            b"",
+            b"error: Azure log value contains a line boundary\n",
+        );
+        verify(
+            &[command, "##["],
+            1,
+            b"",
+            b"error: Azure log value contains reserved syntax\n",
+        );
+    }
+    verify(
+        &["azure-pipelines:group", "##vso"],
+        1,
+        b"",
+        b"error: Azure log value contains reserved syntax\n",
+    );
     for (flags, output, read_only) in [
         (vec![], false, false),
         (vec!["--output"], true, false),

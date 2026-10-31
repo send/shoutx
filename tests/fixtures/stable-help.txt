@@ -25,6 +25,9 @@ GitHub Actions stdout commands:
   shoutx github-actions:error   [--title TITLE] [--file FILE] [--line N] [--end-line N] [--column N] [--end-column N] [MESSAGE]
 
 Azure Pipelines commands (unreleased):
+  shoutx azure-pipelines:debug [MESSAGE]
+  shoutx azure-pipelines:group [TITLE]
+  shoutx azure-pipelines:endgroup
   shoutx azure-pipelines:variable [--output] [--read-only] NAME [VALUE]
   shoutx azure-pipelines:secret-variable [--output] [--read-only] NAME
   shoutx azure-pipelines:warning [--file FILE] [--line N] [--column N] [--code CODE] [MESSAGE]

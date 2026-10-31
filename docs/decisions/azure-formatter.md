@@ -1,14 +1,15 @@
 # Azure diagnostic and group writers
 
-Status: Proposed, 2026-10-31. Design only; no new CLI is available.
+Status: Accepted, 2026-10-31. Source implementation added; hosted admission and
+implementation review are in progress. Unreleased.
 
 ## Context and decision drivers
 
 Build scripts need to label a phase with generated text and emit diagnostic
 messages. A typed writer should retain accepted text and select one intended
 operation. It does not make arbitrary group-body output safe or manage a group
-across processes. The [draft contract](../commands/azure-pipelines-formatter.md)
-owns candidate behavior; [source observations](../compatibility/azure-pipelines.md#formatter-design-observations)
+across processes. The [command contract](../commands/azure-pipelines-formatter.md)
+owns behavior; [source observations](../compatibility/azure-pipelines.md#formatter-design-observations)
 own evidence and its limits.
 
 The useful boundary is the path from emitted stdout to Agent command dispatch
@@ -25,7 +26,7 @@ remain accepted without a language-specific allowlist.
 | Explicit visible sanitization | Can display otherwise rejected diagnostic text without executing its original control syntax | Changes the text and needs a specified reversible display notation, collision handling and consumer checks. It is not exact diagnostic data. No silent replacement is acceptable. |
 | Defer some or all writers | Avoids shipping an unproven representation | Leaves ordinary dynamic log labels/debug messages without a typed boundary. Fixed trusted labels remain usable. |
 
-## Proposed decision
+## Decision
 
 Prefer task-command debug and formatter group/endgroup, with a deliberately
 single-line, unchanged-text contract. The reservation of formatter-looking
@@ -33,7 +34,8 @@ text is conservative pending the finite consumer check; it is not a claim that
 every reserved input has a demonstrated attack path. The draft names every
 restriction so the maintainer can assess its usability cost before adoption.
 
-The maintainer must approve three choices:
+The maintainer approved these three choices when starting the implementation
+goal on 2026-10-31:
 
 1. Use the official task-lib-backed debug route despite its omission from the
    general logging-command list, with support limited to the admitted profile.
@@ -52,10 +54,11 @@ only by a concrete operation-changing path or a finite failed admission case.
 
 ## Verification and endpoint
 
-The draft contract owns the finite producer, Agent and hosted/UI checks.
-This design goal ends after independent GPT-6.1 Sol review and presentation
-of these decisions; hosted implementation admission is a subsequent approved
-task. Passing raw-log assertions alone cannot establish group display effects.
+The command contract owns the finite producer, Agent and hosted/UI checks.
+The design goal completed with independent GPT-6.1 Sol review and presentation
+of these decisions. The approved implementation goal ends in a merge-ready PR
+after finite admission and independent/latest-head CI/Codex reviews.
+Passing raw-log assertions alone cannot establish group display effects.
 
 Reconsider the wire choice if Microsoft removes the SDK route, changes the
 pinned interpretation path, or admission demonstrates loss of intended text

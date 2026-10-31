@@ -468,13 +468,13 @@ owns the completed admission, including corrected verifier runs. Earlier
 design and implementation checkpoints are historical, not pending gates.
 Release preparation remains on hold.
 
-### Current formatter design increment
+### Current formatter implementation increment
 
-Design `debug`, `group` and fixed `endgroup` typed writers; do not implement
-them in this increment. The [proposed decision](decisions/azure-formatter.md)
-owns alternatives and the maintainer choices; the
-[draft contract](commands/azure-pipelines-formatter.md) owns the candidate CLI
-and finite admission plan. Both remain proposals until maintainer approval.
+On 2026-10-31 the maintainer approved implementation of `debug`, `group` and
+fixed `endgroup`, including the single-line and explicit substring reservations.
+The [accepted decision](decisions/azure-formatter.md) owns rationale; the
+[command contract](commands/azure-pipelines-formatter.md) owns the CLI and finite
+admission plan. Start from reviewed design commit `aaf9c52`.
 
 Reuse the existing Agent pin and native Ubuntu/Windows profile. Investigate
 concrete interpretation paths only; do not audit Unicode, .NET, ICU or Azure
@@ -482,20 +482,35 @@ internals generally. Confidential constructions and follow-ups remain outside
 the worktree under SECURITY.md. The common Git metadata directory contains
 `shoutx-private/azure-formatter-followup.md`.
 
-Completion is a reviewed design presented for decision, including any unresolved
-representation tradeoffs. Obtain an independent GPT-6.1 Sol read-only review,
-verify findings against primary evidence, and record their disposition.
-Implementation, hosted execution, merge, publication and unrelated dependency
-updates are not authorized by this design goal. A failure to establish a useful
-representation is a decision to surface, not permission to silently narrow
-input or sanitize it.
+Completion is a merge-ready PR with implementation, CLI/package documentation,
+producer/upstream-parser checks, the finite four-job native hosted admission
+and recorded web-view group effects. Obtain an independent GPT-6.1 Sol read-only
+review, verify findings against primary evidence, and converge latest-head CI
+and Codex review with no unresolved threads. Implementation and the stated
+hosted checks are authorized; merge, publication and unrelated dependency
+updates are not. A required contract/profile change returns for decision,
+not silent narrowing, sanitization or open-ended investigation.
 
 On 2026-10-31 GPT-6.1 Sol completed an independent read-only review of the
 drafts, maintenance diff, confidential follow-up and pinned Agent/task-lib
 sources. It reported no concrete findings. No correction or repeat review was
 required. Service/UI effects and large-value fidelity remain explicit subsequent
-admission hypotheses. The reviewed design is ready for maintainer choice;
-approval of its wire/input tradeoffs is the next step, not more broad research.
+admission hypotheses. The subsequent maintainer approval starts implementation,
+not more broad research. Track runtime observations in the compatibility record.
+
+Implementation checkpoint, 2026-10-31: the three source commands, CLI/help and
+packaged-surface coverage are added. Local all-target/no-default-feature tests,
+Clippy and stable-doc verification pass. The pinned actual-source parser corpus
+passes 3,265 cases with 33 negative controls, including exact formatter bytes
+and non-dispatch as task commands. This is not hosted/UI admission.
+
+Remaining work: finish the contract matrix for exact failure diagnostics,
+terminal/invalid-argv and output-I/O cases; prepare/run the approved four-job
+native hosted fixture and bounded log verifier; capture the stated Web UI
+effects; update compatibility/admission status; run GPT-6.1 Sol implementation
+review; open the focused PR and monitor current-head CI/Codex to convergence.
+Do not report the design review as implementation approval or parser success
+as rendered grouping evidence.
 
 ## CI and quality gates
 

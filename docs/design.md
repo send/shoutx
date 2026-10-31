@@ -122,7 +122,7 @@ shoutx github-actions:error   [ANNOTATION OPTIONS] [MESSAGE]
 ```
 
 All fourteen GitHub commands are included in default and `--no-default-features` builds,
-alongside the eight unreleased Azure commands.
+alongside the eleven unreleased Azure commands.
 The former research feature is removed. Stdout consumer compatibility is scoped
 by the adoption contract below; binary availability does not broaden it.
 

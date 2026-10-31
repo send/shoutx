@@ -38,6 +38,113 @@ fn check(command: &str, args: &[&str], input: &[u8], status: i32, expected: &[u8
 }
 
 #[test]
+fn formatter_values_preserve_text_in_the_selected_wire() {
+    for (value, debug) in [
+        ("hello", "hello"),
+        ("日本語ไทยالعربية😀e\u{301}", "日本語ไทยالعربية😀e\u{301}"),
+        (" \t x ", " \t x "),
+        ("%0A;%AZP25]", "%AZP250A%3B%AZP25AZP25%5D"),
+        ("--help", "--help"),
+    ] {
+        for (command, expected) in [
+            ("debug", format!("##vso[task.debug]{debug}\n")),
+            ("group", format!("##[group]{value}\n")),
+        ] {
+            check(command, &["--", value], b"ignored", 0, expected.as_bytes());
+            check(command, &[], value.as_bytes(), 0, expected.as_bytes());
+        }
+    }
+    check("debug", &[""], b"ignored", 0, b"##vso[task.debug]\n");
+    check("debug", &[], b"", 0, b"##vso[task.debug]\n");
+    check("group", &[""], b"ignored", 1, b"");
+    check("group", &[], b"", 1, b"");
+    // Prefix reservations are exact byte sequences, not case folding.
+    check("group", &["##VSO"], b"", 0, b"##[group]##VSO\n");
+    check("debug", &["##vso"], b"", 0, b"##vso[task.debug]##vso\n");
+}
+
+#[test]
+fn formatter_rejections_have_no_stdout() {
+    for command in ["debug", "group"] {
+        for reserved in [b"\r".as_slice(), b"\n", b"\r\n", b"##[", b"\0", b"\xff"] {
+            for (prefix, suffix) in [
+                (b"".as_slice(), b"SECRET".as_slice()),
+                (b"SECRET", b"tail"),
+                (b"SECRET", b""),
+            ] {
+                let input = [prefix, reserved, suffix].concat();
+                check(command, &[], &input, 1, b"");
+            }
+        }
+        for args in [
+            vec!["--raw"],
+            vec!["one", "two"],
+            vec!["--multiline"],
+            vec!["--file", "x"],
+        ] {
+            check(command, &args, b"SECRET", 2, b"");
+        }
+        check(command, &["--help"], b"SECRET", 0, shoutx::HELP.as_bytes());
+        check(
+            command,
+            &["--version"],
+            b"SECRET",
+            0,
+            shoutx::version_output().as_bytes(),
+        );
+        check(command, &[], &vec![b'x'; VALUE_LIMIT + 1], 1, b"");
+    }
+    for value in ["##vso", "##vsotail", "prefix##vso", "prefix##vsotail"] {
+        check("group", &[value], b"", 1, b"");
+    }
+}
+
+#[test]
+fn formatter_limits_include_worst_case_encoding() {
+    let value = vec![b'%'; VALUE_LIMIT];
+    let mut expected = b"##vso[task.debug]".to_vec();
+    expected.extend_from_slice("%AZP25".repeat(VALUE_LIMIT).as_bytes());
+    expected.push(b'\n');
+    check("debug", &[], &value, 0, &expected);
+    let mut expected = b"##[group]".to_vec();
+    expected.extend_from_slice(&value);
+    expected.push(b'\n');
+    check("group", &[], &value, 0, &expected);
+}
+
+#[test]
+fn azure_endgroup_does_not_acquire_stdin() {
+    for args in [vec![], vec!["--"]] {
+        let mut child = Command::new(env!("CARGO_BIN_EXE_shoutx"))
+            .arg("azure-pipelines:endgroup")
+            .args(args)
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .unwrap();
+        let stdin = child.stdin.take().unwrap(); // Keep the pipe open without delivering EOF.
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
+        while child.try_wait().unwrap().is_none() {
+            if std::time::Instant::now() >= deadline {
+                child.kill().unwrap();
+                child.wait().unwrap();
+                panic!("endgroup waited for stdin");
+            }
+            std::thread::sleep(std::time::Duration::from_millis(10));
+        }
+        drop(stdin);
+        let out = child.wait_with_output().unwrap();
+        assert!(out.status.success());
+        assert_eq!(out.stdout, b"##[endgroup]\n");
+        assert!(out.stderr.is_empty());
+    }
+    for args in [vec![""], vec!["x"], vec!["--raw"], vec!["--", "x"]] {
+        check("endgroup", &args, b"", 2, b"");
+    }
+}
+
+#[test]
 fn secret_variable_stdin_wire_and_rejection() {
     for (flags, output, read_only) in [
         (vec![], false, false),

@@ -260,6 +260,21 @@ failure; a partial I/O failure is not an atomic batch rollback.
 Details: [mask contract and tests](commands/azure-pipelines-mask.md),
 [scoped hosted verification](compatibility/azure-pipelines.md#mask-hosted-observations).
 
+### Debug messages and groups
+
+`azure-pipelines:debug` writes one typed debug request; `azure-pipelines:group`
+writes one group title, and `azure-pipelines:endgroup` closes the caller's group.
+These source commands are unreleased, with hosted admission in progress.
+They reject line breaks and reserved protocol-looking substrings before stdout;
+accepted text is preserved, without trimming or sanitization. See the
+[input rules and consumer scope](commands/azure-pipelines-formatter.md).
+
+Debug visibility follows Azure configuration and is not confidentiality.
+The caller authorizes disclosure, checks failures, balances groups and controls
+body output. Grouping does not make a subprocess log safe or change task status.
+A successful write does not acknowledge Azure display; an interrupted write
+cannot roll back a group.
+
 ### Secret variables
 
 `azure-pipelines:secret-variable` accepts the credential through stdin only and

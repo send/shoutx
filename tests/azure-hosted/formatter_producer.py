@@ -37,7 +37,7 @@ def package():
     (binary().parent / "identity.json").write_text(json.dumps(identity))
 
 
-def emit():
+def emit(capacity=False):
     identity = json.loads((binary().parent / "identity.json").read_text())
     if (identity["source"] != os.environ["BUILD_SOURCEVERSION"]
             or identity["run"] != os.environ["BUILD_BUILDID"]
@@ -70,6 +70,8 @@ def emit():
             raise RuntimeError("group rejection control failed")
     line("SX_REJECTIONS_OK")
     for name, value in values():
+        if (name == "cap") != capacity:
+            continue
         line("SX_DEBUG_" + name + "_BEGIN")
         invoke("debug", value)
         line("SX_DEBUG_" + name + "_END")
@@ -78,6 +80,9 @@ def emit():
         line("SX_INSIDE_" + name)
         invoke("endgroup")
         line("SX_GROUP_" + name + "_END")
+    if capacity:
+        line("SX_CAPACITY_COMPLETE")
+        return
     line("SX_DEBUG_empty_BEGIN")
     invoke("debug", "")
     line("SX_DEBUG_empty_END")
@@ -101,6 +106,8 @@ if __name__ == "__main__":
             package()
         elif mode == "emit":
             emit()
+        elif mode == "emit-capacity":
+            emit(capacity=True)
         elif mode == "sentinel" and os.environ["SHOUTX_FORMATTER_SENTINEL"] == "unchanged":
             line("SX_SENTINEL_UNCHANGED")
         else:

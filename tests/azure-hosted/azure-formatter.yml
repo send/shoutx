@@ -66,6 +66,17 @@ jobs:
                       $PSNativeCommandUseErrorActionPreference = $true
                       python -B tests/azure-hosted/formatter_producer.py emit
                     displayName: Emit formatter corpus
+              - ${{ if eq(image.name, 'linux') }}:
+                  - bash: |
+                      set -euo pipefail
+                      python3 -B tests/azure-hosted/formatter_producer.py emit-capacity
+                    displayName: Emit formatter capacity
+              - ${{ else }}:
+                  - pwsh: |
+                      $ErrorActionPreference = 'Stop'
+                      $PSNativeCommandUseErrorActionPreference = $true
+                      python -B tests/azure-hosted/formatter_producer.py emit-capacity
+                    displayName: Emit formatter capacity
               - task: PythonScript@0
                 displayName: Verify formatter sentinel
                 inputs:

@@ -29,12 +29,18 @@ def check_job(host, mode, job, records, logs, source, run):
         return found[0], log_lines(logs[found[0]["log"]["id"]])
 
     producer, lines = phase("Emit formatter corpus")
+    capacity_task, capacity_lines = phase("Emit formatter capacity")
     _, sentinel = phase("Verify formatter sentinel")
     require(sentinel.count("SX_SENTINEL_UNCHANGED") == 1, "sentinel changed/missing")
     identities = [json.loads(line.removeprefix("SX_FORMATTER_IDENTITY:")) for line in lines
                   if line.startswith("SX_FORMATTER_IDENTITY:")]
     require(len(identities) == 1, "identity missing/duplicate")
     identity = identities[0]
+    capacity_identities = [json.loads(line.removeprefix("SX_FORMATTER_IDENTITY:"))
+                           for line in capacity_lines if line.startswith("SX_FORMATTER_IDENTITY:")]
+    require(capacity_identities == [identity], "capacity identity mismatch")
+    require(capacity_lines.count("SX_CAPACITY_COMPLETE") == 1
+            and capacity_lines.count("SX_REJECTIONS_OK") == 1, "capacity phase incomplete")
     require(identity.get("source") == source and identity.get("run") == str(run)
             and identity.get("job", "").lower() == job["id"].lower()
             and identity.get("attempt") == str(job.get("attempt", 1))
@@ -48,9 +54,11 @@ def check_job(host, mode, job, records, logs, source, run):
     require(lines.index("SX_NESTED_END") < lines.index("SX_AFTER_ALL_GROUPS")
             < lines.index("SX_FORMATTER_COMPLETE"), "wrong group completion order")
     for tag, expected in expected_blocks(mode == "on").items():
-        exact_block(lines, tag, expected)
+        exact_block(capacity_lines if tag.endswith("_cap") else lines, tag, expected)
     return {**identity, "producerTask": producer["id"], "producerLog": producer["log"]["id"],
             "logDigest": hashlib.sha256(logs[producer["log"]["id"]]).hexdigest(),
+            "capacityTask": capacity_task["id"], "capacityLog": capacity_task["log"]["id"],
+            "capacityLogDigest": hashlib.sha256(logs[capacity_task["log"]["id"]]).hexdigest(),
             "blocks": len(expected_blocks(mode == "on"))}
 
 

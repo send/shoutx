@@ -8,6 +8,9 @@ parameter overrides. Each OS's off job builds once and publishes the binary
 with source/run/digest identity; its on job verifies and reuses that artifact.
 Producer jobs have no mapped API token. Bash/PowerShell run the same bounded
 synthetic corpus through native stdout. Rejected probes stay captured.
+The unchanged capacity sample runs in a separate producer task in each job,
+so completed-log size checks and ordinary Web UI interactions have separate
+logs. Both tasks are mandatory, identity-bound and checked by the verifier.
 
 After the entire run completes, execute `formatter_verify.py` outside the
 producer jobs, with `BUILD_BUILDID`, `BUILD_SOURCEVERSION`,

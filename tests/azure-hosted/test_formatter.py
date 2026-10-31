@@ -13,15 +13,21 @@ def fixture(mode="on"):
     records = [job, {**job, "id": "emit", "parentId": "job", "type": "Task",
                      "name": "Emit formatter corpus", "log": {"id": 1}},
                {**job, "id": "sentinel", "parentId": "job", "type": "Task",
-                "name": "Verify formatter sentinel", "log": {"id": 2}}]
+                "name": "Verify formatter sentinel", "log": {"id": 2}},
+               {**job, "id": "capacity", "parentId": "job", "type": "Task",
+                "name": "Emit formatter capacity", "log": {"id": 3}}]
     identity = {"source": "a" * 40, "run": "1", "job": "job", "attempt": "1",
                 "agent": "4.test", "image": "ubuntu24", "imageVersion": "test",
                 "digest": "b" * 64, "host": "linux", "debug": mode}
     lines = ["SX_FORMATTER_IDENTITY:" + json.dumps(identity), "SX_REJECTIONS_OK"]
+    capacity_lines = list(lines)
     for tag, content in expected_blocks(mode == "on").items():
-        lines += [tag + "_BEGIN", *content, tag + "_END"]
+        selected = capacity_lines if tag.endswith("_cap") else lines
+        selected += [tag + "_BEGIN", *content, tag + "_END"]
     lines += ["SX_AFTER_ALL_GROUPS", "SX_FORMATTER_COMPLETE"]
-    logs = {1: ("\n".join(lines) + "\n").encode(), 2: b"SX_SENTINEL_UNCHANGED\n"}
+    capacity_lines += ["SX_CAPACITY_COMPLETE"]
+    logs = {1: ("\n".join(lines) + "\n").encode(), 2: b"SX_SENTINEL_UNCHANGED\n",
+            3: ("\n".join(capacity_lines) + "\n").encode()}
     return job, records, logs
 
 
@@ -73,7 +79,7 @@ class FormatterVerifierTests(unittest.TestCase):
             state[1][1][field] = value
             with self.subTest(field=field), self.assertRaises(RuntimeError):
                 self.check("on", state)
-        for log_id in (1, 2):
+        for log_id in (1, 2, 3):
             state = fixture()
             del state[2][log_id]
             with self.assertRaises(RuntimeError):
@@ -85,6 +91,15 @@ class FormatterVerifierTests(unittest.TestCase):
         state[2][2] = b"SX_SENTINEL_CHANGED\n"
         with self.assertRaises(RuntimeError):
             self.check("on", state)
+
+    def test_capacity_cannot_be_omitted_or_replaced_with_small_value(self):
+        for before, after in [(b"x" * 1_048_576, b"small"),
+                              (b"SX_CAPACITY_COMPLETE", b"missing"),
+                              (b'"attempt": "1"', b'"attempt": "2"')]:
+            state = fixture()
+            state[2][3] = state[2][3].replace(before, after, 1)
+            with self.assertRaises(RuntimeError):
+                self.check("on", state)
 
 
 if __name__ == "__main__":

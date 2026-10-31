@@ -5,9 +5,9 @@ Azure coverage proposal delegated by the design index, not a command contract
 or implementation authorization. Release preparation remains on hold.
 
 The existing writers cover basic non-secret variable exchange, diagnostics,
-PATH setup, scoped mask registration and build metadata. They are useful, but do
-not yet cover all valuable script-to-Agent output boundaries. In particular,
-dynamic secret-variable assignment still requires other mechanisms. Completing
+PATH setup, scoped mask registration, dynamic secret-variable assignment and
+build metadata. They are useful, but do not yet cover all valuable
+script-to-Agent output boundaries. Completing
 these implementations is not evidence of practical surface completeness.
 
 ## How to read the assessment
@@ -57,7 +57,7 @@ claims of identical effects. Caller duties apply equally to those alternatives.
 | Surface and disposition | Use and typical input | Boundary, responsibility and reason / alternative |
 | --- | --- | --- |
 | `task.setvariable`, non-secret — **Covered** | Pass tool results to later tasks; output/read-only flags | Name/property/line injection is handled by the [variable contract](commands/azure-pipelines.md). Callers authorize names, mappings and subsequent use; Azure owns scope, collisions and restrictions. YAML variables suffice for values known before execution. |
-| `task.setvariable`, `isSecret=true` — **Add value** | Pass a runtime-issued token or derived credential to a later task | Preserve the requested name, flags and exact secret without extra commands or registration-channel disclosure. Mask registration alone does not assign a variable. Caller owns acquisition, permitted consumers and lifetime; Azure owns secret storage/mapping. Prefer UI, variable groups or Key Vault for provisioned secrets [2]; these do not eliminate the runtime-produced-value use case. Needs its own contract, not an inferred safe flag on the current writer. |
+| `task.setvariable`, `isSecret=true` — **Covered**, unreleased | Pass a runtime-issued token or derived credential to a later task | The dedicated [secret-variable contract](commands/azure-pipelines-secret-variable.md) owns exact assignment, prior-mask ordering, rejection policy and scoped confidentiality. Caller owns acquisition, names, mappings, permitted consumers and lifetime; Azure owns secret storage/mapping. Prefer UI, variable groups or Key Vault for provisioned secrets [2]. See the [hosted admission](compatibility/azure-pipelines.md#secret-variable-hosted-admission); mask registration alone does not assign a variable. |
 | `task.logissue`, warning/error — **Covered** | Report tool diagnostics with file, position and code | The [issue contract](commands/azure-pipelines.md) protects command and property identity. Callers authorize severity/content and propagate failure; Azure owns retention/rendering. Existing issue writers are the supported alternative to raw concatenation. |
 | `task.prependpath` — **Covered** | Expose a trusted tool installation directory to later tasks | The [PATH contract](commands/azure-pipelines.md#path) prevents extra commands and additional incoming PATH entries. Caller authorizes directory/executable trust; Azure owns ordering and equivalence. Fixed task/tool-install configuration can avoid dynamic PATH writes. |
 | `task.setsecret` — **Covered** | Register a securely acquired value or selected lines for later logs | The [mask contract](commands/azure-pipelines-mask.md) and profile cover exact registration and scoped later redaction. Callers own timing, representations and overmasking; not secret-variable assignment or retrospective cleanup. Existing secret configuration is an alternative for provisioned values. |
@@ -104,25 +104,18 @@ input/consumer contracts remain deliberately unimplemented.
    [decision](decisions/azure-build-metadata.md) records rationale, the
    [compatibility record](compatibility/azure-pipelines.md#build-metadata-hosted-admission)
    owns finite handler/service evidence, and the handoff owns PR progress.
-2. **Dynamic secret-variable contract.** Address runtime-created credentials
-   separately from mask registration. Completion of the design task: agreed
-   stdin-only delivery, name/flag authorization, exact-value and rejection
-   policy, scope/mapping expectations, disclosure paths and a finite handler/
-   hosted plan. Reuse mask findings, but do not infer assignment or secret-output
-   effects from `setsecret` tests. Start from the already recorded
-   [secret-handler observations](compatibility/azure-pipelines.md#secret-source-observations),
-   including platform-dependent multiline checks and escaped-data registration,
-   rather than rediscovering or assuming away those constraints.
-   Prefer managed configuration for existing
-   secrets [2]; no credential sanitization, vault client or retrospective cleanup.
-   Implementation requires subsequent approval of that contract.
+2. **Dynamic secret-variable writer implemented, unreleased.** The dedicated
+   [contract](commands/azure-pipelines-secret-variable.md) and
+   [hosted admission](compatibility/azure-pipelines.md#secret-variable-hosted-admission)
+   cover the accepted increment. PR #149 merged on 2026-10-28. This does not
+   resume release preparation or extend the admitted confidentiality profile.
 3. **Formatter contract for debug/group/endgroup.** Confirm the actual formatter
    boundary and whether lossless data representation exists. Completion: an
    approved representation or explicit rejection policy, consumer/display scope
    and finite tests for unintended command interpretation (not only additional
    physical lines), title/data fidelity and group
    effects. No arbitrary subprocess-log sanitizer, automatic group lifecycle or
-   default decoration. Compare the source-only debug alternative noted below
+   default decoration. Compare the SDK-used debug alternative noted below
    before selecting a wire. If safe encoding is unavailable, present rejection or
    explicit sanitization tradeoffs for approval, not a hidden transformation.
 4. **File-path command contract, starting with summary/uploadfile.** Completion:
@@ -146,12 +139,12 @@ The inventory owns proposed coverage rationale and relative priorities. The
 handoff records the maintainer-selected task; accepted contract decisions and
 their rationale still belong in the existing specifications and decision records.
 
-A limited source check at the existing Agent pin found `task.debug` registered
-by `TaskCommandExtension`, with a handler passing decoded data to `context.Debug`.
-It is not in the official task-command list above and is not a supported shoutx
-operation. This is a possible debug-design alternative, not proof of safe
-formatting or a reason to expose undocumented Agent commands generally. See the
-[source observation](compatibility/azure-pipelines.md#coverage-source-observations).
+A source check found `task.debug` registered by the pinned Agent and used by
+Microsoft's task-lib. It is not in the official task-command list above and is
+not a supported shoutx operation. The [formatter proposal](decisions/azure-formatter.md)
+compares this route; the [source observations](compatibility/azure-pipelines.md#formatter-design-observations)
+record its evidence and remaining admission limits. SDK use is not proof of
+safe formatting or permission to expose arbitrary internal Agent commands.
 
 The official inventory was checked on 2026-10-25: 11 task command names,
 7 formatter names, 2 artifact commands, 3 build commands and 1 release command.

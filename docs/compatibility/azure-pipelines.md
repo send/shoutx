@@ -398,6 +398,35 @@ logging-command inventory. This is source evidence for a candidate alternative,
 not hosted admission, formatter safety or an implemented shoutx command.
 No new hosted experiment was run for the coverage assessment.
 
+## Formatter design observations
+
+Source inspection on 2026-10-31 reused Agent
+`efa064fee06c75b31cabc0451857ad1e294649c7`. These are design observations,
+not hosted formatter admission:
+
+- [NodeHandler.OnDataReceived](https://github.com/microsoft/azure-pipelines-agent/blob/efa064fee06c75b31cabc0451857ad1e294649c7/src/Agent.Worker/Handlers/NodeHandler.cs)
+  tries WorkerCommandManager before forwarding ordinary output. Formatter and
+  task-command handling cannot be treated as independent stdout channels.
+- [ExecutionContext.Debug and Write](https://github.com/microsoft/azure-pipelines-agent/blob/efa064fee06c75b31cabc0451857ad1e294649c7/src/Agent.Worker/ExecutionContext.cs)
+  gate the debug helper on WriteDebug, add the debug tag and write through the
+  masking/log queues. The inspected write path does not call command dispatch
+  again. Ordinary Output does not use the same debug gate. This does not prove
+  the service's formatter parsing, visibility or group UI behavior.
+- Microsoft's task-lib at `c38688fbd96f4b11f29e9003ff5282c6de45b6fe`
+  exports [debug](https://github.com/microsoft/azure-pipelines-task-lib/blob/c38688fbd96f4b11f29e9003ff5282c6de45b6fe/node/task.ts),
+  whose [internal implementation](https://github.com/microsoft/azure-pipelines-task-lib/blob/c38688fbd96f4b11f29e9003ff5282c6de45b6fe/node/internal.ts)
+  emits task.debug, subject to an optional producer-side debug filter. This
+  strengthens its status from an internal-handler-only candidate to an SDK-used
+  route, but does not add it to the general logging-command inventory.
+
+The official [logging-command reference](https://learn.microsoft.com/en-us/azure/devops/pipelines/scripts/logging-commands?view=azure-devops)
+documents the formatter spellings. A formatter data-escape contract was not
+established by this inspection; task-command percent decoding is not evidence
+for one. No hosted formatter experiment or service/UI parser audit was run.
+The [proposed contract](../commands/azure-pipelines-formatter.md) defines the
+finite follow-up admission; confidential interpretation details are retained
+outside the worktree according to SECURITY.md.
+
 ## Build metadata source observations
 
 Inspected on 2026-10-26 at the existing Agent source pin:

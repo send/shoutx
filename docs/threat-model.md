@@ -232,6 +232,24 @@ variable scope, service limits and issue display/translation are separate
 consumer effects. Record new concrete security paths privately per SECURITY.md,
 not as public exploit-bearing follow-up issues.
 
+### Proposed formatter boundary
+
+The [formatter draft](commands/azure-pipelines-formatter.md) considers an
+attacker-controlled diagnostic message or group title, with operation choice
+and output transport controlled by the caller. Protected assets are the selected
+operation, its text and the intended log-group boundary. The concrete paths to
+assess are physical-line injection and interpretation of text as control syntax
+by another consumer of the same stream. Task-command framing evidence cannot
+alone establish formatter behavior. Detailed confidential constructions follow
+SECURITY.md; the [compatibility note](compatibility/azure-pipelines.md#formatter-design-observations)
+records the bounded public evidence.
+
+Group balancing, concurrently written body logs, disclosure authorization and
+later interpretation are caller responsibilities. The candidate does not
+sanitize subprocess logs or promise confidentiality from debug filtering.
+Input reservations and their pending approval belong only to the draft contract
+and its linked decision, not to the implemented Azure guarantees above.
+
 ### Proposed secret variable boundary
 
 The [approved secret-variable contract](commands/azure-pipelines-secret-variable.md)

@@ -504,11 +504,17 @@ Clippy and stable-doc verification pass. The pinned actual-source parser corpus
 passes 3,265 cases with 33 negative controls, including exact formatter bytes
 and non-dispatch as task commands. This is not hosted/UI admission.
 
-Remaining work: finish the contract matrix for exact failure diagnostics,
-terminal/invalid-argv and output-I/O cases; prepare/run the approved four-job
-native hosted fixture and bounded log verifier; capture the stated Web UI
-effects; update compatibility/admission status; run GPT-6.1 Sol implementation
-review; open the focused PR and monitor current-head CI/Codex to convergence.
+Follow-up checkpoint: fixed-diagnostic precedence, POSIX terminal/input/output
+errors and invalid-argv checks pass; corresponding Windows surrogate/invalid
+handle cases are added for CI. The four-job fixture, external completed-log
+verifier and offline corruption tests are prepared. GPT-6.1 Sol independently
+reviewed the implementation and hosted fixture with no findings, and ran the
+three offline verifier tests successfully. This review is not hosted admission.
+
+Remaining work: run the approved four-job native hosted fixture and bounded
+log verifier; capture the stated Web UI effects; update compatibility/admission
+status; finish native CI checks; open the focused PR and monitor current-head
+CI/Codex to convergence. If substantive fixes follow, obtain focused review.
 Do not report the design review as implementation approval or parser success
 as rendered grouping evidence.
 

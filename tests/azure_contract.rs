@@ -113,6 +113,31 @@ fn formatter_limits_include_worst_case_encoding() {
 }
 
 #[test]
+fn formatter_fixed_diagnostics_follow_validation_order() {
+    for command in ["debug", "group"] {
+        for (input, diagnostic) in [
+            (b"\xff\0\n##[".as_slice(), "Azure field is not valid UTF-8"),
+            (b"\0\n##[", "Azure field contains NUL"),
+            (b"\n##[", "Azure log value contains a line boundary"),
+            (b"##[", "Azure log value contains reserved syntax"),
+        ] {
+            let mut child = Command::new(env!("CARGO_BIN_EXE_shoutx"))
+                .arg(format!("azure-pipelines:{command}"))
+                .stdin(Stdio::piped())
+                .stdout(Stdio::piped())
+                .stderr(Stdio::piped())
+                .spawn()
+                .unwrap();
+            child.stdin.take().unwrap().write_all(input).unwrap();
+            let result = child.wait_with_output().unwrap();
+            assert_eq!(result.status.code(), Some(1));
+            assert!(result.stdout.is_empty());
+            assert_eq!(result.stderr, format!("error: {diagnostic}\n").as_bytes());
+        }
+    }
+}
+
+#[test]
 fn azure_endgroup_does_not_acquire_stdin() {
     for args in [vec![], vec!["--"]] {
         let mut child = Command::new(env!("CARGO_BIN_EXE_shoutx"))
@@ -908,6 +933,8 @@ fn invalid_argv_is_not_lossily_replaced() {
         "azure-pipelines:variable",
         "azure-pipelines:warning",
         "azure-pipelines:path",
+        "azure-pipelines:debug",
+        "azure-pipelines:group",
     ] {
         let mut cmd = Command::new(env!("CARGO_BIN_EXE_shoutx"));
         cmd.arg(command);
@@ -993,6 +1020,24 @@ fn path_native_bytes_and_rejections() {
             result.stdout,
             format!("##vso[task.prependpath]{root}\n").as_bytes()
         );
+    }
+}
+
+#[cfg(windows)]
+#[test]
+fn formatter_rejects_unpaired_surrogate_argv() {
+    use std::{ffi::OsString, os::windows::ffi::OsStringExt};
+    for command in ["debug", "group"] {
+        for units in [&[0xd800][..], &[0x2d, 0xd800][..]] {
+            let result = Command::new(env!("CARGO_BIN_EXE_shoutx"))
+                .arg(format!("azure-pipelines:{command}"))
+                .arg(OsString::from_wide(units))
+                .output()
+                .unwrap();
+            assert_eq!(result.status.code(), Some(1));
+            assert!(result.stdout.is_empty());
+            assert_eq!(result.stderr, b"error: input is not valid UTF-8\n");
+        }
     }
 }
 

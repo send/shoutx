@@ -511,22 +511,19 @@ verifier and offline corruption tests are prepared. GPT-6.1 Sol independently
 reviewed the implementation and hosted fixture with no findings, and ran the
 three offline verifier tests successfully. This review is not hosted admission.
 
-Hosted checkpoint: [PR #150](https://github.com/send/shoutx/pull/150) is draft.
-The ordinary/capacity split received focused GPT-6.1 Sol review with no findings;
-all four offline verifier tests pass. Completed hosted logs passed, but the
-[observed nested UI limitation](compatibility/azure-pipelines.md#formatter-hosted-observations-admission-incomplete)
-requires a maintainer decision before admission can close. The scope question
-has been presented; do not silently weaken the contract or requeue the same
-hosted run without a concrete correction.
+Hosted checkpoint: [PR #150](https://github.com/send/shoutx/pull/150) implements
+the three writers. The ordinary/capacity split received focused GPT-6.1 Sol
+review with no findings; four offline verifier tests pass.
+[Hosted observations](compatibility/azure-pipelines.md#formatter-hosted-observations)
+own completed log and Web UI evidence. On 2026-11-01 the maintainer accepted
+the provider-boundary clarification: retain the nested UI limitation without
+making unsupported provider behavior a shoutx completion gate. No wire, input
+limit, accepted-value fidelity or test corpus changes result.
 
-Remaining work: resolve that consumer-scope decision, finish the corresponding
-compatibility/contract updates, then converge final-head CI/Codex with zero
-unresolved threads. CI still had three runner-differential jobs in progress at
-the checkpoint; other checks were successful or expected skips. No explicit
-Codex request has yet been sent; request once at the final reviewable head.
-If substantive fixes follow, obtain focused review.
-Do not report the design review as implementation approval or parser success
-as rendered grouping evidence.
+Remaining work: push the documentation closeout and converge final-head CI/Codex
+with zero unresolved threads. Implementation head b3d0c6e passed CI; final-head
+checks must still converge. Independent implementation review is complete.
+Do not merge or publish as part of this goal.
 
 ## CI and quality gates
 

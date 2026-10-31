@@ -1,7 +1,6 @@
 # Azure diagnostic and group writers
 
-Status: Accepted, 2026-10-31. Source implementation added; hosted admission and
-implementation review are in progress. Unreleased.
+Status: Accepted, 2026-10-31. Implemented with finite hosted admission. Unreleased.
 
 ## Context and decision drivers
 
@@ -64,3 +63,14 @@ Reconsider the wire choice if Microsoft removes the SDK route, changes the
 pinned interpretation path, or admission demonstrates loss of intended text
 or operation. Reconsider the conservative reservations when a concrete user
 need and bounded consumer evidence support a wider accepted domain.
+
+## Provider-boundary clarification, 2026-11-01
+
+The maintainer agreed that provider specifications, bounded observations and
+shoutx guarantees must be distinguished. The official formatter documentation
+does not define nested-group behavior; making successful nested UI folding a
+mandatory product gate was an unsupported assumption. Preserve the nested
+case and its observed limitation, without rejection, sanitization, provider
+internals investigation or a claim of nested UI support. Single-level folding
+and exact records remain verified. The command contract owns the resulting
+scope; the compatibility record owns the actual observations.

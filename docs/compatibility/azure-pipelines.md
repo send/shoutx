@@ -428,7 +428,7 @@ The [accepted contract](../commands/azure-pipelines-formatter.md) defines the
 finite follow-up admission; confidential interpretation details are retained
 outside the worktree according to SECURITY.md.
 
-### Formatter hosted observations (admission incomplete)
+### Formatter hosted observations
 
 On 2026-10-31, definition 8 ran the finite four-job formatter fixture in
 [run 19](https://dev.azure.com/kazjuly7/shoutx/_build/results?buildId=19)
@@ -455,9 +455,12 @@ clicking the outer control left its body visible; the inner group could be
 expanded/collapsed. Single-level group controls worked in the observed logs.
 Screenshots and interaction observations are retained in private local evidence.
 This is a bounded viewer observation, not an injection finding or an audit of
-the service's implementation. The accepted admission criterion is not yet met;
-the consumer-scope decision is pending. Producer success and passed log checks
-must not be reported as complete UI admission.
+the service's implementation. On 2026-11-01 the maintainer accepted the
+[provider-boundary clarification](../decisions/azure-formatter.md#provider-boundary-clarification-2026-11-01).
+The official formatting-command reference describes single-level groups but
+does not define nested grouping behavior. Admission is complete for the
+command contract's clarified scope; nested UI folding is not claimed. This
+conclusion uses actual UI interactions as well as the completed-log checks.
 
 ## Build metadata source observations
 

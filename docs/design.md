@@ -424,7 +424,7 @@ verification plan:
 - [Azure Pipelines commands](commands/azure-pipelines.md)
 - [Azure Pipelines mask registration](commands/azure-pipelines-mask.md)
 - [Azure Pipelines secret variables](commands/azure-pipelines-secret-variable.md)
-- [Proposed Azure diagnostic and group writers](commands/azure-pipelines-formatter.md)
+- [Azure diagnostic and group writers](commands/azure-pipelines-formatter.md)
 
 ## Design decisions
 
@@ -436,7 +436,7 @@ separately under the [decision-record policy](decisions/README.md):
 - [GitHub Actions problem matcher writers](decisions/github-actions-problem-matchers.md)
 - [v1 CLI review](decisions/v1-cli-review.md)
 - [Azure build metadata writers](decisions/azure-build-metadata.md)
-- [Proposed Azure diagnostic and group writers](decisions/azure-formatter.md)
+- [Azure diagnostic and group writers](decisions/azure-formatter.md)
 - [Unstable GitHub Actions stdout command isolation](decisions/unstable-github-actions-stdout.md)
 - [Markdown output](decisions/markdown-output.md)
 - [GitHub Actions artifact declarations](decisions/github-actions-artifacts.md)

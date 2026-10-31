@@ -264,7 +264,8 @@ Details: [mask contract and tests](commands/azure-pipelines-mask.md),
 
 `azure-pipelines:debug` writes one typed debug request; `azure-pipelines:group`
 writes one group title, and `azure-pipelines:endgroup` closes the caller's group.
-These source commands are unreleased, with hosted admission in progress.
+These commands are implemented and unreleased. The linked compatibility record
+scopes hosted admission and records the nested-group UI limitation.
 They reject line breaks and reserved protocol-looking substrings before stdout;
 accepted text is preserved, without trimming or sanitization. See the
 [input rules and consumer scope](commands/azure-pipelines-formatter.md).

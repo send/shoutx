@@ -1,9 +1,10 @@
 # Azure diagnostic and group writers
 
-Status: Approved on 2026-10-31; source implementation added, admission in progress. The
+Status: Implemented, unreleased. Approved on 2026-10-31, with the provider-boundary
+clarification accepted on 2026-11-01. The
 [decision](../decisions/azure-formatter.md) owns rationale and the accepted
 tradeoffs. This document is the single CLI/admission contract. It does not
-claim hosted admission or release availability.
+claim release availability. The compatibility record owns hosted evidence.
 
 ## Interface and input
 
@@ -69,7 +70,7 @@ group. Do not retry blindly when the consumer may already have seen the record.
 
 ## Responsibility and consumer scope
 
-The candidate protects the selected operation and accepted message/title at
+The writer protects the selected operation and accepted message/title at
 this output boundary. Callers authorize disclosure and operation choice and
 pass values as quoted data instead of shell source. Body output and later
 parsers are separate boundaries. Azure owns debug gating, masking, rendering,
@@ -84,7 +85,12 @@ debug-on jobs. No secret is appropriate input for these display commands.
 Limit grouping admission to Azure DevOps Services' web run-log view; downloaded
 logs need only retain the expected records/text, not interactive grouping.
 No containers, self-hosted profiles, third-party viewers or whole-stream safety
-are added by this proposal.
+are added by this increment.
+
+Interactive grouping is verified for single-level groups. Nested UI folding is
+not guaranteed: shoutx does not track nesting or reject nested invocations.
+Retain the nested case as a compatibility observation, not a requirement that
+shoutx repair or reproduce unspecified provider behavior.
 
 ## Finite implementation admission
 
@@ -121,13 +127,15 @@ Agent parser instead of building a new logging framework.
    unexpected issues fail; do not infer success from a producer exit code.
 4. **Web-view evidence:** manually inspect those four run logs after completion.
    Record run/task IDs, Agent/image versions, date, view identity and screenshots
-   of group title plus collapse/expand effect, nested balance and after-marker
-   outside the group. Check debug visibility with the same view settings and
+   of single-level group title plus collapse/expand effect and after-marker
+   outside the group. Record nested-pair behavior, including limitations,
+   without requiring nested folding to work. Check debug visibility with the same view settings and
    record any UI filtering separately from Agent omission. Long-value fidelity
    is a completed-log byte check, not a screenshot comparison. Do not claim
    interactive grouping from the presence of wire text alone.
 5. **Stop condition:** exact producer/parser assertions plus all four hosted
-   outcomes and recorded UI effects are required for implementation admission.
+   outcomes and single-level UI effects are required for implementation admission;
+   nested UI limitations must be recorded.
    A concrete failure gets one scoped diagnosis/correction and a rerun of the
    affected checks. If representation, limits or consumer scope must change,
    return that choice for approval; never silently drop cases or launch an

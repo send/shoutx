@@ -37,7 +37,8 @@ must establish which bytes the actual consumer treats as structure and which
 as text, including interaction with other command processing on the same stream;
 checking line boundaries alone is insufficient. Do not assume that `##vso`
 percent decoding or GitHub encoding applies.
-No formatter implementation or safe arbitrary-stream wrapper is proposed here.
+The accepted formatter increment is linked below; no safe arbitrary-stream
+wrapper is proposed.
 
 ## Existing scope and evidence
 
@@ -76,9 +77,9 @@ claimed covered merely because the current warning/error writers create issues.
 
 | Surface and disposition | Use and typical input | Boundary, responsibility and reason / alternative |
 | --- | --- | --- |
-| `group` — **Add value** | Group a build phase with a tool-derived title | A raw title newline can introduce a new control line; the formatter boundary note above requires checking other command interpretation too. A candidate must keep the title in its chosen formatter operation. Caller owns group lifetime and body output; log grouping does not neutralize body commands. A static title is a simpler alternative when no dynamic data is needed. |
-| `endgroup` — **Add value** only as group's fixed companion | Close the caller's group | No untrusted value; fixed terminator completes the typed interface, not an independent injection-prevention feature. Caller balances groups. A trusted literal is an alternative. |
-| `debug` — **Add value** | Display tool-derived diagnostic text | Constrain physical control-line injection and verify actual formatter behavior without importing task-command escapes. Caller authorizes disclosure, Azure owns debug visibility. Ordinary logs are not a safe fallback for untrusted command-looking text. |
+| `group` — **Covered**, unreleased | Group a build phase with a tool-derived title | A raw title newline can introduce a new control line; the formatter boundary note above requires checking other command interpretation too. The [contract](commands/azure-pipelines-formatter.md) keeps accepted titles in the chosen operation; its linked evidence scopes UI compatibility. Caller owns group lifetime and body output; log grouping does not neutralize body commands. A static title is a simpler alternative when no dynamic data is needed. |
+| `endgroup` — **Covered**, unreleased fixed companion | Close the caller's group | No untrusted value; fixed terminator completes the typed interface, not an independent injection-prevention feature. Caller balances groups. A trusted literal is an alternative. |
+| `debug` — **Covered** via `task.debug`, unreleased | Display tool-derived diagnostic text | The [contract](commands/azure-pipelines-formatter.md) uses encoded `task.debug` with explicit single-line and reserved-substring validation. Caller authorizes disclosure, Azure owns debug visibility. Ordinary logs are not a safe fallback for untrusted command-looking text. |
 | `section` — **Add value**, lower priority | Display a dynamic phase/section label | Same formatter boundary questions as group, including the cross-protocol check above, without claiming lifetime management. Caller owns truthful labels; UI owns presentation. Fixed section labels or group titles may suffice. |
 | `warning` / `error` — **Outside** as separate initial formatter writers | Mark ordinary log lines without selecting timeline issue semantics | Dynamic text has a framing risk, but existing typed `task.logissue` writers cover diagnostic reporting. They are a use-case alternative, not a wire/UI-equivalent implementation. Reconsider if log-only warnings/errors without issue creation are required. |
 | `command` — **Outside** initial coverage | Display the command line being run | External command text could add formatter/control lines. No need for this distinct command-line display is identified beyond ordinary diagnostics/activity labels; that is the exclusion reason, not disclosure risk alone. Formatting neither executes safely nor authorizes execution, and printing arguments can disclose secrets. Use a fixed non-secret activity label or a trusted task's logging policy; reconsider for a concrete command-display requirement. |
@@ -109,15 +110,11 @@ input/consumer contracts remain deliberately unimplemented.
    [hosted admission](compatibility/azure-pipelines.md#secret-variable-hosted-admission)
    cover the accepted increment. PR #149 merged on 2026-10-28. This does not
    resume release preparation or extend the admitted confidentiality profile.
-3. **Formatter contract for debug/group/endgroup.** Confirm the actual formatter
-   boundary and whether lossless data representation exists. Completion: an
-   approved representation or explicit rejection policy, consumer/display scope
-   and finite tests for unintended command interpretation (not only additional
-   physical lines), title/data fidelity and group
-   effects. No arbitrary subprocess-log sanitizer, automatic group lifecycle or
-   default decoration. Compare the SDK-used debug alternative noted below
-   before selecting a wire. If safe encoding is unavailable, present rejection or
-   explicit sanitization tradeoffs for approval, not a hidden transformation.
+3. **Debug/group/endgroup implemented, unreleased.** The accepted
+   [contract](commands/azure-pipelines-formatter.md) owns representation and
+   scope; [hosted observations](compatibility/azure-pipelines.md#formatter-hosted-observations)
+   record the finite admission and nested UI limitation. No arbitrary stream
+   sanitizer, automatic group lifecycle or default decoration is added.
 4. **File-path command contract, starting with summary/uploadfile.** Completion:
    approved path/metadata framing, clear separation from content and resource
    authorization, failure behavior and finite intended-attachment checks using
@@ -141,8 +138,8 @@ their rationale still belong in the existing specifications and decision records
 
 A source check found `task.debug` registered by the pinned Agent and used by
 Microsoft's task-lib. It is not in the official task-command list above and is
-not a supported shoutx operation. The [formatter proposal](decisions/azure-formatter.md)
-compares this route; the [source observations](compatibility/azure-pipelines.md#formatter-design-observations)
+used by the implemented shoutx debug writer. The [formatter decision](decisions/azure-formatter.md)
+explains this route; the [source observations](compatibility/azure-pipelines.md#formatter-design-observations)
 record its evidence and remaining admission limits. SDK use is not proof of
 safe formatting or permission to expose arbitrary internal Agent commands.
 

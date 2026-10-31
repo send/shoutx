@@ -149,6 +149,9 @@ fn configured_command_table_is_the_complete_expected_surface() {
         );
     }
     const EXPECTED: &[&str] = &[
+        "azure-pipelines:debug",
+        "azure-pipelines:group",
+        "azure-pipelines:endgroup",
         "azure-pipelines:build-number",
         "azure-pipelines:build-tag",
         "azure-pipelines:mask",

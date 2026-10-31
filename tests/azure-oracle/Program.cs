@@ -21,6 +21,9 @@ class Program
 {
     static bool Matches(string line, JsonElement expected, bool decode)
     {
+        if (expected.TryGetProperty("formatter", out var formatter))
+            return !Command.TryParse(line, decode, out _)
+                && line == formatter.GetString();
         if (!Command.TryParse(line, decode, out var command)) return false;
         var properties = expected.GetProperty("properties").EnumerateObject().ToArray();
         var area = expected.TryGetProperty("area", out var requestedArea)

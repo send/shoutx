@@ -105,6 +105,19 @@ int wmain(int argc, wchar_t **argv) {
     if (status != 0) return status;
     status = run_child(argv[1], L"github-actions:endgroup", TRUE, FALSE, 0, "::endgroup::\n");
     if (status != 0) return status;
+    const wchar_t *azure_commands[] = {L"azure-pipelines:debug", L"azure-pipelines:group"};
+    const wchar_t *azure_values[] = {L"azure-pipelines:debug value", L"azure-pipelines:group value", L"azure-pipelines:endgroup"};
+    const char *azure_outputs[] = {"##vso[task.debug]value\n", "##[group]value\n", "##[endgroup]\n"};
+    for (int i = 0; i < 2; i++) {
+        status = run_child(argv[1], azure_commands[i], TRUE, FALSE, 1, "");
+        if (status != 0) return status;
+    }
+    for (int i = 0; i < 3; i++) {
+        status = run_child(argv[1], azure_values[i], TRUE, FALSE, 0, azure_outputs[i]);
+        if (status != 0) return status;
+        status = run_child(argv[1], azure_values[i], FALSE, TRUE, 1, "");
+        if (status != 0) return status;
+    }
     const wchar_t *matcher_commands[] = {L"github-actions:add-matcher", L"github-actions:remove-matcher file", L"github-actions:remove-matcher owner"};
     const wchar_t *matcher_values[] = {L"github-actions:add-matcher value", L"github-actions:remove-matcher file value", L"github-actions:remove-matcher owner value"};
     const char *matcher_outputs[] = {"::add-matcher::value\n", "::remove-matcher::value\n", "::remove-matcher owner=value,::\n"};

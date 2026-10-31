@@ -122,7 +122,7 @@ shoutx github-actions:error   [ANNOTATION OPTIONS] [MESSAGE]
 ```
 
 All fourteen GitHub commands are included in default and `--no-default-features` builds,
-alongside the eight unreleased Azure commands.
+alongside the eleven unreleased Azure commands.
 The former research feature is removed. Stdout consumer compatibility is scoped
 by the adoption contract below; binary availability does not broaden it.
 
@@ -423,6 +423,8 @@ verification plan:
 - [GitHub Actions problem matcher commands](commands/github-actions-problem-matchers.md)
 - [Azure Pipelines commands](commands/azure-pipelines.md)
 - [Azure Pipelines mask registration](commands/azure-pipelines-mask.md)
+- [Azure Pipelines secret variables](commands/azure-pipelines-secret-variable.md)
+- [Azure diagnostic and group writers](commands/azure-pipelines-formatter.md)
 
 ## Design decisions
 
@@ -434,6 +436,7 @@ separately under the [decision-record policy](decisions/README.md):
 - [GitHub Actions problem matcher writers](decisions/github-actions-problem-matchers.md)
 - [v1 CLI review](decisions/v1-cli-review.md)
 - [Azure build metadata writers](decisions/azure-build-metadata.md)
+- [Azure diagnostic and group writers](decisions/azure-formatter.md)
 - [Unstable GitHub Actions stdout command isolation](decisions/unstable-github-actions-stdout.md)
 - [Markdown output](decisions/markdown-output.md)
 - [GitHub Actions artifact declarations](decisions/github-actions-artifacts.md)

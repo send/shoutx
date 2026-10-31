@@ -398,6 +398,70 @@ logging-command inventory. This is source evidence for a candidate alternative,
 not hosted admission, formatter safety or an implemented shoutx command.
 No new hosted experiment was run for the coverage assessment.
 
+## Formatter design observations
+
+Source inspection on 2026-10-31 reused Agent
+`efa064fee06c75b31cabc0451857ad1e294649c7`. These are design observations,
+not hosted formatter admission:
+
+- [NodeHandler.OnDataReceived](https://github.com/microsoft/azure-pipelines-agent/blob/efa064fee06c75b31cabc0451857ad1e294649c7/src/Agent.Worker/Handlers/NodeHandler.cs)
+  tries WorkerCommandManager before forwarding ordinary output. Formatter and
+  task-command handling cannot be treated as independent stdout channels.
+- [ExecutionContext.Debug and Write](https://github.com/microsoft/azure-pipelines-agent/blob/efa064fee06c75b31cabc0451857ad1e294649c7/src/Agent.Worker/ExecutionContext.cs)
+  gate the debug helper on WriteDebug, add the debug tag and write through the
+  masking/log queues. The inspected write path does not call command dispatch
+  again. Ordinary Output does not use the same debug gate. This does not prove
+  the service's formatter parsing, visibility or group UI behavior.
+- Microsoft's task-lib at `c38688fbd96f4b11f29e9003ff5282c6de45b6fe`
+  exports [debug](https://github.com/microsoft/azure-pipelines-task-lib/blob/c38688fbd96f4b11f29e9003ff5282c6de45b6fe/node/task.ts),
+  whose [internal implementation](https://github.com/microsoft/azure-pipelines-task-lib/blob/c38688fbd96f4b11f29e9003ff5282c6de45b6fe/node/internal.ts)
+  emits task.debug, subject to an optional producer-side debug filter. This
+  strengthens its status from an internal-handler-only candidate to an SDK-used
+  route, but does not add it to the general logging-command inventory.
+
+The official [logging-command reference](https://learn.microsoft.com/en-us/azure/devops/pipelines/scripts/logging-commands?view=azure-devops)
+documents the formatter spellings. A formatter data-escape contract was not
+established by this inspection; task-command percent decoding is not evidence
+for one. No hosted formatter experiment or service/UI parser audit was run
+during that design inspection. The subsequent hosted observations follow below.
+The [accepted contract](../commands/azure-pipelines-formatter.md) defines the
+finite follow-up admission; confidential interpretation details are retained
+outside the worktree according to SECURITY.md.
+
+### Formatter hosted observations
+
+On 2026-10-31, definition 8 ran the finite four-job formatter fixture in
+[run 19](https://dev.azure.com/kazjuly7/shoutx/_build/results?buildId=19)
+at source `b3d0c6efbaa1ae205d7054134a4d4ca82297843c`. All four native jobs
+succeeded. The bounded completed-log verifier passed all twelve expected
+blocks per job, including full input-cap values, debug on/off visibility,
+exact message/title bytes, markers and unchanged sentinel/status. Ordinary
+and capacity logs were separate tasks with matching source/artifact identity;
+neither task could be omitted for success. The retained
+[log evidence](evidence/azure-formatter-run19.json) records task/log IDs,
+digests and per-OS artifact identity. Agent was 5.281.1; images were Ubuntu 24
+`20261026.354.1` and Windows 2025 `20261021.299.1`.
+
+Earlier run 18 passed completed-log checks, but its combined ordinary/capacity
+log did not yield usable UI evidence in the inspected viewer. Run 19 separated
+the capacity task without removing cases or changing input limits. Capacity
+fidelity is log-byte evidence, not a claim of usable rendering of 1 MiB titles.
+
+Inspection used Azure DevOps Services' web run-log view in Orca's embedded
+browser, dark log theme, without changing debug filtering. All four ordinary
+logs showed the expected debug gating and preserved after-group markers.
+The balanced nested pair did **not** behave as two nested collapsible groups:
+clicking the outer control left its body visible; the inner group could be
+expanded/collapsed. Single-level group controls worked in the observed logs.
+Screenshots and interaction observations are retained in private local evidence.
+This is a bounded viewer observation, not an injection finding or an audit of
+the service's implementation. On 2026-11-01 the maintainer accepted the
+[provider-boundary clarification](../decisions/azure-formatter.md#provider-boundary-clarification-2026-11-01).
+The official formatting-command reference describes single-level groups but
+does not define nested grouping behavior. Admission is complete for the
+command contract's clarified scope; nested UI folding is not claimed. This
+conclusion uses actual UI interactions as well as the completed-log checks.
+
 ## Build metadata source observations
 
 Inspected on 2026-10-26 at the existing Agent source pin:

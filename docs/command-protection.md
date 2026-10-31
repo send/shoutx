@@ -260,6 +260,43 @@ failure; a partial I/O failure is not an atomic batch rollback.
 Details: [mask contract and tests](commands/azure-pipelines-mask.md),
 [scoped hosted verification](compatibility/azure-pipelines.md#mask-hosted-observations).
 
+### Debug messages and groups
+
+`azure-pipelines:debug` writes one typed debug request; `azure-pipelines:group`
+writes one group title, and `azure-pipelines:endgroup` closes the caller's group.
+These commands are implemented and unreleased. The linked compatibility record
+scopes hosted admission and records the nested-group UI limitation.
+They reject line breaks and reserved protocol-looking substrings before stdout;
+accepted text is preserved, without trimming or sanitization. See the
+[input rules and consumer scope](commands/azure-pipelines-formatter.md).
+
+Debug visibility follows Azure configuration and is not confidentiality.
+The caller authorizes disclosure, checks failures, balances groups and controls
+body output. Grouping does not make a subprocess log safe or change task status.
+A successful write does not acknowledge Azure display; an interrupted write
+cannot roll back a group.
+
+### Secret variables
+
+`azure-pipelines:secret-variable` accepts the credential through stdin only and
+requests a secret assignment, optionally with output/read-only flags. It
+prepares prior masks for the original and wire representations before the
+assignment. This protects the selected command and fields and provides scoped
+registration-channel confidentiality; it is not an atomic transaction.
+
+Values containing line breaks or variable-expansion syntax are rejected rather
+than changed into another credential. The caller authorizes the public name,
+flags, dependency mappings and recipients, supplies bytes without echo, and
+stops dependent work on failure. Azure owns assignment and propagation; a zero
+writer exit does not acknowledge either. Prior masks can remain after a rejected
+assignment or interrupted write.
+
+The supported profile covers complete values in subsequent ordinary captured
+logs, not arbitrary fragments, earlier output or uploaded files. Follow the
+[secret-variable contract, input examples and deployment conditions](commands/azure-pipelines-secret-variable.md)
+and its linked [hosted admission](compatibility/azure-pipelines.md#secret-variable-hosted-admission).
+This writer is implemented but unreleased.
+
 ## Feedback and security reports
 
 For unclear explanations, missing use cases or non-sensitive improvement ideas,

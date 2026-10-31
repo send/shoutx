@@ -422,10 +422,42 @@ not hosted formatter admission:
 The official [logging-command reference](https://learn.microsoft.com/en-us/azure/devops/pipelines/scripts/logging-commands?view=azure-devops)
 documents the formatter spellings. A formatter data-escape contract was not
 established by this inspection; task-command percent decoding is not evidence
-for one. No hosted formatter experiment or service/UI parser audit was run.
-The [proposed contract](../commands/azure-pipelines-formatter.md) defines the
+for one. No hosted formatter experiment or service/UI parser audit was run
+during that design inspection. The subsequent hosted observations follow below.
+The [accepted contract](../commands/azure-pipelines-formatter.md) defines the
 finite follow-up admission; confidential interpretation details are retained
 outside the worktree according to SECURITY.md.
+
+### Formatter hosted observations (admission incomplete)
+
+On 2026-10-31, definition 8 ran the finite four-job formatter fixture in
+[run 19](https://dev.azure.com/kazjuly7/shoutx/_build/results?buildId=19)
+at source `b3d0c6efbaa1ae205d7054134a4d4ca82297843c`. All four native jobs
+succeeded. The bounded completed-log verifier passed all twelve expected
+blocks per job, including full input-cap values, debug on/off visibility,
+exact message/title bytes, markers and unchanged sentinel/status. Ordinary
+and capacity logs were separate tasks with matching source/artifact identity;
+neither task could be omitted for success. The retained
+[log evidence](evidence/azure-formatter-run19.json) records task/log IDs,
+digests and per-OS artifact identity. Agent was 5.281.1; images were Ubuntu 24
+`20261026.354.1` and Windows 2025 `20261021.299.1`.
+
+Earlier run 18 passed completed-log checks, but its combined ordinary/capacity
+log did not yield usable UI evidence in the inspected viewer. Run 19 separated
+the capacity task without removing cases or changing input limits. Capacity
+fidelity is log-byte evidence, not a claim of usable rendering of 1 MiB titles.
+
+Inspection used Azure DevOps Services' web run-log view in Orca's embedded
+browser, dark log theme, without changing debug filtering. All four ordinary
+logs showed the expected debug gating and preserved after-group markers.
+The balanced nested pair did **not** behave as two nested collapsible groups:
+clicking the outer control left its body visible; the inner group could be
+expanded/collapsed. Single-level group controls worked in the observed logs.
+Screenshots and interaction observations are retained in private local evidence.
+This is a bounded viewer observation, not an injection finding or an audit of
+the service's implementation. The accepted admission criterion is not yet met;
+the consumer-scope decision is pending. Producer success and passed log checks
+must not be reported as complete UI admission.
 
 ## Build metadata source observations
 

@@ -511,10 +511,20 @@ verifier and offline corruption tests are prepared. GPT-6.1 Sol independently
 reviewed the implementation and hosted fixture with no findings, and ran the
 three offline verifier tests successfully. This review is not hosted admission.
 
-Remaining work: run the approved four-job native hosted fixture and bounded
-log verifier; capture the stated Web UI effects; update compatibility/admission
-status; finish native CI checks; open the focused PR and monitor current-head
-CI/Codex to convergence. If substantive fixes follow, obtain focused review.
+Hosted checkpoint: [PR #150](https://github.com/send/shoutx/pull/150) is draft.
+The ordinary/capacity split received focused GPT-6.1 Sol review with no findings;
+all four offline verifier tests pass. Completed hosted logs passed, but the
+[observed nested UI limitation](compatibility/azure-pipelines.md#formatter-hosted-observations-admission-incomplete)
+requires a maintainer decision before admission can close. The scope question
+has been presented; do not silently weaken the contract or requeue the same
+hosted run without a concrete correction.
+
+Remaining work: resolve that consumer-scope decision, finish the corresponding
+compatibility/contract updates, then converge final-head CI/Codex with zero
+unresolved threads. CI still had three runner-differential jobs in progress at
+the checkpoint; other checks were successful or expected skips. No explicit
+Codex request has yet been sent; request once at the final reviewable head.
+If substantive fixes follow, obtain focused review.
 Do not report the design review as implementation approval or parser success
 as rendered grouping evidence.
 

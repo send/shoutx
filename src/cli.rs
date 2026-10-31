@@ -109,6 +109,11 @@ pub struct AnnotationRequest {
 
 #[derive(Debug)]
 pub enum Action {
+    AzureLog {
+        kind: crate::azure_pipelines::LogKind,
+        value: Option<OsString>,
+    },
+    AzureEndGroup,
     AzureBuildMetadata {
         kind: crate::azure_pipelines::BuildMetadata,
         value: Option<OsString>,
@@ -140,6 +145,9 @@ pub enum Action {
 
 #[derive(Clone, Copy)]
 enum Command {
+    AzureDebug,
+    AzureGroup,
+    AzureEndGroup,
     AzureBuildNumber,
     AzureBuildTag,
     AzureMask,
@@ -165,6 +173,9 @@ enum Command {
 }
 
 const COMMANDS: &[(&str, Command)] = &[
+    ("azure-pipelines:debug", Command::AzureDebug),
+    ("azure-pipelines:group", Command::AzureGroup),
+    ("azure-pipelines:endgroup", Command::AzureEndGroup),
     ("azure-pipelines:build-number", Command::AzureBuildNumber),
     ("azure-pipelines:build-tag", Command::AzureBuildTag),
     ("azure-pipelines:mask", Command::AzureMask),
@@ -234,6 +245,25 @@ pub fn parse(args: Vec<OsString>) -> Result<Action, ShoutxError> {
         .find_map(|(name, kind)| (*name == command).then_some(*kind))
         .ok_or_else(|| ShoutxError::usage("unknown command"))?;
     let destination = match command {
+        Command::AzureDebug | Command::AzureGroup => {
+            return Ok(match parse_path(it.collect(), true)? {
+                Action::AzurePath(request) => Action::AzureLog {
+                    kind: if matches!(command, Command::AzureDebug) {
+                        crate::azure_pipelines::LogKind::Debug
+                    } else {
+                        crate::azure_pipelines::LogKind::Group
+                    },
+                    value: request.value,
+                },
+                other => other,
+            });
+        }
+        Command::AzureEndGroup => {
+            return Ok(match parse_endgroup(it.collect())? {
+                Action::EndGroup => Action::AzureEndGroup,
+                other => other,
+            });
+        }
         Command::AzureBuildNumber | Command::AzureBuildTag => {
             let parsed = parse_path(it.collect(), true)?;
             return Ok(match parsed {

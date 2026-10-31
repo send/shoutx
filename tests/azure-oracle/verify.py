@@ -106,6 +106,35 @@ def corpus(binary):
                           record=base64.b64encode(b"".join(altered)).decode("ascii")))
 
     root = "C:\\" if os.name == "nt" else "/"
+    log_values = ["", "text", " \t ", "日本語ไทยالعربية😀e\u0301",
+                  "%0A%AZP25;]", "\u0085\u2028\u2029", "x" * 1_048_576]
+    for value in log_values:
+        add(["azure-pipelines:debug"], value, "debug", {})
+    debug_original = cases[-1]
+    cases.append(dict(debug_original, event="wrong", match=False))
+    cases.append(dict(debug_original, data="changed", match=False))
+    cases.append(dict(debug_original, record=base64.b64encode(
+        base64.b64decode(debug_original["record"]) + b"extra\n").decode("ascii"), match=False))
+
+    for value in log_values[1:]:
+        result = run([str(binary), "azure-pipelines:group"], input=value.encode())
+        if result.stderr:
+            raise RuntimeError("formatter producer wrote diagnostics")
+        cases.append({"record": base64.b64encode(result.stdout).decode("ascii"),
+                      "decode": True, "match": True, "formatter": "##[group]" + value})
+    group_original = cases[-1]
+    cases.append(dict(group_original, formatter="##[group]changed", match=False))
+    cases.append(dict(group_original, record=debug_original["record"], match=False))
+    cases.append(dict(group_original, record=base64.b64encode(
+        base64.b64decode(group_original["record"]) + b"extra\n").decode("ascii"), match=False))
+    result = run([str(binary), "azure-pipelines:endgroup"], input=b"ignored")
+    if result.stderr:
+        raise RuntimeError("formatter producer wrote diagnostics")
+    end = {"record": base64.b64encode(result.stdout).decode("ascii"),
+           "decode": True, "match": True, "formatter": "##[endgroup]"}
+    cases.append(end)
+    cases.append(dict(end, formatter="##[group]", match=False))
+
     for sample in samples:
         # Native PATH policy, not the variable/issue newline policy.
         tail = sample.translate(str.maketrans("", "", '\r\n;"' if os.name == "nt" else "\r\n:"))
@@ -196,7 +225,7 @@ def main():
         payload = "".join(json.dumps(c, ensure_ascii=True) + "\n" for c in cases).encode()
         result = run(["dotnet", str(work / "out/Oracle.dll")], input=payload, env=env)
         report = json.loads(result.stdout)
-        if report != {"cases": len(cases), "negativeControls": 26} or result.stderr:
+        if report != {"cases": len(cases), "negativeControls": 33} or result.stderr:
             raise RuntimeError("missing source-parser results")
         print(json.dumps({"agentCommit": COMMIT, "scope": "source-parser-only", **report}))
 

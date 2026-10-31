@@ -1,0 +1,85 @@
+# Manual trusted exact-revision admission. Do not override matrix parameters.
+trigger: none
+pr: none
+
+parameters:
+  - name: images
+    type: object
+    default:
+      - name: linux
+        vmImage: ubuntu-24.04
+      - name: windows
+        vmImage: windows-2025
+  - name: modes
+    type: object
+    default: ['off', 'on']
+
+variables:
+  DECODE_PERCENTS: 'true'
+  SHOUTX_FORMATTER_SENTINEL: unchanged
+
+jobs:
+  - ${{ each image in parameters.images }}:
+      - ${{ each mode in parameters.modes }}:
+          - job: ${{ image.name }}_${{ mode }}
+            displayName: ${{ image.name }}_${{ mode }}
+            timeoutInMinutes: 15
+            ${{ if eq(mode, 'on') }}:
+              dependsOn: ${{ image.name }}_off
+            pool:
+              vmImage: ${{ image.vmImage }}
+            variables:
+              SHOUTX_FORMATTER_HOST: ${{ image.name }}
+              SHOUTX_FORMATTER_DEBUG: ${{ mode }}
+              ${{ if eq(mode, 'on') }}:
+                system.debug: 'true'
+              ${{ else }}:
+                system.debug: 'false'
+            steps:
+              - checkout: self
+                persistCredentials: false
+              - ${{ if eq(mode, 'off') }}:
+                  - pwsh: |
+                      $ErrorActionPreference = 'Stop'
+                      $PSNativeCommandUseErrorActionPreference = $true
+                      cargo build --release --locked --no-default-features
+                      python -B tests/azure-hosted/formatter_producer.py package
+                    displayName: Build and bind formatter binary
+                  - publish: $(Pipeline.Workspace)/formatter-binary
+                    artifact: formatter-binary-${{ image.name }}
+                    displayName: Publish formatter binary
+              - ${{ else }}:
+                  - download: current
+                    artifact: formatter-binary-${{ image.name }}
+                  - pwsh: |
+                      $ErrorActionPreference = 'Stop'
+                      Move-Item -LiteralPath '$(Pipeline.Workspace)/formatter-binary-${{ image.name }}' -Destination '$(Pipeline.Workspace)/formatter-binary'
+                    displayName: Place formatter binary
+              - ${{ if eq(image.name, 'linux') }}:
+                  - bash: |
+                      set -euo pipefail
+                      python3 -B tests/azure-hosted/formatter_producer.py emit
+                    displayName: Emit formatter corpus
+              - ${{ else }}:
+                  - pwsh: |
+                      $ErrorActionPreference = 'Stop'
+                      $PSNativeCommandUseErrorActionPreference = $true
+                      python -B tests/azure-hosted/formatter_producer.py emit
+                    displayName: Emit formatter corpus
+              - ${{ if eq(image.name, 'linux') }}:
+                  - bash: |
+                      set -euo pipefail
+                      python3 -B tests/azure-hosted/formatter_producer.py emit-capacity
+                    displayName: Emit formatter capacity
+              - ${{ else }}:
+                  - pwsh: |
+                      $ErrorActionPreference = 'Stop'
+                      $PSNativeCommandUseErrorActionPreference = $true
+                      python -B tests/azure-hosted/formatter_producer.py emit-capacity
+                    displayName: Emit formatter capacity
+              - task: PythonScript@0
+                displayName: Verify formatter sentinel
+                inputs:
+                  scriptSource: filePath
+                  scriptPath: tests/azure-hosted/formatter_producer.py
+                  arguments: sentinel

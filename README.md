@@ -169,6 +169,9 @@ GitHub Actions stdout commands:
   shoutx github-actions:error   [--title TITLE] [--file FILE] [--line N] [--end-line N] [--column N] [--end-column N] [MESSAGE]
 
 Azure Pipelines commands (unreleased):
+  shoutx azure-pipelines:debug [MESSAGE]
+  shoutx azure-pipelines:group [TITLE]
+  shoutx azure-pipelines:endgroup
   shoutx azure-pipelines:variable [--output] [--read-only] NAME [VALUE]
   shoutx azure-pipelines:secret-variable [--output] [--read-only] NAME
   shoutx azure-pipelines:warning [--file FILE] [--line N] [--column N] [--code CODE] [MESSAGE]
@@ -233,6 +236,15 @@ The source includes an unreleased `azure-pipelines:secret-variable` writer.
 See its [stdin-only interface and usage examples](docs/commands/azure-pipelines-secret-variable.md)
 and [scoped hosted evidence](docs/compatibility/azure-pipelines.md#secret-variable-hosted-admission).
 Apply the documented deployment conditions before using credentials.
+
+The source also includes unreleased Azure `debug`, `group` and `endgroup`
+writers. Their hosted admission is in progress. They accept single-line text;
+even a trailing producer newline is rejected. Use quoted argv with `--` or
+newline-free stdin, and propagate failure. The
+[log command contract](docs/commands/azure-pipelines-formatter.md) lists the
+reserved substrings and consumer scope. Accepted text is not sanitized.
+Debug follows Azure's debug setting; it is not a secret channel. The caller
+balances groups and remains responsible for their body output.
 
 ## GitHub Actions writers
 

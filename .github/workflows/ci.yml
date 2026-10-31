@@ -320,6 +320,7 @@ jobs:
           python -B tests/azure-oracle/verify.py $binary
           python -B tests/azure-hosted/test_smoke.py
           python -B tests/azure-hosted/test_metadata.py
+          python -B tests/azure-hosted/test_formatter.py
           python -B tests/azure-hosted/test_mask_stdin.py
           python -B tests/azure-hosted/test_secret_stdin.py
           python -B tests/azure-hosted/test_secret_verify.py

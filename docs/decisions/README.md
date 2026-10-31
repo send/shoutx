@@ -47,8 +47,10 @@ Current cross-repository decisions:
 
 Azure follow-up planning:
 
+- [`azure-formatter.md`](azure-formatter.md) — accepted debug/group/endgroup
+  representation and provider-boundary rationale; implemented, unreleased.
 - [`azure-secret-variable.md`](azure-secret-variable.md) — accepted dedicated
-  secret-assignment rationale; implementation and admission are in progress.
+  secret-assignment rationale; implemented with scoped admission, unreleased.
 - [`azure-build-metadata.md`](azure-build-metadata.md) — build-number and tag
   writer rationale; field rules belong to the linked command specification.
 - [`azure-path.md`](azure-path.md) — PATH writer rationale and finite work plan;

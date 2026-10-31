@@ -1,5 +1,34 @@
 # Azure hosted smoke
 
+## Formatter admission
+
+`azure-formatter.yml` expands to four native jobs: Ubuntu/Windows with debug
+off/on, each capped at 15 minutes. Queue a reviewed exact revision without
+parameter overrides. Each OS's off job builds once and publishes the binary
+with source/run/digest identity; its on job verifies and reuses that artifact.
+Producer jobs have no mapped API token. Bash/PowerShell run the same bounded
+synthetic corpus through native stdout. Rejected probes stay captured.
+The unchanged capacity sample runs in a separate producer task in each job,
+so completed-log size checks and ordinary Web UI interactions have separate
+logs. Both tasks are mandatory, identity-bound and checked by the verifier.
+
+After the entire run completes, execute `formatter_verify.py` outside the
+producer jobs, with `BUILD_BUILDID`, `BUILD_SOURCEVERSION`,
+`SYSTEM_TEAMPROJECTID` and a read-only `SYSTEM_ACCESSTOKEN` supplied securely.
+The verifier reuses bounded retrieval, refuses redirects, checks exact run/
+source/job/attempt and log completeness, and compares exact payload blocks.
+It reports only identities/counts/digests. Its result explicitly leaves UI
+verification pending; it is not a fifth pipeline job.
+
+Record the four Web UI checks and screenshots specified by the
+[admission contract](../../docs/commands/azure-pipelines-formatter.md#finite-implementation-admission)
+separately. Do not infer collapse/expand effects from raw log markers. Run the
+offline corruption controls before queueing:
+
+```sh
+python3 -B tests/azure-hosted/test_formatter.py
+```
+
 ## Secret variable admission
 
 `azure-secret-variable.yml` and `secret-steps.yml` implement the approved

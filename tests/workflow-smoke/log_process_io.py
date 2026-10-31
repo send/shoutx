@@ -10,6 +10,18 @@ def verify(binary):
     import pty
     master, slave = pty.openpty()
     try:
+        for command, wire in [("debug", b"##vso[task.debug]value\n"),
+                              ("group", b"##[group]value\n")]:
+            result = subprocess.run([binary, "azure-pipelines:" + command], stdin=slave,
+                                    capture_output=True, timeout=10)
+            assert result.returncode == 2 and not result.stdout
+            assert result.stderr == b"error: VALUE omitted while stdin is a terminal\n"
+            result = subprocess.run([binary, "azure-pipelines:" + command, "value"],
+                                    stdin=slave, capture_output=True, timeout=10)
+            assert result.returncode == 0 and result.stdout == wire and not result.stderr
+        result = subprocess.run([binary, "azure-pipelines:endgroup"], stdin=slave,
+                                capture_output=True, timeout=10)
+        assert result.returncode == 0 and result.stdout == b"##[endgroup]\n" and not result.stderr
         for flags in ([], ["--output"], ["--read-only"], ["--output", "--read-only"]):
             result = subprocess.run([binary, "azure-pipelines:secret-variable", *flags, "Credential"],
                                     stdin=slave, capture_output=True, timeout=10)
@@ -58,7 +70,9 @@ def verify(binary):
     read_end, write_end = os.pipe()
     os.close(read_end)
     try:
-        for args in [["azure-pipelines:mask"], ["azure-pipelines:secret-variable", "Credential"]]:
+        for args in [["azure-pipelines:mask"], ["azure-pipelines:secret-variable", "Credential"],
+                     ["azure-pipelines:debug"], ["azure-pipelines:group"],
+                     ["azure-pipelines:endgroup"]]:
             result = subprocess.run([binary, *args], input=b"synthetic",
                                     stdout=write_end, stderr=subprocess.PIPE, timeout=10)
             assert result.returncode == 1
@@ -69,6 +83,19 @@ def verify(binary):
     # fd that Rust replaces with /dev/null. Help/argv errors must not read it.
     unreadable = os.open(os.path.dirname(os.path.abspath(__file__)), os.O_RDONLY)
     try:
+        for command in ("debug", "group", "endgroup"):
+            for flag in ("--help", "--version"):
+                result = subprocess.run([binary, "azure-pipelines:" + command, flag],
+                                        stdin=unreadable, capture_output=True, timeout=10)
+                assert result.returncode == 0 and result.stdout and not result.stderr
+            result = subprocess.run([binary, "azure-pipelines:" + command],
+                                    stdin=unreadable, capture_output=True, timeout=10)
+            if command == "endgroup":
+                assert result.returncode == 0 and result.stdout == b"##[endgroup]\n"
+                assert not result.stderr
+            else:
+                assert result.returncode == 1 and not result.stdout
+                assert result.stderr == b"error: failed to read stdin\n"
         for flag in ("--help", "--version"):
             result = subprocess.run([binary, "azure-pipelines:secret-variable", flag],
                                     stdin=unreadable, capture_output=True, timeout=10)

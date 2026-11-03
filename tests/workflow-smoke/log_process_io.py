@@ -19,6 +19,14 @@ def verify(binary):
             result = subprocess.run([binary, "azure-pipelines:" + command, "value"],
                                     stdin=slave, capture_output=True, timeout=10)
             assert result.returncode == 0 and result.stdout == wire and not result.stderr
+        for command, event in [("summary", "uploadsummary"), ("uploadfile", "uploadfile")]:
+            result = subprocess.run([binary, "azure-pipelines:" + command], stdin=slave,
+                                    capture_output=True, timeout=10)
+            assert result.returncode == 2 and not result.stdout
+            result = subprocess.run([binary, "azure-pipelines:" + command, "/file"], stdin=slave,
+                                    capture_output=True, timeout=10)
+            assert result.returncode == 0 and result.stdout == f"##vso[task.{event}]/file\n".encode()
+            assert not result.stderr
         result = subprocess.run([binary, "azure-pipelines:endgroup"], stdin=slave,
                                 capture_output=True, timeout=10)
         assert result.returncode == 0 and result.stdout == b"##[endgroup]\n" and not result.stderr

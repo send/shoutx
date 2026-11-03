@@ -520,10 +520,27 @@ the provider-boundary clarification: retain the nested UI limitation without
 making unsupported provider behavior a shoutx completion gate. No wire, input
 limit, accepted-value fidelity or test corpus changes result.
 
-Remaining work: push the documentation closeout and converge final-head CI/Codex
-with zero unresolved threads. Implementation head b3d0c6e passed CI; final-head
-checks must still converge. Independent implementation review is complete.
-Do not merge or publish as part of this goal.
+Completed: PR #150 merged after final-head CI/Codex convergence. The formatter
+increment is closed; the compatibility record owns its bounded observations.
+
+### Current file-writer increment
+
+Implement `azure-pipelines:summary` and `azure-pipelines:uploadfile` according to
+the [single authoritative contract](commands/azure-pipelines-files.md) and
+[decision](decisions/azure-files.md). The finite endpoint is exact producer and
+Agent-parser tests, two native hosted attachment checks and a bounded Web UI
+observation, independent GPT-6.1 Sol review, then final-head CI/Codex with no
+unresolved findings. Stop merge-ready; release preparation remains on hold.
+Do not broaden into artifact publishing, Markdown auditing or file authority.
+Independent GPT-6.1 Sol design and implementation reviews found no actionable
+issues. It also reviewed the bounded run-20 compatibility adjustment with no
+findings: retain the observed attachment-name limitation and test literal escape
+paths via the parent directory, without changing accepted inputs or wire bytes.
+The actual pinned parser passed 3,939 cases with 41 negative controls; local
+Cargo tests, Clippy, fmt, docs and offline fixture controls passed.
+Hosted admission completed in run 21; its [compatibility record](compatibility/azure-pipelines.md#file-writer-hosted-admission)
+owns the exact attachment and bounded UI observations. PR #152 remains for
+final-head CI/Codex convergence and maintainer-directed merge.
 
 ## CI and quality gates
 

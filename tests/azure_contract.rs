@@ -933,6 +933,8 @@ fn invalid_argv_is_not_lossily_replaced() {
         "azure-pipelines:variable",
         "azure-pipelines:warning",
         "azure-pipelines:path",
+        "azure-pipelines:summary",
+        "azure-pipelines:uploadfile",
         "azure-pipelines:debug",
         "azure-pipelines:group",
     ] {
@@ -1027,7 +1029,7 @@ fn path_native_bytes_and_rejections() {
 #[test]
 fn formatter_rejects_unpaired_surrogate_argv() {
     use std::{ffi::OsString, os::windows::ffi::OsStringExt};
-    for command in ["debug", "group"] {
+    for command in ["debug", "group", "summary", "uploadfile"] {
         for units in [&[0xd800][..], &[0x2d, 0xd800][..]] {
             let result = Command::new(env!("CARGO_BIN_EXE_shoutx"))
                 .arg(format!("azure-pipelines:{command}"))
@@ -1075,5 +1077,75 @@ fn azure_path_invalid_dash_operand_is_input_failure() {
         assert_eq!(result.status.code(), Some(1));
         assert!(result.stdout.is_empty());
         assert_eq!(result.stderr, b"error: input is not valid UTF-8\n");
+    }
+}
+
+#[test]
+fn file_writers_preserve_authorized_paths_without_reading_files() {
+    let root = if cfg!(windows) {
+        "C:/nonexistent/"
+    } else {
+        "/nonexistent/"
+    };
+    for (command, event) in [("summary", "uploadsummary"), ("uploadfile", "uploadfile")] {
+        for tail in [
+            "report.md",
+            "日本語ไทยالعربية😀e\u{301}",
+            " space ",
+            "%0A;%AZP25]",
+            "##vso[task.complete]",
+            "--help",
+        ] {
+            let path = format!("{root}{tail}");
+            let encoded = path
+                .replace('%', "%AZP25")
+                .replace(';', "%3B")
+                .replace(']', "%5D");
+            let expected = format!("##vso[task.{event}]{encoded}\n");
+            check(command, &[&path], b"ignored", 0, expected.as_bytes());
+            check(command, &[], path.as_bytes(), 0, expected.as_bytes());
+        }
+        for path in [
+            "",
+            "relative",
+            "/",
+            "C:/",
+            "/tmp/.",
+            "/tmp/..",
+            "C:/tmp/.",
+            "C:/tmp/..",
+        ] {
+            check(command, &[path], b"ignored", 1, b"");
+        }
+        for bad in [b"\r".as_slice(), b"\n", b"\0", b"\xff"] {
+            let value = [root.as_bytes(), b"SECRET", bad].concat();
+            check(command, &[], &value, 1, b"");
+        }
+        for args in [
+            vec!["--raw"],
+            vec!["--name", "x"],
+            vec!["--type", "x"],
+            vec!["one", "two"],
+        ] {
+            check(command, &args, b"SECRET", 2, b"");
+        }
+        check(command, &["--help"], b"ignored", 0, shoutx::HELP.as_bytes());
+        check(
+            command,
+            &["--version"],
+            b"ignored",
+            0,
+            shoutx::version_output().as_bytes(),
+        );
+        let mut limit = root.as_bytes().to_vec();
+        limit.resize(VALUE_LIMIT, b'%');
+        let expected = format!(
+            "##vso[task.{event}]{}{}\n",
+            root,
+            "%AZP25".repeat(VALUE_LIMIT - root.len())
+        );
+        check(command, &[], &limit, 0, expected.as_bytes());
+        limit.push(b'x');
+        check(command, &[], &limit, 1, b"");
     }
 }

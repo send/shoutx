@@ -169,6 +169,8 @@ GitHub Actions stdout commands:
   shoutx github-actions:error   [--title TITLE] [--file FILE] [--line N] [--end-line N] [--column N] [--end-column N] [MESSAGE]
 
 Azure Pipelines commands (unreleased):
+  shoutx azure-pipelines:summary [PATH]
+  shoutx azure-pipelines:uploadfile [PATH]
   shoutx azure-pipelines:debug [MESSAGE]
   shoutx azure-pipelines:group [TITLE]
   shoutx azure-pipelines:endgroup
@@ -238,13 +240,26 @@ and [scoped hosted evidence](docs/compatibility/azure-pipelines.md#secret-variab
 Apply the documented deployment conditions before using credentials.
 
 The source also includes unreleased Azure `debug`, `group` and `endgroup`
-writers. Their hosted admission is in progress. They accept single-line text;
+writers. Their scoped hosted evidence is recorded in the compatibility note. They accept single-line text;
 even a trailing producer newline is rejected. Use quoted argv with `--` or
 newline-free stdin, and propagate failure. The
 [log command contract](docs/commands/azure-pipelines-formatter.md) lists the
 reserved substrings and consumer scope. Accepted text is not sanitized.
 Debug follows Azure's debug setting; it is not a secret channel. The caller
 balances groups and remains responsible for their body output.
+
+The unreleased `azure-pipelines:summary` and `azure-pipelines:uploadfile`
+writers pass a caller-approved absolute file path to Azure. For example, in Bash:
+
+```bash
+shoutx azure-pipelines:summary -- "$approved_report_path"
+shoutx azure-pipelines:uploadfile -- "$approved_diagnostic_path"
+```
+
+Azure reads the file and publishes a summary or task-log attachment. These
+commands protect command framing; they do not authorize publication, redact
+file contents, or sanitize Markdown. See the [file-writer contract](docs/commands/azure-pipelines-files.md)
+for native path rules and the verification status.
 
 ## GitHub Actions writers
 

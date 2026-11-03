@@ -149,6 +149,8 @@ fn configured_command_table_is_the_complete_expected_surface() {
         );
     }
     const EXPECTED: &[&str] = &[
+        "azure-pipelines:summary",
+        "azure-pipelines:uploadfile",
         "azure-pipelines:debug",
         "azure-pipelines:group",
         "azure-pipelines:endgroup",

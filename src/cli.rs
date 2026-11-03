@@ -113,6 +113,10 @@ pub enum Action {
         kind: crate::azure_pipelines::LogKind,
         value: Option<OsString>,
     },
+    AzureFile {
+        kind: crate::azure_pipelines::FileKind,
+        value: Option<OsString>,
+    },
     AzureEndGroup,
     AzureBuildMetadata {
         kind: crate::azure_pipelines::BuildMetadata,
@@ -145,6 +149,8 @@ pub enum Action {
 
 #[derive(Clone, Copy)]
 enum Command {
+    AzureSummary,
+    AzureUploadFile,
     AzureDebug,
     AzureGroup,
     AzureEndGroup,
@@ -173,6 +179,8 @@ enum Command {
 }
 
 const COMMANDS: &[(&str, Command)] = &[
+    ("azure-pipelines:summary", Command::AzureSummary),
+    ("azure-pipelines:uploadfile", Command::AzureUploadFile),
     ("azure-pipelines:debug", Command::AzureDebug),
     ("azure-pipelines:group", Command::AzureGroup),
     ("azure-pipelines:endgroup", Command::AzureEndGroup),
@@ -245,6 +253,19 @@ pub fn parse(args: Vec<OsString>) -> Result<Action, ShoutxError> {
         .find_map(|(name, kind)| (*name == command).then_some(*kind))
         .ok_or_else(|| ShoutxError::usage("unknown command"))?;
     let destination = match command {
+        Command::AzureSummary | Command::AzureUploadFile => {
+            return Ok(match parse_path(it.collect(), true)? {
+                Action::AzurePath(request) => Action::AzureFile {
+                    kind: if matches!(command, Command::AzureSummary) {
+                        crate::azure_pipelines::FileKind::Summary
+                    } else {
+                        crate::azure_pipelines::FileKind::UploadFile
+                    },
+                    value: request.value,
+                },
+                other => other,
+            });
+        }
         Command::AzureDebug | Command::AzureGroup => {
             return Ok(match parse_path(it.collect(), true)? {
                 Action::AzurePath(request) => Action::AzureLog {

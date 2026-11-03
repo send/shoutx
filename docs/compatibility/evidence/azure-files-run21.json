@@ -1,0 +1,120 @@
+{
+  "runId": 21,
+  "sourceVersion": "386bcdd406b3d8df82df18e5a24e63a8e0bd197d",
+  "result": "succeeded",
+  "timelineId": "c48d7613-754d-44e7-ab75-e098cbaace31",
+  "jobs": [
+    {
+      "host": "windows",
+      "identity": {
+        "BUILD_BUILDID": "21",
+        "BUILD_SOURCEVERSION": "386bcdd406b3d8df82df18e5a24e63a8e0bd197d",
+        "SYSTEM_JOBID": "2d2b3007-3c5c-5840-9bb0-2b1ea49925f3",
+        "SYSTEM_JOBATTEMPT": "1",
+        "AGENT_VERSION": "5.281.1",
+        "AGENT_OS": "Windows_NT",
+        "AGENT_OSARCHITECTURE": "X64",
+        "ImageOS": "win25",
+        "ImageVersion": "20261021.299.1",
+        "binarySha256": "a9b2eb338f8fc3b3540123130ca9b72f5f7a04e1d65995c06f958d5d8aa3ca7b"
+      },
+      "producerId": "ac0b0b0f-051f-52f7-8fb3-a7e384b0dde9",
+      "verificationId": "ebe6c72d-cef2-5d39-d81f-0eb5198ec063",
+      "verificationLogId": 9,
+      "attachments": [
+        {
+          "type": "DistributedTask.Core.Summary",
+          "name": "shoutx-windows-summary-0-plain.md",
+          "sha256": "19a2c8e49c7a639bfc84c21da5194045547f3949eeac1ad74838091cfe41ef57",
+          "size": 147
+        },
+        {
+          "type": "DistributedTask.Core.Summary",
+          "name": "shoutx-windows-summary-1-日本語ไทยالعربية😀é.md",
+          "sha256": "96a38e186c5f23210d0469f247e1a84647a2c99bc1252e05c41f5a34acab7122",
+          "size": 147
+        },
+        {
+          "type": "DistributedTask.Core.Summary",
+          "name": "shoutx-windows-summary-2- space ;] .md",
+          "sha256": "d59dc4871fa3a1420c7f66054f3f78746e69071ed723063b497943ad60bc5b7d",
+          "size": 147
+        },
+        {
+          "type": "DistributedTask.Core.FileAttachment",
+          "name": "shoutx-windows-uploadfile-0-plain.md",
+          "sha256": "4a1002845e95340517e71212b190004c99d65acd6e712fb18c6ea916bce245bb",
+          "size": 150
+        },
+        {
+          "type": "DistributedTask.Core.FileAttachment",
+          "name": "shoutx-windows-uploadfile-1-日本語ไทยالعربية😀é.md",
+          "sha256": "fb3980fc7b0b62b2d20d2bbd9847ed2e68e6aaae603cdd11ecb3161b6d225b51",
+          "size": 150
+        },
+        {
+          "type": "DistributedTask.Core.FileAttachment",
+          "name": "shoutx-windows-uploadfile-2- space ;] .md",
+          "sha256": "dddcb58214ffc1a143cbbf71be8cacfcc17d19654a3624abb41f87c5a618c712",
+          "size": 150
+        }
+      ]
+    },
+    {
+      "host": "linux",
+      "identity": {
+        "BUILD_BUILDID": "21",
+        "BUILD_SOURCEVERSION": "386bcdd406b3d8df82df18e5a24e63a8e0bd197d",
+        "SYSTEM_JOBID": "0da5d1d9-276d-5173-c4c4-9d4d4ed14fdb",
+        "SYSTEM_JOBATTEMPT": "1",
+        "AGENT_VERSION": "5.281.1",
+        "AGENT_OS": "Linux",
+        "AGENT_OSARCHITECTURE": "X64",
+        "ImageOS": "ubuntu24",
+        "ImageVersion": "20261026.354.1",
+        "binarySha256": "ff13b392a064f39ad401ebd8643430aa31baeda1ca4b9988e96d4eee08476f92"
+      },
+      "producerId": "8ef82b3b-1feb-5bbd-06f6-b1f7b5467f03",
+      "verificationId": "8fe2eab8-6c5e-52c4-123b-01b7e018b065",
+      "verificationLogId": 17,
+      "attachments": [
+        {
+          "type": "DistributedTask.Core.Summary",
+          "name": "shoutx-linux-summary-0-plain.md",
+          "sha256": "acbf5dbc4a12b72675c1448ec1935dafc7c0217ad5a01a548c359e8efd9730cb",
+          "size": 145
+        },
+        {
+          "type": "DistributedTask.Core.Summary",
+          "name": "shoutx-linux-summary-1-日本語ไทยالعربية😀é.md",
+          "sha256": "5726eba5a2c6afc422b130f233bd9c35ad415f9df55402becd7d049087789796",
+          "size": 145
+        },
+        {
+          "type": "DistributedTask.Core.Summary",
+          "name": "shoutx-linux-summary-2- space ;] .md",
+          "sha256": "1634c13dfce2cf36e52583be263313e9c88c1409b0845ed1201ff79c6fa99bd0",
+          "size": 145
+        },
+        {
+          "type": "DistributedTask.Core.FileAttachment",
+          "name": "shoutx-linux-uploadfile-0-plain.md",
+          "sha256": "ed7e5b354dae81e3a9393c26dcc50f8497a620396ccc04aa6575531cbe8d445b",
+          "size": 148
+        },
+        {
+          "type": "DistributedTask.Core.FileAttachment",
+          "name": "shoutx-linux-uploadfile-1-日本語ไทยالعربية😀é.md",
+          "sha256": "81564f240e2d08c8694831b09a6253ac3feb6beb757ca71e44ea078e3c78bd67",
+          "size": 148
+        },
+        {
+          "type": "DistributedTask.Core.FileAttachment",
+          "name": "shoutx-linux-uploadfile-2- space ;] .md",
+          "sha256": "01dc4475320590941c6287371d10aa3b1a5139301966bc4e23856f25dc62dea1",
+          "size": 148
+        }
+      ]
+    }
+  ]
+}

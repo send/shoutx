@@ -66,8 +66,8 @@ claims of identical effects. Caller duties apply equally to those alternatives.
 | `task.complete` — **Outside** for fixed result control; **Add value**, lower priority for external operation text | Finish a task with a trusted result and possibly tool-derived operation text | A fixed trusted status has no data field to protect. A text-bearing variant would need a typed result plus text framing; text must not select status or another command. Caller owns failure policy and shell exit propagation. Exit codes plus pipeline continue-on-error policy cover ordinary failure and some partial-success uses [1], not every explicit timeline effect. No lifecycle orchestration is proposed. |
 | `task.logdetail` — **Outside** current ordinary-script coverage | Custom task authors maintain timeline IDs, parent relationships and progress | Names/text could cross command/property boundaries. Caller owns GUID relationships and truthful state; Azure owns timeline presentation. No ordinary-script requirement for custom nested timeline records is identified here, unlike common log grouping; this is the exclusion reason, not the mere existence of caller duties. Prefer task-author APIs and reconsider with a concrete reusable script use case. |
 | `task.setendpoint` — **Outside** current scope | Custom tasks change an authorized service connection URL/auth/data field | A writer could frame fields, but cannot authorize destination changes or credential recipients. This is job-scoped service-connection mutation, not ordinary value export. Use configured service connections or a purpose-built trusted task. Reconsider only with an explicit endpoint-mutation use case and credential boundary; high privilege alone is not proof that framing has no value. |
-| `task.uploadsummary` — **Add value** | A report generator supplies a Markdown file path | Protect the selected upload command and path, not Markdown content or authorization to read/publish that file. Caller owns path identity, races and sensitive content; Azure owns upload/rendering. A normal artifact can distribute a report but is not an equivalent summary UI. Unlike GitHub summary-file content, Azure's path is itself a logging-command data boundary. |
-| `task.uploadfile` — **Add value** | Attach a caller-approved diagnostic file to task logs | Protect path/command structure; caller authorizes disclosure and file identity, Azure performs upload. Artifact publishing is an alternative distribution channel, not the same task-log attachment. No file-reading/upload engine belongs in shoutx. |
+| `task.uploadsummary` — **Covered**, unreleased | A report generator supplies a Markdown file path | Protect the selected upload command and path, not Markdown content or authorization to read/publish that file. Caller owns path identity, races and sensitive content; Azure owns upload/rendering. A normal artifact can distribute a report but is not an equivalent summary UI. Unlike GitHub summary-file content, Azure's path is itself a logging-command data boundary. |
+| `task.uploadfile` — **Covered**, unreleased | Attach a caller-approved diagnostic file to task logs | Protect path/command structure; caller authorizes disclosure and file identity, Azure performs upload. Artifact publishing is an alternative distribution channel, not the same task-log attachment. No file-reading/upload engine belongs in shoutx. |
 | `task.addattachment` — **Add value**, lower priority | An extension chooses an attachment type/name and generated file | Names, type and path can inject properties/commands if concatenated. Typed framing can protect selected fields; caller authorizes extension/type, file and publication, Azure owns attachment access. Prefer the summary shorthand for summaries; extension-specific tasks are an alternative for other types. |
 
 ## Formatter coverage
@@ -115,13 +115,13 @@ input/consumer contracts remain deliberately unimplemented.
    scope; [hosted observations](compatibility/azure-pipelines.md#formatter-hosted-observations)
    record the finite admission and nested UI limitation. No arbitrary stream
    sanitizer, automatic group lifecycle or default decoration is added.
-4. **File-path command contract, starting with summary/uploadfile.** Completion:
-   approved path/metadata framing, clear separation from content and resource
-   authorization, failure behavior and finite intended-attachment checks using
-   synthetic authorized files. Do not read, hash, redact or upload files in the
-   producer, expand into Markdown sanitization, or presume log masks protect
-   uploaded bytes. Evaluate the lower-priority attachment/artifact/log variants
-   against the task alternatives before choosing a subsequent increment.
+4. **Summary/uploadfile implemented, unreleased.** The [file-writer contract](commands/azure-pipelines-files.md)
+   owns path rules and publication boundaries; [compatibility evidence](compatibility/azure-pipelines.md#file-writer-source-observations)
+   distinguishes parser fidelity from asynchronous upload and records a tested
+   basename limitation. No file-reading engine or Markdown sanitization is added.
+   Evaluate lower-priority attachment/artifact/log variants against existing task
+   alternatives only when choosing a subsequent increment.
+
 
 Progress, completion text and section formatting remain useful lower-priority
 candidates, not prerequisites merely to increase command count. Reconsider them

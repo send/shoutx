@@ -527,3 +527,66 @@ source pin and live Agent version are separate evidence, not claimed identical.
 - [Logging commands](https://learn.microsoft.com/en-us/azure/devops/pipelines/scripts/logging-commands?view=azure-devops)
 - [Variables and naming restrictions](https://learn.microsoft.com/en-us/azure/devops/pipelines/process/variables?view=azure-devops)
 - [Setting and mapping output variables](https://learn.microsoft.com/en-us/azure/devops/pipelines/process/set-variables-scripts?view=azure-devops)
+
+## File-writer source observations
+
+Inspected on 2026-11-03 at the existing Agent source pin. The
+[`TaskCommandExtension` handlers](https://github.com/microsoft/azure-pipelines-agent/blob/efa064fee06c75b31cabc0451857ad1e294649c7/src/Agent.Worker/TaskCommandExtension.cs#L249-L375)
+select fixed summary/file-attachment types, derive names with `Path.GetFileName`,
+and delegate to `AddAttachment`. The helper validates type/name, translates the
+path for the task source, checks file existence and queues the attachment.
+Shoutx does not perform those filesystem operations. The official
+[logging-command reference](https://learn.microsoft.com/en-us/azure/devops/pipelines/scripts/logging-commands?view=azure-devops)
+distinguishes Markdown summaries from files downloadable with task logs.
+
+The actual pinned Agent parser passed 3,939 cases including 41 negative controls
+with the new file writers. Fixed events, empty properties, unchanged decoded
+paths and single-record framing were checked; this alone is not upload evidence.
+The hosted fixture uses the supported [attachment-list API](https://learn.microsoft.com/en-us/rest/api/azure/devops/build/attachments/list?view=azure-devops-rest-7.1)
+and [attachment-content API](https://learn.microsoft.com/en-us/rest/api/azure/devops/build/attachments/get?view=azure-devops-rest-7.1),
+separately from producer success. The [command contract](../commands/azure-pipelines-files.md)
+owns the boundary and finite admission criteria.
+
+Run 20 at source `2f6deb8620deabc969b41018c3a38de9a67e0bfb` exposed a fixture
+error: attachment type strings are `DistributedTask.Core.Summary` and
+`DistributedTask.Core.FileAttachment` (capital T), and API lookup is case-sensitive
+in this observation. After correcting the external query, both hosts' plain
+and multilingual/combining-name attachments were retrieved with exact contents.
+The composite basename containing ` space %0A;%AZP25] ` was absent from both
+type inventories and content retrieval returned 404, despite clean producer
+tasks. This does not identify which character caused the service omission or
+establish an injection path. Do not infer upload success from producer success.
+The pinned [upload queue](https://github.com/microsoft/azure-pipelines-agent/blob/efa064fee06c75b31cabc0451857ad1e294649c7/src/Microsoft.VisualStudio.Services.Agent/JobServerQueue.cs#L435-L462)
+handles upload exceptions as best effort, independently of command acceptance.
+No investigation of general server filename handling is required for the
+writer's framing contract. A follow-up finite run puts literal escape text in
+the parent directory and separately checks delimiter/space basenames, preserving
+path-fidelity coverage without claiming universal attachment-name support.
+
+### File-writer hosted admission
+
+[Run 21](https://dev.azure.com/kazjuly7/shoutx/_build/results?buildId=21) passed
+both native jobs on 2026-11-03 at source
+`386bcdd406b3d8df82df18e5a24e63a8e0bd197d`. Pipeline 9 used project-scoped job
+authorization. Each job verified six exact type/name/content attachments after
+a clean producer, an unchanged sentinel, and run/source/job/attempt/image/Agent
+and binary identities. An independent completed-run API retrieval also compared
+all twelve contents. The retained [evidence projection](evidence/azure-files-run21.json)
+contains identities, task IDs and content digests. Agent was 5.281.1; images were
+Ubuntu 24 `20261026.354.1` and Windows 2025 `20261021.299.1`.
+
+All tested paths used a parent directory containing spaces and literal
+`%0A;%AZP25]`; basenames covered plain ASCII, multilingual/combining text and
+spaces with `;]`. Both argv and stdin were exercised. These observations do not
+remove run 20's composite-basename limitation or promise arbitrary filesystem
+or service filename portability.
+
+Orca's authenticated Azure web view displayed the Windows Markdown reports
+under Extensions, including the command-looking text as a code block. The
+More actions → Download logs route downloaded `logs_21.zip`; all six uploadfile
+contents matched exactly, while summary attachments were absent from that ZIP
+as documented. ZIP member names included task-number prefixes and omitted the
+space immediately before `.md` in the delimiter cases; the attachment API names
+retained it. Shoutx does not promise ZIP member-name identity. Screenshots are
+retained as private local evidence. This is a bounded display/download
+observation, not a general Markdown-rendering audit.

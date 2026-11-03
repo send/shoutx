@@ -118,6 +118,17 @@ int wmain(int argc, wchar_t **argv) {
         status = run_child(argv[1], azure_values[i], FALSE, TRUE, 1, "");
         if (status != 0) return status;
     }
+    const wchar_t *file_commands[] = {L"azure-pipelines:summary", L"azure-pipelines:uploadfile"};
+    const wchar_t *file_values[] = {L"azure-pipelines:summary C:/file", L"azure-pipelines:uploadfile C:/file"};
+    const char *file_outputs[] = {"##vso[task.uploadsummary]C:/file\n", "##vso[task.uploadfile]C:/file\n"};
+    for (int i = 0; i < 2; i++) {
+        status = run_child(argv[1], file_commands[i], TRUE, FALSE, 1, "");
+        if (status != 0) return status;
+        status = run_child(argv[1], file_values[i], TRUE, FALSE, 0, file_outputs[i]);
+        if (status != 0) return status;
+        status = run_child(argv[1], file_values[i], FALSE, TRUE, 1, "");
+        if (status != 0) return status;
+    }
     const wchar_t *matcher_commands[] = {L"github-actions:add-matcher", L"github-actions:remove-matcher file", L"github-actions:remove-matcher owner"};
     const wchar_t *matcher_values[] = {L"github-actions:add-matcher value", L"github-actions:remove-matcher file value", L"github-actions:remove-matcher owner value"};
     const char *matcher_outputs[] = {"::add-matcher::value\n", "::remove-matcher::value\n", "::remove-matcher owner=value,::\n"};

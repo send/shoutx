@@ -1,0 +1,48 @@
+# Manual, trusted source only; synthetic caller-authorized files.
+trigger: none
+pr: none
+parameters:
+  - name: hosts
+    type: object
+    default:
+      - name: linux
+        image: ubuntu-24.04
+      - name: windows
+        image: windows-2025
+jobs:
+  - ${{ each host in parameters.hosts }}:
+      - job: ${{ host.name }}
+        timeoutInMinutes: 15
+        pool:
+          vmImage: ${{ host.image }}
+        variables:
+          DECODE_PERCENTS: 'true'
+          SHOUTX_FILES_SENTINEL: unchanged
+        steps:
+          - checkout: self
+            persistCredentials: false
+          - pwsh: |
+              $ErrorActionPreference = 'Stop'
+              $PSNativeCommandUseErrorActionPreference = $true
+              cargo build --release --locked --no-default-features
+              python -B tests/azure-hosted/test_files.py
+            displayName: Build reviewed source and test verifier controls
+          - ${{ if eq(host.name, 'linux') }}:
+              - bash: |
+                  set -euo pipefail
+                  python3 -B tests/azure-hosted/files.py emit linux
+                displayName: Emit file attachments
+          - ${{ else }}:
+              - pwsh: |
+                  $ErrorActionPreference = 'Stop'
+                  $PSNativeCommandUseErrorActionPreference = $true
+                  python -B tests/azure-hosted/files.py emit windows
+                displayName: Emit file attachments
+          - task: PythonScript@0
+            displayName: Verify exact uploaded attachments
+            inputs:
+              scriptSource: filePath
+              scriptPath: tests/azure-hosted/files.py
+              arguments: verify ${{ host.name }}
+            env:
+              SYSTEM_ACCESSTOKEN: $(System.AccessToken)

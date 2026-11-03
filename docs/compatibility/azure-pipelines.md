@@ -562,3 +562,31 @@ No investigation of general server filename handling is required for the
 writer's framing contract. A follow-up finite run puts literal escape text in
 the parent directory and separately checks delimiter/space basenames, preserving
 path-fidelity coverage without claiming universal attachment-name support.
+
+### File-writer hosted admission
+
+[Run 21](https://dev.azure.com/kazjuly7/shoutx/_build/results?buildId=21) passed
+both native jobs on 2026-11-03 at source
+`386bcdd406b3d8df82df18e5a24e63a8e0bd197d`. Pipeline 9 used project-scoped job
+authorization. Each job verified six exact type/name/content attachments after
+a clean producer, an unchanged sentinel, and run/source/job/attempt/image/Agent
+and binary identities. An independent completed-run API retrieval also compared
+all twelve contents. The retained [evidence projection](evidence/azure-files-run21.json)
+contains identities, task IDs and content digests. Agent was 5.281.1; images were
+Ubuntu 24 `20261026.354.1` and Windows 2025 `20261021.299.1`.
+
+All tested paths used a parent directory containing spaces and literal
+`%0A;%AZP25]`; basenames covered plain ASCII, multilingual/combining text and
+spaces with `;]`. Both argv and stdin were exercised. These observations do not
+remove run 20's composite-basename limitation or promise arbitrary filesystem
+or service filename portability.
+
+Orca's authenticated Azure web view displayed the Windows Markdown reports
+under Extensions, including the command-looking text as a code block. The
+More actions → Download logs route downloaded `logs_21.zip`; all six uploadfile
+contents matched exactly, while summary attachments were absent from that ZIP
+as documented. ZIP member names included task-number prefixes and omitted the
+space immediately before `.md` in the delimiter cases; the attachment API names
+retained it. Shoutx does not promise ZIP member-name identity. Screenshots are
+retained as private local evidence. This is a bounded display/download
+observation, not a general Markdown-rendering audit.

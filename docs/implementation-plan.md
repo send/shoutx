@@ -538,6 +538,9 @@ findings: retain the observed attachment-name limitation and test literal escape
 paths via the parent directory, without changing accepted inputs or wire bytes.
 The actual pinned parser passed 3,939 cases with 41 negative controls; local
 Cargo tests, Clippy, fmt, docs and offline fixture controls passed.
+Hosted admission completed in run 21; its [compatibility record](compatibility/azure-pipelines.md#file-writer-hosted-admission)
+owns the exact attachment and bounded UI observations. PR #152 remains for
+final-head CI/Codex convergence and maintainer-directed merge.
 
 ## CI and quality gates
 

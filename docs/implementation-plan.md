@@ -532,7 +532,12 @@ Agent-parser tests, two native hosted attachment checks and a bounded Web UI
 observation, independent GPT-6.1 Sol review, then final-head CI/Codex with no
 unresolved findings. Stop merge-ready; release preparation remains on hold.
 Do not broaden into artifact publishing, Markdown auditing or file authority.
-The draft contract received independent GPT-6.1 Sol review with no findings.
+Independent GPT-6.1 Sol design and implementation reviews found no actionable
+issues. It also reviewed the bounded run-20 compatibility adjustment with no
+findings: retain the observed attachment-name limitation and test literal escape
+paths via the parent directory, without changing accepted inputs or wire bytes.
+The actual pinned parser passed 3,939 cases with 41 negative controls; local
+Cargo tests, Clippy, fmt, docs and offline fixture controls passed.
 
 ## CI and quality gates
 

@@ -78,6 +78,31 @@ fn packaged_binary_has_exact_help_and_version() {
 #[test]
 fn packaged_binary_exposes_complete_surface() {
     use std::io::Write;
+    let path = if cfg!(windows) {
+        "C:/report;].md"
+    } else {
+        "/report;].md"
+    };
+    let wire = if cfg!(windows) {
+        "C:/report%3B%5D.md"
+    } else {
+        "/report%3B%5D.md"
+    };
+    for (command, event) in [("summary", "uploadsummary"), ("uploadfile", "uploadfile")] {
+        verify(
+            &[&format!("azure-pipelines:{command}"), path],
+            0,
+            format!("##vso[task.{event}]{wire}\n").as_bytes(),
+            b"",
+        );
+        verify(
+            &[&format!("azure-pipelines:{command}"), "relative"],
+            1,
+            b"",
+            b"error: invalid Azure file path syntax\n",
+        );
+    }
+
     verify(
         &["azure-pipelines:debug", "α%0A;]"],
         0,

@@ -25,6 +25,8 @@ GitHub Actions stdout commands:
   shoutx github-actions:error   [--title TITLE] [--file FILE] [--line N] [--end-line N] [--column N] [--end-column N] [MESSAGE]
 
 Azure Pipelines commands (unreleased):
+  shoutx azure-pipelines:summary [PATH]
+  shoutx azure-pipelines:uploadfile [PATH]
   shoutx azure-pipelines:debug [MESSAGE]
   shoutx azure-pipelines:group [TITLE]
   shoutx azure-pipelines:endgroup

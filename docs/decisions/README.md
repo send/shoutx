@@ -47,6 +47,8 @@ Current cross-repository decisions:
 
 Azure follow-up planning:
 
+- [`azure-files.md`](azure-files.md) — selected summary/log-file path writers.
+
 - [`azure-formatter.md`](azure-formatter.md) — accepted debug/group/endgroup
   representation and provider-boundary rationale; implemented, unreleased.
 - [`azure-secret-variable.md`](azure-secret-variable.md) — accepted dedicated

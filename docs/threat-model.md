@@ -232,9 +232,20 @@ variable scope, service limits and issue display/translation are separate
 consumer effects. Record new concrete security paths privately per SECURITY.md,
 not as public exploit-bearing follow-up issues.
 
-### Proposed formatter boundary
+### File publication boundary
 
-The [formatter draft](commands/azure-pipelines-formatter.md) considers an
+The [file-writer contract](commands/azure-pipelines-files.md) adds fixed
+`task.uploadsummary` and `task.uploadfile` operations. Attacker-controlled path
+text must not select another command/property or create another record; Azure
+encoding and native single-file syntax protect that boundary. Decoded path
+fidelity is distinct from resource authorization: a valid path can disclose a
+sensitive file if its caller has not authorized it. Shoutx does not read or
+redact the file, prevent replacement races, sanitize Markdown or grant upload
+permission. Callers must not infer attachment redaction from log masking.
+
+### Formatter boundary
+
+The [formatter contract](commands/azure-pipelines-formatter.md) considers an
 attacker-controlled diagnostic message or group title, with operation choice
 and output transport controlled by the caller. Protected assets are the selected
 operation, its text and the intended log-group boundary. The concrete paths to
@@ -245,10 +256,9 @@ SECURITY.md; the [compatibility note](compatibility/azure-pipelines.md#formatter
 records the bounded public evidence.
 
 Group balancing, concurrently written body logs, disclosure authorization and
-later interpretation are caller responsibilities. The candidate does not
+later interpretation are caller responsibilities. The writer does not
 sanitize subprocess logs or promise confidentiality from debug filtering.
-Input reservations and their pending approval belong only to the draft contract
-and its linked decision, not to the implemented Azure guarantees above.
+Input reservations belong only to the command contract and its linked decision.
 
 ### Proposed secret variable boundary
 

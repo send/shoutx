@@ -34,6 +34,8 @@ pub const HELP: &str = concat!(
     "  shoutx github-actions:warning [--title TITLE] [--file FILE] [--line N] [--end-line N] [--column N] [--end-column N] [MESSAGE]\n",
     "  shoutx github-actions:error   [--title TITLE] [--file FILE] [--line N] [--end-line N] [--column N] [--end-column N] [MESSAGE]\n",
     "\nAzure Pipelines commands (unreleased):\n",
+    "  shoutx azure-pipelines:summary [PATH]\n",
+    "  shoutx azure-pipelines:uploadfile [PATH]\n",
     "  shoutx azure-pipelines:debug [MESSAGE]\n",
     "  shoutx azure-pipelines:group [TITLE]\n",
     "  shoutx azure-pipelines:endgroup\n",

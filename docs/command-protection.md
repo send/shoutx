@@ -307,3 +307,12 @@ For a suspected vulnerability or a new attack path, do **not** post reproduction
 details in a public issue. Follow [SECURITY.md](../SECURITY.md) and use
 [private vulnerability reporting](https://github.com/send/shoutx/security/advisories/new).
 Reports showing that an exclusion has a wider impact are useful too.
+
+### Azure summary and task-log files (unreleased)
+
+`azure-pipelines:summary` and `azure-pipelines:uploadfile` protect a selected
+upload command and preserve its decoded path. A path containing a header
+terminator or escape text remains path data. Invalid inputs fail before stdout.
+The caller still authorizes the file and disclosure; content is neither read
+nor sanitized by shoutx. Log masks do not promise redaction of attachment bytes.
+See the [command contract](commands/azure-pipelines-files.md) for precise rules.

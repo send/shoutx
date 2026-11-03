@@ -140,6 +140,17 @@ def corpus(binary):
         tail = sample.translate(str.maketrans("", "", '\r\n;"' if os.name == "nt" else "\r\n:"))
         add(["azure-pipelines:path"], root + tail, "prependpath", {})
 
+    for command, event in [("summary", "uploadsummary"), ("uploadfile", "uploadfile")]:
+        for sample in samples:
+            forbidden = '\r\n"<>|?*:/\\' if os.name == "nt" else "\r\n/"
+            tail = "".join(c for c in sample if c not in forbidden and (os.name != "nt" or ord(c) >= 32))
+            add(["azure-pipelines:" + command], root + tail + "file", event, {})
+        original_file = cases[-1]
+        for change in [dict(event="wrong"), dict(data="changed"), dict(properties={"name": "injected"})]:
+            cases.append(dict(original_file, **change, match=False))
+        cases.append(dict(original_file, record=base64.b64encode(
+            base64.b64decode(original_file["record"]) + b"extra\n").decode("ascii"), match=False))
+
     for command, event in [("build-number", "updatebuildnumber"), ("build-tag", "addbuildtag")]:
         values = ["v1.2.3", "日本語😀ไทย", "\u0301\u200b", "%0A%AZP25;]",
                   "x" * 255, "😀" * 127 + "x", "##[error]data"]
@@ -225,7 +236,7 @@ def main():
         payload = "".join(json.dumps(c, ensure_ascii=True) + "\n" for c in cases).encode()
         result = run(["dotnet", str(work / "out/Oracle.dll")], input=payload, env=env)
         report = json.loads(result.stdout)
-        if report != {"cases": len(cases), "negativeControls": 33} or result.stderr:
+        if report != {"cases": len(cases), "negativeControls": 41} or result.stderr:
             raise RuntimeError("missing source-parser results")
         print(json.dumps({"agentCommit": COMMIT, "scope": "source-parser-only", **report}))
 

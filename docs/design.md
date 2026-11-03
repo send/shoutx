@@ -122,7 +122,7 @@ shoutx github-actions:error   [ANNOTATION OPTIONS] [MESSAGE]
 ```
 
 All fourteen GitHub commands are included in default and `--no-default-features` builds,
-alongside the eleven unreleased Azure commands.
+alongside the thirteen unreleased Azure commands.
 The former research feature is removed. Stdout consumer compatibility is scoped
 by the adoption contract below; binary availability does not broaden it.
 
@@ -267,14 +267,16 @@ by this adoption contract.
 ## Azure Pipelines profile
 
 The [Azure practical coverage inventory](azure-coverage.md) owns Azure surface
-classifications and proposed priorities. It is a coverage assessment, not an
+classifications and reconsideration criteria. It is the accepted practical scope, not an
 extension of the command contracts or this applicability profile.
 
 The current source implements variable, warning/error and PATH writers described
-by the [Azure command contract](commands/azure-pipelines.md). It is not included
-in v1.0.0. The command contract owns destination-specific input and newline
+by the [Azure command contract](commands/azure-pipelines.md), plus the
+[diagnostic/group writers](commands/azure-pipelines-formatter.md) and
+[summary/task-log writers](commands/azure-pipelines-files.md). Azure commands
+are not included in v1.0.0. The command contract owns destination-specific input and newline
 rules. PATH uses the native producer OS dialect, without extending this profile
-to cross-OS producers or containers. The coverage inventory proposes priorities;
+to cross-OS producers or containers. The coverage inventory owns the selected practical subset;
 the maintainer-selected task is owned by the
 [current handoff](implementation-plan.md#current-handoff-status).
 The [mask contract](commands/azure-pipelines-mask.md) is implemented, with scoped

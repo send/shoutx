@@ -8,7 +8,7 @@ appropriate owner and replace the duplicate with a link.
 | Information | Authoritative source |
 | --- | --- |
 | Product boundary, GitHub v1 readiness and coverage inventory, applicability profile, and accepted cross-cutting invariants | [`design.md`](design.md) |
-| Azure coverage proposals, their row rationale and relative priorities, delegated by the design index | [`azure-coverage.md`](azure-coverage.md); the handoff records the maintainer-selected task |
+| Azure practical coverage dispositions and reconsideration criteria, delegated by the design index | [`azure-coverage.md`](azure-coverage.md); the handoff records the maintainer-selected task |
 | Adversary, trust assumptions, assets, and attack inventory | [`threat-model.md`](threat-model.md) |
 | Observable CLI behavior for one destination | [`commands/`](commands/) |
 | Contract decision rationale, alternatives, and reconsideration conditions | [`decisions/`](decisions/) |

@@ -539,8 +539,19 @@ paths via the parent directory, without changing accepted inputs or wire bytes.
 The actual pinned parser passed 3,939 cases with 41 negative controls; local
 Cargo tests, Clippy, fmt, docs and offline fixture controls passed.
 Hosted admission completed in run 21; its [compatibility record](compatibility/azure-pipelines.md#file-writer-hosted-admission)
-owns the exact attachment and bounded UI observations. PR #152 remains for
-final-head CI/Codex convergence and maintainer-directed merge.
+owns the exact attachment and bounded UI observations. PR #152 merged as
+`5d466e8` after final-head CI/Codex convergence; the implementation is complete.
+
+### Current Azure usage documentation increment
+
+The maintainer accepted the [practical-scope decision](decisions/azure-practical-scope.md).
+Consolidate the inventory's covered/deferred/outside dispositions and provide
+README command selection and native Bash/PowerShell examples. Keep contracts,
+profile and compatibility observations in their existing authoritative homes.
+No runtime change, new command, hosted experiment or release preparation is
+included. Validate documentation consistency and the examples proportionally,
+obtain independent GPT-6.1 Sol review, then converge final-head CI/Codex with no
+unresolved findings. Stop at a merge-ready documentation PR.
 
 ## CI and quality gates
 

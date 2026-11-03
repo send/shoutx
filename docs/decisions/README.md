@@ -47,6 +47,9 @@ Current cross-repository decisions:
 
 Azure follow-up planning:
 
+- [`azure-practical-scope.md`](azure-practical-scope.md) — accepted practical
+  subset and rationale for deferring further writers.
+
 - [`azure-files.md`](azure-files.md) — selected summary/log-file path writers.
 
 - [`azure-formatter.md`](azure-formatter.md) — accepted debug/group/endgroup

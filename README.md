@@ -203,63 +203,125 @@ encoders use the `LANGUAGE:CONTEXT` form.
 
 ## Azure Pipelines writers (unreleased)
 
-These commands require building this source tree; published v1.0.0 binaries
-do not contain them. See the [verification record](docs/compatibility/azure-pipelines.md)
-for tested hosted environments, observed effects and limits.
+Build this source tree and make its native `shoutx` executable available on
+PATH before using these examples; published v1.0.0 binaries do not include Azure
+commands. The [Azure profile](docs/design.md#azure-pipelines-profile) owns the
+supported hosts, shells and required job settings. The
+[verification record](docs/compatibility/azure-pipelines.md) records actual
+hosted behavior and limits. The selected
+[practical scope](docs/azure-coverage.md) does not mean every Azure command is
+implemented, and release preparation remains on hold.
 
-```sh
-shoutx azure-pipelines:variable --output Result "$VALUE"
-shoutx azure-pipelines:warning --code CHECK -- "$MESSAGE"
-shoutx azure-pipelines:error --file "$FILE" --line 1 -- "$MESSAGE"
-shoutx azure-pipelines:path -- "$TOOL_DIRECTORY"
+### Choose a writer
+
+All commands in this table use the `azure-pipelines:` prefix. Links lead to the
+input rules and exact guarantees; this table is a selection guide.
+
+| Intended operation | Writer | Caller responsibility / important limit |
+| --- | --- | --- |
+| Pass non-secret data to later tasks | [`variable`](docs/commands/azure-pipelines.md) | Authorize names and consumers; `--output` needs the appropriate named-step/dependency mapping. |
+| Report a diagnostic | [`warning`, `error`](docs/commands/azure-pipelines.md) | Authorize severity and content; reporting an error is not a substitute for propagating tool failure. |
+| Expose an installed tool directory | [`path`](docs/commands/azure-pipelines.md#path) | Trust the directory and its executables; affects later tasks, not the current shell. |
+| Mask a securely acquired value in later logs | [`mask`](docs/commands/azure-pipelines-mask.md) | Stdin only; follow the separate-task/profile conditions. Does not assign a variable or redact uploaded files. |
+| Assign a runtime-created credential | [`secret-variable`](docs/commands/azure-pipelines-secret-variable.md) | Stdin only; apply the secret profile and explicitly map authorized later consumers. |
+| Set a run identifier or classification | [`build-number`, `build-tag`](docs/commands/azure-pipelines.md#build-metadata) | Authorize metadata and downstream use; tags require the profile's job-level API setting. |
+| Add diagnostic text or organize a phase | [`debug`, `group`, `endgroup`](docs/commands/azure-pipelines-formatter.md) | Debug is not secret; caller balances groups and controls their body output. |
+| Publish a Markdown report or diagnostic file | [`summary`, `uploadfile`](docs/commands/azure-pipelines-files.md) | Supply an authorized absolute file path; content is not sanitized or redacted by shoutx. |
+
+Keep stdout connected to the Agent. Pass dynamic input through environment
+variables or quoted arguments, never by substituting Azure expressions directly
+into shell source. Propagate every failure before dependent work. A successful
+write does not acknowledge that Azure applied, displayed or uploaded the request.
+See the [command protection guide](docs/command-protection.md#azure-pipelines)
+for attack boundaries and exclusions.
+
+### Publish a generated report
+
+The following equivalent **step bodies** create synthetic non-secret files in a
+caller-approved directory, export their report path for later tasks, and request
+a summary plus task-log attachment. They assume `shoutx` is already on PATH.
+On the supported native hosts, configure the job-level setting shown in the
+[profile](docs/design.md#azure-pipelines-profile):
+
+```yaml
+variables:
+  DECODE_PERCENTS: 'true'
 ```
 
-Keep stdout connected to the Azure Agent. Pass inputs as data, not by inserting
-Azure expressions into shell source, and propagate nonzero exit status.
-Unlike the GitHub single-value writers, variable/issue commands preserve final
-newlines as value data. PATH has its own
-[input rules and trust boundary](docs/commands/azure-pipelines.md#path).
-The four writers above do not set secrets or register masks. The separate
-`azure-pipelines:mask [--each-line]` command registers stdin values; its
-[contract and finite verification plan](docs/commands/azure-pipelines-mask.md)
-describe the caller obligations. The scoped native hosted results are recorded
-in the [mask verification evidence](docs/compatibility/azure-pipelines.md#mask-hosted-observations).
-See the [Azure contract](docs/commands/azure-pipelines.md), including consumer
-configuration and output-variable scope, and the
-[hosted verification record](docs/compatibility/azure-pipelines.md).
+Map the same public values through the step's `env:` block for either shell;
+Azure expansion occurs in environment values, not script source:
 
-The source also implements `azure-pipelines:build-number [NUMBER]` and
-`azure-pipelines:build-tag [TAG]`; consult the verification record above. Use
-`--` before untrusted argv data, or newline-free stdin. They do not trim or
-rename values. See the [metadata contract](docs/commands/azure-pipelines.md#build-metadata)
-and the [profile's required tag setting](docs/design.md#azure-pipelines-profile).
+```yaml
+env:
+  REPORT_DIRECTORY: $(Agent.TempDirectory)/shoutx-report
+  CHECK_MESSAGE: Verification report generated
+```
 
-The source includes an unreleased `azure-pipelines:secret-variable` writer.
-See its [stdin-only interface and usage examples](docs/commands/azure-pipelines-secret-variable.md)
-and [scoped hosted evidence](docs/compatibility/azure-pipelines.md#secret-variable-hosted-admission).
-Apply the documented deployment conditions before using credentials.
+Use a dedicated directory without pre-existing files or untrusted symlinks.
+The example owns and overwrites `report.md` and `diagnostic.txt` there. Substitute
+only files whose publication is authorized. This example uses no secrets and
+makes no claim about arbitrary generator output.
 
-The source also includes unreleased Azure `debug`, `group` and `endgroup`
-writers. Their scoped hosted evidence is recorded in the compatibility note. They accept single-line text;
-even a trailing producer newline is rejected. Use quoted argv with `--` or
-newline-free stdin, and propagate failure. The
-[log command contract](docs/commands/azure-pipelines-formatter.md) lists the
-reserved substrings and consumer scope. Accepted text is not sanitized.
-Debug follows Azure's debug setting; it is not a secret channel. The caller
-balances groups and remains responsible for their body output.
-
-The unreleased `azure-pipelines:summary` and `azure-pipelines:uploadfile`
-writers pass a caller-approved absolute file path to Azure. For example, in Bash:
+Bash (`bash:` on the supported Ubuntu host):
 
 ```bash
-shoutx azure-pipelines:summary -- "$approved_report_path"
-shoutx azure-pipelines:uploadfile -- "$approved_diagnostic_path"
+set -euo pipefail
+: "${REPORT_DIRECTORY:?Set an approved absolute report directory}"
+: "${CHECK_MESSAGE:?Set a public diagnostic message}"
+mkdir -p -- "$REPORT_DIRECTORY"
+report_path="$REPORT_DIRECTORY/report.md"
+diagnostic_path="$REPORT_DIRECTORY/diagnostic.txt"
+printf '# Verification report\n\nSynthetic check passed.\n' > "$report_path"
+printf 'Synthetic diagnostic: check passed.\n' > "$diagnostic_path"
+
+shoutx azure-pipelines:variable --read-only ReportPath "$report_path"
+shoutx azure-pipelines:debug -- "$CHECK_MESSAGE"
+shoutx azure-pipelines:group -- 'Publish verification report'
+shoutx azure-pipelines:summary -- "$report_path"
+shoutx azure-pipelines:uploadfile -- "$diagnostic_path"
+shoutx azure-pipelines:endgroup
 ```
 
-Azure reads the file and publishes a summary or task-log attachment. These
-commands protect command framing; they do not authorize publication, redact
-file contents, or sanitize Markdown. See the [file-writer contract](docs/commands/azure-pipelines-files.md)
-for native path rules and the verification status.
+PowerShell (`pwsh:` on the supported Windows host):
+
+```powershell
+$ErrorActionPreference = 'Stop'
+$PSNativeCommandUseErrorActionPreference = $true
+$reportDirectory = [Environment]::GetEnvironmentVariable('REPORT_DIRECTORY')
+$checkMessage = [Environment]::GetEnvironmentVariable('CHECK_MESSAGE')
+if ([string]::IsNullOrEmpty($reportDirectory)) { throw 'Set an approved absolute report directory' }
+if ([string]::IsNullOrEmpty($checkMessage)) { throw 'Set a public diagnostic message' }
+[System.IO.Directory]::CreateDirectory($reportDirectory) | Out-Null
+$reportPath = [System.IO.Path]::Combine($reportDirectory, 'report.md')
+$diagnosticPath = [System.IO.Path]::Combine($reportDirectory, 'diagnostic.txt')
+$utf8 = [System.Text.UTF8Encoding]::new($false, $true)
+[System.IO.File]::WriteAllText($reportPath, "# Verification report`n`nSynthetic check passed.`n", $utf8)
+[System.IO.File]::WriteAllText($diagnosticPath, "Synthetic diagnostic: check passed.`n", $utf8)
+
+shoutx azure-pipelines:variable --read-only ReportPath $reportPath
+shoutx azure-pipelines:debug -- $checkMessage
+shoutx azure-pipelines:group -- 'Publish verification report'
+shoutx azure-pipelines:summary -- $reportPath
+shoutx azure-pipelines:uploadfile -- $diagnosticPath
+shoutx azure-pipelines:endgroup
+```
+
+Pass `$(ReportPath)` through a later task's `env:` mapping to consume it; it is
+not assigned to the current shell. Check provider results when publication is
+required. The [file-writer observations](docs/compatibility/azure-pipelines.md#file-writer-hosted-admission)
+record an omitted composite filename and ZIP-name transformations; these examples
+use simple basenames. Debug output follows Azure's debug setting. Group bodies
+remain caller-controlled, and nested UI folding is not promised.
+
+For credentials, use the existing [secret-variable delivery examples](docs/commands/azure-pipelines-secret-variable.md#usage-examples)
+or [mask byte-stream examples](docs/commands/azure-pipelines-mask.md#input-delivery-examples),
+including their prerequisite job settings and later-task separation. Do not
+adapt the public argv example above by placing a credential in an argument.
+
+For ordinary file/directory artifacts, use Azure's
+[Publish Pipeline Artifacts task](https://learn.microsoft.com/en-us/azure/devops/pipelines/tasks/reference/publish-pipeline-artifact-v1?view=azure-pipelines).
+The [coverage inventory](docs/azure-coverage.md#current-disposition-and-reconsideration)
+owns the deferred operations and conditions for reconsidering them.
 
 ## GitHub Actions writers
 

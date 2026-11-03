@@ -527,3 +527,38 @@ source pin and live Agent version are separate evidence, not claimed identical.
 - [Logging commands](https://learn.microsoft.com/en-us/azure/devops/pipelines/scripts/logging-commands?view=azure-devops)
 - [Variables and naming restrictions](https://learn.microsoft.com/en-us/azure/devops/pipelines/process/variables?view=azure-devops)
 - [Setting and mapping output variables](https://learn.microsoft.com/en-us/azure/devops/pipelines/process/set-variables-scripts?view=azure-devops)
+
+## File-writer source observations
+
+Inspected on 2026-11-03 at the existing Agent source pin. The
+[`TaskCommandExtension` handlers](https://github.com/microsoft/azure-pipelines-agent/blob/efa064fee06c75b31cabc0451857ad1e294649c7/src/Agent.Worker/TaskCommandExtension.cs#L249-L375)
+select fixed summary/file-attachment types, derive names with `Path.GetFileName`,
+and delegate to `AddAttachment`. The helper validates type/name, translates the
+path for the task source, checks file existence and queues the attachment.
+Shoutx does not perform those filesystem operations. The official
+[logging-command reference](https://learn.microsoft.com/en-us/azure/devops/pipelines/scripts/logging-commands?view=azure-devops)
+distinguishes Markdown summaries from files downloadable with task logs.
+
+The actual pinned Agent parser passed 3,939 cases including 41 negative controls
+with the new file writers. Fixed events, empty properties, unchanged decoded
+paths and single-record framing were checked; this alone is not upload evidence.
+The hosted fixture uses the supported [attachment-list API](https://learn.microsoft.com/en-us/rest/api/azure/devops/build/attachments/list?view=azure-devops-rest-7.1)
+and [attachment-content API](https://learn.microsoft.com/en-us/rest/api/azure/devops/build/attachments/get?view=azure-devops-rest-7.1),
+separately from producer success. The [command contract](../commands/azure-pipelines-files.md)
+owns the boundary and finite admission criteria.
+
+Run 20 at source `2f6deb8620deabc969b41018c3a38de9a67e0bfb` exposed a fixture
+error: attachment type strings are `DistributedTask.Core.Summary` and
+`DistributedTask.Core.FileAttachment` (capital T), and API lookup is case-sensitive
+in this observation. After correcting the external query, both hosts' plain
+and multilingual/combining-name attachments were retrieved with exact contents.
+The composite basename containing ` space %0A;%AZP25] ` was absent from both
+type inventories and content retrieval returned 404, despite clean producer
+tasks. This does not identify which character caused the service omission or
+establish an injection path. Do not infer upload success from producer success.
+The pinned [upload queue](https://github.com/microsoft/azure-pipelines-agent/blob/efa064fee06c75b31cabc0451857ad1e294649c7/src/Microsoft.VisualStudio.Services.Agent/JobServerQueue.cs#L435-L462)
+handles upload exceptions as best effort, independently of command acceptance.
+No investigation of general server filename handling is required for the
+writer's framing contract. A follow-up finite run puts literal escape text in
+the parent directory and separately checks delimiter/space basenames, preserving
+path-fidelity coverage without claiming universal attachment-name support.

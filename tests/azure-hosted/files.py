@@ -9,7 +9,7 @@ import time
 import urllib.parse
 import urllib.request
 
-TYPES = {"summary": "Distributedtask.Core.Summary", "uploadfile": "Distributedtask.Core.FileAttachment"}
+TYPES = {"summary": "DistributedTask.Core.Summary", "uploadfile": "DistributedTask.Core.FileAttachment"}
 KEYS = ["BUILD_BUILDID", "BUILD_SOURCEVERSION", "SYSTEM_JOBID", "SYSTEM_JOBATTEMPT",
         "AGENT_VERSION", "AGENT_OS", "AGENT_OSARCHITECTURE", "ImageOS", "ImageVersion"]
 
@@ -28,7 +28,7 @@ def identity():
 
 def cases(host):
     for command in TYPES:
-        for index, tail in enumerate(["plain", "日本語ไทยالعربية😀e\u0301", " space %0A;%AZP25] "]):
+        for index, tail in enumerate(["plain", "日本語ไทยالعربية😀e\u0301", " space ;] "]):
             name = f"shoutx-{host}-{command}-{index}-{tail}.md"
             content = (f"# Shoutx {host} {command} {index}\n\nSynthetic report.\n\n"
                        "```text\n##vso[task.setvariable variable=SHOUTX_FILES_SENTINEL;]changed\n"
@@ -42,7 +42,7 @@ def manifest():
 
 def emit(host):
     ident = identity()
-    root = Path(os.environ["AGENT_TEMPDIRECTORY"]) / "shoutx-files"
+    root = Path(os.environ["AGENT_TEMPDIRECTORY"]) / "shoutx-files space %0A;%AZP25]"
     root.mkdir(exist_ok=False)
     for index, (command, name, content) in enumerate(cases(host)):
         path = root / name

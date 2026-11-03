@@ -61,7 +61,11 @@ unsafe when the caller has not authorized that resource.
 Azure reads and uploads the file, derives the attachment name from the basename,
 and owns collisions, retention, permissions and rendering. Summary requests
 attach a Markdown report; uploadfile requests attach a file to task logs.
-Their destinations are different. Callers supply UTF-8/ASCII Markdown for
+Their destinations are different. A successful stdout write is not an upload
+acknowledgement: Azure can omit an attachment without failing the producer task.
+The [compatibility observations](../compatibility/azure-pipelines.md#file-writer-source-observations)
+record a tested filename combination with that behavior; use a simple basename
+when publication must be verified and check the resulting attachment. Callers supply UTF-8/ASCII Markdown for
 summaries and must not assume registered log masks redact uploaded bytes.
 Neither command replays the file as stdout commands. Avoid secrets in both
 paths and contents. A literal protocol marker in an authorized file is content,
@@ -86,7 +90,7 @@ undocumented UI behavior or universal accepted-filename portability is promised.
 - Two native hosted jobs, Ubuntu 24.04/Bash and Windows 2025/PowerShell, each
   at most 15 minutes, use synthetic caller-owned files with unique names and
   bounded content. Exercise ASCII, multilingual/combining text, spaces and
-  literal escape/delimiter filenames. Include command-looking text only in
+  literal escape/delimiter paths. Include command-looking text only in
   uploaded synthetic contents or captured offline rejected output, never as a
   live injected command. Check exact attachment type/name/content via the
   supported API after the producer completes cleanly, and an unchanged sentinel.

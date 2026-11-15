@@ -1,5 +1,5 @@
 use super::{request::Request, *};
-use crate::{input::read_value, provider::Context};
+use crate::{ShoutxError, input::read_value, provider::Context};
 impl Request {
     pub(crate) fn encode(self, context: &mut impl Context) -> Result<Vec<u8>, ShoutxError> {
         const MISSING: &str = "VALUE omitted while stdin is a terminal";

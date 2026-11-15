@@ -1,4 +1,3 @@
-use super::{BuildMetadata, FileKind, Issue, LogKind, Variable};
 use std::ffi::OsString;
 
 #[derive(Debug)]
@@ -25,4 +24,46 @@ pub enum Request {
     Variable(Variable),
     SecretVariable(Variable),
     Issue(Issue),
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum LogKind {
+    Debug,
+    Group,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum BuildMetadata {
+    Number,
+    Tag,
+}
+
+#[derive(Debug)]
+pub struct Variable {
+    pub name: OsString,
+    pub output: bool,
+    pub read_only: bool,
+    pub value: Option<OsString>,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum Severity {
+    Warning,
+    Error,
+}
+
+#[derive(Debug)]
+pub struct Issue {
+    pub severity: Severity,
+    pub file: Option<OsString>,
+    pub line: Option<OsString>,
+    pub column: Option<OsString>,
+    pub code: Option<OsString>,
+    pub message: Option<OsString>,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum FileKind {
+    Summary,
+    UploadFile,
 }

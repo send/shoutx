@@ -103,6 +103,36 @@ independent complete-command and exact-help fixtures protect the published
 surface. Contracts in `commands/` remain authoritative for behavior, not these
 implementation tables.
 
+### Azure encoder responsibilities
+
+Azure's `mod.rs` declares modules and re-exports the provider's existing types
+and encoder entry points. `request.rs` owns the request/field types;
+`cli.rs` still owns command definitions and grammar, and `execute.rs` still
+owns validation and input-acquisition sequencing.
+
+The encoder modules keep each command's admission checks beside its output:
+
+| Module | Responsibility |
+| --- | --- |
+| `variable.rs` | Variable names, ordinary assignment, and the secret-variable registration/assignment sequence |
+| `mask.rs` | Mask admission, per-line batching and ordered batch construction |
+| `path.rs` | PATH-entry admission and prependpath output |
+| `file.rs` | Summary/uploadfile path admission and output |
+| `log.rs` | Debug/group admission and encoding |
+| `issue.rs` | Warning/error fields, location numbers and encoding |
+| `build_metadata.rs` | Build-number/tag admission and encoding |
+| `record.rs` | Azure logging-command framing, escaping and shared record-size limit |
+| `validation.rs` | Shared text size, UTF-8, NUL and emptiness checks |
+| `path_syntax.rs` | Shared Windows absolute-path syntax, without destination admission |
+
+PATH and file validators remain separate; sharing absolute-path syntax does
+not apply PATH-list restrictions to file uploads. Mask and secret-variable
+admission also remain separate. Aggregate-size checks stay with the command
+that constructs a batch or multi-record operation, using the shared record
+limit. No new generic policy layer is introduced. Private path-dialect unit
+tests live beside the validator they exercise; the external Azure contract
+suite continues to verify the complete CLI boundary independently.
+
 ### Adding commands and providers
 
 For a command in an existing provider:
@@ -586,21 +616,28 @@ coverage dispositions and native Bash/PowerShell examples. Contracts, profile
 and compatibility observations remain in their authoritative homes. No new
 runtime command or release approval was introduced.
 
-### Current provider-boundary increment
+### Provider-boundary completion
 
-Refactor the existing built-in providers according to the [module architecture](#crate-and-module-layout)
-without changing CLI bytes, accepted inputs, diagnostics, status classes,
-validation order or lazy input/environment access. Add provider commands
-without editing common execution code. Use existing contract/oracle evidence,
-plus focused host-operation ordering regressions and comparison with the
-pre-refactor binary. Update internal test imports without weakening expected
-results. Obtain independent GPT-6.1 Sol review and final-head CI/Codex
-convergence with zero unresolved findings; stop at a merge-ready PR.
+PR #155 completed built-in provider registration, provider-owned CLI/request/
+execution modules, shared grammar/input primitives, and table-derived command
+help. The [module architecture](#crate-and-module-layout) owns the extension
+procedure. Existing CLI behavior and lazy host access were preserved.
 
-Dynamic plugins, a stable plugin API, new commands, admission-policy changes
-and release preparation are outside this increment. New sensitive attack
-findings follow `SECURITY.md` and are retained privately for follow-up rather
-than published as issue examples.
+### Current Azure module increment
+
+Split Azure encoder internals according to the [responsibility map](#azure-encoder-responsibilities)
+without changing accepted input, output bytes, diagnostics, statuses,
+validation/input order or the secret-variable registration/assignment sequence.
+Keep the existing provider registration, CLI and execution responsibilities.
+Reuse existing contract and source-parser tests without weakening expected
+results; move private tests with their owning validators. Complete the normal
+local checks, independent GPT-6.1 Sol review and final-head CI/Codex review with
+zero unresolved findings, then stop at a merge-ready PR.
+
+New commands, admission-policy changes, GitHub restructuring, plugin APIs,
+external Azure behavior investigations and release preparation are outside
+this increment. Sensitive findings follow `SECURITY.md` and remain private
+follow-up work.
 
 ## CI and quality gates
 

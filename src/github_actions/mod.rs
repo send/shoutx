@@ -1,5 +1,7 @@
 mod annotation;
 mod artifacts;
+pub(crate) mod cli;
+mod execute;
 mod log;
 mod mask;
 mod matcher;
@@ -8,12 +10,13 @@ mod normalize;
 mod path;
 mod random;
 mod record;
+pub mod request;
 mod stdout_guard;
 mod stdout_start_table;
 
 use std::ffi::OsStr;
 
-use crate::{cli::WriteRequest, error::ShoutxError, input::VALUE_LIMIT};
+use crate::{error::ShoutxError, github_actions::request::WriteRequest, input::VALUE_LIMIT};
 
 pub use annotation::encode as encode_annotation;
 pub use artifacts::{encode_file as encode_artifact_file, encode_oci as encode_artifact_oci};
@@ -58,7 +61,7 @@ impl TargetOs {
 
 pub fn validate_request(request: &WriteRequest) -> Result<(), ShoutxError> {
     name::validate(request.destination, &request.name)?;
-    if let crate::cli::LineMode::Join(separator) = &request.mode {
+    if let crate::github_actions::request::LineMode::Join(separator) = &request.mode {
         normalize::validate_separator(separator)?;
     }
     Ok(())
@@ -84,7 +87,9 @@ pub fn encode_with(
     }
     let name = name::validate(request.destination, &request.name)?;
     match request.mode {
-        crate::cli::LineMode::Multiline => record::multiline(name, value, target_os, random),
+        crate::github_actions::request::LineMode::Multiline => {
+            record::multiline(name, value, target_os, random)
+        }
         mode => {
             let normalized = normalize::apply(mode, value)?;
             record::single_line(name, normalized)

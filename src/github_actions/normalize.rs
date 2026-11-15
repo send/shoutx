@@ -1,4 +1,4 @@
-use crate::{cli::LineMode, error::ShoutxError, input::VALUE_LIMIT};
+use crate::{error::ShoutxError, github_actions::request::LineMode, input::VALUE_LIMIT};
 
 pub(super) fn strip_final(value: &mut Vec<u8>) {
     if value.ends_with(b"\r\n") {

@@ -2,7 +2,7 @@ use base64::{Engine as _, engine::general_purpose::STANDARD};
 use serde::Serialize;
 use std::{collections::BTreeMap, ffi::OsString, fs, path::PathBuf};
 
-use shoutx::cli::{AnnotationRequest, AnnotationSeverity};
+use shoutx::github_actions::request::{AnnotationRequest, AnnotationSeverity};
 
 #[derive(Serialize)]
 struct AnnotationCase {

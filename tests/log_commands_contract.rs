@@ -1,4 +1,4 @@
-use shoutx::{cli::LogKind, github_actions::encode_log, input::VALUE_LIMIT};
+use shoutx::{github_actions::encode_log, github_actions::request::LogKind, input::VALUE_LIMIT};
 use std::{
     io::Write,
     process::{Command, Stdio},
@@ -35,7 +35,7 @@ fn grammar_sources_and_exact_encoding() {
             &["--help", "ignored"],
             b"",
             0,
-            shoutx::HELP.as_bytes(),
+            shoutx::help().as_bytes(),
         );
         check(
             command,
@@ -73,7 +73,7 @@ fn grammar_sources_and_exact_encoding() {
             0,
             format!("::{command}::abc\n").as_bytes(),
         );
-        check(command, &["--help"], b"", 0, shoutx::HELP.as_bytes());
+        check(command, &["--help"], b"", 0, shoutx::help().as_bytes());
         check(
             command,
             &["--version"],
@@ -99,7 +99,7 @@ fn grammar_sources_and_exact_encoding() {
     );
     check("endgroup", &[], b"\xffSECRET", 0, b"::endgroup::\n");
     check("endgroup", &["--"], b"\xffSECRET", 0, b"::endgroup::\n");
-    check("endgroup", &["--help"], b"", 0, shoutx::HELP.as_bytes());
+    check("endgroup", &["--help"], b"", 0, shoutx::help().as_bytes());
     for args in [vec![""], vec!["data"], vec!["--", "--help"]] {
         check("endgroup", &args, b"", 2, b"");
     }

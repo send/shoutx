@@ -1,7 +1,10 @@
 //! Typed Azure logging commands. No dependency on GitHub's boundary policy.
+pub(crate) mod cli;
+mod execute;
+pub mod request;
 use std::ffi::OsString;
 
-use crate::{ShoutxError, cli::os_bytes, input::VALUE_LIMIT};
+use crate::{ShoutxError, input::VALUE_LIMIT, input::os_bytes};
 
 const RECORD_LIMIT: usize = 8 * 1024 * 1024;
 

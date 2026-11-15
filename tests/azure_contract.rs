@@ -84,7 +84,13 @@ fn formatter_rejections_have_no_stdout() {
         ] {
             check(command, &args, b"SECRET", 2, b"");
         }
-        check(command, &["--help"], b"SECRET", 0, shoutx::HELP.as_bytes());
+        check(
+            command,
+            &["--help"],
+            b"SECRET",
+            0,
+            shoutx::help().as_bytes(),
+        );
         check(
             command,
             &["--version"],
@@ -594,7 +600,7 @@ fn mask_validation_precedence_and_immediate_help() {
         vec!["--help", "SECRET"],
         vec!["--each-line", "--help", "--each-line"],
     ] {
-        check("mask", &args, b"\xffSECRET", 0, shoutx::HELP.as_bytes());
+        check("mask", &args, b"\xffSECRET", 0, shoutx::help().as_bytes());
     }
     check(
         "mask",
@@ -741,7 +747,7 @@ fn grammar_and_source_selection() {
             &["--help", "ignored"],
             b"",
             0,
-            shoutx::HELP.as_bytes(),
+            shoutx::help().as_bytes(),
         );
         check(
             command,
@@ -994,7 +1000,7 @@ fn path_native_bytes_and_rejections() {
     for args in [vec!["--unknown"], vec!["--multiline"], vec![root, root]] {
         check("path", &args, b"", 2, b"");
     }
-    check("path", &["--help"], b"", 0, shoutx::HELP.as_bytes());
+    check("path", &["--help"], b"", 0, shoutx::help().as_bytes());
     check(
         "path",
         &["--version"],
@@ -1129,7 +1135,13 @@ fn file_writers_preserve_authorized_paths_without_reading_files() {
         ] {
             check(command, &args, b"SECRET", 2, b"");
         }
-        check(command, &["--help"], b"ignored", 0, shoutx::HELP.as_bytes());
+        check(
+            command,
+            &["--help"],
+            b"ignored",
+            0,
+            shoutx::help().as_bytes(),
+        );
         check(
             command,
             &["--version"],

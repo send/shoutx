@@ -1,9 +1,58 @@
+use crate::{ShoutxError, input::os_bytes};
 use std::ffi::{OsStr, OsString};
 
-use crate::error::ShoutxError;
+#[derive(Debug)]
+pub enum Parsed<T> {
+    Help,
+    Version,
+    Command(T),
+}
+impl<T> Parsed<T> {
+    pub fn map<U>(self, f: impl FnOnce(T) -> U) -> Parsed<U> {
+        match self {
+            Self::Help => Parsed::Help,
+            Self::Version => Parsed::Version,
+            Self::Command(value) => Parsed::Command(f(value)),
+        }
+    }
+}
+
+pub(crate) struct CommandSpec<T> {
+    pub name: &'static str,
+    pub kind: T,
+    pub section: usize,
+    pub order: usize,
+    pub usage: &'static [&'static str],
+}
+
+pub(crate) fn help_section<T>(
+    out: &mut String,
+    commands: &[CommandSpec<T>],
+    section: usize,
+    heading: &str,
+) {
+    out.push_str(heading);
+    let mut commands: Vec<_> = commands.iter().filter(|c| c.section == section).collect();
+    commands.sort_by_key(|c| c.order);
+    for command in commands {
+        for usage in command.usage {
+            out.push_str("  shoutx ");
+            out.push_str(command.name);
+            out.push_str(usage);
+            out.push('\n');
+        }
+    }
+}
+
+// The caller selects when to reject an invalid first operand; this preserves
+// each command's validation precedence without naming providers here.
+pub(crate) enum InvalidOperandEncoding {
+    Deferred,
+    Immediate,
+}
 
 #[cfg(unix)]
-fn strip_os_prefix(value: &OsStr, prefix: &[u8]) -> Option<OsString> {
+pub(crate) fn strip_os_prefix(value: &OsStr, prefix: &[u8]) -> Option<OsString> {
     use std::os::unix::ffi::{OsStrExt, OsStringExt};
     value
         .as_bytes()
@@ -12,13 +61,13 @@ fn strip_os_prefix(value: &OsStr, prefix: &[u8]) -> Option<OsString> {
 }
 
 #[cfg(unix)]
-fn starts_with_ascii_dash(value: &OsStr) -> bool {
+pub(crate) fn starts_with_ascii_dash(value: &OsStr) -> bool {
     use std::os::unix::ffi::OsStrExt;
     value.as_bytes().first() == Some(&b'-')
 }
 
 #[cfg(windows)]
-fn strip_os_prefix(value: &OsStr, prefix: &[u8]) -> Option<OsString> {
+pub(crate) fn strip_os_prefix(value: &OsStr, prefix: &[u8]) -> Option<OsString> {
     use std::os::windows::ffi::{OsStrExt, OsStringExt};
     let wide: Vec<u16> = value.encode_wide().collect();
     let prefix: Vec<u16> = prefix.iter().map(|byte| u16::from(*byte)).collect();
@@ -26,690 +75,23 @@ fn strip_os_prefix(value: &OsStr, prefix: &[u8]) -> Option<OsString> {
 }
 
 #[cfg(windows)]
-fn starts_with_ascii_dash(value: &OsStr) -> bool {
+pub(crate) fn starts_with_ascii_dash(value: &OsStr) -> bool {
     use std::os::windows::ffi::OsStrExt;
     value.encode_wide().next() == Some(u16::from(b'-'))
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum Destination {
-    Output,
-    Env,
-    State,
-}
-
-#[derive(Debug, Eq, PartialEq)]
-pub enum LineMode {
-    Default,
-    FirstLine,
-    Join(Vec<u8>),
-    Multiline,
-}
-
-#[derive(Debug)]
-pub struct WriteRequest {
-    pub destination: Destination,
-    pub mode: LineMode,
-    pub name: OsString,
-    pub value: Option<OsString>,
-}
-
-#[derive(Debug)]
-pub struct PathRequest {
-    pub value: Option<OsString>,
-}
-
-#[derive(Debug)]
-pub enum ArtifactRequest {
-    File {
-        path: Option<OsString>,
-    },
-    Oci {
-        reference: OsString,
-        digest: OsString,
-    },
-}
-
-#[derive(Debug)]
-pub struct MaskRequest {
-    pub value: Option<OsString>,
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum LogKind {
-    Debug,
-    Group,
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum MatcherKind {
-    AddFile,
-    RemoveFile,
-    RemoveOwner,
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum AnnotationSeverity {
-    Notice,
-    Warning,
-    Error,
-}
-
-#[derive(Debug)]
-pub struct AnnotationRequest {
-    pub severity: AnnotationSeverity,
-    pub title: Option<OsString>,
-    pub file: Option<OsString>,
-    pub line: Option<OsString>,
-    pub end_line: Option<OsString>,
-    pub column: Option<OsString>,
-    pub end_column: Option<OsString>,
-    pub message: Option<OsString>,
-}
-
-#[derive(Debug)]
-pub enum Action {
-    AzureLog {
-        kind: crate::azure_pipelines::LogKind,
-        value: Option<OsString>,
-    },
-    AzureFile {
-        kind: crate::azure_pipelines::FileKind,
-        value: Option<OsString>,
-    },
-    AzureEndGroup,
-    AzureBuildMetadata {
-        kind: crate::azure_pipelines::BuildMetadata,
-        value: Option<OsString>,
-    },
-    AzureMask {
-        each_line: bool,
-    },
-    AzurePath(PathRequest),
-    AzureVariable(crate::azure_pipelines::Variable),
-    AzureSecretVariable(crate::azure_pipelines::Variable),
-    AzureIssue(crate::azure_pipelines::Issue),
-    Help,
-    Version,
-    Write(WriteRequest),
-    WritePath(PathRequest),
-    Artifact(ArtifactRequest),
-    Mask(MaskRequest),
-    Log {
-        kind: LogKind,
-        value: Option<OsString>,
-    },
-    EndGroup,
-    Matcher {
-        kind: MatcherKind,
-        value: Option<OsString>,
-    },
-    Annotate(AnnotationRequest),
-}
-
-#[derive(Clone, Copy)]
-enum Command {
-    AzureSummary,
-    AzureUploadFile,
-    AzureDebug,
-    AzureGroup,
-    AzureEndGroup,
-    AzureBuildNumber,
-    AzureBuildTag,
-    AzureMask,
-    AzurePath,
-    AzureVariable,
-    AzureSecretVariable,
-    AzureWarning,
-    AzureError,
-    AddMatcher,
-    RemoveMatcher,
-    Debug,
-    Group,
-    EndGroup,
-    Artifacts,
-    Output,
-    Env,
-    State,
-    Path,
-    Mask,
-    Notice,
-    Warning,
-    Error,
-}
-
-const COMMANDS: &[(&str, Command)] = &[
-    ("azure-pipelines:summary", Command::AzureSummary),
-    ("azure-pipelines:uploadfile", Command::AzureUploadFile),
-    ("azure-pipelines:debug", Command::AzureDebug),
-    ("azure-pipelines:group", Command::AzureGroup),
-    ("azure-pipelines:endgroup", Command::AzureEndGroup),
-    ("azure-pipelines:build-number", Command::AzureBuildNumber),
-    ("azure-pipelines:build-tag", Command::AzureBuildTag),
-    ("azure-pipelines:mask", Command::AzureMask),
-    ("azure-pipelines:variable", Command::AzureVariable),
-    (
-        "azure-pipelines:secret-variable",
-        Command::AzureSecretVariable,
-    ),
-    ("azure-pipelines:warning", Command::AzureWarning),
-    ("azure-pipelines:error", Command::AzureError),
-    ("azure-pipelines:path", Command::AzurePath),
-    ("github-actions:add-matcher", Command::AddMatcher),
-    ("github-actions:remove-matcher", Command::RemoveMatcher),
-    ("github-actions:debug", Command::Debug),
-    ("github-actions:group", Command::Group),
-    ("github-actions:endgroup", Command::EndGroup),
-    ("github-actions:artifacts", Command::Artifacts),
-    ("github-actions:output", Command::Output),
-    ("github-actions:env", Command::Env),
-    ("github-actions:state", Command::State),
-    ("github-actions:path", Command::Path),
-    ("github-actions:mask", Command::Mask),
-    ("github-actions:notice", Command::Notice),
-    ("github-actions:warning", Command::Warning),
-    ("github-actions:error", Command::Error),
-];
-
-pub fn command_names() -> impl Iterator<Item = &'static str> {
-    COMMANDS.iter().map(|(name, _)| *name)
-}
-
-fn parse_azure_mask(tokens: Vec<OsString>) -> Result<Action, ShoutxError> {
-    let mut each_line = false;
-    let mut options = true;
-    for token in tokens {
-        match (options, token.to_str()) {
-            (true, Some("--help")) => return Ok(Action::Help),
-            (true, Some("--version")) => return Ok(Action::Version),
-            (true, Some("--")) => options = false,
-            (true, Some("--each-line")) if !each_line => each_line = true,
-            _ => return Err(ShoutxError::usage("invalid Azure mask argument")),
-        }
-    }
-    Ok(Action::AzureMask { each_line })
-}
-
-fn text(value: &OsStr) -> Result<&str, ShoutxError> {
-    value
-        .to_str()
-        .ok_or_else(|| ShoutxError::usage("command line contains invalid UTF-8"))
-}
-
-pub fn parse(args: Vec<OsString>) -> Result<Action, ShoutxError> {
-    let mut it = args.into_iter();
-    let command = it
-        .next()
-        .ok_or_else(|| ShoutxError::usage("missing command"))?;
-    let command = text(&command)?;
-    if command == "--help" {
-        return Ok(Action::Help);
-    }
-    if command == "--version" {
-        return Ok(Action::Version);
-    }
-    let command = COMMANDS
-        .iter()
-        .find_map(|(name, kind)| (*name == command).then_some(*kind))
-        .ok_or_else(|| ShoutxError::usage("unknown command"))?;
-    let destination = match command {
-        Command::AzureSummary | Command::AzureUploadFile => {
-            return Ok(match parse_path(it.collect(), true)? {
-                Action::AzurePath(request) => Action::AzureFile {
-                    kind: if matches!(command, Command::AzureSummary) {
-                        crate::azure_pipelines::FileKind::Summary
-                    } else {
-                        crate::azure_pipelines::FileKind::UploadFile
-                    },
-                    value: request.value,
-                },
-                other => other,
-            });
-        }
-        Command::AzureDebug | Command::AzureGroup => {
-            return Ok(match parse_path(it.collect(), true)? {
-                Action::AzurePath(request) => Action::AzureLog {
-                    kind: if matches!(command, Command::AzureDebug) {
-                        crate::azure_pipelines::LogKind::Debug
-                    } else {
-                        crate::azure_pipelines::LogKind::Group
-                    },
-                    value: request.value,
-                },
-                other => other,
-            });
-        }
-        Command::AzureEndGroup => {
-            return Ok(match parse_endgroup(it.collect())? {
-                Action::EndGroup => Action::AzureEndGroup,
-                other => other,
-            });
-        }
-        Command::AzureBuildNumber | Command::AzureBuildTag => {
-            let parsed = parse_path(it.collect(), true)?;
-            return Ok(match parsed {
-                Action::AzurePath(request) => Action::AzureBuildMetadata {
-                    kind: if matches!(command, Command::AzureBuildNumber) {
-                        crate::azure_pipelines::BuildMetadata::Number
-                    } else {
-                        crate::azure_pipelines::BuildMetadata::Tag
-                    },
-                    value: request.value,
-                },
-                other => other,
-            });
-        }
-        Command::AzureMask => return parse_azure_mask(it.collect()),
-        Command::AzurePath => {
-            return parse_path(it.collect(), true);
-        }
-        Command::AzureVariable => return parse_azure_variable(it.collect()),
-        Command::AzureSecretVariable => {
-            return match parse_azure_variable(it.collect())? {
-                Action::AzureVariable(request) if request.value.is_none() => {
-                    Ok(Action::AzureSecretVariable(request))
-                }
-                Action::AzureVariable(_) => {
-                    Err(ShoutxError::usage("secret variable takes stdin only"))
-                }
-                other => Ok(other),
-            };
-        }
-        Command::AzureWarning => {
-            return parse_azure_issue(crate::azure_pipelines::Severity::Warning, it.collect());
-        }
-        Command::AzureError => {
-            return parse_azure_issue(crate::azure_pipelines::Severity::Error, it.collect());
-        }
-        Command::AddMatcher => return parse_matcher(MatcherKind::AddFile, it.collect()),
-        Command::RemoveMatcher => return parse_remove_matcher(it.collect()),
-        Command::Debug => return parse_log(LogKind::Debug, it.collect()),
-        Command::Group => return parse_log(LogKind::Group, it.collect()),
-        Command::EndGroup => return parse_endgroup(it.collect()),
-        Command::Artifacts => return parse_artifacts(it.collect()),
-        Command::Output => Destination::Output,
-        Command::Env => Destination::Env,
-        Command::State => Destination::State,
-        Command::Path => return parse_path(it.collect(), false),
-        Command::Mask => return parse_mask(it.collect()),
-        Command::Notice => return parse_annotation(AnnotationSeverity::Notice, it.collect()),
-        Command::Warning => return parse_annotation(AnnotationSeverity::Warning, it.collect()),
-        Command::Error => return parse_annotation(AnnotationSeverity::Error, it.collect()),
-    };
-
-    let tokens: Vec<OsString> = it.collect();
-    let mut i = 0;
-    let mut mode = LineMode::Default;
-    let mut mode_set = false;
-    let mut join_separator = None;
-    let mut options = true;
-    let name;
-    loop {
-        let token = tokens
-            .get(i)
-            .ok_or_else(|| ShoutxError::usage("missing NAME"))?;
-        let token_text = token.to_str();
-        if options && token_text == Some("--") {
-            options = false;
-            i += 1;
-            continue;
-        }
-        if options && token_text == Some("--help") {
-            return Ok(Action::Help);
-        }
-        if options && token_text == Some("--version") {
-            return Ok(Action::Version);
-        }
-        if options && token_text == Some("--multiline") {
-            if mode_set {
-                return Err(ShoutxError::usage("line modes are mutually exclusive"));
-            }
-            mode = LineMode::Multiline;
-            mode_set = true;
-            i += 1;
-            continue;
-        }
-        if options {
-            if let Some(separator) = strip_os_prefix(token, b"--join-lines-with=") {
-                if mode_set {
-                    return Err(ShoutxError::usage("line modes are mutually exclusive"));
-                }
-                mode = LineMode::Join(Vec::new());
-                join_separator = Some(separator);
-                mode_set = true;
-                i += 1;
-                continue;
-            }
-        }
-        if options && (token_text == Some("--first-line") || token_text == Some("--join-lines")) {
-            if mode_set {
-                return Err(ShoutxError::usage("line modes are mutually exclusive"));
-            }
-            mode = if token_text == Some("--first-line") {
-                LineMode::FirstLine
-            } else {
-                LineMode::Join(b" ".to_vec())
-            };
-            mode_set = true;
-            i += 1;
-            continue;
-        }
-        if options && token_text == Some("--join-lines-with") {
-            if mode_set {
-                return Err(ShoutxError::usage("line modes are mutually exclusive"));
-            }
-            let separator = tokens
-                .get(i + 1)
-                .ok_or_else(|| ShoutxError::usage("missing join separator"))?;
-            mode = LineMode::Join(Vec::new());
-            join_separator = Some(separator.clone());
-            mode_set = true;
-            i += 2;
-            continue;
-        }
-        if options && starts_with_ascii_dash(token) {
-            return Err(ShoutxError::usage("unknown option"));
-        }
-        name = token.clone();
-        i += 1;
-        break;
-    }
-    let value = match tokens.len() - i {
-        0 => None,
-        1 => Some(tokens[i].clone()),
-        _ => return Err(ShoutxError::usage("too many operands")),
-    };
-    if let Some(separator) = join_separator {
-        mode = LineMode::Join(os_bytes(&separator)?.to_vec());
-    }
-    Ok(Action::Write(WriteRequest {
-        destination,
-        mode,
-        name,
-        value,
-    }))
-}
-
-fn parse_azure_variable(tokens: Vec<OsString>) -> Result<Action, ShoutxError> {
-    let mut output = false;
-    let mut read_only = false;
-    let mut options = true;
-    let mut it = tokens.into_iter();
-    let name = loop {
-        let token = it
-            .next()
-            .ok_or_else(|| ShoutxError::usage("missing NAME"))?;
-        if options {
-            match token.to_str() {
-                Some("--help") => return Ok(Action::Help),
-                Some("--version") => return Ok(Action::Version),
-                Some("--") => {
-                    options = false;
-                    continue;
-                }
-                Some("--output" | "--read-only") => {
-                    let flag = if token == "--output" {
-                        &mut output
-                    } else {
-                        &mut read_only
-                    };
-                    if *flag {
-                        return Err(ShoutxError::usage("duplicate Azure option"));
-                    }
-                    *flag = true;
-                    continue;
-                }
-                _ if starts_with_ascii_dash(&token) => {
-                    return Err(ShoutxError::usage("unknown option"));
-                }
-                _ => {}
-            }
-        }
-        break token;
-    };
-    let value = it.next();
-    if it.next().is_some() {
-        return Err(ShoutxError::usage("too many operands"));
-    }
-    Ok(Action::AzureVariable(crate::azure_pipelines::Variable {
-        name,
-        output,
-        read_only,
-        value,
-    }))
-}
-
-fn parse_azure_issue(
-    severity: crate::azure_pipelines::Severity,
+pub(crate) fn parse_value(
     tokens: Vec<OsString>,
-) -> Result<Action, ShoutxError> {
-    let mut request = crate::azure_pipelines::Issue {
-        severity,
-        file: None,
-        line: None,
-        column: None,
-        code: None,
-        message: None,
-    };
-    let mut options = true;
-    let mut it = tokens.into_iter();
-    while let Some(token) = it.next() {
-        if request.message.is_some() {
-            return Err(ShoutxError::usage("too many operands"));
-        }
-        if options {
-            let field = match token.to_str() {
-                Some("--help") => return Ok(Action::Help),
-                Some("--version") => return Ok(Action::Version),
-                Some("--") => {
-                    options = false;
-                    continue;
-                }
-                Some("--file") => Some(&mut request.file),
-                Some("--line") => Some(&mut request.line),
-                Some("--column") => Some(&mut request.column),
-                Some("--code") => Some(&mut request.code),
-                _ => None,
-            };
-            if let Some(field) = field {
-                if field.is_some() {
-                    return Err(ShoutxError::usage("duplicate Azure option"));
-                }
-                *field = Some(
-                    it.next()
-                        .ok_or_else(|| ShoutxError::usage("missing Azure option operand"))?,
-                );
-                continue;
-            }
-            if starts_with_ascii_dash(&token) {
-                return Err(ShoutxError::usage("unknown option"));
-            }
-        }
-        request.message = Some(token);
-    }
-    Ok(Action::AzureIssue(request))
-}
-
-fn parse_log(kind: LogKind, tokens: Vec<OsString>) -> Result<Action, ShoutxError> {
-    // Only acquisition grammar is shared; mask validation is not invoked here.
-    match parse_mask(tokens)? {
-        Action::Mask(MaskRequest { value }) => Ok(Action::Log { kind, value }),
-        action => Ok(action),
-    }
-}
-
-fn parse_matcher(kind: MatcherKind, tokens: Vec<OsString>) -> Result<Action, ShoutxError> {
-    // Share only the single-value grammar, never mask acceptance rules.
-    match parse_mask(tokens)? {
-        Action::Mask(MaskRequest { value }) => Ok(Action::Matcher { kind, value }),
-        action => Ok(action),
-    }
-}
-
-fn parse_remove_matcher(tokens: Vec<OsString>) -> Result<Action, ShoutxError> {
-    let mut tokens = tokens.into_iter();
-    let mode = tokens.next();
-    let kind = match mode.as_deref().and_then(OsStr::to_str) {
-        Some("--help") => return Ok(Action::Help),
-        Some("--version") => return Ok(Action::Version),
-        Some("owner") => MatcherKind::RemoveOwner,
-        Some("file") => MatcherKind::RemoveFile,
-        _ => {
-            return Err(ShoutxError::usage(
-                "missing or unknown matcher removal mode",
-            ));
-        }
-    };
-    parse_matcher(kind, tokens.collect())
-}
-
-fn parse_endgroup(tokens: Vec<OsString>) -> Result<Action, ShoutxError> {
-    match tokens.first().and_then(|token| token.to_str()) {
-        Some("--help") => Ok(Action::Help),
-        Some("--version") => Ok(Action::Version),
-        _ if tokens.is_empty() || (tokens.len() == 1 && tokens[0] == "--") => Ok(Action::EndGroup),
-        _ => Err(ShoutxError::usage("endgroup takes no operands")),
-    }
-}
-
-fn parse_artifacts(tokens: Vec<OsString>) -> Result<Action, ShoutxError> {
-    let variant = tokens.first().and_then(|t| t.to_str());
-    match variant {
-        Some("--help") => return Ok(Action::Help),
-        Some("--version") => return Ok(Action::Version),
-        Some("file" | "oci") => {}
-        _ => return Err(ShoutxError::usage("missing or unknown artifact variant")),
-    }
-    let mut operands = Vec::new();
-    let mut options = true;
-    for token in tokens.iter().skip(1) {
-        if options {
-            match token.to_str() {
-                Some("--help") => return Ok(Action::Help),
-                Some("--version") => return Ok(Action::Version),
-                Some("--") => {
-                    options = false;
-                    continue;
-                }
-                _ if starts_with_ascii_dash(token) => {
-                    return Err(ShoutxError::usage("unknown option"));
-                }
-                _ => options = false,
-            }
-        }
-        operands.push(token.clone());
-    }
-    match (variant, operands.len()) {
-        (Some("file"), 0..=1) => Ok(Action::Artifact(ArtifactRequest::File {
-            path: operands.pop(),
-        })),
-        (Some("oci"), 2) => {
-            let digest = operands.pop().unwrap();
-            let reference = operands.pop().unwrap();
-            Ok(Action::Artifact(ArtifactRequest::Oci { reference, digest }))
-        }
-        _ => Err(ShoutxError::usage("wrong number of artifact operands")),
-    }
-}
-
-fn parse_annotation(
-    severity: AnnotationSeverity,
-    tokens: Vec<OsString>,
-) -> Result<Action, ShoutxError> {
-    let mut request = AnnotationRequest {
-        severity,
-        title: None,
-        file: None,
-        line: None,
-        end_line: None,
-        column: None,
-        end_column: None,
-        message: None,
-    };
-    let mut options = true;
-    let mut i = 0;
-    while i < tokens.len() {
-        let token = &tokens[i];
-        let token_text = token.to_str();
-        if request.message.is_none() && options && token_text == Some("--") {
-            options = false;
-            i += 1;
-            continue;
-        }
-        if request.message.is_none() && options && token_text == Some("--help") {
-            return Ok(Action::Help);
-        }
-        if request.message.is_none() && options && token_text == Some("--version") {
-            return Ok(Action::Version);
-        }
-        let field = if request.message.is_none() && options {
-            match token_text {
-                Some("--title") => Some(&mut request.title),
-                Some("--file") => Some(&mut request.file),
-                Some("--line") => Some(&mut request.line),
-                Some("--end-line") => Some(&mut request.end_line),
-                Some("--column") => Some(&mut request.column),
-                Some("--end-column") => Some(&mut request.end_column),
-                _ => None,
-            }
-        } else {
-            None
-        };
-        if let Some(field) = field {
-            if field.is_some() {
-                return Err(ShoutxError::usage("duplicate annotation option"));
-            }
-            let operand = tokens
-                .get(i + 1)
-                .ok_or_else(|| ShoutxError::usage("missing annotation option operand"))?;
-            *field = Some(operand.clone());
-            i += 2;
-            continue;
-        }
-        if request.message.is_none() && options && starts_with_ascii_dash(token) {
-            return Err(ShoutxError::usage("unknown option"));
-        }
-        if request.message.is_some() {
-            return Err(ShoutxError::usage("too many operands"));
-        }
-        request.message = Some(token.clone());
-        i += 1;
-    }
-    Ok(Action::Annotate(request))
-}
-
-fn parse_mask(tokens: Vec<OsString>) -> Result<Action, ShoutxError> {
+    encoding: InvalidOperandEncoding,
+) -> Result<Parsed<Option<OsString>>, ShoutxError> {
     let mut options = true;
     let mut value = None;
     for token in tokens {
         let token_text = token.to_str();
-        if value.is_none() && options && token_text == Some("--") {
-            options = false;
-            continue;
-        }
-        if value.is_none() && options && token_text == Some("--help") {
-            return Ok(Action::Help);
-        }
-        if value.is_none() && options && token_text == Some("--version") {
-            return Ok(Action::Version);
-        }
-        if value.is_none() && options && starts_with_ascii_dash(&token) {
-            return Err(ShoutxError::usage("unknown option"));
-        }
-        if value.is_some() {
-            return Err(ShoutxError::usage("too many operands"));
-        }
-        value = Some(token);
-    }
-    Ok(Action::Mask(MaskRequest { value }))
-}
-
-fn parse_path(tokens: Vec<OsString>, azure: bool) -> Result<Action, ShoutxError> {
-    let mut options = true;
-    let mut value = None;
-    for token in tokens {
-        let token_text = token.to_str();
-        if azure && value.is_none() && token_text.is_none() {
+        if matches!(encoding, InvalidOperandEncoding::Immediate)
+            && value.is_none()
+            && token_text.is_none()
+        {
             os_bytes(&token)?;
         }
         if value.is_none() && options && token_text == Some("--") {
@@ -717,10 +99,10 @@ fn parse_path(tokens: Vec<OsString>, azure: bool) -> Result<Action, ShoutxError>
             continue;
         }
         if value.is_none() && options && token_text == Some("--help") {
-            return Ok(Action::Help);
+            return Ok(Parsed::Help);
         }
         if value.is_none() && options && token_text == Some("--version") {
-            return Ok(Action::Version);
+            return Ok(Parsed::Version);
         }
         if value.is_none() && options && starts_with_ascii_dash(&token) {
             return Err(ShoutxError::usage("unknown option"));
@@ -730,17 +112,36 @@ fn parse_path(tokens: Vec<OsString>, azure: bool) -> Result<Action, ShoutxError>
         }
         value = Some(token);
     }
-    let request = PathRequest { value };
-    Ok(if azure {
-        Action::AzurePath(request)
-    } else {
-        Action::WritePath(request)
-    })
+    Ok(Parsed::Command(value))
+}
+pub(crate) fn parse_empty(
+    tokens: Vec<OsString>,
+    error: &'static str,
+) -> Result<Parsed<()>, ShoutxError> {
+    match tokens.first().and_then(|token| token.to_str()) {
+        Some("--help") => Ok(Parsed::Help),
+        Some("--version") => Ok(Parsed::Version),
+        _ if tokens.is_empty() || (tokens.len() == 1 && tokens[0] == "--") => {
+            Ok(Parsed::Command(()))
+        }
+        _ => Err(ShoutxError::usage(error)),
+    }
 }
 
-pub fn os_bytes(value: &OsStr) -> Result<&[u8], ShoutxError> {
-    value
+pub fn command_names() -> impl Iterator<Item = &'static str> {
+    crate::provider::command_names()
+}
+pub fn parse(args: Vec<OsString>) -> Result<Parsed<crate::provider::Invocation>, ShoutxError> {
+    let mut args = args.into_iter();
+    let command = args
+        .next()
+        .ok_or_else(|| ShoutxError::usage("missing command"))?;
+    let command = command
         .to_str()
-        .map(str::as_bytes)
-        .ok_or_else(|| ShoutxError::failure("input is not valid UTF-8"))
+        .ok_or_else(|| ShoutxError::usage("command line contains invalid UTF-8"))?;
+    match command {
+        "--help" => Ok(Parsed::Help),
+        "--version" => Ok(Parsed::Version),
+        _ => crate::provider::parse(command, args.collect()),
+    }
 }

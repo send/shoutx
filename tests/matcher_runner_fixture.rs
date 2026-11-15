@@ -1,6 +1,6 @@
 use base64::{Engine as _, engine::general_purpose::STANDARD};
 use serde::Serialize;
-use shoutx::{cli::MatcherKind, github_actions::encode_matcher};
+use shoutx::{github_actions::encode_matcher, github_actions::request::MatcherKind};
 
 #[derive(Serialize)]
 struct Case {

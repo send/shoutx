@@ -1,7 +1,5 @@
-use crate::{
-    cli::{Destination, os_bytes},
-    error::ShoutxError,
-};
+use crate::input::os_bytes;
+use crate::{error::ShoutxError, github_actions::request::Destination};
 use std::ffi::OsStr;
 
 pub fn validate(destination: Destination, name: &OsStr) -> Result<Vec<u8>, ShoutxError> {

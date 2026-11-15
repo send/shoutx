@@ -1,6 +1,6 @@
 use base64::{Engine as _, engine::general_purpose::STANDARD};
 use serde::Serialize;
-use shoutx::{cli::LogKind, github_actions::encode_log};
+use shoutx::{github_actions::encode_log, github_actions::request::LogKind};
 
 #[derive(Serialize)]
 struct Case {

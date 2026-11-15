@@ -1,4 +1,6 @@
-use shoutx::{cli::MatcherKind, github_actions::encode_matcher, input::VALUE_LIMIT};
+use shoutx::{
+    github_actions::encode_matcher, github_actions::request::MatcherKind, input::VALUE_LIMIT,
+};
 use std::{
     io::Write,
     process::{Command, Output, Stdio},
@@ -110,7 +112,7 @@ fn grammar_and_rejections() {
             let mut args = mode.to_vec();
             args.extend([option, "ignored"]);
             let expected = if option == "--help" {
-                shoutx::HELP.to_owned()
+                shoutx::help().to_owned()
             } else {
                 shoutx::version_output()
             };
@@ -172,7 +174,7 @@ fn grammar_and_rejections() {
         &["github-actions:remove-matcher", "--help"],
         b"",
         0,
-        shoutx::HELP.as_bytes(),
+        shoutx::help().as_bytes(),
     );
 }
 

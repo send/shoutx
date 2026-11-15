@@ -1,8 +1,8 @@
 use std::ffi::OsStr;
 
 use crate::{
-    cli::{AnnotationRequest, AnnotationSeverity},
     error::ShoutxError,
+    github_actions::request::{AnnotationRequest, AnnotationSeverity},
     input::VALUE_LIMIT,
 };
 

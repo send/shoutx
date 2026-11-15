@@ -52,7 +52,7 @@ fn file_grammar_and_input_selection() {
         vec!["file", "--help"],
         vec!["oci", "--help"],
     ] {
-        check(&args, b"", 0, shoutx::HELP.as_bytes());
+        check(&args, b"", 0, shoutx::help().as_bytes());
     }
     for args in [
         vec!["--version"],

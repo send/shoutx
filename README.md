@@ -586,6 +586,8 @@ stdout and shell redirection are not transactional.
 CI systems expose different command channels and record protocols. Provider
 namespaces keep those rules separate while sharing input handling, validation,
 normalization, and encoder primitives.
+See the [implementation architecture](docs/implementation-plan.md#crate-and-module-layout)
+for the built-in provider boundaries and extension procedure.
 
 ## Security model
 

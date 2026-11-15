@@ -1,4 +1,4 @@
-use shoutx::cli::{Destination, LineMode, WriteRequest};
+use shoutx::github_actions::request::{Destination, LineMode, WriteRequest};
 use shoutx::github_actions::{RandomSource, TargetOs};
 use shoutx::{ErrorClass, ShoutxError};
 use std::{
@@ -109,7 +109,7 @@ fn help_version_and_grammar_contract() {
     ] {
         let output = run(args, None);
         assert_eq!(output.status.code(), Some(0));
-        assert_eq!(output.stdout, shoutx::HELP.as_bytes());
+        assert_eq!(output.stdout, shoutx::help().as_bytes());
         assert!(output.stderr.is_empty());
     }
     let version = run(&["--version"], None);
@@ -196,7 +196,7 @@ fn unsupported_commands_are_ordinary_unknown_commands() {
 
 #[test]
 fn stable_help_and_version_are_exact() {
-    assert_eq!(shoutx::HELP, include_str!("fixtures/stable-help.txt"));
+    assert_eq!(shoutx::help(), include_str!("fixtures/stable-help.txt"));
     assert_eq!(
         shoutx::version_output(),
         format!("shoutx {}\n", shoutx::VERSION)
@@ -604,7 +604,7 @@ fn expanded_join_size_is_checked_before_construction() {
         value: None,
     };
     let value = vec![b'\n'; 10_000];
-    let error = shoutx::encode(request, value).unwrap_err();
+    let error = shoutx::github_actions::encode(request, value).unwrap_err();
     assert_eq!(error.class(), shoutx::ErrorClass::Failure);
 }
 
@@ -617,7 +617,10 @@ fn library_size_boundaries_are_exact() {
             name: OsString::from("r"),
             value: None,
         };
-        assert_eq!(shoutx::encode(request, vec![b'a'; size]).is_ok(), succeeds);
+        assert_eq!(
+            shoutx::github_actions::encode(request, vec![b'a'; size]).is_ok(),
+            succeeds
+        );
     }
     for (size, succeeds) in [(254, true), (255, true), (256, false)] {
         let request = WriteRequest {
@@ -626,7 +629,10 @@ fn library_size_boundaries_are_exact() {
             name: OsString::from("r"),
             value: None,
         };
-        assert_eq!(shoutx::encode(request, b"a\nb".to_vec()).is_ok(), succeeds);
+        assert_eq!(
+            shoutx::github_actions::encode(request, b"a\nb".to_vec()).is_ok(),
+            succeeds
+        );
     }
 }
 
@@ -834,7 +840,7 @@ fn matrix_encode(
     mode: LineMode,
     input: &[u8],
 ) -> Result<Vec<u8>, ShoutxError> {
-    shoutx::encode(
+    shoutx::github_actions::encode(
         WriteRequest {
             destination,
             mode,

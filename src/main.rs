@@ -9,7 +9,7 @@ use std::{
     process::ExitCode,
 };
 
-use shoutx::{ShoutxError, cli::Action, error::ErrorClass};
+use shoutx::{ShoutxError, cli::Parsed, error::ErrorClass};
 
 fn diagnostic(message: &'static str) {
     let mut stderr = io::stderr().lock();
@@ -27,200 +27,29 @@ fn output(bytes: &[u8]) -> Result<(), ShoutxError> {
         .map_err(|_| ShoutxError::failure("failed to write stdout"))
 }
 
-fn run() -> Result<(), ShoutxError> {
-    let args: Vec<OsString> = std::env::args_os().skip(1).collect();
-    match shoutx::prepare(args)? {
-        Action::AzureFile { kind, value } => {
-            let value = read_value(value.as_ref())?;
-            output(&shoutx::azure_pipelines::encode_file(kind, &value)?)
+struct ProcessContext;
+impl shoutx::provider::Context for ProcessContext {
+    fn read_stdin(&mut self, missing_operand: &'static str) -> Result<Vec<u8>, ShoutxError> {
+        if io::stdin().is_terminal() {
+            return Err(ShoutxError::usage(missing_operand));
         }
-        Action::AzureLog { kind, value } => {
-            let value = read_value(value.as_ref())?;
-            output(&shoutx::azure_pipelines::encode_log(kind, &value)?)
-        }
-        Action::AzureEndGroup => output(b"##[endgroup]\n"),
-        Action::AzureBuildMetadata { kind, value } => {
-            let value = read_value(value.as_ref())?;
-            output(&shoutx::azure_pipelines::encode_build_metadata(
-                kind, &value,
-            )?)
-        }
-        Action::AzureMask { each_line } => {
-            let value = read_value(None)?;
-            output(&shoutx::azure_pipelines::encode_mask(&value, each_line)?)
-        }
-        Action::AzurePath(request) => {
-            let value = read_value(request.value.as_ref())?;
-            output(&shoutx::azure_pipelines::encode_path(&value)?)
-        }
-        Action::AzureVariable(request) => {
-            shoutx::azure_pipelines::validate_variable(&request)?;
-            let value = read_value(request.value.as_ref())?;
-            output(&shoutx::azure_pipelines::encode_variable(&request, &value)?)
-        }
-        Action::AzureSecretVariable(request) => {
-            shoutx::azure_pipelines::validate_variable(&request)?;
-            let value = read_value(None)?;
-            output(&shoutx::azure_pipelines::encode_secret_variable(
-                &request, &value,
-            )?)
-        }
-        Action::AzureIssue(request) => {
-            let value = read_value(request.message.as_ref())?;
-            output(&shoutx::azure_pipelines::encode_issue(&request, &value)?)
-        }
-        Action::Help => output(shoutx::HELP.as_bytes()),
-        Action::Version => output(shoutx::version_output().as_bytes()),
-        Action::EndGroup => output(b"::endgroup::\n"),
-        Action::Matcher { kind, value } => {
-            let value = if let Some(value) = value {
-                shoutx::cli::os_bytes(&value)?.to_vec()
-            } else {
-                if io::stdin().is_terminal() {
-                    return Err(ShoutxError::usage(
-                        "VALUE omitted while stdin is a terminal",
-                    ));
-                }
-                let mut stdin = process_io::stdin_file()
-                    .map_err(|_| ShoutxError::failure("failed to open stdin"))?;
-                shoutx::input::read_bounded(&mut stdin)?
-            };
-            output(&shoutx::github_actions::encode_matcher(kind, value)?)
-        }
-        Action::Log { kind, value } => {
-            let value = if let Some(value) = value {
-                shoutx::cli::os_bytes(&value)?.to_vec()
-            } else {
-                if io::stdin().is_terminal() {
-                    return Err(ShoutxError::usage(
-                        "VALUE omitted while stdin is a terminal",
-                    ));
-                }
-                let mut stdin = process_io::stdin_file()
-                    .map_err(|_| ShoutxError::failure("failed to open stdin"))?;
-                shoutx::input::read_bounded(&mut stdin)?
-            };
-            output(&shoutx::github_actions::encode_log(kind, value)?)
-        }
-        Action::Artifact(request) => {
-            let record = match request {
-                shoutx::cli::ArtifactRequest::File { path } => {
-                    let value = if let Some(path) = path {
-                        shoutx::cli::os_bytes(&path)?.to_vec()
-                    } else {
-                        if io::stdin().is_terminal() {
-                            return Err(ShoutxError::usage(
-                                "PATH omitted while stdin is a terminal",
-                            ));
-                        }
-                        let mut stdin = process_io::stdin_file()
-                            .map_err(|_| ShoutxError::failure("failed to open stdin"))?;
-                        shoutx::input::read_bounded(&mut stdin)?
-                    };
-                    shoutx::github_actions::encode_artifact_file(value)?
-                }
-                shoutx::cli::ArtifactRequest::Oci { reference, digest } => {
-                    shoutx::github_actions::encode_artifact_oci(
-                        shoutx::cli::os_bytes(&reference)?,
-                        shoutx::cli::os_bytes(&digest)?,
-                    )?
-                }
-            };
-            output(&record)
-        }
-        Action::Write(request) => {
-            shoutx::github_actions::validate_request(&request)?;
-            let value = if let Some(value) = request.value.as_ref() {
-                shoutx::cli::os_bytes(value)?.to_vec()
-            } else {
-                if io::stdin().is_terminal() {
-                    return Err(ShoutxError::usage(
-                        "VALUE omitted while stdin is a terminal",
-                    ));
-                }
-                let mut stdin = process_io::stdin_file()
-                    .map_err(|_| ShoutxError::failure("failed to open stdin"))?;
-                shoutx::input::read_bounded(&mut stdin)?
-            };
-            let target_os = shoutx::github_actions::TargetOs::from_runner_os(
-                std::env::var_os("RUNNER_OS").as_deref(),
-            );
-            let record = shoutx::github_actions::encode_with(
-                request,
-                value,
-                target_os,
-                &mut shoutx::github_actions::OsRandom,
-            )?;
-            output(&record)
-        }
-        Action::WritePath(request) => {
-            let target_os = shoutx::github_actions::TargetOs::from_runner_os(
-                std::env::var_os("RUNNER_OS").as_deref(),
-            );
-            if target_os == shoutx::github_actions::TargetOs::Unknown {
-                return Err(ShoutxError::failure("unknown target runner OS"));
-            }
-            let value = if let Some(value) = request.value.as_ref() {
-                shoutx::cli::os_bytes(value)?.to_vec()
-            } else {
-                if io::stdin().is_terminal() {
-                    return Err(ShoutxError::usage(
-                        "VALUE omitted while stdin is a terminal",
-                    ));
-                }
-                let mut stdin = process_io::stdin_file()
-                    .map_err(|_| ShoutxError::failure("failed to open stdin"))?;
-                shoutx::input::read_bounded(&mut stdin)?
-            };
-            output(&shoutx::github_actions::encode_path(value, target_os)?)
-        }
-        Action::Mask(request) => {
-            let value = if let Some(value) = request.value.as_ref() {
-                shoutx::cli::os_bytes(value)?.to_vec()
-            } else {
-                if io::stdin().is_terminal() {
-                    return Err(ShoutxError::usage(
-                        "VALUE omitted while stdin is a terminal",
-                    ));
-                }
-                let mut stdin = process_io::stdin_file()
-                    .map_err(|_| ShoutxError::failure("failed to open stdin"))?;
-                shoutx::input::read_bounded(&mut stdin)?
-            };
-            output(&shoutx::github_actions::encode_mask(value)?)
-        }
-        Action::Annotate(request) => {
-            let message = if let Some(message) = request.message.as_ref() {
-                shoutx::cli::os_bytes(message)?.to_vec()
-            } else {
-                if io::stdin().is_terminal() {
-                    return Err(ShoutxError::usage(
-                        "MESSAGE omitted while stdin is a terminal",
-                    ));
-                }
-                let mut stdin = process_io::stdin_file()
-                    .map_err(|_| ShoutxError::failure("failed to open stdin"))?;
-                shoutx::input::read_bounded(&mut stdin)?
-            };
-            output(&shoutx::github_actions::encode_annotation(
-                request, message,
-            )?)
-        }
+        let mut stdin =
+            process_io::stdin_file().map_err(|_| ShoutxError::failure("failed to open stdin"))?;
+        shoutx::input::read_bounded(&mut stdin)
+    }
+    fn env_var(&mut self, name: &str) -> Option<OsString> {
+        std::env::var_os(name)
     }
 }
 
-fn read_value(value: Option<&OsString>) -> Result<Vec<u8>, ShoutxError> {
-    if let Some(value) = value {
-        return Ok(shoutx::cli::os_bytes(value)?.to_vec());
-    }
-    if io::stdin().is_terminal() {
-        return Err(ShoutxError::usage(
-            "VALUE omitted while stdin is a terminal",
-        ));
-    }
-    let mut stdin =
-        process_io::stdin_file().map_err(|_| ShoutxError::failure("failed to open stdin"))?;
-    shoutx::input::read_bounded(&mut stdin)
+fn run() -> Result<(), ShoutxError> {
+    let args = std::env::args_os().skip(1).collect();
+    let bytes = match shoutx::prepare(args)? {
+        Parsed::Help => shoutx::help().into_bytes(),
+        Parsed::Version => shoutx::version_output().into_bytes(),
+        Parsed::Command(request) => request.encode(&mut ProcessContext)?,
+    };
+    output(&bytes)
 }
 
 fn caught_status<F>(operation: F) -> u8

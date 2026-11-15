@@ -2,7 +2,7 @@ use base64::{Engine as _, engine::general_purpose::STANDARD};
 use serde::{Deserialize, Serialize};
 use shoutx::{
     ShoutxError,
-    cli::{Destination, LineMode, WriteRequest},
+    github_actions::request::{Destination, LineMode, WriteRequest},
     github_actions::{RandomSource, TargetOs},
 };
 use std::{ffi::OsString, fs};

@@ -53,45 +53,80 @@ discovery, or plugin loading as a side effect.
 
 ## Crate and module layout
 
-Begin with one package containing a library and a thin binary:
+One package contains a library and a thin binary. Built-in providers are
+registered explicitly; this internal arrangement does not select an external
+plugin distribution mechanism or promise a stable Rust/plugin API.
 
 ```text
-Cargo.toml
-Cargo.lock
 src/
-  main.rs
-  lib.rs
-  cli.rs
+  main.rs                 # process handles, diagnostics, exit status
+  process_io.rs           # native handle access
+  lib.rs                  # library entry points and version
+  provider.rs             # built-in registry, invocation dispatch, host capabilities
+  cli.rs                  # global options and reusable grammar primitives
+  input.rs                # strict argv conversion and bounded input acquisition
   error.rs
-  input.rs
-  process_io.rs
   github_actions/
+    cli.rs                # command definitions, usage, provider grammar
+    request.rs            # provider request types
+    execute.rs            # validation/input/environment/encoding order
+    mod.rs                # encoders and provider exports
+    ...                   # destination-specific validation and record construction
+  azure_pipelines/
+    cli.rs
+    request.rs
+    execute.rs
     mod.rs
-    name.rs
-    normalize.rs
-    record.rs
-tests/
-  cli_contract.rs
-  support/
-    mod.rs
-    process.rs
-    runner_parser.rs
 ```
 
-The binary owns only process integration: collecting OS arguments with
-`std::env::args_os`, lazily opening inherited standard handles when needed,
-identifying stdin state, calling the library, writing one prepared stdout
-buffer, rendering a safe diagnostic, and selecting the documented exit status.
-Business rules belong in the library and are testable without spawning a
-subprocess. Stdin is not opened or duplicated when a value operand is present.
+The binary collects `args_os`, handles global help/version, executes one prepared
+provider invocation and writes its complete returned buffer. It contains no
+provider command names, wire syntax, validation policy, or environment-variable
+selection. `provider::Context` supplies lazy stdin and environment access; it
+cannot write stdout. A provider's execution module decides when to request
+these capabilities, including validation before input, argv bypass of stdin,
+and commands that never read input. Do not eagerly acquire stdin or a common
+set of environment variables before dispatch. GitHub's `RUNNER_OS` selection
+and Azure's native-path interpretation remain separate provider policies.
 
-`tests/support/runner_parser.rs` is test-only code and must not import or reuse
-production record parsing or encoding logic. Sharing constants such as size
-limits is also avoided where doing so would make an incorrect production value
-self-validating in the oracle.
+Provider encoders depend on provider-owned request types and common byte/error
+primitives, not on the top-level CLI dispatcher. Shared grammar helpers return
+`Parsed<T>` (help, version, or a typed value); they do not manufacture another
+command's request as an intermediate result. Each caller explicitly chooses
+its existing invalid-operand encoding precedence. Sharing grammar does not
+share destination admission policy.
 
-Do not split the repository into a Cargo workspace until a second independently
-versioned package or tool justifies it.
+Each provider's `CommandSpec` table owns command names, parser selectors and
+usage suffixes. Enumeration, command lookup and help lines derive from that
+same table. Providers retain their help sections and display order; the
+independent complete-command and exact-help fixtures protect the published
+surface. Contracts in `commands/` remain authoritative for behavior, not these
+implementation tables.
+
+### Adding commands and providers
+
+For a command in an existing provider:
+
+1. Define/review its destination contract before exposing it.
+2. Add its entry and usage in that provider's `cli.rs`, its request type and
+   parsing there, and its execution sequence in `execute.rs`.
+3. Implement its provider-local encoder and focused contract tests. Update the
+   independent command/help fixtures deliberately.
+
+This requires no changes to `main.rs`, `provider.rs`, or the common grammar and
+input modules unless a genuinely reusable new primitive is needed. Do not move
+command policy into those modules to avoid a provider-local change.
+
+For a new built-in provider, add its module and the same provider-local pieces,
+then register its namespace, enumeration, parser and help in `provider.rs` and
+add the typed invocation/dispatch arm there. Export the module from `lib.rs`.
+Registration is deliberate; there is no executable discovery, dynamic loading,
+filesystem probing or automatic fallback to another provider.
+
+Test-only consumer parser models must not import/reuse production encoding
+logic or size constants where this would make an incorrect producer value
+self-validating. Do not split into a Cargo workspace until a second
+independently versioned package or tool justifies it.
 
 ## Core types and data flow
 
@@ -161,9 +196,11 @@ intermediate increment that advertises an unavailable documented mode.
 
 ## Input handling
 
-The process layer reads `RUNNER_OS` as an `OsString` and passes a parsed target
-OS into the library for commands that require it. Tests pass this dependency
-explicitly and do not mutate process-global environment.
+GitHub execution requests `RUNNER_OS` through `Context::env_var` only for
+commands that require it, and interprets the returned `OsString` inside the
+provider. The process context supplies the raw environment value without
+provider policy. Tests supply the context explicitly and do not mutate
+process-global environment.
 
 ### Argument values
 
@@ -326,8 +363,8 @@ contracts and lasting command-specific implementation constraints live under
 
 The stdout writers are compiled into the normal executable without a feature
 opt-in. Their encoders and input policies are unchanged by promotion. The parser
-still dispatches through one enumerable command table, now checked against the
-complete command surface. Explicit stdout integration targets and fresh
+dispatches through enumerable provider-owned command tables, checked against
+the complete command surface. Explicit stdout integration targets and fresh
 corpus exports remain in CI; artifact tests exercise the same normal binary.
 The former isolation rationale is retained in its superseded decision record.
 
@@ -542,16 +579,28 @@ Hosted admission completed in run 21; its [compatibility record](compatibility/a
 owns the exact attachment and bounded UI observations. PR #152 merged as
 `5d466e8` after final-head CI/Codex convergence; the implementation is complete.
 
-### Current Azure usage documentation increment
+### Azure usage documentation completion
 
-The maintainer accepted the [practical-scope decision](decisions/azure-practical-scope.md).
-Consolidate the inventory's covered/deferred/outside dispositions and provide
-README command selection and native Bash/PowerShell examples. Keep contracts,
-profile and compatibility observations in their existing authoritative homes.
-No runtime change, new command, hosted experiment or release preparation is
-included. Validate documentation consistency and the examples proportionally,
-obtain independent GPT-6.1 Sol review, then converge final-head CI/Codex with no
-unresolved findings. Stop at a merge-ready documentation PR.
+PR #153 completed the accepted [practical-scope decision](decisions/azure-practical-scope.md),
+coverage dispositions and native Bash/PowerShell examples. Contracts, profile
+and compatibility observations remain in their authoritative homes. No new
+runtime command or release approval was introduced.
+
+### Current provider-boundary increment
+
+Refactor the existing built-in providers according to the [module architecture](#crate-and-module-layout)
+without changing CLI bytes, accepted inputs, diagnostics, status classes,
+validation order or lazy input/environment access. Add provider commands
+without editing common execution code. Use existing contract/oracle evidence,
+plus focused host-operation ordering regressions and comparison with the
+pre-refactor binary. Update internal test imports without weakening expected
+results. Obtain independent GPT-6.1 Sol review and final-head CI/Codex
+convergence with zero unresolved findings; stop at a merge-ready PR.
+
+Dynamic plugins, a stable plugin API, new commands, admission-policy changes
+and release preparation are outside this increment. New sensitive attack
+findings follow `SECURITY.md` and are retained privately for follow-up rather
+than published as issue examples.
 
 ## CI and quality gates
 

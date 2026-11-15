@@ -1,4 +1,4 @@
-use crate::{cli::MatcherKind, error::ShoutxError, input::VALUE_LIMIT};
+use crate::{error::ShoutxError, github_actions::request::MatcherKind, input::VALUE_LIMIT};
 
 pub fn encode(kind: MatcherKind, mut value: Vec<u8>) -> Result<Vec<u8>, ShoutxError> {
     if value.len() > VALUE_LIMIT {

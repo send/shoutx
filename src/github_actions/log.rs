@@ -1,4 +1,4 @@
-use crate::{cli::LogKind, error::ShoutxError, input::VALUE_LIMIT};
+use crate::{error::ShoutxError, github_actions::request::LogKind, input::VALUE_LIMIT};
 
 pub fn encode(kind: LogKind, mut value: Vec<u8>) -> Result<Vec<u8>, ShoutxError> {
     if value.len() > VALUE_LIMIT {

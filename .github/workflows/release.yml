@@ -238,7 +238,7 @@ jobs:
           mkdir -p "dist/$root" verify
           install -m 0755 "target/release-stable/$TARGET/release/shoutx" "dist/$root/shoutx"
           install -m 0644 README.md LICENSE "dist/$root/"
-          tar -czf "dist/$archive" -C dist "$root"
+          tar --format=ustar -czf "dist/$archive" -C dist "$root"
           tar -xzf "dist/$archive" -C verify
           test "$(find "verify/$root" -type f | wc -l | tr -d ' ')" = 3
           test -x "verify/$root/shoutx"

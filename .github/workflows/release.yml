@@ -246,12 +246,12 @@ jobs:
           test -f "verify/$root/LICENSE"
           if [[ "$RUNNER_OS" == "Linux" ]]; then
             test "$(stat -c '%a' "verify/$root/shoutx")" = 755
-            test "$(stat -c '%a' "verify/$root/README.md")" = 1144
-            test "$(stat -c '%a' "verify/$root/LICENSE")" = 1144
+            test "$(stat -c '%a' "verify/$root/README.md")" = 644
+            test "$(stat -c '%a' "verify/$root/LICENSE")" = 644
           else
             test "$(stat -f '%Lp' "verify/$root/shoutx")" = 755
-            test "$(stat -f '%Lp' "verify/$root/README.md")" = 1144
-            test "$(stat -f '%Lp' "verify/$root/LICENSE")" = 1144
+            test "$(stat -f '%Lp' "verify/$root/README.md")" = 644
+            test "$(stat -f '%Lp' "verify/$root/LICENSE")" = 644
           fi
           SHOUTX_VERIFY_BINARY="$GITHUB_WORKSPACE/verify/$root/shoutx" \
             SHOUTX_VERIFY_REQUIRE_EXTERNAL=1 \

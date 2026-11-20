@@ -4,14 +4,13 @@ Prevent injection at CI workflow output boundaries.
 
 `shoutx` safely writes untrusted values from shell-driven workflows to
 destination-specific formats and protocols. The current source supports GitHub
-Actions environment files and scoped stdout workflow commands, plus an
-unreleased Azure Pipelines increment; its verification status is recorded
+Actions environment files and scoped stdout workflow commands, plus Azure Pipelines writers in the v2.0.0 candidate; its verification status is recorded
 in the [Azure compatibility note](docs/compatibility/azure-pipelines.md).
 Generic context encoders are deferred
 until a concrete destination and safe consumption contract justify one.
 
-The published baseline is v1.0.0; see its [release notes](docs/releases/v1.0.0.md)
-for changes and migration guidance. Check
+See the [v2.0.0 release notes](docs/releases/v2.0.0.md) for the provider-specific
+archive names and migration from v1.0.0. Check
 [GitHub releases](https://github.com/send/shoutx/releases) for published versions;
 a version in this document does not establish publication. The `github-actions:output`,
 `github-actions:env`, `github-actions:path`, and `github-actions:state` commands
@@ -171,7 +170,7 @@ GitHub Actions stdout commands:
   shoutx github-actions:warning [--title TITLE] [--file FILE] [--line N] [--end-line N] [--column N] [--end-column N] [MESSAGE]
   shoutx github-actions:error   [--title TITLE] [--file FILE] [--line N] [--end-line N] [--column N] [--end-column N] [MESSAGE]
 
-Azure Pipelines commands (unreleased):
+Azure Pipelines commands:
   shoutx azure-pipelines:summary [PATH]
   shoutx azure-pipelines:uploadfile [PATH]
   shoutx azure-pipelines:debug [MESSAGE]
@@ -204,7 +203,7 @@ Namespaced commands identify the interpretation context, not merely a data
 type. Provider-specific writers use the `PROVIDER:DESTINATION` form. Reusable
 encoders use the `LANGUAGE:CONTEXT` form.
 
-## Azure Pipelines writers (unreleased)
+## Azure Pipelines writers
 
 Build this source tree and make its native `shoutx` executable available on
 PATH before using these examples; published v1.0.0 binaries do not include Azure
@@ -213,7 +212,7 @@ supported hosts, shells and required job settings. The
 [verification record](docs/compatibility/azure-pipelines.md) records actual
 hosted behavior and limits. The selected
 [practical scope](docs/azure-coverage.md) does not mean every Azure command is
-implemented, and release preparation remains on hold.
+implemented.
 
 ### Choose a writer
 

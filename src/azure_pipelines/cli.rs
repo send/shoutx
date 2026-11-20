@@ -307,6 +307,6 @@ pub(crate) fn help(out: &mut String) {
         out,
         COMMANDS,
         0,
-        "\nAzure Pipelines commands (unreleased):\n",
+        "\nAzure Pipelines commands:\n",
     );
 }

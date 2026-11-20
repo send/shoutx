@@ -24,7 +24,7 @@ GitHub Actions stdout commands:
   shoutx github-actions:warning [--title TITLE] [--file FILE] [--line N] [--end-line N] [--column N] [--end-column N] [MESSAGE]
   shoutx github-actions:error   [--title TITLE] [--file FILE] [--line N] [--end-line N] [--column N] [--end-column N] [MESSAGE]
 
-Azure Pipelines commands (unreleased):
+Azure Pipelines commands:
   shoutx azure-pipelines:summary [PATH]
   shoutx azure-pipelines:uploadfile [PATH]
   shoutx azure-pipelines:debug [MESSAGE]

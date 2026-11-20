@@ -8,10 +8,12 @@ description = "Safe writers for CI workflow output boundaries"
 repository = "https://github.com/send/shoutx"
 
 [features]
-default = []
+default = ["github-actions", "azure-pipelines"]
+github-actions = ["dep:getrandom"]
+azure-pipelines = []
 
 [dependencies]
-getrandom = "0.4.3"
+getrandom = { version = "0.4.3", optional = true }
 
 [dev-dependencies]
 base64 = { version = "0.23.1", default-features = false, features = ["std"] }

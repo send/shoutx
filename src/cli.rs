@@ -46,12 +46,14 @@ pub(crate) fn help_section<T>(
 
 // The caller selects when to reject an invalid first operand; this preserves
 // each command's validation precedence without naming providers here.
+#[allow(dead_code)] // Each provider selects one policy in single-provider builds.
 pub(crate) enum InvalidOperandEncoding {
     Deferred,
     Immediate,
 }
 
 #[cfg(unix)]
+#[cfg(feature = "github-actions")]
 pub(crate) fn strip_os_prefix(value: &OsStr, prefix: &[u8]) -> Option<OsString> {
     use std::os::unix::ffi::{OsStrExt, OsStringExt};
     value
@@ -67,6 +69,7 @@ pub(crate) fn starts_with_ascii_dash(value: &OsStr) -> bool {
 }
 
 #[cfg(windows)]
+#[cfg(feature = "github-actions")]
 pub(crate) fn strip_os_prefix(value: &OsStr, prefix: &[u8]) -> Option<OsString> {
     use std::os::windows::ffi::{OsStrExt, OsStringExt};
     let wide: Vec<u16> = value.encode_wide().collect();

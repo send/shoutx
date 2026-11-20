@@ -86,10 +86,11 @@ class PublishTests(unittest.TestCase):
         self.env = dict(GITHUB_REPOSITORY='send/shoutx', TAG=TAG, GITHUB_SHA=SHA, PRERELEASE='false')
         self.api = FakeAPI()
         self.admitted = []
-        names = [f'shoutx-{TAG}-{target}.tar.gz' for target in (
+        providers = ('github-actions', 'azure-pipelines')
+        names = [f'shoutx-{provider}-{TAG}-{target}.tar.gz' for provider in providers for target in (
             'aarch64-apple-darwin', 'aarch64-unknown-linux-musl',
             'x86_64-apple-darwin', 'x86_64-unknown-linux-musl')]
-        names.append(f'shoutx-{TAG}-x86_64-pc-windows-msvc.zip')
+        names.extend(f'shoutx-{provider}-{TAG}-x86_64-pc-windows-msvc.zip' for provider in providers)
         for name in names:
             (self.directory / name).write_bytes(name.encode())
         self.manifest()
@@ -126,7 +127,7 @@ class PublishTests(unittest.TestCase):
         self.assertEqual(sum(c[0] == 'DELETE' for c in self.api.calls), 101)
         self.assertEqual(row['body'], 'Maintainer notes')
         self.assertEqual(row['name'], 'Custom title')
-        self.assertEqual(len(self.api.assets), 6)
+        self.assertEqual(len(self.api.assets), 11)
 
     def test_published_or_ambiguous_matches_never_mutate(self):
         for rows in ((dict(draft=False, immutable=True),), ({}, {}),

@@ -78,10 +78,11 @@ def listing(api, endpoint):
 
 
 def local_assets(directory, tag):
-    names = {f'shoutx-{tag}-{target}.tar.gz' for target in (
+    providers = ('github-actions', 'azure-pipelines')
+    names = {f'shoutx-{provider}-{tag}-{target}.tar.gz' for provider in providers for target in (
         'x86_64-unknown-linux-musl', 'aarch64-unknown-linux-musl',
         'x86_64-apple-darwin', 'aarch64-apple-darwin')}
-    names.add(f'shoutx-{tag}-x86_64-pc-windows-msvc.zip')
+    names.update(f'shoutx-{provider}-{tag}-x86_64-pc-windows-msvc.zip' for provider in providers)
     require({p.name for p in directory.iterdir()} == names | {'SHA256SUMS'}, 'Unexpected local assets')
     result = {}
     for name in sorted(names | {'SHA256SUMS'}):
@@ -98,7 +99,7 @@ def local_assets(directory, tag):
 def publish(api, env, directory, admission):
     repo, tag, sha = env['GITHUB_REPOSITORY'], env['TAG'], env['GITHUB_SHA']
     require(repo == 'send/shoutx', 'Unexpected repository')
-    require(re.fullmatch(r'v[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?', tag) and len(tag) <= 56,
+    require(re.fullmatch(r'v[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?', tag) and len(tag) <= 40,
             'Invalid release tag')
     require(re.fullmatch(r'[a-f0-9]{40}', sha), 'Invalid source SHA')
     prerelease = '-' in tag

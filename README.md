@@ -56,7 +56,10 @@ trusted SHA-256 digest of the selected version's `SHA256SUMS`; do not reuse a
 digest from another version. See the action repository for supported runners, inputs, and
 verification limits.
 
-Alternatively, build this tree with `cargo build --release --locked`.
+Alternatively, build this tree with `cargo build --release --locked` for both providers.
+For a single provider add `--no-default-features --features github-actions` or
+`--no-default-features --features azure-pipelines`. See the
+[archive naming contract](docs/release.md#artifact-contract) for the upcoming provider-specific downloads.
 
 Download the archive for your platform and `SHA256SUMS` from the
 [latest GitHub release](https://github.com/send/shoutx/releases/latest). Verify

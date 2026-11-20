@@ -55,18 +55,49 @@ fn verify(args: &[&str], status: i32, stdout: &[u8], stderr: &[u8]) {
 #[test]
 fn surface_verifier_sentinel() {
     if let Ok(expected) = std::env::var("SHOUTX_EXPECT_SURFACE") {
-        assert_eq!(expected, "stable", "only the official surface is supported");
+        let selected = match (
+            cfg!(feature = "github-actions"),
+            cfg!(feature = "azure-pipelines"),
+        ) {
+            (true, true) => "stable",
+            (true, false) => "github-actions",
+            (false, true) => "azure-pipelines",
+            _ => unreachable!(),
+        };
+        assert_eq!(expected, selected);
     }
 }
 
 #[test]
 fn packaged_binary_has_exact_help_and_version() {
-    verify(
-        &["--help"],
-        0,
-        include_bytes!("fixtures/stable-help.txt"),
-        b"",
+    let full = include_str!("fixtures/stable-help.txt");
+    let (github, azure) = full.split_once("\nAzure Pipelines commands").unwrap();
+    let help = if !cfg!(feature = "azure-pipelines") {
+        github.to_owned()
+    } else if !cfg!(feature = "github-actions") {
+        format!(
+            "shoutx - safe CI output writers\n\nUsage:\n  shoutx --help\n  shoutx --version\n\nAzure Pipelines commands{azure}"
+        )
+    } else {
+        full.to_owned()
+    };
+    verify(&["--help"], 0, help.as_bytes(), b"");
+    let names = |text: &str| -> std::collections::BTreeSet<String> {
+        text.lines()
+            .filter_map(|line| line.strip_prefix("  shoutx "))
+            .filter_map(|usage| usage.split_whitespace().next())
+            .filter(|name| name.contains(':'))
+            .map(str::to_owned)
+            .collect()
+    };
+    let included = names(&help);
+    assert_eq!(
+        included,
+        shoutx::cli::command_names().map(str::to_owned).collect()
     );
+    for excluded in names(full).difference(&included) {
+        verify(&[excluded, "--help"], 2, b"", b"error: unknown command\n");
+    }
     verify(
         &["--version"],
         0,
@@ -76,7 +107,8 @@ fn packaged_binary_has_exact_help_and_version() {
 }
 
 #[test]
-fn packaged_binary_exposes_complete_surface() {
+#[cfg(feature = "azure-pipelines")]
+fn packaged_binary_exposes_azure_surface() {
     use std::io::Write;
     let path = if cfg!(windows) {
         "C:/report;].md"
@@ -222,6 +254,11 @@ fn packaged_binary_exposes_complete_surface() {
             b"",
         );
     }
+}
+
+#[test]
+#[cfg(feature = "github-actions")]
+fn packaged_binary_exposes_github_surface() {
     verify(
         &["github-actions:add-matcher", "α%0A.json"],
         0,
@@ -312,6 +349,7 @@ fn packaged_binary_exposes_complete_surface() {
 }
 
 #[test]
+#[cfg(feature = "github-actions")]
 fn packaged_binary_rejects_invalid_and_unintended_surface() {
     for command in [
         "github-actions:add-mask",

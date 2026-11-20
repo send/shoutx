@@ -1,7 +1,11 @@
 #![forbid(unsafe_code)]
+#[cfg(feature = "azure-pipelines")]
 pub mod azure_pipelines;
+#[cfg(not(any(feature = "github-actions", feature = "azure-pipelines")))]
+compile_error!("enable at least one provider feature");
 pub mod cli;
 pub mod error;
+#[cfg(feature = "github-actions")]
 pub mod github_actions;
 pub mod input;
 pub mod provider;

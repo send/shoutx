@@ -42,7 +42,7 @@ jobs:
                   - pwsh: |
                       $ErrorActionPreference = 'Stop'
                       $PSNativeCommandUseErrorActionPreference = $true
-                      cargo build --release --locked --no-default-features
+                      cargo build --release --locked --no-default-features --features azure-pipelines
                       python -B tests/azure-hosted/formatter_producer.py package
                     displayName: Build and bind formatter binary
                   - publish: $(Pipeline.Workspace)/formatter-binary

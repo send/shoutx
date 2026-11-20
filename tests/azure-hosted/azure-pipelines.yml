@@ -24,7 +24,7 @@ jobs:
             persistCredentials: false
           - pwsh: |
               $PSNativeCommandUseErrorActionPreference = $true
-              cargo build --release --locked --no-default-features
+              cargo build --release --locked --no-default-features --features azure-pipelines
             displayName: Build reviewed source
           - ${{ if eq(image.name, 'linux') }}:
               - bash: |

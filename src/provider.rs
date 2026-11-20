@@ -11,13 +11,17 @@ pub trait Context {
 
 #[derive(Debug)]
 pub enum Invocation {
+    #[cfg(feature = "github-actions")]
     Github(crate::github_actions::request::Request),
+    #[cfg(feature = "azure-pipelines")]
     Azure(crate::azure_pipelines::request::Request),
 }
 impl Invocation {
     pub fn encode(self, context: &mut impl Context) -> Result<Vec<u8>, ShoutxError> {
         match self {
+            #[cfg(feature = "github-actions")]
             Self::Github(request) => request.encode(context),
+            #[cfg(feature = "azure-pipelines")]
             Self::Azure(request) => request.encode(context),
         }
     }
@@ -30,6 +34,7 @@ struct Provider {
     help: fn(&mut String),
 }
 const PROVIDERS: &[Provider] = &[
+    #[cfg(feature = "azure-pipelines")]
     Provider {
         namespace: "azure-pipelines",
         names: || crate::azure_pipelines::cli::command_names().collect(),
@@ -38,6 +43,7 @@ const PROVIDERS: &[Provider] = &[
         },
         help: crate::azure_pipelines::cli::help,
     },
+    #[cfg(feature = "github-actions")]
     Provider {
         namespace: "github-actions",
         names: || crate::github_actions::cli::command_names().collect(),
@@ -61,6 +67,8 @@ pub(crate) fn parse(command: &str, args: Vec<OsString>) -> Result<Parsed<Invocat
 }
 pub(crate) fn help() -> String {
     let mut out = String::from("shoutx - safe CI output writers\n\n");
+    #[cfg(not(feature = "github-actions"))]
+    out.push_str("Usage:\n  shoutx --help\n  shoutx --version\n");
     // Retain the established help layout independently of command enumeration.
     for provider in PROVIDERS.iter().rev() {
         (provider.help)(&mut out);

@@ -78,25 +78,25 @@ rm -f -- "$corpus" "$path_corpus" "$mask_corpus" "$annotation_corpus" "$artifact
 rm -f -- "$matcher_corpus"
 SHOUTX_MATCHER_CORPUS_PATH="$matcher_corpus" \
   CARGO_TARGET_DIR=target/oracle-stable \
-  cargo test --no-default-features --test matcher_runner_fixture export_matcher_corpus -- --ignored
+  cargo test --all-features --test matcher_runner_fixture export_matcher_corpus -- --ignored
 SHOUTX_LOG_CORPUS_PATH="$log_corpus" \
   CARGO_TARGET_DIR=target/oracle-stable \
-  cargo test --no-default-features --test log_runner_fixture export_log_corpus -- --ignored
+  cargo test --all-features --test log_runner_fixture export_log_corpus -- --ignored
 SHOUTX_ARTIFACTS_CORPUS_PATH="$artifacts_corpus" \
   CARGO_TARGET_DIR=target/oracle-stable \
-  cargo test --no-default-features --test artifacts_runner_fixture export_artifacts_corpus -- --ignored
+  cargo test --all-features --test artifacts_runner_fixture export_artifacts_corpus -- --ignored
 SHOUTX_CORPUS_PATH="$corpus" \
   CARGO_TARGET_DIR=target/oracle-stable \
-  cargo test --no-default-features --test runner_differential_fixture export_runner_corpus -- --ignored
+  cargo test --all-features --test runner_differential_fixture export_runner_corpus -- --ignored
 SHOUTX_PATH_CORPUS_PATH="$path_corpus" \
   CARGO_TARGET_DIR=target/oracle-stable \
-  cargo test --no-default-features --test path_runner_fixture export_path_corpus -- --ignored
+  cargo test --all-features --test path_runner_fixture export_path_corpus -- --ignored
 SHOUTX_MASK_CORPUS_PATH="$mask_corpus" \
   CARGO_TARGET_DIR=target/oracle-stable \
-  cargo test --no-default-features --test mask_runner_fixture export_mask_corpus -- --ignored
+  cargo test --all-features --test mask_runner_fixture export_mask_corpus -- --ignored
 SHOUTX_ANNOTATION_CORPUS_PATH="$annotation_corpus" \
   CARGO_TARGET_DIR=target/oracle-stable \
-  cargo test --no-default-features --test annotation_runner_fixture export_annotation_corpus -- --ignored
+  cargo test --all-features --test annotation_runner_fixture export_annotation_corpus -- --ignored
 for generated in "$corpus" "$path_corpus" "$mask_corpus" "$annotation_corpus" "$artifacts_corpus" "$log_corpus" "$matcher_corpus"; do
   if [ ! -s "$generated" ]; then
     echo "error: expected freshly generated corpus: $generated" >&2

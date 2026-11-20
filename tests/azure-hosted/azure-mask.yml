@@ -53,7 +53,7 @@ jobs:
               - ${{ if eq(case, 'ascii') }}:
                   - pwsh: |
                       $PSNativeCommandUseErrorActionPreference = $true
-                      cargo build --release --locked --no-default-features
+                      cargo build --release --locked --no-default-features --features azure-pipelines
                       python tests/azure-hosted/mask_producer.py package
                     displayName: Build and bind binary
                   - publish: $(Pipeline.Workspace)/mask-binary

@@ -52,27 +52,22 @@ compatibility. Required CI and release gates remain unchanged.
 
 ### Executable configurations
 
-Default and `--no-default-features` builds expose the same complete command
-table: `output`, `env`, `state`, `path`, `artifacts`, `mask`, `notice`, `warning`,
-`error`, `debug`, `group`, `endgroup`, `add-matcher`, and `remove-matcher` in
-the GitHub namespace, plus Azure `variable`, `warning`, `error`, `path`, `mask`,
-`build-number`, `build-tag`, `secret-variable`, `debug`, `group`, `endgroup`,
-`summary` and `uploadfile`.
-Cargo's only feature entry is an empty `default` set. The former research feature
-and test `required-features` are removed. CI and release builds run all contract
-tests, including mask and annotation, without a feature opt-in. Focused stdout
+Default source builds enable all built-in providers. CI and release gates run
+the complete contract suite with both providers, including mask and annotation.
+Packaged executables select one provider under the [release contract](release.md#artifact-contract).
+Focused stdout
 and corpus jobs explicitly select their four named targets; fresh nonempty
 exported corpora remain required. A missing target or empty export must fail,
 not silently turn intended coverage into a zero-test success.
 
 Source-configuration tests check the exact enumerable command table and
 exhaustive dispatch. The independently specified LF help golden and version
-bytes must match each native artifact. The artifact verifier exercises the
+bytes for the selected provider must match each native artifact. Commands from the other provider must fail with the unknown-command diagnostic. The artifact verifier exercises the
 implemented surface, including Unicode mask/message/metadata cases, and checks exact stdout,
 stderr and status. It also checks unsupported commands and rejected input with
 empty stdout. Negative controls corrupt status, output bytes and diagnostics
 to verify the result checker rejects them. Binary marker absence is no longer
-a relevant control after promotion. Default and no-default-feature dependency
+a relevant control after promotion. Default and all-feature dependency
 graphs must match, and release gates check the exact feature table.
 The verifier never prints captured bytes on failure; its diagnostic reports
 only lengths. Each of the five native release targets runs the verifier against
@@ -361,7 +356,7 @@ generated representation. Acceptance-set changes require explicit review of
 membership and its evidence; renderer success alone is not evidence of safety.
 Compare release-mode CLI performance with the recorded, predeclared method in
 [the evidence note](compatibility/stdout-unicode-policy.md#producer-performance).
-Normal default/no-default-feature Cargo and Runner oracle gates remain required.
+Normal default/all-feature Cargo and Runner oracle gates remain required.
 Publication additionally requires the [release admission policy](release.md#stdout-admission-and-compatibility-maintenance);
 neither this section nor historical investigation results alone authorize it.
 

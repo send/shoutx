@@ -97,13 +97,13 @@ jobs:
         with:
           persist-credentials: false
       - run: rustup toolchain install stable --profile minimal --component clippy
-      - run: cargo +stable test --all-targets --no-default-features
+      - run: cargo +stable test --all-targets --all-features
         env:
           SHOUTX_EXPECT_SURFACE: stable
-      - run: cargo +stable clippy --all-targets --no-default-features -- -D warnings
-      - run: cargo +stable build --no-default-features
+      - run: cargo +stable clippy --all-targets --all-features -- -D warnings
+      - run: cargo +stable build --all-features
       - name: Verify stdout test selection
-        run: cargo +stable test --no-default-features --test mask_contract --test annotation_contract --test mask_runner_fixture --test annotation_runner_fixture
+        run: cargo +stable test --all-features --test mask_contract --test annotation_contract --test mask_runner_fixture --test annotation_runner_fixture
       - name: Dogfood GitHub action state
         uses: ./tests/workflow-state-action
         with:
@@ -278,8 +278,8 @@ jobs:
           persist-credentials: false
       - run: rustup toolchain install 1.85.0 --profile minimal --component clippy,rustfmt
       - run: cargo +1.85.0 fmt --all -- --check
-      - run: SHOUTX_EXPECT_SURFACE=stable CARGO_TARGET_DIR=target/msrv-stable cargo +1.85.0 test --all-targets --no-default-features
-      - run: CARGO_TARGET_DIR=target/msrv-stable cargo +1.85.0 clippy --all-targets --no-default-features -- -D warnings
+      - run: SHOUTX_EXPECT_SURFACE=stable CARGO_TARGET_DIR=target/msrv-stable cargo +1.85.0 test --all-targets --all-features
+      - run: CARGO_TARGET_DIR=target/msrv-stable cargo +1.85.0 clippy --all-targets --all-features -- -D warnings
 
   runner-differential:
     needs: changes
@@ -315,7 +315,7 @@ jobs:
         shell: pwsh
         run: |
           $PSNativeCommandUseErrorActionPreference = $true
-          cargo build --locked --no-default-features
+          cargo build --locked --all-features
           $binary = if ($IsWindows) { 'target/debug/shoutx.exe' } else { 'target/debug/shoutx' }
           python -B tests/azure-oracle/verify.py $binary
           python -B tests/azure-hosted/test_smoke.py
@@ -348,36 +348,36 @@ jobs:
         run: |
           $PSNativeCommandUseErrorActionPreference = $true
           $env:CARGO_TARGET_DIR = 'target/oracle-stable'
-          cargo +stable test --no-default-features --test runner_differential_fixture
-          cargo +stable test --no-default-features --test path_runner_fixture
+          cargo +stable test --all-features --test runner_differential_fixture
+          cargo +stable test --all-features --test path_runner_fixture
           $env:CARGO_TARGET_DIR = 'target/oracle-stable'
-          cargo +stable test --no-default-features --test mask_runner_fixture
-          cargo +stable test --no-default-features --test annotation_runner_fixture
+          cargo +stable test --all-features --test mask_runner_fixture
+          cargo +stable test --all-features --test annotation_runner_fixture
           $env:SHOUTX_CORPUS_PATH = "$pwd/target/runner-oracle/corpus.json"
           Remove-Item -ErrorAction Ignore $env:SHOUTX_CORPUS_PATH
           $env:CARGO_TARGET_DIR = 'target/oracle-stable'
-          cargo +stable test --no-default-features --test runner_differential_fixture export_runner_corpus -- --ignored
+          cargo +stable test --all-features --test runner_differential_fixture export_runner_corpus -- --ignored
           $env:SHOUTX_PATH_CORPUS_PATH = "$pwd/target/runner-oracle/path-corpus.json"
           Remove-Item -ErrorAction Ignore $env:SHOUTX_PATH_CORPUS_PATH
-          cargo +stable test --no-default-features --test path_runner_fixture export_path_corpus -- --ignored
+          cargo +stable test --all-features --test path_runner_fixture export_path_corpus -- --ignored
           $env:SHOUTX_MASK_CORPUS_PATH = "$pwd/target/runner-oracle/mask-corpus.json"
           Remove-Item -ErrorAction Ignore $env:SHOUTX_MASK_CORPUS_PATH
           $env:CARGO_TARGET_DIR = 'target/oracle-stable'
-          cargo +stable test --no-default-features --test mask_runner_fixture export_mask_corpus -- --ignored
+          cargo +stable test --all-features --test mask_runner_fixture export_mask_corpus -- --ignored
           $env:SHOUTX_ANNOTATION_CORPUS_PATH = "$pwd/target/runner-oracle/annotation-corpus.json"
           Remove-Item -ErrorAction Ignore $env:SHOUTX_ANNOTATION_CORPUS_PATH
-          cargo +stable test --no-default-features --test annotation_runner_fixture export_annotation_corpus -- --ignored
+          cargo +stable test --all-features --test annotation_runner_fixture export_annotation_corpus -- --ignored
           $env:SHOUTX_ARTIFACTS_CORPUS_PATH = "$pwd/target/runner-oracle/artifacts-corpus.json"
           Remove-Item -ErrorAction Ignore $env:SHOUTX_ARTIFACTS_CORPUS_PATH
-          cargo +stable test --no-default-features --test artifacts_runner_fixture export_artifacts_corpus -- --ignored
+          cargo +stable test --all-features --test artifacts_runner_fixture export_artifacts_corpus -- --ignored
           $env:SHOUTX_LOG_CORPUS_PATH = "$pwd/target/runner-oracle/log-corpus.json"
           Remove-Item -ErrorAction Ignore $env:SHOUTX_LOG_CORPUS_PATH
-          cargo +stable test --no-default-features --test log_runner_fixture
-          cargo +stable test --no-default-features --test log_runner_fixture export_log_corpus -- --ignored
+          cargo +stable test --all-features --test log_runner_fixture
+          cargo +stable test --all-features --test log_runner_fixture export_log_corpus -- --ignored
           $env:SHOUTX_MATCHER_CORPUS_PATH = "$pwd/target/runner-oracle/matcher-corpus.json"
           Remove-Item -ErrorAction Ignore $env:SHOUTX_MATCHER_CORPUS_PATH
-          cargo +stable test --no-default-features --test matcher_runner_fixture
-          cargo +stable test --no-default-features --test matcher_runner_fixture export_matcher_corpus -- --ignored
+          cargo +stable test --all-features --test matcher_runner_fixture
+          cargo +stable test --all-features --test matcher_runner_fixture export_matcher_corpus -- --ignored
           foreach ($corpus in @($env:SHOUTX_CORPUS_PATH, $env:SHOUTX_PATH_CORPUS_PATH, $env:SHOUTX_MASK_CORPUS_PATH, $env:SHOUTX_ANNOTATION_CORPUS_PATH, $env:SHOUTX_ARTIFACTS_CORPUS_PATH, $env:SHOUTX_LOG_CORPUS_PATH, $env:SHOUTX_MATCHER_CORPUS_PATH)) {
             if (-not (Test-Path $corpus) -or (Get-Item $corpus).Length -eq 0) { throw "Missing fresh corpus" }
           }
@@ -512,7 +512,7 @@ jobs:
         shell: pwsh
         run: |
           $env:CARGO_TARGET_DIR = 'target/hosted-stdout'
-          cargo +stable build --locked --no-default-features
+          cargo +stable build --locked --all-features
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Exercise package-matched hosted boundaries
         shell: bash

@@ -47,8 +47,8 @@ The product-level prerequisite for v1 is owned by
 gates in this document.
 
 Release versions follow SemVer as represented by Cargo, except that the initial
-release process prohibits build metadata. Revision 1 also limits `VERSION` to
-55 ASCII bytes so every member path fits the TAR name field without an
+release process prohibits build metadata. Revision 2 limits `VERSION` to
+39 ASCII bytes so every member path fits the TAR name field without an
 extension record. A release tag is `vVERSION`, where `VERSION` is exactly the
 `[package].version` from `Cargo.toml`; for example, package version `0.1.0` uses
 tag `v0.1.0`.
@@ -72,12 +72,12 @@ v0.2.0 remain mutable and are not covered by this guarantee. Draft assembly is
 retained because assets remain changeable until the release is published; the
 tag and assets become immutable at publication.
 
-Official binaries are built with `--no-default-features`. The release workflow
-asserts that Cargo's default feature set is empty and applies the stable-surface
-source, dependency, and packaged-artifact gates defined by the
-[test plan](test-plan.md) to every native target. Default and no-default-feature
-builds expose the same [complete command surface](design.md#github-actions-commands)
-and use the same dependencies.
+Official binaries are built with `--no-default-features --features PROVIDER`.
+For each native target the workflow builds one archive for `github-actions`
+and one for `azure-pipelines` from the same version and source. Each executable
+registers only its selected provider. Ordinary Cargo builds enable both
+providers for development. PR and dispatch builds produce the same candidate
+archives and checksum manifest as tag builds.
 
 The release workflow reruns the stable contract suite and `cargo deny
 --all-features --locked` itself. A successful aggregate CI result whose relevant
@@ -240,13 +240,16 @@ gates prove review readiness only; each new publication still requires approval.
 
 ## Artifact contract
 
-### Setup-action compatibility revision 1
+### Setup-action compatibility revision 2
 
-Releases from v0.3.0-rc.1 onward use setup-action artifact contract revision 1
-until a later release explicitly introduces another revision. The release
-workflow enforces the immutable-release assertion and raw archive-entry gates
-specified below; releases before v0.3.0-rc.1 did not pass those gates and are
-not eligible for the official setup action.
+Revision 2 applies to the first provider-split release after v1.0.0.
+Published assets retain their original names. Versions from v0.3.0-rc.1
+through v1.0.0 use revision 1 with the archive stem `shoutx-vVERSION-TARGET`.
+Earlier versions are ineligible for the official setup action. Revision 2
+adds the provider to both the filename and archive root and publishes only
+provider-qualified archives. The executable inside is still named `shoutx`
+(`shoutx.exe` on Windows).
+
 The installer-consumed parts of this revision are:
 
 - the version and tag contract above;
@@ -262,15 +265,15 @@ requires a new revision coordinated with the official setup action before the
 CLI release. An older action is expected to fail closed when its exact asset or
 layout is absent; it does not infer a new convention.
 
-Archive names are deterministic:
+In the following names, `PROVIDER` is either `github-actions` or `azure-pipelines`.
 
 ```text
-shoutx-vVERSION-TARGET.tar.gz
-shoutx-vVERSION-TARGET.zip
+shoutx-PROVIDER-vVERSION-TARGET.tar.gz
+shoutx-PROVIDER-vVERSION-TARGET.zip
 ```
 
 The four POSIX targets use `tar.gz`; Windows uses `zip`. Each archive has one
-top-level directory named `shoutx-vVERSION-TARGET` containing only:
+top-level directory named `shoutx-PROVIDER-vVERSION-TARGET` containing only:
 
 ```text
 shoutx                 # shoutx.exe on Windows
@@ -283,7 +286,7 @@ may additionally represent the top-level directory as a directory entry, and
 a ZIP archive may omit that entry. Neither representation permits an additional
 file, link, device, alternate path spelling, duplicate path, or case-colliding
 path. A represented top-level directory has no payload data.
-Revision 1 deliberately excludes all pax records, GNU long-name and long-link
+The archive format excludes all pax records, GNU long-name and long-link
 records, TAR prefix and linkname fields, ZIP extra fields (including ZIP64 and
 Unicode path overrides), local/central ZIP metadata disagreement, encryption,
 data descriptors, archive and per-entry ZIP comments, multi-disk ZIPs, and
@@ -312,7 +315,7 @@ lexicographic filename order. It uses the conventional lowercase hexadecimal
 digest, two ASCII spaces, filename, and LF format:
 
 ```text
-HEX_DIGEST  shoutx-vVERSION-TARGET.EXT
+HEX_DIGEST  shoutx-PROVIDER-vVERSION-TARGET.EXT
 ```
 
 `SHA256SUMS` does not include itself. Checksums are computed only after all
@@ -457,7 +460,7 @@ verify that GitHub Actions built that exact archive from this repository, use
 the GitHub CLI:
 
 ```sh
-gh attestation verify shoutx-vVERSION-TARGET.EXT --repo send/shoutx
+gh attestation verify shoutx-PROVIDER-vVERSION-TARGET.EXT --repo send/shoutx
 ```
 
 Replace `VERSION`, `TARGET`, and `EXT` with the downloaded asset name. Perform

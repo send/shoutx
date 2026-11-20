@@ -70,8 +70,8 @@ baseline is:
 
 ```sh
 cargo fmt --all -- --check
-CARGO_TARGET_DIR=target/stable cargo test --all-targets --no-default-features
-CARGO_TARGET_DIR=target/stable cargo clippy --all-targets --no-default-features -- -D warnings
+CARGO_TARGET_DIR=target/stable cargo test --all-targets --all-features
+CARGO_TARGET_DIR=target/stable cargo clippy --all-targets --all-features -- -D warnings
 scripts/verify-stable-docs.sh
 ```
 

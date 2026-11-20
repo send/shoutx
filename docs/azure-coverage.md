@@ -3,13 +3,13 @@
 Status: accepted practical scope, 2026-11-03. This is the authoritative Azure
 coverage inventory delegated by the design index. The
 [scope decision](decisions/azure-practical-scope.md) records the rationale;
-command specifications still own behavior. Release preparation remains on hold.
+command specifications still own behavior.
 
 The implemented subset covers ordinary scripted variable exchange, diagnostics,
 PATH setup, scoped mask registration, dynamic secret assignment, build metadata,
 log grouping and report/task-log publication. This is the selected practical
 scope, not coverage of every Azure command, arbitrary subprocess output, or all
-Azure deployments. All Azure writers remain unreleased.
+Azure deployments. The [v2.0.0 release notes](releases/v2.0.0.md) describe packaging and migration.
 
 ## How to read the assessment
 

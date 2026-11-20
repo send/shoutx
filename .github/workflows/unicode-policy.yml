@@ -22,7 +22,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73
         with:
-          dotnet-version: 8.0.425
+          dotnet-version: 8.0.427
       - name: Check candidate with pinned parser
         shell: pwsh
         run: |

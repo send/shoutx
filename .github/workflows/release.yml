@@ -37,7 +37,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
       - name: Install pinned Rust toolchain
@@ -78,12 +78,12 @@ jobs:
             --manifest-path tools/archive-validator/Cargo.toml
           cargo +"$TOOLCHAIN" clippy --all-targets --locked \
             --manifest-path tools/archive-validator/Cargo.toml -- -D warnings
-      - uses: EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25
+      - uses: EmbarkStudios/cargo-deny-action@v2.1.1
         with:
           command: check
           arguments: --all-features --locked
           command-arguments: advisories bans licenses sources
-      - uses: EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25
+      - uses: EmbarkStudios/cargo-deny-action@v2.1.1
         with:
           command: check
           manifest-path: tools/archive-validator/Cargo.toml
@@ -103,12 +103,12 @@ jobs:
       tag: ${{ steps.package.outputs.tag }}
       prerelease: ${{ steps.package.outputs.prerelease }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
       - name: Install pinned shoutx release
         id: setup-shoutx
-        uses: send/setup-shoutx@eb61a2361c6c0e0d37ab9cca1c50e998b4a94c24 # v0.1.0
+        uses: send/setup-shoutx@v0.1.0
         with:
           shoutx-version: '1.0.0'
           checksums-sha256: a6336c0e538c54e1fe4e35025983694e4f60ba9ab8aefda740796ab95ee13875
@@ -200,7 +200,7 @@ jobs:
       PROVIDER: ${{ matrix.provider }}
       EXTENSION: ${{ matrix.platform.extension }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
       - name: Install pinned Rust toolchain
@@ -279,7 +279,7 @@ jobs:
           cargo "+$env:TOOLCHAIN" test --locked --no-default-features --features "$env:PROVIDER" --test stable_surface
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           Remove-Item -Recurse "dist/$root", "verify"
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+      - uses: actions/upload-artifact@v7.0.2
         with:
           name: candidate-${{ matrix.provider }}-${{ matrix.platform.target }}
           path: dist/shoutx-${{ matrix.provider }}-v${{ needs.metadata.outputs.version }}-${{ matrix.platform.target }}.${{ matrix.platform.extension }}
@@ -305,11 +305,11 @@ jobs:
       TAG: ${{ needs.metadata.outputs.tag }}
       PRERELEASE: ${{ needs.metadata.outputs.prerelease }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/checkout@v7.0.1
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+      - uses: actions/download-artifact@v8.0.2
         with:
           name: release-assets
           path: dist
@@ -319,7 +319,7 @@ jobs:
           test "$(find dist -maxdepth 1 -type f | wc -l | tr -d ' ')" = 11
           (cd dist && sha256sum --check SHA256SUMS)
       - name: Attest release assets
-        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6
+        uses: actions/attest@v4.2.2
         with:
           subject-path: dist/*
       - name: Publish verified release
@@ -333,13 +333,13 @@ jobs:
       VERSION: ${{ needs.metadata.outputs.version }}
       TOOLCHAIN: ${{ needs.metadata.outputs.toolchain }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
       - name: Install pinned Rust toolchain
         shell: bash
         run: rustup toolchain install "$TOOLCHAIN" --profile minimal
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+      - uses: actions/download-artifact@v8.0.2
         with:
           pattern: candidate-*
           path: ${{ runner.temp }}/release-candidates
@@ -378,7 +378,7 @@ jobs:
             done < "$expected" > SHA256SUMS
           )
           (cd "$candidate_dir" && sha256sum --check SHA256SUMS)
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+      - uses: actions/upload-artifact@v7.0.2
         with:
           name: release-assets
           path: ${{ runner.temp }}/release-candidates/

@@ -4,7 +4,7 @@ Prevent injection at CI workflow output boundaries.
 
 `shoutx` safely writes untrusted values from shell-driven workflows to
 destination-specific formats and protocols. The current source supports GitHub
-Actions environment files and scoped stdout workflow commands, plus Azure Pipelines writers in the v2.0.0 candidate; its verification status is recorded
+Actions environment files and scoped stdout workflow commands, plus Azure Pipelines writers in v2.0.0. Azure verification status is recorded
 in the [Azure compatibility note](docs/compatibility/azure-pipelines.md).
 Generic context encoders are deferred
 until a concrete destination and safe consumption contract justify one.
@@ -37,28 +37,29 @@ compatibility evidence, and release policy each have one authoritative home.
 
 For GitHub Actions, use the official
 [`send/setup-shoutx`](https://github.com/send/setup-shoutx) action. This example
-pins the action commit and CLI version to the published v1.0.0 release, with
-the complete fourteen-command surface:
+installs the GitHub Actions binary from shoutx v2.0.0:
 
 ```yaml
-- uses: send/setup-shoutx@eb61a2361c6c0e0d37ab9cca1c50e998b4a94c24 # v0.1.0
+- uses: send/setup-shoutx@4d56952710c9e225285e0474b381d6a10f4d3fdd # v0.2.0
   with:
-    shoutx-version: '1.0.0'
+    shoutx-version: '2.0.0'
+    checksums-sha256: b366c56f14818e856939742c807889af882d881b5fa0ef6ed60ffd63eb3c6553
     github-token: ${{ github.token }}
 - run: shoutx --version
 ```
 
 Run setup before untrusted steps and grant the job only the permissions it
-needs (`contents: read` is sufficient for installation). For an additional
-independent manifest pin, supply the optional `checksums-sha256` input with a
-trusted SHA-256 digest of the selected version's `SHA256SUMS`; do not reuse a
-digest from another version. See the action repository for supported runners, inputs, and
-verification limits.
+needs (`contents: read` is sufficient for installation). The example pins the
+release's checksum manifest. Update the version and digest together.
+
+For Azure Pipelines, use the
+[setup-shoutx steps template](https://github.com/send/setup-shoutx/blob/main/README.md#azure-pipelines-v020)
+to install the Azure binary for the same CLI release.
 
 Alternatively, build this tree with `cargo build --release --locked` for both providers.
 For a single provider add `--no-default-features --features github-actions` or
 `--no-default-features --features azure-pipelines`. See the
-[archive naming contract](docs/release.md#artifact-contract) for the upcoming provider-specific downloads.
+[archive naming contract](docs/release.md#artifact-contract) for provider-specific downloads.
 
 Download the archive for your platform and `SHA256SUMS` from the
 [latest GitHub release](https://github.com/send/shoutx/releases/latest). Verify
@@ -205,9 +206,8 @@ encoders use the `LANGUAGE:CONTEXT` form.
 
 ## Azure Pipelines writers
 
-Build this source tree and make its native `shoutx` executable available on
-PATH before using these examples; published v1.0.0 binaries do not include Azure
-commands. The [Azure profile](docs/design.md#azure-pipelines-profile) owns the
+Install the Azure Pipelines binary as described under [Installation](#installation)
+before using these examples. The [Azure profile](docs/design.md#azure-pipelines-profile) owns the
 supported hosts, shells and required job settings. The
 [verification record](docs/compatibility/azure-pipelines.md) records actual
 hosted behavior and limits. The selected

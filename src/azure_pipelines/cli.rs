@@ -303,10 +303,5 @@ fn parse_azure_issue(
 }
 
 pub(crate) fn help(out: &mut String) {
-    crate::cli::help_section(
-        out,
-        COMMANDS,
-        0,
-        "\nAzure Pipelines commands:\n",
-    );
+    crate::cli::help_section(out, COMMANDS, 0, "\nAzure Pipelines commands:\n");
 }

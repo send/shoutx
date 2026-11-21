@@ -26,7 +26,7 @@ jobs:
     steps:
       # workflow_run's github.sha is the trusted default-branch revision, NOT
       # the triggering run's head_sha. Never checkout/execute triggering code.
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/checkout@v7.0.1
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
@@ -34,7 +34,7 @@ jobs:
         run: python3 -B scripts/verify-stdout-run.py --output "$RUNNER_TEMP/stdout-verification/report.json"
       - name: Retain bounded source-bound verification
         if: always()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: stdout-verification-${{ github.event.workflow_run.id }}-${{ github.event.workflow_run.run_attempt }}-${{ github.event.workflow_run.head_sha }}
           path: ${{ runner.temp }}/stdout-verification/report.json

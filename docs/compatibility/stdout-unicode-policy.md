@@ -42,6 +42,17 @@ remained v2.337.0. This closes that update's pending verification, not admission
 of a future version-preparation SHA. Historical sections below retain their
 original versions and scope.
 
+On 2026-11-21 JST, [main CI run 44836518813](https://github.com/send/shoutx/actions/runs/44836518813)
+reported live Runner v2.338.2 on all four differential jobs while the controlled
+package tests still used v2.338.0. The [upstream comparison](https://github.com/actions/runner/compare/v2.338.0...v2.338.2)
+leaves the action-command and file-command handlers unchanged. It updates the
+SDK to 8.0.427 and changes package dependencies. The published macOS arm64
+Worker runtime configuration specifies .NET 8.0.33. The four existing pinned
+runtime-source digests match the files at the new runtime commit.
+The [controlled pins](../../tests/runner-package/pins.json) track this consumer.
+Final release admission still requires the candidate main run and its
+independent verifier under the [release policy](../release.md).
+
 The local macOS26/runtime8.0.30/ICU78.1 configuration reports candidate
 misrecognition in both tested cultures. It is outside the table's characterized
 configuration set; its result prohibits claiming automatic newer-version support.

@@ -305,12 +305,12 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: actions/runner
-          ref: 197ca027b90de199464dee3bb9ff198a1db60967
+          ref: d1eb12d4b115c301201de27d667284e1a80f2ab5
           path: target/runner-oracle/actions-runner
           persist-credentials: false
       - uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73
         with:
-          dotnet-version: 8.0.425
+          dotnet-version: 8.0.427
       - name: Verify Azure logging-command source parser (not hosted Azure)
         shell: pwsh
         run: |
@@ -331,8 +331,8 @@ jobs:
         shell: pwsh
         working-directory: target/runner-oracle/actions-runner/src
         run: |
-          if ((dotnet --version) -ne '8.0.425') {
-            throw "Expected .NET SDK 8.0.425, got $(dotnet --version)"
+          if ((dotnet --version) -ne '8.0.427') {
+            throw "Expected .NET SDK 8.0.427, got $(dotnet --version)"
           }
       - run: rustup toolchain install stable --profile minimal
       - name: Test offline managed reference inventory

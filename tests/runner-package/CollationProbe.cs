@@ -63,7 +63,7 @@ static class CollationProbe
         Require(preconditions && expectedVersion != 0, "ICU observation preconditions unavailable");
         Require(IntPtr.Size == 8 && RuntimeInformation.ProcessArchitecture is Architecture.X64 or Architecture.Arm64 &&
             typeof(object).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ==
-                "8.0.31+1219a42122cf5190c7f512850557e38c422430dc", "unreviewed native sort handle layout");
+                "8.0.33+da7a9beabf4cccc624399d583f52f080a4c858c2", "unreviewed native sort handle layout");
         var compare = CultureInfo.CurrentCulture.CompareInfo;
         result["culture"] = compare.Name;
         Require(compare.IndexOf("::warning::日text", "::", 2, CompareOptions.None) == 9, "native observation separator mismatch");

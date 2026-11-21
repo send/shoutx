@@ -6,7 +6,7 @@ Run `cargo build --locked`, then:
 mise exec -- python3 -B tests/azure-oracle/verify.py target/debug/shoutx
 ```
 
-Windows uses `target/debug/shoutx.exe`. CI installs .NET 8.0.425 directly.
+Windows uses `target/debug/shoutx.exe`. CI installs .NET 8.0.427 directly.
 The harness downloads two commit- and SHA-256-pinned MIT-licensed Agent source
 files into a temporary directory, compiles them unchanged with a constructor
 assertion stub, and compares actual CLI output with independently supplied

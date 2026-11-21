@@ -645,7 +645,7 @@ raising the MSRV requires a deliberate release decision and matching manifest
 and CI changes.
 
 The pinned `actions/runner` differential suite additionally needs .NET SDK
-8.0.425. `mise.toml` can install that SDK for local development, but mise is
+8.0.427. `mise.toml` can install that SDK for local development, but mise is
 optional:
 
 ```sh
